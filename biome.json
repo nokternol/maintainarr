@@ -51,5 +51,21 @@
       "package-lock.json",
       "*.log"
     ]
-  }
+  },
+  "overrides": [
+    {
+      "include": ["**/*.stories.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off",
+            "useButtonType": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    }
+  ]
 }
