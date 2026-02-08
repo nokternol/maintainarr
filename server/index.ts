@@ -3,7 +3,7 @@ import next from 'next';
 import logger from './logger';
 
 const dev = process.env.NODE_ENV !== 'production';
-const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 5056;
+const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 5057;
 
 const app = next({ dev });
 const handle = app.getRequestHandler();

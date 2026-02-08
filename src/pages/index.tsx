@@ -22,7 +22,7 @@ export default function Home() {
               Tailwind CSS styling
             </li>
             <li className="flex items-center">
-              <span className="text-gray-500 mr-2">○</span>
+              <span className="text-green-500 mr-2">✓</span>
               Testing frameworks (Vitest, Cypress, Ladle)
             </li>
             <li className="flex items-center">
@@ -31,7 +31,7 @@ export default function Home() {
             </li>
           </ul>
         </div>
-        <div className="mt-8 text-gray-500 text-sm">Port 5056 | tsx + nodemon | biome</div>
+        <div className="mt-8 text-gray-500 text-sm">Port 5057 | tsx + nodemon | biome</div>
       </div>
     </div>
   );

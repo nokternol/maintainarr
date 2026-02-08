@@ -17,7 +17,7 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "cypress open",
     "test:e2e:headless": "cypress run --browser chrome",
-    "test:e2e:ci": "start-server-and-test dev http://localhost:5056 test:e2e:headless",
+    "test:e2e:ci": "start-server-and-test dev http://localhost:5057 test:e2e:headless",
     "ladle": "ladle serve",
     "ladle:build": "ladle build",
     "lint": "biome check .",
