@@ -10,7 +10,9 @@ const handle = app.getRequestHandler();
 
 async function startServer() {
   try {
+    logger.info('Preparing Next.js...');
     await app.prepare();
+    logger.info('Next.js prepared successfully');
 
     const server = express();
 
@@ -27,10 +29,19 @@ async function startServer() {
 
     server.all('*', (req, res) => handle(req, res));
 
-    server.listen(port, () => {
+    const httpServer = server.listen(port, '0.0.0.0', () => {
       logger.info(`Server started on port ${port}`);
       logger.info(`Environment: ${dev ? 'development' : 'production'}`);
       logger.info(`Open http://localhost:${port}`);
+    });
+
+    httpServer.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`Port ${port} is already in use`);
+      } else {
+        logger.error('Server error:', error);
+      }
+      process.exit(1);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
