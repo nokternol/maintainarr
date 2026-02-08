@@ -3,7 +3,7 @@ import next from 'next';
 import logger from './logger';
 
 const dev = process.env.NODE_ENV !== 'production';
-const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5056;
+const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 5056;
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
@@ -17,7 +17,7 @@ async function startServer() {
     server.use(express.json());
     server.use(express.urlencoded({ extended: true }));
 
-    server.get('/api/health', (req, res) => {
+    server.get('/api/health', (_req, res) => {
       res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
