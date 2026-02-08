@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1f2937" />
+    <title>Maintainarr - You are offline</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 2em;
+        background-color: #111827;
+        color: #f3f4f6;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      h1 {
+        color: #a855f7;
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        font-size: 1.2rem;
+        color: #9ca3af;
+        margin-bottom: 2rem;
+      }
+
+      button {
+        background-color: #a855f7;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background-color: #9333ea;
+      }
+
+      .status {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>You are offline</h1>
+    <p>Please check your internet connection and try again.</p>
+    <button type="button">↻ Reload</button>
+    <div class="status" id="status"></div>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      let retryCount = 0;
+
+      document.querySelector('button').addEventListener('click', () => {
+        window.location.reload();
+      });
+
+      window.addEventListener('online', () => {
+        window.location.reload();
+      });
+
+      async function checkNetworkAndReload() {
+        try {
+          retryCount++;
+          statusEl.textContent = `Checking connection... (attempt ${retryCount})`;
+
+          const response = await fetch('.');
+          if (response.status >= 200 && response.status < 500) {
+            statusEl.textContent = 'Connection restored! Reloading...';
+            window.location.reload();
+            return;
+          }
+        } catch {
+          // Unable to connect to the server, ignore.
+        }
+        window.setTimeout(checkNetworkAndReload, 2500);
+      }
+
+      checkNetworkAndReload();
+    </script>
+  </body>
+</html>
