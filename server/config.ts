@@ -10,9 +10,7 @@ const configSchema = z.object({
   COMMIT_TAG: z.string().default('local'),
 
   // Logging
-  LOG_LEVEL: z
-    .enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'])
-    .default('info'),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('info'),
   LOG_DIR: z.string().default('./config/logs'),
 
   // Database

@@ -7,12 +7,7 @@ export class AppError extends Error {
   public readonly type: string;
   public readonly isOperational: boolean;
 
-  constructor(
-    message: string,
-    statusCode = 500,
-    type = 'INTERNAL_ERROR',
-    isOperational = true,
-  ) {
+  constructor(message: string, statusCode = 500, type = 'INTERNAL_ERROR', isOperational = true) {
     super(message);
     this.name = this.constructor.name;
     this.statusCode = statusCode;

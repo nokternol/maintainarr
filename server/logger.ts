@@ -13,10 +13,9 @@ const humanFormat = winston.format.combine(
   winston.format.printf(({ timestamp, level, message, label, requestId, ...meta }) => {
     const labelTag = label ? `[${label}]` : '';
     const ridTag = requestId ? `[${requestId}]` : '';
-    const metaStr =
-      Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+    const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
     return `${timestamp} ${level}:${labelTag}${ridTag} ${message}${metaStr}`;
-  }),
+  })
 );
 
 // Uncolorized human format for text log files
@@ -27,10 +26,9 @@ const fileFormat = winston.format.combine(
   winston.format.printf(({ timestamp, level, message, label, requestId, ...meta }) => {
     const labelTag = label ? `[${label}]` : '';
     const ridTag = requestId ? `[${requestId}]` : '';
-    const metaStr =
-      Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+    const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
     return `${timestamp} ${level}:${labelTag}${ridTag} ${message}${metaStr}`;
-  }),
+  })
 );
 
 // Machine-readable JSON format for parsing and monitoring tools
@@ -38,7 +36,7 @@ const jsonFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
-  winston.format.json(),
+  winston.format.json()
 );
 
 const logger = winston.createLogger({
