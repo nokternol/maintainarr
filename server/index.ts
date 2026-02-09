@@ -1,18 +1,21 @@
 import express from 'express';
 import next from 'next';
-import logger from './logger';
+import { loadConfig } from './config';
+import { getChildLogger } from './logger';
 
-const dev = process.env.NODE_ENV !== 'production';
-const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 5057;
-
-const app = next({ dev });
-const handle = app.getRequestHandler();
+const log = getChildLogger('Server');
 
 async function startServer() {
+  const config = loadConfig();
+  const dev = config.NODE_ENV !== 'production';
+  const port = config.PORT;
+
   try {
-    logger.info('Preparing Next.js...');
+    log.info('Preparing Next.js...');
+    const app = next({ dev });
+    const handle = app.getRequestHandler();
     await app.prepare();
-    logger.info('Next.js prepared successfully');
+    log.info('Next.js prepared successfully');
 
     const server = express();
 
@@ -23,28 +26,27 @@ async function startServer() {
       res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        version: process.env.COMMIT_TAG || 'local',
+        version: config.COMMIT_TAG,
       });
     });
 
     server.all('*', (req, res) => handle(req, res));
 
     const httpServer = server.listen(port, '0.0.0.0', () => {
-      logger.info(`Server started on port ${port}`);
-      logger.info(`Environment: ${dev ? 'development' : 'production'}`);
-      logger.info(`Open http://localhost:${port}`);
+      log.info('Server started', { port, env: config.NODE_ENV });
+      log.info(`Open http://localhost:${port}`);
     });
 
     httpServer.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
-        logger.error(`Port ${port} is already in use`);
+        log.error(`Port ${port} is already in use`);
       } else {
-        logger.error('Server error:', error);
+        log.error('Server error', { error: error.message });
       }
       process.exit(1);
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    log.error('Failed to start server', { error });
     process.exit(1);
   }
 }
