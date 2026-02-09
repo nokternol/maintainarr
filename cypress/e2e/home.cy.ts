@@ -19,7 +19,7 @@ describe('Home Page', () => {
   });
 
   it('shows port and tech stack information', () => {
-    cy.contains('Port 5056').should('be.visible');
+    cy.contains('Port 5057').should('be.visible');
     cy.contains('tsx').should('be.visible');
     cy.contains('biome').should('be.visible');
   });
