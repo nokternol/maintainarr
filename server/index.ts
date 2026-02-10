@@ -3,8 +3,10 @@ import express from 'express';
 import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
+import { scopePerRequest } from './container';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
+import { apiRouter } from './routes';
 
 const log = getChildLogger('Server');
 
@@ -38,15 +40,10 @@ async function startServer() {
     // Request pipeline
     server.use(requestIdMiddleware);
     server.use(requestLoggerMiddleware);
+    server.use(scopePerRequest);
 
-    // API routes (will be replaced by apiRouter in Step 5)
-    server.get('/api/health', (_req, res) => {
-      res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        version: config.COMMIT_TAG,
-      });
-    });
+    // API routes
+    server.use('/api', apiRouter);
 
     // Next.js catch-all
     server.all('*', (req, res) => handle(req, res));
