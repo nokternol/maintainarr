@@ -11,8 +11,8 @@ describe('Badge', () => {
   it('applies default variant styles', () => {
     const { container } = render(<Badge>Default</Badge>);
     const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-slate-700/50');
-    expect(badge).toHaveClass('text-slate-300');
+    expect(badge).toHaveClass('bg-slate-500/10');
+    expect(badge).toHaveClass('text-slate-400');
   });
 
   it('applies success variant styles', () => {
@@ -46,8 +46,8 @@ describe('Badge', () => {
   it('applies teal variant styles', () => {
     const { container } = render(<Badge variant="teal">Teal</Badge>);
     const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-teal-500/10');
-    expect(badge).toHaveClass('text-teal-400');
+    expect(badge).toHaveClass('bg-primary/10');
+    expect(badge).toHaveClass('text-primary');
   });
 
   it('applies small size styles', () => {
