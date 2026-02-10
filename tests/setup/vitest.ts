@@ -1,12 +1,12 @@
 import '@testing-library/jest-dom';
 import { afterAll, afterEach, beforeAll } from 'vitest';
-import { server } from '../mocks/server';
 
-// Start MSW server before all tests
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+// Only start MSW in jsdom environment (client tests).
+// Server tests run in Node and use supertest — MSW would intercept those requests.
+if (typeof window !== 'undefined') {
+  const { server } = await import('../mocks/server');
 
-// Reset handlers after each test to ensure test isolation
-afterEach(() => server.resetHandlers());
-
-// Clean up after all tests
-afterAll(() => server.close());
+  beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
+}

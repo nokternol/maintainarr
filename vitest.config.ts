@@ -6,8 +6,6 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup/vitest.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -22,7 +20,25 @@ export default defineConfig({
         'server/index.ts',
       ],
     },
-    include: ['**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'client',
+          environment: 'happy-dom',
+          setupFiles: ['./tests/setup/vitest.ts'],
+          include: ['src/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'server',
+          environment: 'node',
+          include: ['server/__tests__/**/*.{test,spec}.ts'],
+        },
+      },
+    ],
   },
   resolve: {
     alias: {
