@@ -19,13 +19,13 @@ describe('Button', () => {
   it('applies secondary variant styles', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-white');
+    expect(button).toHaveClass('bg-secondary');
   });
 
   it('applies danger variant styles', () => {
     render(<Button variant="danger">Danger</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-red-600');
+    expect(button).toHaveClass('bg-danger');
   });
 
   it('applies size styles correctly', () => {

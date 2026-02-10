@@ -22,7 +22,7 @@ export const ThemeShowcase: Story = () => (
     {/* Dark Mode Section */}
     <div className="p-8 rounded-xl bg-surface-dark dark">
       <h3 className="text-white font-bold mb-4">Dark Mode Surface (slate-950)</h3>
-      <div className="flex gap-4 p-6 bg-surface-card rounded-lg border border-gray-800">
+      <div className="flex gap-4 p-6 bg-surface-panel rounded-lg border border-gray-800">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
       </div>
@@ -54,7 +54,7 @@ export const AllVariants: Story = () => (
       <div className="flex gap-4">
         <Button variant="primary">Primary (Teal 600)</Button>
         <Button variant="secondary">Secondary (Gray 600)</Button>
-        <Button variant="danger">Danger (Red)</Button>
+        <Button variant="danger">Danger (Red 600)</Button>
       </div>
     </section>
 

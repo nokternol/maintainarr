@@ -9,6 +9,11 @@ export const themeColors = {
         DEFAULT: '#4b5563', // gray-600
         dark: '#9ca3af',    // gray-400 (lighter for better dark mode contrast)
     },
+    danger: {
+        light: '#ef4444',   // red-500 (Best for Hovers)
+        DEFAULT: '#dc2626', // red-600 (Main Action)
+        dark: '#b91c1c',    // red-700 (Pressed/Active)
+    },
     // Semantic surface colors
     surface: {
         light: '#ffffff',   // Pure white for cards in light mode

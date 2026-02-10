@@ -25,10 +25,10 @@ export default function Button({
 
     // Secondary: Fixed for Dark Mode (translucent background on dark, solid on light)
     secondary:
-      'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 focus:ring-gray-500',
+      'bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary',
 
     // Danger: Complements the Teal
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+    danger: 'bg-danger hover:bg-danger-light active:bg-danger-dark text-white focus:ring-danger',
   };
 
   const sizeStyles = {
