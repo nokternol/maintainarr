@@ -2792,6 +2792,13 @@ available-typed-arrays@^1.0.7:
   dependencies:
     possible-typed-array-names "^1.0.0"
 
+awilix@^12.1.0:
+  version "12.1.0"
+  resolved "https://registry.yarnpkg.com/awilix/-/awilix-12.1.0.tgz#76299b584ed129f66c3a7b9780fda7c83e71b1a5"
+  integrity sha512-9ZgF5IHQQvvpgKasxNU2WAzQLVKmRBwjEm8zksqPxtAdrmmCRMVjIgeOTr/kOE4O9EcUXl/qRbtjXh8ucV0CkQ==
+  dependencies:
+    fast-glob "^3.3.3"
+
 aws-sign2@~0.7.0:
   version "0.7.0"
   resolved "https://registry.yarnpkg.com/aws-sign2/-/aws-sign2-0.7.0.tgz#b46e890934a9591f2d2f6f86d7e6a9f1b3fe76a8"

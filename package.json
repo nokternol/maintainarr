@@ -33,6 +33,7 @@
     "ci:fast": "yarn lint && yarn typecheck && yarn test:run"
   },
   "dependencies": {
+    "awilix": "^12.1.0",
     "axios": "^1.7.9",
     "cors": "^2.8.6",
     "date-fns": "^3.6.0",
