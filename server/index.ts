@@ -3,10 +3,10 @@ import express from 'express';
 import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
-import { scopePerRequest } from './container';
+import { buildContainer, scopePerRequest } from './container';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
-import { apiRouter } from './routes';
+import { createApiRouter } from './modules';
 
 const log = getChildLogger('Server');
 
@@ -21,6 +21,12 @@ async function startServer() {
     const handle = app.getRequestHandler();
     await app.prepare();
     log.info('Next.js prepared successfully');
+
+    // Build DI container (DB will be added in Step 6)
+    const container = buildContainer({
+      config,
+      dataSource: null as never, // Placeholder until Step 6
+    });
 
     const server = express();
 
@@ -42,8 +48,8 @@ async function startServer() {
     server.use(requestLoggerMiddleware);
     server.use(scopePerRequest);
 
-    // API routes
-    server.use('/api', apiRouter);
+    // API routes — dependencies injected via container cradle
+    server.use('/api', createApiRouter(container.cradle));
 
     // Next.js catch-all
     server.all('*', (req, res) => handle(req, res));
