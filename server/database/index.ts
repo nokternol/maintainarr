@@ -19,9 +19,8 @@ export async function initializeDatabase(config: AppConfig): Promise<DataSource>
 
   try {
     // Resolve DB_PATH relative to project root (unless it's :memory:)
-    const dbPath = config.DB_PATH === ':memory:'
-      ? ':memory:'
-      : path.resolve(process.cwd(), config.DB_PATH);
+    const dbPath =
+      config.DB_PATH === ':memory:' ? ':memory:' : path.resolve(process.cwd(), config.DB_PATH);
 
     log.info('Initializing database connection', {
       path: dbPath,
