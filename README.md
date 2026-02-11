@@ -84,10 +84,6 @@ Now when you `cd` into the project directory, fnm will automatically switch to N
 Cypress requires additional system libraries on WSL/Linux:
 
 ```bash
-# Run the setup script
-./scripts/setup-cypress-wsl.sh
-
-# Or manually install:
 sudo apt-get update
 sudo apt-get install -y \
   libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev \
