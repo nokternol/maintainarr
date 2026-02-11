@@ -90,17 +90,6 @@ sudo apt-get install -y \
   libnss3 libxss1 libasound2 libxtst6 xauth xvfb
 ```
 
-### Common WSL Issues
-
-**Issue**: Cypress won't start (missing dependencies)
-- **Solution**: Run `./scripts/setup-cypress-wsl.sh` to install required system libraries
-
-**Issue**: Node version mismatch
-- **Solution**: Install fnm and run `fnm use`
-
-**Issue**: Port already in use
-- **Solution**: Kill process on port 5056: `lsof -ti:5056 | xargs kill -9`
-
 ## Scripts Reference
 
 ### Development
