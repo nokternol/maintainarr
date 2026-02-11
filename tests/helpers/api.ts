@@ -1,5 +1,6 @@
 import type { Express } from 'express';
 import request from 'supertest';
+import { expect } from "vitest";
 
 /**
  * Test helper for making authenticated API requests
@@ -17,7 +18,7 @@ export function createApiClient(app: Express) {
     /**
      * POST request with common test setup
      */
-    post: (url: string, body?: unknown, options?: { headers?: Record<string, string> }) =>
+    post: (url: string, body?: object, options?: { headers?: Record<string, string> }) =>
       request(app)
         .post(url)
         .send(body)
@@ -26,7 +27,7 @@ export function createApiClient(app: Express) {
     /**
      * PUT request with common test setup
      */
-    put: (url: string, body?: unknown, options?: { headers?: Record<string, string> }) =>
+    put: (url: string, body?: object, options?: { headers?: Record<string, string> }) =>
       request(app)
         .put(url)
         .send(body)
@@ -35,7 +36,7 @@ export function createApiClient(app: Express) {
     /**
      * PATCH request with common test setup
      */
-    patch: (url: string, body?: unknown, options?: { headers?: Record<string, string> }) =>
+    patch: (url: string, body?: object, options?: { headers?: Record<string, string> }) =>
       request(app)
         .patch(url)
         .send(body)
