@@ -24,8 +24,7 @@ export default function Button({
       'bg-primary hover:bg-primary-light active:bg-primary-dark text-white focus:ring-primary',
 
     // Secondary: Fixed for Dark Mode (translucent background on dark, solid on light)
-    secondary:
-      'bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary',
+    secondary: 'bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary',
 
     // Danger: Complements the Teal
     danger: 'bg-danger hover:bg-danger-light active:bg-danger-dark text-white focus:ring-danger',

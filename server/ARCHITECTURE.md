@@ -7,16 +7,17 @@ This document explains the design intent behind the `server/` directory structur
 ```
 server/
   config.ts          # Zod-validated configuration (env vars)
+  container.ts       # Awilix DI container with typed Cradle
   errors.ts          # AppError hierarchy for standardized error handling
   index.ts           # Server entry point and startup sequence
   logger.ts          # Winston logger with child logger factory
   ARCHITECTURE.md    # This file
   database/          # TypeORM connection, entities, and migrations
-  middleware/         # Express middleware (request pipeline)
-  routes/            # Express routers (API endpoints)
+  middleware/        # Express middleware (request pipeline)
+  modules/           # Domain-organized API modules (schemas/handlers/routes)
   services/          # Business logic (no Express types)
   types/             # Shared TypeScript types and Express augmentations
-  utils/             # Small utilities (e.g., asyncHandler)
+  utils/             # Small utilities (e.g., defineRoute)
   __tests__/         # Server-side unit and integration tests
 ```
 

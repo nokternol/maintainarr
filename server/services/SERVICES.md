@@ -55,11 +55,54 @@ export interface Cradle {
 }
 ```
 
+## Using Services in Handlers
+
+Services are injected via the cradle in handler factories. **No manual resolution needed.**
+
+```typescript
+// server/modules/example/example.handler.ts
+import { defineRoute } from '@server/utils/defineRoute';
+import { exampleSchemas } from './example.schemas';
+import type { ExampleService } from '@server/services/exampleService';
+
+export function createExampleHandlers({ exampleService }: { exampleService: ExampleService }) {
+  return {
+    getItem: defineRoute({
+      schemas: exampleSchemas.getItem,
+      handler: async ({ params }) => {
+        // exampleService is directly available — no req.scope.resolve()
+        return exampleService.getById(params.id);
+      },
+    }),
+  };
+}
+```
+
+**Pattern:**
+- Handler factory receives `{ exampleService }` via destructuring from cradle
+- Services are available in closure scope for all handlers returned by the factory
+- No need to call `req.scope.resolve('exampleService')` inside handlers
+
 ## Testing Services
 
 Services are tested without Express. Pass mock dependencies via constructor:
 
 ```typescript
+const mockDataSource = {
+  getRepository: vi.fn().mockReturnValue({
+    findOneBy: vi.fn().mockResolvedValue(null),
+  }),
+} as unknown as DataSource;
+
 const service = new ExampleService(mockDataSource);
 await expect(service.getById(999)).rejects.toThrow(NotFoundError);
 ```
+
+## Service Lifetime
+
+Services are registered as `.scoped()` in Awilix, meaning:
+- A new instance is created per HTTP request
+- Each request gets its own isolated service instances
+- Services can safely maintain per-request state (like request-specific logging metadata)
+
+If you need a singleton service (e.g., caching, connection pools), use `.singleton()` instead.
