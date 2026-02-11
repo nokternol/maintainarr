@@ -1,9 +1,11 @@
+import 'reflect-metadata';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
 import { buildContainer, scopePerRequest } from './container';
+import { initializeDatabase } from './database';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
@@ -22,10 +24,13 @@ async function startServer() {
     await app.prepare();
     log.info('Next.js prepared successfully');
 
-    // Build DI container (DB will be added in Step 6)
+    // Initialize database connection
+    const dataSource = await initializeDatabase(config);
+
+    // Build DI container with initialized dependencies
     const container = buildContainer({
       config,
-      dataSource: null as never, // Placeholder until Step 6
+      dataSource,
     });
 
     const server = express();
@@ -70,6 +75,20 @@ async function startServer() {
       }
       process.exit(1);
     });
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      log.info(`${signal} received, closing server gracefully`);
+      httpServer.close(async () => {
+        log.info('HTTP server closed');
+        await dataSource.destroy();
+        log.info('Database connection closed');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
     log.error('Failed to start server', { error });
     process.exit(1);

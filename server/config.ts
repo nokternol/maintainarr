@@ -15,6 +15,10 @@ const configSchema = z.object({
 
   // Database
   DB_PATH: z.string().default('./config/db/maintainarr.db'),
+  DB_LOGGING: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true' || v === '1'),
 
   // Network — 'true'/'1' → true, anything else → false
   TRUST_PROXY: z
