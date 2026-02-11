@@ -1,11 +1,15 @@
 import 'reflect-metadata';
+import { TypeormStore } from 'connect-typeorm';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import session from 'express-session';
 import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
 import { buildContainer, scopePerRequest } from './container';
 import { initializeDatabase } from './database';
+import { Session } from './database/entities/Session';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
@@ -47,6 +51,28 @@ async function startServer() {
     // Body parsing
     server.use(express.json());
     server.use(express.urlencoded({ extended: true }));
+    server.use(cookieParser());
+
+    // Session middleware (before API routes)
+    const sessionRepo = dataSource.getRepository(Session);
+    server.use(
+      '/api',
+      session({
+        secret: config.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: config.NODE_ENV === 'production',
+        },
+        store: new TypeormStore({
+          cleanupLimit: 2,
+          ttl: 86400 * 30, // 30 days in seconds
+        }).connect(sessionRepo),
+      })
+    );
 
     // Request pipeline
     server.use(requestIdMiddleware);

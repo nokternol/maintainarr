@@ -25,6 +25,18 @@ const configSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v === 'true' || v === '1'),
+
+  // TMDB Configuration
+  TMDB_API_KEY: z.string().default('db55323b8d3e4154498498a75642b381'), // Public API key
+
+  // Session Configuration
+  SESSION_SECRET: z.string().default(() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET must be set in production');
+    }
+    // Generate random secret in development
+    return require('node:crypto').randomBytes(32).toString('hex');
+  }),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

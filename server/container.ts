@@ -1,8 +1,14 @@
-import { type AwilixContainer, InjectionMode, asValue, createContainer } from 'awilix';
+import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import type { DataSource } from 'typeorm';
 import type { AppConfig } from './config';
 import { getChildLogger } from './logger';
+import { AuthService } from './services/authService';
+import type { AuthService as AuthServiceType } from './services/authService';
+import { PlexService } from './services/plexService';
+import type { PlexService as PlexServiceType } from './services/plexService';
+import { TmdbService } from './services/tmdbService';
+import type { TmdbService as TmdbServiceType } from './services/tmdbService';
 
 const log = getChildLogger('Container');
 
@@ -13,6 +19,9 @@ const log = getChildLogger('Container');
 export interface Cradle {
   config: AppConfig;
   dataSource: DataSource;
+  tmdbService: TmdbServiceType;
+  plexService: PlexServiceType;
+  authService: AuthServiceType;
 }
 
 let container: AwilixContainer<Cradle> | null = null;
@@ -33,6 +42,11 @@ export function buildContainer(deps: {
   container.register({
     config: asValue(deps.config),
     dataSource: asValue(deps.dataSource),
+
+    // Services
+    tmdbService: asClass(TmdbService).singleton(), // Singleton for caching
+    plexService: asClass(PlexService).scoped(), // Per-request
+    authService: asClass(AuthService).scoped(), // Per-request
   });
 
   log.info('Container built', {

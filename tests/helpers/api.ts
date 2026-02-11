@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 import request from 'supertest';
-import { expect } from "vitest";
+import { expect } from 'vitest';
 
 /**
  * Test helper for making authenticated API requests
