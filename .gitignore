@@ -23,6 +23,13 @@ cypress/videos
 /config/logs
 /config/settings.json
 
+# test databases
+:memory:
+*.db
+*.sqlite
+*.sqlite3
+!.gitkeep
+
 # misc
 .DS_Store
 *.pem
