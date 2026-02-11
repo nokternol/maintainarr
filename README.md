@@ -30,14 +30,6 @@ Task automation and metadata-driven grouping for the \*arr ecosystem.
    yarn install
    ```
 
-3. **Setup Cypress (WSL/Linux only)**
-
-   If you're on WSL or Linux and want to run E2E tests:
-
-   ```bash
-   ./scripts/setup-cypress-wsl.sh
-   ```
-
 ### Development
 
 ```bash
