@@ -32,7 +32,7 @@ export class AuthService {
         plexUsername: plexUser.username,
         plexId: plexUser.id,
         plexToken: authToken,
-        avatar: plexUser.thumb,
+        avatar: plexUser.thumb ?? null,
         userType: UserType.PLEX,
         isActive: true,
       });
@@ -43,7 +43,7 @@ export class AuthService {
       // Update existing user
       user.plexToken = authToken;
       user.plexUsername = plexUser.username;
-      user.avatar = plexUser.thumb;
+      user.avatar = plexUser.thumb ?? null;
       if (!user.plexId) user.plexId = plexUser.id;
 
       await userRepo.save(user);

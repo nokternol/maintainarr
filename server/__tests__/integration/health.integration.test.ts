@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { closeDatabase, initializeDatabase } from '@server/database';

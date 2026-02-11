@@ -7,22 +7,22 @@ export enum UserType {
 
 @Entity()
 export class User extends BaseEntity {
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   @Index()
   email!: string;
 
-  @Column({ nullable: true })
-  plexUsername?: string;
+  @Column({ type: 'varchar', nullable: true })
+  plexUsername: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   @Index()
-  plexId?: number;
+  plexId: number | null;
 
-  @Column({ nullable: true, select: false })
-  plexToken?: string;
+  @Column({ type: 'varchar', nullable: true, select: false })
+  plexToken: string | null;
 
-  @Column({ nullable: true })
-  avatar?: string;
+  @Column({ type: 'varchar', nullable: true })
+  avatar: string | null;
 
   @Column({ type: 'text', default: UserType.PLEX })
   userType!: UserType;

@@ -42,6 +42,7 @@ describe('config', () => {
       process.env.PORT = '3000';
       process.env.LOG_LEVEL = 'debug';
       process.env.TRUST_PROXY = 'true';
+      process.env.SESSION_SECRET = 'test-secret';
 
       const config = loadConfig();
       expect(config.NODE_ENV).toBe('production');
