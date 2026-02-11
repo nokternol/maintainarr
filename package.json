@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon --watch server -e ts,json --exec tsx server/index.ts",
+    "dev:debug": "nodemon --watch server -e ts,json --exec tsx --inspect server/index.ts",
     "build": "yarn build:next && yarn build:server",
     "build:server": "tsc --project server/tsconfig.json && tsc-alias -p server/tsconfig.json",
     "build:next": "next build",

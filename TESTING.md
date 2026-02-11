@@ -148,6 +148,148 @@ yarn ci              # With E2E tests
 yarn ci:fast         # Without E2E tests (faster)
 ```
 
+## Server Testing Patterns
+
+### Environment Split
+
+Server and client tests run in different environments:
+- **Server tests** (`server/**`): Run in **Node.js** environment
+- **Client tests** (`src/**`): Run in **happy-dom** environment
+
+This is configured in `vitest.config.ts` using test projects:
+
+```typescript
+export default defineConfig({
+  test: {
+    projects: [
+      { extends: true, test: { include: ['server/**'], name: 'server', environment: 'node' } },
+      { extends: true, test: { include: ['src/**'], name: 'client', environment: 'happy-dom' } },
+    ],
+  },
+});
+```
+
+### Test Helpers
+
+Located in `tests/helpers/`, these utilities provide consistent testing patterns:
+
+#### API Testing (`tests/helpers/api.ts`)
+
+```typescript
+import { createApiClient, expectSuccessResponse, expectErrorResponse } from '@tests/helpers/api';
+
+const client = createApiClient(app);
+
+// Make requests
+const response = await client.get('/api/health');
+const response = await client.post('/api/users', { name: 'John' });
+
+// Assert responses
+expectSuccessResponse(response, { id: 1, name: 'John' });
+expectErrorResponse(response, 404, 'NOT_FOUND');
+expectValidationError(response, { email: ['Required'] });
+```
+
+#### Component Testing (`tests/helpers/component.tsx`)
+
+```typescript
+import { render, screen, setupUser } from '@tests/helpers/component';
+
+// Render with providers
+render(<MyComponent />);
+
+// User interactions
+const user = setupUser();
+await user.click(screen.getByRole('button'));
+await user.type(screen.getByLabelText('Name'), 'John');
+
+// Utilities
+await waitForLoadingToFinish();
+const element = getByTestId(container, 'my-element');
+```
+
+#### Test Factories (`tests/factories/index.ts`)
+
+```typescript
+import { generateId, randomEmail, createMockConfig, timestamp } from '@tests/factories';
+
+const user = {
+  id: generateId(),
+  email: randomEmail(),
+  createdAt: timestamp(),
+};
+
+const config = createMockConfig({ PORT: 3000 });
+```
+
+### Integration Tests
+
+Integration tests demonstrate full application setup:
+
+```typescript
+// server/__tests__/integration/health.integration.test.ts
+import { createApiClient } from '@tests/helpers/api';
+import { createMockConfig } from '@tests/factories';
+
+describe('Health API Integration', () => {
+  let app: Express;
+  let client: ReturnType<typeof createApiClient>;
+
+  beforeAll(async () => {
+    // 1. Load test configuration
+    const config = loadConfig();
+
+    // 2. Initialize database (in-memory for tests)
+    const dataSource = await initializeDatabase(config);
+
+    // 3. Build DI container
+    const container = buildContainer({ config, dataSource });
+
+    // 4. Create Express app with middleware
+    app = express();
+    app.use(express.json());
+    app.use(requestIdMiddleware);
+    app.use('/api/health', createHealthRoutes(container.cradle));
+    app.use(errorHandlerMiddleware);
+
+    // 5. Create test client
+    client = createApiClient(app);
+  });
+
+  it('returns health status', async () => {
+    const response = await client.get('/api/health');
+    const data = expectSuccessResponse(response);
+
+    expect(data).toMatchObject({
+      status: 'ok',
+      timestamp: expect.any(String),
+    });
+  });
+});
+```
+
+### Debugging
+
+#### VS Code Debugger
+
+Run the dev server with debugger attached:
+
+```bash
+yarn dev:debug
+```
+
+Then attach VS Code debugger (F5) or use "Attach to Node Process" command.
+
+#### Server Test Debugging
+
+Add debugger statements and run specific server tests:
+
+```bash
+yarn test server/__tests__/my.test.ts
+```
+
+See [TESTING_PATTERNS.md](./TESTING_PATTERNS.md) for comprehensive testing guide.
+
 ## Adding New Tests
 
 ### 1. Unit Test (Vitest)
