@@ -50,6 +50,144 @@ yarn test:e2e        # E2E tests (interactive)
 yarn ladle           # Component stories
 ```
 
+## Project Structure
+
+Maintainarr is organized into backend (Express + TypeORM) and frontend (Next.js + React) with comprehensive documentation in every directory.
+
+### High-Level Structure
+
+```mermaid
+graph TB
+    Root[📦 Maintainarr]
+
+    Root --> Server[🖥️ server/]
+    Root --> Src[⚛️ src/]
+    Root --> Tests[🧪 tests/]
+    Root --> Config[⚙️ config/]
+
+    Server --> ServerDocs["📖 Server Architecture<br/>Express + TypeORM backend"]
+    Src --> SrcDocs["📖 Frontend<br/>Next.js + React + Tailwind"]
+    Tests --> TestsDocs["📖 Test Infrastructure<br/>Helpers + Mocks + Factories"]
+    Config --> ConfigDocs["📖 Runtime Config<br/>Database + Logs"]
+
+    click Server "server/README.md" "Backend architecture and API"
+    click Src "src/README.md" "Frontend components and pages"
+    click Tests "tests/README.md" "Testing utilities and mocks"
+    click Config "config/README.md" "Runtime configuration directory"
+
+    style Server fill:#0d9488,stroke:#0f766e,color:#fff
+    style Src fill:#6366f1,stroke:#4f46e5,color:#fff
+    style Tests fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Config fill:#64748b,stroke:#475569,color:#fff
+```
+
+### Server Directory (Backend)
+
+```mermaid
+graph TB
+    Server[🖥️ server/]
+
+    Server --> Middleware[middleware/]
+    Server --> Modules[modules/]
+    Server --> Services[services/]
+    Server --> Database[database/]
+    Server --> Types[types/]
+    Server --> Utils[utils/]
+
+    Middleware --> MiddlewareDocs["📖 Request Pipeline<br/>requestId, logger, errorHandler"]
+    Modules --> ModulesDocs["📖 API Modules<br/>Domain-organized endpoints"]
+    Services --> ServicesDocs["📖 Business Logic<br/>Framework-agnostic services"]
+    Database --> DatabaseDocs["📖 Data Layer<br/>TypeORM + SQLite + Migrations"]
+    Types --> TypesDocs["📖 Type Definitions<br/>API envelopes + Express types"]
+    Utils --> UtilsDocs["📖 Utilities<br/>defineRoute + helpers"]
+
+    click Server "server/README.md" "Server architecture overview"
+    click Middleware "server/middleware/README.md" "Middleware documentation"
+    click Modules "server/modules/README.md" "API modules documentation"
+    click Services "server/services/README.md" "Services documentation"
+    click Database "server/database/README.md" "Database documentation"
+    click Types "server/types/README.md" "Types documentation"
+    click Utils "server/utils/README.md" "Utils documentation"
+
+    style Server fill:#0d9488,stroke:#0f766e,color:#fff
+    style Middleware fill:#14b8a6,stroke:#0d9488,color:#fff
+    style Modules fill:#14b8a6,stroke:#0d9488,color:#fff
+    style Services fill:#14b8a6,stroke:#0d9488,color:#fff
+    style Database fill:#14b8a6,stroke:#0d9488,color:#fff
+    style Types fill:#14b8a6,stroke:#0d9488,color:#fff
+    style Utils fill:#14b8a6,stroke:#0d9488,color:#fff
+```
+
+### Frontend Directory (Client)
+
+```mermaid
+graph TB
+    Src[⚛️ src/]
+
+    Src --> Components[components/]
+    Src --> Hooks[hooks/]
+    Src --> Pages[pages/]
+    Src --> Styles[styles/]
+    Src --> SrcTypes[types/]
+
+    Components --> UI[ui/]
+    Components --> Layout[layout/]
+
+    UI --> UIDocs["📖 UI Primitives<br/>Button, Card, Badge, etc."]
+    Layout --> LayoutDocs["📖 Layout System<br/>AppLayout, Sidebar, TopBar"]
+    Hooks --> HooksDocs["📖 Custom Hooks<br/>Data fetching + state"]
+    Pages --> PagesDocs["📖 Next.js Pages<br/>File-based routing"]
+    Styles --> StylesDocs["📖 Styling<br/>Tailwind + dark theme"]
+    SrcTypes --> SrcTypesDocs["📖 Frontend Types<br/>API contracts + models"]
+
+    click Src "src/README.md" "Frontend overview"
+    click Components "src/components/README.md" "Components documentation"
+    click UI "src/components/ui/README.md" "UI components"
+    click Layout "src/components/layout/README.md" "Layout components"
+    click Hooks "src/hooks/README.md" "Custom hooks"
+    click Pages "src/pages/README.md" "Pages and routing"
+    click Styles "src/styles/README.md" "Styling and theme"
+    click SrcTypes "src/types/README.md" "Frontend types"
+
+    style Src fill:#6366f1,stroke:#4f46e5,color:#fff
+    style Components fill:#818cf8,stroke:#6366f1,color:#fff
+    style UI fill:#a5b4fc,stroke:#818cf8,color:#000
+    style Layout fill:#a5b4fc,stroke:#818cf8,color:#000
+    style Hooks fill:#818cf8,stroke:#6366f1,color:#fff
+    style Pages fill:#818cf8,stroke:#6366f1,color:#fff
+    style Styles fill:#818cf8,stroke:#6366f1,color:#fff
+    style SrcTypes fill:#818cf8,stroke:#6366f1,color:#fff
+```
+
+### Test Infrastructure
+
+```mermaid
+graph TB
+    Tests[🧪 tests/]
+
+    Tests --> Helpers[helpers/]
+    Tests --> Mocks[mocks/]
+
+    Helpers --> HelpersDocs["📖 Test Helpers<br/>API + Component utilities"]
+    Mocks --> MocksDocs["📖 MSW Mocks<br/>Shared API handlers"]
+
+    click Tests "tests/README.md" "Test infrastructure overview"
+    click Helpers "tests/helpers/README.md" "Test helpers documentation"
+    click Mocks "tests/mocks/README.md" "MSW mocks documentation"
+
+    style Tests fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Helpers fill:#a78bfa,stroke:#8b5cf6,color:#fff
+    style Mocks fill:#a78bfa,stroke:#8b5cf6,color:#fff
+```
+
+### Documentation Files
+
+- 📖 [TESTING.md](TESTING.md) - Testing architecture and patterns
+- 📖 [TESTING_PATTERNS.md](TESTING_PATTERNS.md) - Comprehensive testing guide
+- 📄 [.nvmrc](.nvmrc) - Node.js version specification
+
+Click any folder name in the diagrams above to view its README documentation.
+
 ## Node Version Management
 
 This project uses `.nvmrc` to specify the Node version. We recommend **fnm** (Fast Node Manager) over nvm.
