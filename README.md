@@ -70,10 +70,10 @@ graph TB
     Tests --> TestsDocs["📖 Test Infrastructure<br/>Helpers + Mocks + Factories"]
     Config --> ConfigDocs["📖 Runtime Config<br/>Database + Logs"]
 
-    click Server "server/README.md" "Backend architecture and API"
-    click Src "src/README.md" "Frontend components and pages"
-    click Tests "tests/README.md" "Testing utilities and mocks"
-    click Config "config/README.md" "Runtime configuration directory"
+    click Server "/server/README.md" "Backend architecture and API"
+    click Src "/src/README.md" "Frontend components and pages"
+    click Tests "/tests/README.md" "Testing utilities and mocks"
+    click Config "/config/README.md" "Runtime configuration directory"
 
     style Server fill:#0d9488,stroke:#0f766e,color:#fff
     style Src fill:#6366f1,stroke:#4f46e5,color:#fff
@@ -101,13 +101,13 @@ graph TB
     Types --> TypesDocs["📖 Type Definitions<br/>API envelopes + Express types"]
     Utils --> UtilsDocs["📖 Utilities<br/>defineRoute + helpers"]
 
-    click Server "server/README.md" "Server architecture overview"
-    click Middleware "server/middleware/README.md" "Middleware documentation"
-    click Modules "server/modules/README.md" "API modules documentation"
-    click Services "server/services/README.md" "Services documentation"
-    click Database "server/database/README.md" "Database documentation"
-    click Types "server/types/README.md" "Types documentation"
-    click Utils "server/utils/README.md" "Utils documentation"
+    click Server "/server/README.md" "Server architecture overview"
+    click Middleware "/server/middleware/README.md" "Middleware documentation"
+    click Modules "/server/modules/README.md" "API modules documentation"
+    click Services "/server/services/README.md" "Services documentation"
+    click Database "/server/database/README.md" "Database documentation"
+    click Types "/server/types/README.md" "Types documentation"
+    click Utils "/server/utils/README.md" "Utils documentation"
 
     style Server fill:#0d9488,stroke:#0f766e,color:#fff
     style Middleware fill:#14b8a6,stroke:#0d9488,color:#fff
@@ -140,14 +140,14 @@ graph TB
     Styles --> StylesDocs["📖 Styling<br/>Tailwind + dark theme"]
     SrcTypes --> SrcTypesDocs["📖 Frontend Types<br/>API contracts + models"]
 
-    click Src "src/README.md" "Frontend overview"
-    click Components "src/components/README.md" "Components documentation"
-    click UI "src/components/ui/README.md" "UI components"
-    click Layout "src/components/layout/README.md" "Layout components"
-    click Hooks "src/hooks/README.md" "Custom hooks"
-    click Pages "src/pages/README.md" "Pages and routing"
-    click Styles "src/styles/README.md" "Styling and theme"
-    click SrcTypes "src/types/README.md" "Frontend types"
+    click Src "/src/README.md" "Frontend overview"
+    click Components "/src/components/README.md" "Components documentation"
+    click UI "/src/components/ui/README.md" "UI components"
+    click Layout "/src/components/layout/README.md" "Layout components"
+    click Hooks "/src/hooks/README.md" "Custom hooks"
+    click Pages "/src/pages/README.md" "Pages and routing"
+    click Styles "/src/styles/README.md" "Styling and theme"
+    click SrcTypes "/src/types/README.md" "Frontend types"
 
     style Src fill:#6366f1,stroke:#4f46e5,color:#fff
     style Components fill:#818cf8,stroke:#6366f1,color:#fff
@@ -171,9 +171,9 @@ graph TB
     Helpers --> HelpersDocs["📖 Test Helpers<br/>API + Component utilities"]
     Mocks --> MocksDocs["📖 MSW Mocks<br/>Shared API handlers"]
 
-    click Tests "tests/README.md" "Test infrastructure overview"
-    click Helpers "tests/helpers/README.md" "Test helpers documentation"
-    click Mocks "tests/mocks/README.md" "MSW mocks documentation"
+    click Tests "/tests/README.md" "Test infrastructure overview"
+    click Helpers "/tests/helpers/README.md" "Test helpers documentation"
+    click Mocks "/tests/mocks/README.md" "MSW mocks documentation"
 
     style Tests fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style Helpers fill:#a78bfa,stroke:#8b5cf6,color:#fff
