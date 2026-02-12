@@ -8,16 +8,16 @@ const log = getChildLogger('HTTP');
  * Captures method, path, status code, duration, and request ID.
  */
 export function requestLoggerMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const start = Date.now();
+  const start = process.hrtime.bigint();
 
   res.on('finish', () => {
-    const duration = Date.now() - start;
+    const duration = Number(process.hrtime.bigint() - start) / 1_000_000;
     const logData = {
       requestId: req.requestId,
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
-      duration: `${duration}ms`,
+      duration: `${duration.toFixed(3)}ms`,
     };
 
     if (res.statusCode >= 500) {
