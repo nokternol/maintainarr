@@ -1,0 +1,22 @@
+export const useRouter = () => ({
+  basePath: '',
+  pathname: '/',
+  route: '/',
+  query: {},
+  asPath: '/',
+  push: async () => true,
+  replace: async () => true,
+  reload: () => {},
+  back: () => {},
+  prefetch: async () => {},
+  beforePopState: () => {},
+  events: {
+    on: () => {},
+    off: () => {},
+    emit: () => {},
+  },
+  isFallback: false,
+  isLocaleDomain: false,
+  isReady: true,
+  isPreview: false,
+});
