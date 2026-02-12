@@ -1,23 +1,16 @@
 'use client';
 
 import { ImageFader } from '@app/components/ui/ImageFader';
+import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
+import Image from 'next/image';
 import { useState } from 'react';
-import useSWR from 'swr';
-
-const fetcher = (url: string) =>
-  fetch(url)
-    .then((r) => r.json())
-    .then((d) => d.data);
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: backdrops } = useSWR<string[]>('/api/backdrops', fetcher, {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
+  const { backdrops } = useBackdrops();
 
   const handlePlexLogin = async () => {
     setIsLoading(true);
@@ -59,15 +52,28 @@ export default function LoginPage() {
           </div>
         )}
 
-        <button
+<button
           onClick={handlePlexLogin}
           disabled={isLoading}
           type="button"
-          className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-600
-                     text-white font-semibold py-3 px-4 rounded transition-colors
-                     flex items-center justify-center gap-2"
+          className="group relative w-full bg-[#e5a00d] hover:bg-[#cc8e0b] disabled:bg-slate-700 
+                     text-black font-bold py-4 px-6 rounded-lg transition-all 
+                     flex items-center justify-center gap-3 active:scale-[0.98]"
         >
-          {isLoading ? 'Authenticating...' : 'Sign in with Plex'}
+          {!isLoading && (
+            <svg 
+              viewBox="0 0 24 24" 
+              className="w-6 h-6 fill-current" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <title>Plex</title>
+              <path d="M12 0L9.33 6.92 2 12l7.33 5.08L12 24l2.67-6.92L22 12l-7.33-5.08L12 0z"/>
+            </svg>
+          )}
+          
+          <span className="text-lg">
+            {isLoading ? 'Authenticating...' : 'Sign in with Plex'}
+          </span>
         </button>
       </div>
     </div>
