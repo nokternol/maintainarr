@@ -61,6 +61,11 @@ export class PlexOAuth {
 
     return new Promise((resolve, reject) => {
       const interval = setInterval(async () => {
+        if (this.popup?.closed) {
+          clearInterval(interval);
+          reject(new Error('Authentication cancelled'));
+        }
+
         try {
           const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
             headers: this.plexHeaders,

@@ -1,5 +1,6 @@
 'use client';
 
+import { MaintainarrLogo, PlexIcon } from "@app/components/Logo";
 import { ImageFader } from '@app/components/ui/ImageFader';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
@@ -19,6 +20,7 @@ export default function LoginPage() {
     try {
       const oauth = new PlexOAuth();
       const authToken = await oauth.login();
+      console.info("token", authToken);
 
       const response = await fetch('/api/auth/plex', {
         method: 'POST',
@@ -32,49 +34,69 @@ export default function LoginPage() {
 
       window.location.href = '/';
     } catch (err) {
+      if ("message" in err && err.message === "Authentication cancelled")
+        return;
+
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="relative min-h-screen flex items-center justify-center p-4">
-      <ImageFader images={backdrops || []} className="fixed inset-0 -z-10" />
+return (
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
+      {/* Background with Teal Tint */}
+      <div className="absolute inset-0 z-0">
+        <ImageFader images={backdrops || []} className="opacity-40 grayscale" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-slate-950/90 to-slate-950" />
+      </div>
 
-      <div className="max-w-md w-full bg-gray-800/90 backdrop-blur-sm rounded-lg p-8 shadow-xl">
-        <h1 className="text-4xl font-bold text-white mb-2 text-center">Maintainarr</h1>
-        <p className="text-gray-400 mb-8 text-center">Task automation for the *arr ecosystem</p>
+      <div className="relative z-10 w-full max-w-md text-center">
+        {/* SVG Logo Container */}
+        <div className="mb-6 flex justify-center">
+          <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+            {/* SVG Logo here */}
+            <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" /> 
+          </div>
+        </div>
 
+        <h1 className="text-4xl font-black text-white tracking-tighter mb-2 uppercase">
+          Maintain<span className="text-teal-400">arr</span>
+        </h1>
+        <p className="text-slate-400 text-sm font-medium tracking-wide mb-10 px-4 leading-relaxed">
+          Task automation and metadata-driven grouping <br/> for the <span className="text-teal-500 italic">*arr ecosystem</span>
+        </p>
+        
         {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded text-red-200 text-sm">
-            {error}
+          <div className="bg-red-900/50 border border-red-500 text-white p-4 rounded-lg mb-6 text-center">
+            <p className="font-bold">Authentication Failed</p>
+            <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
 
-<button
-          onClick={handlePlexLogin}
-          disabled={isLoading}
-          type="button"
-          className="group relative w-full bg-[#e5a00d] hover:bg-[#cc8e0b] disabled:bg-slate-700 
-                     text-black font-bold py-4 px-6 rounded-lg transition-all 
-                     flex items-center justify-center gap-3 active:scale-[0.98]"
-        >
-          {!isLoading && (
-            <svg 
-              viewBox="0 0 24 24" 
-              className="w-6 h-6 fill-current" 
-              xmlns="http://www.w3.org/2000/svg"
+        {/* Login Card */}
+        <div className="dark:bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-teal-500/10 py-2 border-b border-white/5">
+            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-teal-400">
+              Authorized Access Only
+            </span>
+          </div>
+
+          <div className="p-8">
+            <button
+              type="button"
+              onClick={handlePlexLogin}
+              className="w-full bg-[#e5a00d] hover:bg-[#ffb40d] text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-900/20"
             >
-              <title>Plex</title>
-              <path d="M12 0L9.33 6.92 2 12l7.33 5.08L12 24l2.67-6.92L22 12l-7.33-5.08L12 0z"/>
-            </svg>
-          )}
-          
-          <span className="text-lg">
-            {isLoading ? 'Authenticating...' : 'Sign in with Plex'}
-          </span>
-        </button>
+              <PlexIcon className="w-6 h-6" />
+              <span>Sign in with Plex</span>
+            </button>
+            
+            <p className="mt-6 text-xs text-slate-500">
+              By signing in, you agree to your server's automation policies.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
