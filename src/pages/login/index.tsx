@@ -20,7 +20,6 @@ export default function LoginPage() {
     try {
       const oauth = new PlexOAuth();
       const authToken = await oauth.login();
-      console.info("token", authToken);
 
       const response = await fetch('/api/auth/plex', {
         method: 'POST',
