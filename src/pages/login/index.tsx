@@ -1,6 +1,6 @@
 'use client';
 
-import { MaintainarrLogo, PlexIcon } from "@app/components/Logo";
+import { MaintainarrLogo, PlexIcon } from '@app/components/Logo';
 import { ImageFader } from '@app/components/ui/ImageFader';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
@@ -33,8 +33,7 @@ export default function LoginPage() {
 
       window.location.href = '/';
     } catch (err) {
-      if ("message" in err && err.message === "Authentication cancelled")
-        return;
+      if ('message' in err && err.message === 'Authentication cancelled') return;
 
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
@@ -42,7 +41,7 @@ export default function LoginPage() {
     }
   };
 
-return (
+  return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
       {/* Background with Teal Tint */}
       <div className="absolute inset-0 z-0">
@@ -55,7 +54,7 @@ return (
         <div className="mb-6 flex justify-center">
           <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
             {/* SVG Logo here */}
-            <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" /> 
+            <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
@@ -63,9 +62,10 @@ return (
           Maintain<span className="text-teal-400">arr</span>
         </h1>
         <p className="text-slate-400 text-sm font-medium tracking-wide mb-10 px-4 leading-relaxed">
-          Task automation and metadata-driven grouping <br/> for the <span className="text-teal-500 italic">*arr ecosystem</span>
+          Task automation and metadata-driven grouping <br /> for the{' '}
+          <span className="text-teal-500 italic">*arr ecosystem</span>
         </p>
-        
+
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-white p-4 rounded-lg mb-6 text-center">
             <p className="font-bold">Authentication Failed</p>
@@ -90,7 +90,7 @@ return (
               <PlexIcon className="w-6 h-6" />
               <span>Sign in with Plex</span>
             </button>
-            
+
             <p className="mt-6 text-xs text-slate-500">
               By signing in, you agree to your server's automation policies.
             </p>

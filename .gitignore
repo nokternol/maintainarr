@@ -61,5 +61,8 @@ next-env.d.ts
 *.swo
 *~
 
+# Ladle
+tmp
+
 #agents
 .claude

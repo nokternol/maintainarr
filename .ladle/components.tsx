@@ -1,5 +1,8 @@
 import type { GlobalProvider } from '@ladle/react';
 import '../src/styles/globals.css';
+import { worker } from '../tests/mocks/browser';
+
+worker.start({ onUnhandledRequest: 'bypass' });
 
 export const Provider: GlobalProvider = ({ children, globalState }) => {
   const isDark = globalState.theme === 'dark';

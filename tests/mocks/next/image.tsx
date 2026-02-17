@@ -1,9 +1,15 @@
-const Image = (props: any) => {
+import type { DetailedHTMLProps, ImgHTMLAttributes } from 'react';
+
+const Image = (
+  props: DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement> & {
+    fill: boolean;
+  }
+) => {
   const { src, fill, alt = '', ...rest } = props;
   if (fill) {
     return (
       // biome-ignore lint/a11y/useAltText: <explanation>
-<img
+      <img
         src={src}
         alt={alt}
         style={{
