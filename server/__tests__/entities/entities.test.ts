@@ -10,13 +10,13 @@
  * Run: vitest run --project server
  */
 import 'reflect-metadata';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getMetadataArgsStorage } from 'typeorm';
-import { User, UserType } from '@server/database/entities/User';
-import { Session } from '@server/database/entities/Session';
-import { BaseEntity } from '@server/database/entities/BaseEntity';
-import { _resetDatabase, initializeDatabase } from '@server/database';
 import type { AppConfig } from '@server/config';
+import { _resetDatabase, initializeDatabase } from '@server/database';
+import { BaseEntity } from '@server/database/entities/BaseEntity';
+import { Session } from '@server/database/entities/Session';
+import { User, UserType } from '@server/database/entities/User';
+import { getMetadataArgsStorage } from 'typeorm';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',
@@ -46,7 +46,9 @@ describe('TypeORM decorator metadata', () => {
     const storage = getMetadataArgsStorage();
 
     // PrimaryGeneratedColumn comes from generations, not columns
-    const generatedCols = storage.generations.filter((g) => g.target === BaseEntity || g.target === User);
+    const generatedCols = storage.generations.filter(
+      (g) => g.target === BaseEntity || g.target === User
+    );
     expect(generatedCols.length).toBeGreaterThanOrEqual(1);
     const idGen = generatedCols.find((g) => g.propertyName === 'id');
     expect(idGen).toBeDefined();
@@ -116,9 +118,7 @@ describe('User & Session schema (integration)', () => {
     const { getDataSource } = await import('@server/database');
     const ds = getDataSource();
 
-    const result: { name: string }[] = await ds.query(
-      "SELECT name FROM pragma_table_info('user')"
-    );
+    const result: { name: string }[] = await ds.query("SELECT name FROM pragma_table_info('user')");
     const colNames = result.map((r) => r.name);
 
     expect(colNames).toContain('id');
