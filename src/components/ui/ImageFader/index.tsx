@@ -39,13 +39,6 @@ export function ImageFader({ images, rotationSpeed = 6000, className = '' }: Ima
             priority={index === 0}
             unoptimized
           />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                'linear-gradient(180deg, rgba(17, 24, 39, 0.47) 0%, rgba(17, 24, 39, 1) 100%)',
-            }}
-          />
         </div>
       ))}
     </div>

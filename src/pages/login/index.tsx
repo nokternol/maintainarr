@@ -45,8 +45,8 @@ export default function LoginPage() {
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
       {/* Background with Teal Tint */}
       <div className="absolute inset-0 z-0">
-        <ImageFader images={backdrops || []} className="opacity-40 grayscale" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-slate-950/90 to-slate-950" />
+        <ImageFader images={backdrops || []} className="opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 via-slate-950/50 to-slate-950/80" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
