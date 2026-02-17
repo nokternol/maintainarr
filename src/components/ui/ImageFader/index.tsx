@@ -23,7 +23,7 @@ export function ImageFader({ images, rotationSpeed = 6000, className = '' }: Ima
   if (images.length === 0) return null;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative h-full w-full ${className}`}>
       {images.map((imageUrl, index) => (
         <div
           key={imageUrl}
