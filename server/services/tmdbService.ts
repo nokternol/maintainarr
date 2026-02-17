@@ -12,9 +12,11 @@ interface TmdbResult {
 
 export class TmdbService {
   private cache: NodeCache;
+  private readonly config: AppConfig;
   private readonly baseUrl = 'https://api.themoviedb.org/3';
 
-  constructor(private readonly config: AppConfig) {
+  constructor({ config }: {config: AppConfig}) {
+    this.config = config;
     this.cache = new NodeCache({ stdTTL: 300 }); // 5-minute cache
     log.info('TmdbService initialized');
   }
