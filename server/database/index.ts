@@ -2,6 +2,10 @@ import path from 'node:path';
 import { DataSource } from 'typeorm';
 import type { AppConfig } from '../config';
 import { getChildLogger } from '../logger';
+import { BaseEntity } from './entities/BaseEntity';
+import { Session } from './entities/Session';
+import { User } from './entities/User';
+import { CreateUserAndSession1770848674421 } from './migrations/1770848674421-CreateUserAndSession';
 
 const log = getChildLogger('Database');
 
@@ -32,8 +36,8 @@ export async function initializeDatabase(config: AppConfig): Promise<DataSource>
       database: dbPath,
       synchronize: false, // Use migrations in production
       logging: config.DB_LOGGING ? ['query', 'error', 'warn'] : ['error'],
-      entities: [], // Concrete entities will be registered here as they're created
-      migrations: [], // Migrations will be registered here as they're created
+      entities: [BaseEntity, User, Session],
+      migrations: [CreateUserAndSession1770848674421],
       migrationsRun: config.NODE_ENV !== 'test', // Auto-run in dev/prod, manual in tests
     });
 
