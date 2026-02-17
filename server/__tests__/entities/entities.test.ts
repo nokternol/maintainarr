@@ -169,6 +169,6 @@ describe('User & Session schema (integration)', () => {
     const found = await repo.findOneBy({ id: saved.id });
     expect(found).not.toBeNull();
     expect(found!.email).toBe('test@example.com');
-    expect((found as any).plexToken).toBeUndefined();
+    expect(found!.plexToken).toBeUndefined();
   });
 });

@@ -1,4 +1,7 @@
 import 'reflect-metadata';
+import { loadEnv } from './env';
+// Must run before any import that reads process.env (including loadConfig).
+loadEnv();
 import { TypeormStore } from 'connect-typeorm';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
