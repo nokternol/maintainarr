@@ -14,6 +14,7 @@ When building React components for Maintainarr, we prefer the Compound Component
 3. **Flexible Rendering**: Users of the component can choose whether to include parts like `Badge` or `Year` simply by rendering (or omitting) the sub-component.
 4. **CSS Modules (No Inline Utility Colors)**: Components should use CSS modules for styling (`.module.css`). Reference your theme variables inside the CSS (using `@apply` or native CSS variables like `var(--color-primary)`) rather than using Tailwind color utilities directly in the JSX.
 5. **No Global "ui" Folder**: Components should be housed in `src/components/`, named by their domain (e.g., `src/components/MediaCard/`). The `src/components/ui/` and `src/components/layout/` wrappers are deprecated.
+6. **Ladle Sandbox Driven Development**: Always create a `.stories.tsx` file to demonstrate the usage, and critically, **always verify** the story visually in the browser (or run `yarn ladle:build`) to ensure it executes cleanly without CSS plugin crashes or circular dependencies.
 
 ## Example Structure
 

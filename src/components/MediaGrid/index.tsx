@@ -22,7 +22,7 @@ export const MediaGrid = <T,>({
 }: MediaGridProps<T>) => {
   return (
     <div className={styles.container}>
-      <div className={cn(styles.grid, className)}>{items.map(renderItem)}</div>
+      <div className={cn(styles.gridContainer, className)}>{items.map(renderItem)}</div>
       {hasMore && !isLoading && (
         <div
           data-testid="load-more-trigger"
