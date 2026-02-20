@@ -1,31 +1,16 @@
 // src/styles/theme.ts
 export const themeColors = {
-  primary: {
-    light: '#14b8a6', // teal-500 (Best for Hovers)
-    DEFAULT: '#0d9488', // teal-600 (Main Action)
-    dark: '#0f766e', // teal-700 (Pressed/Active)
-  },
-  secondary: {
-    DEFAULT: '#4b5563', // gray-600
-    dark: '#9ca3af', // gray-400 (lighter for better dark mode contrast)
-  },
-  danger: {
-    light: '#ef4444', // red-500 (Best for Hovers)
-    DEFAULT: '#dc2626', // red-600 (Main Action)
-    dark: '#b91c1c', // red-700 (Pressed/Active)
-  },
-  // Semantic surface colors
-  surface: {
-    light: '#ffffff', // Pure white for cards in light mode
-    DEFAULT: '#f9fafb', // gray-50 for backgrounds
-    dark: '#020617', // slate-950 for dark mode background
-    panel: '#111827', // gray-900 for dark mode cards
-  },
+  // Base primitives
   teal: {
-    400: '#2dd4bf', // trim
-    500: '#14b8a6', // hover (interaction)
-    600: '#0d9488', // base (default actions)
-    700: '#0f766e', // active (selected)
+    400: '#2dd4bf',
+    500: '#14b8a6',
+    600: '#0d9488',
+    700: '#0f766e',
+  },
+  red: {
+    500: '#ef4444',
+    600: '#dc2626',
+    700: '#b91c1c',
   },
   gray: {
     50: '#f9fafb',
@@ -41,5 +26,29 @@ export const themeColors = {
   },
   slate: {
     950: '#020617',
+  },
+
+  // Semantic Intention Classes (Driven by globals.css)
+  primary: {
+    DEFAULT: 'var(--color-primary)',
+    hover: 'var(--color-primary-hover)',
+    active: 'var(--color-primary-active)',
+  },
+  danger: {
+    DEFAULT: 'var(--color-danger)',
+    hover: 'var(--color-danger-hover)',
+    active: 'var(--color-danger-active)',
+  },
+  surface: {
+    bg: 'var(--color-surface-bg)',
+    panel: 'var(--color-surface-panel)',
+  },
+  text: {
+    primary: 'var(--color-text-primary)',
+    secondary: 'var(--color-text-secondary)',
+    muted: 'var(--color-text-muted)',
+  },
+  border: {
+    DEFAULT: 'var(--color-border)',
   },
 };

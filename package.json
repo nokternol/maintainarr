@@ -28,7 +28,7 @@
     "typecheck": "yarn typecheck:server && yarn typecheck:client",
     "typecheck:server": "tsc --project server/tsconfig.json --noEmit",
     "typecheck:client": "tsc --noEmit",
-    "verify": "yarn lint:fix && yarn typecheck && yarn test:run && yarn test:e2e:ci",
+    "verify": "yarn lint && yarn typecheck && yarn test:run && yarn test:e2e:ci",
     "verify:fast": "yarn lint:fast && yarn typecheck && yarn test:run",
     "ci": "yarn lint && yarn typecheck && yarn test:run && yarn test:e2e:ci",
     "ci:fast": "yarn lint && yarn typecheck && yarn test:run"

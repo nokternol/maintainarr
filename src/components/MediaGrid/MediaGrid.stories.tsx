@@ -10,7 +10,7 @@ const mockItems = Array.from({ length: 12 }).map((_, i) => ({
 }));
 
 export const Default: Story = () => (
-  <div className="bg-slate-950 p-8 h-screen overflow-auto">
+  <div className="p-8 h-screen overflow-auto">
     <MediaGrid
       items={mockItems}
       renderItem={(item) => (
@@ -28,7 +28,7 @@ export const Default: Story = () => (
 );
 
 export const LoadingState: Story = () => (
-  <div className="bg-slate-950 p-8 h-screen overflow-auto">
+  <div className="p-8 h-screen overflow-auto">
     <MediaGrid
       items={mockItems}
       isLoading={true}

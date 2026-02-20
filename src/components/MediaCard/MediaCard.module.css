@@ -1,5 +1,5 @@
 .card {
-  @apply flex flex-col gap-2 rounded-lg transition-transform duration-200;
+  @apply relative flex flex-col gap-2 rounded-lg transition-transform duration-200;
 }
 
 .interactive {
@@ -23,15 +23,9 @@
 }
 
 .title {
-  @apply text-sm font-medium line-clamp-1;
-  color: theme("colors.slate.950");
-}
-
-:global(.dark) .title {
-  color: theme("colors.gray.50");
+  @apply text-sm font-medium line-clamp-1 text-text-primary;
 }
 
 .year {
-  @apply text-xs mt-0.5;
-  color: theme("colors.gray.500");
+  @apply text-xs mt-0.5 text-text-muted;
 }

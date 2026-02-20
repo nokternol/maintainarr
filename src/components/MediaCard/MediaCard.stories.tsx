@@ -2,7 +2,7 @@ import type { Story } from '@ladle/react';
 import { MediaCard } from './index';
 
 export const Default: Story = () => (
-  <div className="bg-slate-950 p-8 flex gap-4 w-48">
+  <div className="p-8 flex gap-4 w-48">
     <MediaCard id="1" onClick={(id: string) => alert(`Clicked ${id}`)}>
       <MediaCard.Poster
         src="https://image.tmdb.org/t/p/w600_and_h900_bestv2/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg"
@@ -17,7 +17,7 @@ export const Default: Story = () => (
 );
 
 export const Badges: Story = () => (
-  <div className="bg-slate-950 p-8 flex gap-4">
+  <div className="p-8 flex gap-4">
     <div className="w-48">
       <MediaCard id="1">
         <MediaCard.Poster alt="Cover" />

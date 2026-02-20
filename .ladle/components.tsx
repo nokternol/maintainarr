@@ -21,14 +21,7 @@ export const Provider: GlobalProvider = ({ children, globalState }) => {
 
   return (
     <div className={isDark ? 'dark' : ''}>
-      <div
-        className={`
-          min-h-screen w-full
-          ${isDark ? 'bg-surface-dark text-white' : 'bg-surface text-slate-950'}
-        `}
-      >
-        {children}
-      </div>
+      <div className="min-h-screen w-full bg-surface-bg text-text-primary">{children}</div>
     </div>
   );
 };

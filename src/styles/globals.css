@@ -3,18 +3,57 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-primary: #0d9488;
+    /* teal.600 */
+    --color-primary-hover: #14b8a6;
+    /* teal.500 */
+    --color-primary-active: #0f766e;
+    /* teal.700 */
+
+    --color-danger: #dc2626;
+    /* red.600 */
+    --color-danger-hover: #ef4444;
+    /* red.500 */
+    --color-danger-active: #b91c1c;
+    /* red.700 */
+
+    --color-surface-bg: #f9fafb;
+    /* gray.50 */
+    --color-surface-panel: #ffffff;
+    --color-text-primary: #111827;
+    /* gray.900 */
+    --color-text-secondary: #4b5563;
+    /* gray.600 */
+    --color-text-muted: #9ca3af;
+    /* gray.400 */
+    --color-border: #e5e7eb;
+    /* gray.200 */
+  }
+
+  .dark {
+    --color-surface-bg: #020617;
+    /* slate.950 */
+    --color-surface-panel: #111827;
+    /* gray.900 */
+    --color-text-primary: #f9fafb;
+    /* gray.50 */
+    --color-text-secondary: #9ca3af;
+    /* gray.400 */
+    --color-text-muted: #6b7280;
+    /* gray.500 */
+    --color-border: #1f2937;
+    /* gray.800 */
+  }
+
   body {
     /* This ensures your app background matches the Ladle preview instantly */
-    @apply bg-surface text-slate-950 antialiased transition-colors duration-150;
+    @apply bg-surface-bg text-text-primary antialiased transition-colors duration-150;
   }
 
-  .dark body {
-    @apply bg-surface-dark text-white;
-  }
-
-  /* Optional: Smooth out focus rings across the whole app */
+  /* Smooth out focus rings across the whole app */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary ring-offset-2 dark:ring-offset-surface-dark;
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-surface-bg;
   }
 }
 
