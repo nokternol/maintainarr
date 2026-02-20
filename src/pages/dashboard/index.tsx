@@ -1,11 +1,11 @@
-import AppLayout from '@app/components/layout/AppLayout';
-import Sidebar from '@app/components/layout/Sidebar';
-import TopBar from '@app/components/layout/TopBar';
-import WidgetGrid from '@app/components/layout/WidgetGrid';
-import Badge from '@app/components/ui/Badge';
-import Card from '@app/components/ui/Card';
-import EmptyState from '@app/components/ui/EmptyState';
-import StatCard from '@app/components/ui/StatCard';
+import AppLayout from '@app/components/AppLayout';
+import Badge from '@app/components/Badge';
+import Card from '@app/components/Card';
+import EmptyState from '@app/components/EmptyState';
+import Sidebar from '@app/components/Sidebar';
+import StatCard from '@app/components/StatCard';
+import TopBar from '@app/components/TopBar';
+import WidgetGrid from '@app/components/WidgetGrid';
 import type { SidebarItem } from '@app/types/navigation';
 
 // Icons

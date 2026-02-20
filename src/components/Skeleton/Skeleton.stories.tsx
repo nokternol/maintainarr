@@ -1,4 +1,4 @@
-// src/components/ui/Skeleton/Skeleton.stories.tsx
+// src/components/Skeleton/Skeleton.stories.tsx
 import type { Story } from '@ladle/react';
 import { Skeleton } from './index';
 

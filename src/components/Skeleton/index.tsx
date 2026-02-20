@@ -1,4 +1,4 @@
-// src/components/ui/Skeleton/index.tsx
+// src/components/Skeleton/index.tsx
 import { cn } from '@app/lib/utils/cn';
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

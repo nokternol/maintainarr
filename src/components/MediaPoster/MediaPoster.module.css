@@ -1,0 +1,33 @@
+.container {
+  @apply relative overflow-hidden w-full bg-white dark:bg-gray-900;
+}
+
+.aspectPoster {
+  @apply aspect-[2/3];
+}
+.aspectBanner {
+  @apply aspect-video;
+}
+.aspectSquare {
+  @apply aspect-square;
+}
+
+.fallback {
+  @apply flex items-center justify-center border text-sm p-4 text-center cursor-default;
+  @apply border-gray-200 text-gray-500 dark:border-gray-800 dark:text-gray-400;
+}
+
+.image {
+  @apply w-full h-full object-cover transition-opacity duration-300;
+}
+
+.imageLoading {
+  @apply opacity-0;
+}
+.imageLoaded {
+  @apply opacity-100;
+}
+
+.skeleton {
+  @apply absolute inset-0 z-10;
+}

@@ -1,4 +1,4 @@
-import Badge from '@app/components/ui/Badge';
+import Badge from '@app/components/Badge';
 import type { SidebarItem as SidebarItemType } from '@app/types/navigation';
 
 interface SidebarItemProps {

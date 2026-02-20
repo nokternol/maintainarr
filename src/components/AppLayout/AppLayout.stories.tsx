@@ -1,5 +1,5 @@
-import Card from '@app/components/ui/Card';
-import StatCard from '@app/components/ui/StatCard';
+import Card from '@app/components/Card';
+import StatCard from '@app/components/StatCard';
 import type { SidebarItem } from '@app/types/navigation';
 import type { Story } from '@ladle/react';
 import Sidebar from '../Sidebar';

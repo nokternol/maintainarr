@@ -1,0 +1,37 @@
+.card {
+  @apply group flex flex-col gap-2 rounded-lg transition-transform duration-200;
+}
+
+.interactive {
+  @apply cursor-pointer hover:scale-[1.02];
+}
+
+.posterWrapper {
+  @apply relative;
+}
+
+.poster {
+  @apply rounded-md shadow-sm;
+}
+
+.badgeWrapper {
+  @apply absolute top-2 right-2 z-20;
+}
+
+.contentWrapper {
+  @apply flex flex-col flex-1;
+}
+
+.title {
+  @apply text-sm font-medium line-clamp-1;
+  color: theme("colors.slate.950");
+}
+
+:global(.dark) .title {
+  color: theme("colors.gray.50");
+}
+
+.year {
+  @apply text-xs mt-0.5;
+  color: theme("colors.gray.500");
+}
