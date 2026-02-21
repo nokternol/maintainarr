@@ -4,6 +4,7 @@ import { checkUser } from '../middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
 import { createBackdropsRoutes } from './backdrops/backdrops.routes';
 import { createHealthRoutes } from './health/health.routes';
+import { createProvidersRoutes } from './providers/providers.routes';
 
 /**
  * Creates the API router with all module routes mounted.
@@ -19,6 +20,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/health', createHealthRoutes(cradle));
   router.use('/backdrops', createBackdropsRoutes(cradle));
   router.use('/auth', createAuthRoutes(cradle));
+  router.use('/providers', createProvidersRoutes(cradle));
 
   return router;
 }
