@@ -48,8 +48,6 @@ export default function LoginPage() {
         <ImageFader images={backdrops || []} className="opacity-100 dark:opacity-50" />
         {/* Base wash */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/5 to-slate-50/30 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
-        {/* Central stabilizing halo for text legibility (Darker in light mode, hidden in dark mode) */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900/15 via-transparent to-transparent dark:hidden pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
@@ -61,13 +59,15 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <h1 className="text-4xl font-black text-text-primary tracking-tighter mb-2 uppercase">
-          Maintain<span className="text-primary">arr</span>
-        </h1>
-        <p className="text-text-muted text-sm font-medium tracking-wide mb-10 px-4 leading-relaxed">
-          Task automation and metadata-driven grouping <br /> for the{' '}
-          <span className="text-primary italic">*arr ecosystem</span>
-        </p>
+        <div className="inline-block p-6 rounded-3xl bg-surface-bg/60 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none border border-white/20 dark:border-transparent mb-6 shadow-xl dark:shadow-none">
+          <h1 className="text-4xl font-black text-text-primary tracking-tighter mb-2 uppercase drop-shadow-sm dark:drop-shadow-none">
+            Maintain<span className="text-primary">arr</span>
+          </h1>
+          <p className="text-text-primary dark:text-text-muted text-sm font-medium tracking-wide px-4 leading-relaxed max-w-sm mx-auto">
+            Task automation and metadata-driven grouping <br /> for the{' '}
+            <span className="text-primary italic">*arr ecosystem</span>
+          </p>
+        </div>
 
         {error && (
           <div className="bg-red-900/50 border border-red-500 text-white p-4 rounded-lg mb-6 text-center">
@@ -94,7 +94,7 @@ export default function LoginPage() {
               <span>Sign in with Plex</span>
             </button>
 
-            <p className="mt-6 text-xs text-text-secondary dark:text-text-muted">
+            <p className="mt-6 text-xs text-text-secondary dark:text-text-muted font-medium bg-surface-bg/50 dark:bg-transparent px-3 py-1.5 rounded-md inline-block">
               By signing in, you agree to your server's automation policies.
             </p>
           </div>
