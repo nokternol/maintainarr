@@ -33,6 +33,13 @@
   color: var(--color-text-primary);
 }
 
+.hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .input,
 .textarea {
   padding: 0.5rem 0.75rem;

@@ -33,6 +33,16 @@ export default function ProviderPanel({
 
   const needsSettings = type === 'JELLYFIN';
 
+  // Provider-specific URL placeholders
+  const urlPlaceholder = {
+    SONARR: 'http://localhost:8989/api/v3',
+    RADARR: 'http://localhost:7878/api/v3',
+    PLEX: 'http://localhost:32400',
+    JELLYFIN: 'http://localhost:8096',
+    TAUTULLI: 'http://localhost:8181',
+    OVERSEERR: 'http://localhost:5055',
+  }[type];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params: FetchParams = {
@@ -61,8 +71,11 @@ export default function ProviderPanel({
             className={styles.input}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="http://localhost:8989"
+            placeholder={urlPlaceholder}
           />
+          {(type === 'SONARR' || type === 'RADARR') && (
+            <p className={styles.hint}>Include /api/v3 in the URL</p>
+          )}
         </div>
 
         <div className={styles.field}>
