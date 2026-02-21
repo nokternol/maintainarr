@@ -11,18 +11,18 @@ export const Danger: Story = () => <Button variant="danger">Danger Button</Butto
 export const ThemeShowcase: Story = () => (
   <div className="flex flex-col gap-8 p-8">
     {/* Light Mode Section */}
-    <div className="p-8 rounded-xl bg-surface border border-gray-200">
-      <h3 className="text-text-primary font-bold mb-4">Light Mode Surface (gray-50)</h3>
-      <div className="flex gap-4 p-6 bg-white rounded-lg shadow-sm border border-gray-100">
+    <div className="p-8 rounded-xl bg-surface-bg border border-border">
+      <h3 className="text-text-primary font-bold mb-4">Light Mode Surface (slate-50)</h3>
+      <div className="flex gap-4 p-6 bg-surface-panel rounded-lg shadow-sm border border-border">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
       </div>
     </div>
 
     {/* Dark Mode Section */}
-    <div className="p-8 rounded-xl bg-surface-dark dark">
+    <div className="p-8 rounded-xl bg-surface-bg border border-border dark">
       <h3 className="text-text-primary font-bold mb-4">Dark Mode Surface (slate-950)</h3>
-      <div className="flex gap-4 p-6 bg-surface-panel rounded-lg border border-gray-800">
+      <div className="flex gap-4 p-6 bg-surface-panel rounded-lg border border-border">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
       </div>
@@ -48,18 +48,18 @@ export const States: Story = () => (
 export const AllVariants: Story = () => (
   <div className="flex flex-col gap-10 p-4">
     <section>
-      <p className="text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-4">
+      <p className="text-xs font-bold tracking-widest text-text-muted uppercase mb-4">
         Intent Variants
       </p>
       <div className="flex gap-4">
-        <Button variant="primary">Primary (Teal 600)</Button>
-        <Button variant="secondary">Secondary (Gray 600)</Button>
-        <Button variant="danger">Danger (Red 600)</Button>
+        <Button variant="primary">Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="danger">Danger</Button>
       </div>
     </section>
 
     <section>
-      <p className="text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-4">
+      <p className="text-xs font-bold tracking-widest text-text-muted uppercase mb-4">
         Sizing Scale
       </p>
       <div className="flex items-center gap-4">
@@ -70,7 +70,7 @@ export const AllVariants: Story = () => (
     </section>
 
     <section>
-      <p className="text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-4">
+      <p className="text-xs font-bold tracking-widest text-text-muted uppercase mb-4">
         Interactive States
       </p>
       <div className="flex gap-4">
