@@ -1,4 +1,6 @@
+import { cn } from '@app/lib/utils/cn';
 import type { HTMLAttributes } from 'react';
+import styles from './AppLayout.module.css';
 
 interface AppLayoutProps extends HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -14,14 +16,14 @@ export default function AppLayout({
   ...props
 }: AppLayoutProps) {
   return (
-    <div className={`min-h-screen bg-slate-950 flex ${className}`} {...props}>
+    <div className={cn(styles.container, className)} {...props}>
       {/* Sidebar */}
-      {sidebar && <aside className="hidden md:block w-64 flex-shrink-0">{sidebar}</aside>}
+      {sidebar && <aside className={styles.sidebarWrapper}>{sidebar}</aside>}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-x-hidden">
+      <main className={styles.mainContent}>
         {topBar}
-        <div className="flex-1">{children}</div>
+        <div className={styles.contentWrapper}>{children}</div>
       </main>
     </div>
   );

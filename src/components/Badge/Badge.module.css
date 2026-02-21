@@ -1,0 +1,44 @@
+.base {
+  @apply inline-flex items-center justify-center font-medium rounded-full transition-colors border;
+}
+
+.primary,
+.teal {
+  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  border-color: rgb(from var(--color-primary) r g b / 0.2);
+  @apply text-primary;
+}
+
+.default {
+  @apply bg-surface-panel text-text-muted border-border;
+}
+
+.success {
+  @apply bg-emerald-500/10 text-emerald-500 border-emerald-500/20;
+}
+
+.warning {
+  @apply bg-amber-500/10 text-amber-500 border-amber-500/20;
+}
+
+.error {
+  background-color: rgb(from var(--color-danger) r g b / 0.1);
+  border-color: rgb(from var(--color-danger) r g b / 0.2);
+  @apply text-danger;
+}
+
+.info {
+  @apply bg-blue-500/10 text-blue-500 border-blue-500/20;
+}
+
+.sm {
+  @apply px-2 py-0.5 text-xs;
+}
+
+.md {
+  @apply px-2.5 py-1 text-sm;
+}
+
+.lg {
+  @apply px-3 py-1.5 text-base;
+}

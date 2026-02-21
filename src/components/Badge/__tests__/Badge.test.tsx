@@ -9,69 +9,76 @@ describe('Badge', () => {
   });
 
   it('applies default variant styles', () => {
-    const { container } = render(<Badge>Default</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-slate-500/10');
-    expect(badge).toHaveClass('text-slate-400');
+    render(<Badge data-testid="badge">Default</Badge>);
+    expect(screen.getByTestId('badge').className).toMatch(/default/);
   });
 
   it('applies success variant styles', () => {
-    const { container } = render(<Badge variant="success">Success</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-emerald-500/10');
-    expect(badge).toHaveClass('text-emerald-500');
+    render(
+      <Badge variant="success" data-testid="badge">
+        Success
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/success/);
   });
 
   it('applies warning variant styles', () => {
-    const { container } = render(<Badge variant="warning">Warning</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-amber-500/10');
-    expect(badge).toHaveClass('text-amber-500');
+    render(
+      <Badge variant="warning" data-testid="badge">
+        Warning
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/warning/);
   });
 
   it('applies error variant styles', () => {
-    const { container } = render(<Badge variant="error">Error</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-red-500/10');
-    expect(badge).toHaveClass('text-red-500');
+    render(
+      <Badge variant="error" data-testid="badge">
+        Error
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/error/);
   });
 
   it('applies info variant styles', () => {
-    const { container } = render(<Badge variant="info">Info</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-blue-500/10');
-    expect(badge).toHaveClass('text-blue-500');
+    render(
+      <Badge variant="info" data-testid="badge">
+        Info
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/info/);
   });
 
   it('applies teal variant styles', () => {
-    const { container } = render(<Badge variant="teal">Teal</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('bg-primary/10');
-    expect(badge).toHaveClass('text-primary');
+    render(
+      <Badge variant="teal" data-testid="badge">
+        Teal
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/teal/);
   });
 
   it('applies small size styles', () => {
-    const { container } = render(<Badge size="sm">Small</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('px-2');
-    expect(badge).toHaveClass('py-0.5');
-    expect(badge).toHaveClass('text-xs');
+    render(
+      <Badge size="sm" data-testid="badge">
+        Small
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/sm/);
   });
 
   it('applies medium size styles by default', () => {
-    const { container } = render(<Badge>Medium</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('px-2.5');
-    expect(badge).toHaveClass('py-1');
-    expect(badge).toHaveClass('text-sm');
+    render(<Badge data-testid="badge">Medium</Badge>);
+    expect(screen.getByTestId('badge').className).toMatch(/md/);
   });
 
   it('applies large size styles', () => {
-    const { container } = render(<Badge size="lg">Large</Badge>);
-    const badge = container.firstChild as HTMLElement;
-    expect(badge).toHaveClass('px-3');
-    expect(badge).toHaveClass('py-1.5');
-    expect(badge).toHaveClass('text-base');
+    render(
+      <Badge size="lg" data-testid="badge">
+        Large
+      </Badge>
+    );
+    expect(screen.getByTestId('badge').className).toMatch(/lg/);
   });
 
   it('accepts custom className', () => {

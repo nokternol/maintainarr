@@ -1,0 +1,15 @@
+.container {
+  @apply flex flex-col items-center justify-center text-center p-8;
+}
+
+.iconWrapper {
+  @apply mb-4 text-text-secondary;
+}
+
+.title {
+  @apply text-xl font-semibold text-text-primary mb-2;
+}
+
+.description {
+  @apply text-text-muted mb-6 max-w-md;
+}

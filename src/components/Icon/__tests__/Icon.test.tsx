@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Icon from '../index';
 
@@ -19,58 +19,44 @@ describe('Icon', () => {
   });
 
   it('applies extra small size styles', () => {
-    const { container } = render(
-      <Icon size="xs">
-        <TestSvg />
+    render(
+      <Icon size="xs" data-testid="icon">
+        X
       </Icon>
     );
-    const icon = container.firstChild as HTMLElement;
-    expect(icon).toHaveClass('w-3');
-    expect(icon).toHaveClass('h-3');
+    expect(screen.getByTestId('icon').className).toMatch(/xs/);
   });
 
   it('applies small size styles', () => {
-    const { container } = render(
-      <Icon size="sm">
-        <TestSvg />
+    render(
+      <Icon size="sm" data-testid="icon">
+        S
       </Icon>
     );
-    const icon = container.firstChild as HTMLElement;
-    expect(icon).toHaveClass('w-4');
-    expect(icon).toHaveClass('h-4');
+    expect(screen.getByTestId('icon').className).toMatch(/sm/);
   });
 
   it('applies medium size styles by default', () => {
-    const { container } = render(
-      <Icon>
-        <TestSvg />
-      </Icon>
-    );
-    const icon = container.firstChild as HTMLElement;
-    expect(icon).toHaveClass('w-5');
-    expect(icon).toHaveClass('h-5');
+    render(<Icon data-testid="icon">M</Icon>);
+    expect(screen.getByTestId('icon').className).toMatch(/md/);
   });
 
   it('applies large size styles', () => {
-    const { container } = render(
-      <Icon size="lg">
-        <TestSvg />
+    render(
+      <Icon size="lg" data-testid="icon">
+        L
       </Icon>
     );
-    const icon = container.firstChild as HTMLElement;
-    expect(icon).toHaveClass('w-6');
-    expect(icon).toHaveClass('h-6');
+    expect(screen.getByTestId('icon').className).toMatch(/lg/);
   });
 
   it('applies extra large size styles', () => {
-    const { container } = render(
-      <Icon size="xl">
-        <TestSvg />
+    render(
+      <Icon size="xl" data-testid="icon">
+        XL
       </Icon>
     );
-    const icon = container.firstChild as HTMLElement;
-    expect(icon).toHaveClass('w-8');
-    expect(icon).toHaveClass('h-8');
+    expect(screen.getByTestId('icon').className).toMatch(/xl/);
   });
 
   it('accepts custom className', () => {

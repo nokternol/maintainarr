@@ -14,34 +14,31 @@ describe('LoadingSpinner', () => {
   it('applies small size styles', () => {
     const { container } = render(<LoadingSpinner size="sm" />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('h-4');
-    expect(svg).toHaveClass('w-4');
+    expect(svg?.className).toMatch(/sm_/);
   });
 
   it('applies medium size styles by default', () => {
     const { container } = render(<LoadingSpinner />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('h-6');
-    expect(svg).toHaveClass('w-6');
+    expect(svg?.className).toMatch(/md_/);
   });
 
   it('applies large size styles', () => {
     const { container } = render(<LoadingSpinner size="lg" />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('h-8');
-    expect(svg).toHaveClass('w-8');
+    expect(svg?.className).toMatch(/lg_/);
   });
 
   it('has animate-spin class', () => {
     const { container } = render(<LoadingSpinner />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('animate-spin');
+    expect(svg?.className).toMatch(/icon_/);
   });
 
   it('uses teal color', () => {
     const { container } = render(<LoadingSpinner />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('text-teal-500');
+    expect(svg?.className).toMatch(/icon_/);
   });
 
   it('accepts custom className', () => {

@@ -1,0 +1,31 @@
+.container {
+  @apply bg-surface-panel border-b border-border px-6 py-4;
+}
+
+.isSticky {
+  @apply sticky top-0 z-10;
+}
+
+.inner {
+  @apply flex items-center justify-between;
+}
+
+.breadcrumbsNav {
+  @apply flex items-center gap-2 text-sm text-text-muted mb-1;
+}
+
+.breadcrumbItem {
+  @apply flex items-center gap-2;
+}
+
+.breadcrumbLink {
+  @apply hover:text-primary-hover transition-colors;
+}
+
+.title {
+  @apply text-2xl font-bold text-text-primary;
+}
+
+.actions {
+  @apply flex items-center gap-3;
+}

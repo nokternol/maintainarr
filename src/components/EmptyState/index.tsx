@@ -1,4 +1,7 @@
+import { cn } from '@app/lib/utils/cn';
 import type { HTMLAttributes } from 'react';
+import Button from '../Button';
+import styles from './EmptyState.module.css';
 
 interface EmptyStateProps extends HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode;
@@ -19,21 +22,14 @@ export default function EmptyState({
   ...props
 }: EmptyStateProps) {
   return (
-    <div
-      className={`flex flex-col items-center justify-center text-center p-8 ${className}`}
-      {...props}
-    >
-      {icon && <div className="mb-4 text-slate-600">{icon}</div>}
-      <h3 className="text-xl font-semibold text-slate-300 mb-2">{title}</h3>
-      {description && <p className="text-slate-500 mb-6 max-w-md">{description}</p>}
+    <div className={cn(styles.container, className)} {...props}>
+      {icon && <div className={styles.iconWrapper}>{icon}</div>}
+      <h3 className={styles.title}>{title}</h3>
+      {description && <p className={styles.description}>{description}</p>}
       {action && (
-        <button
-          type="button"
-          onClick={action.onClick}
-          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-slate-950"
-        >
+        <Button onClick={action.onClick} variant="primary">
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

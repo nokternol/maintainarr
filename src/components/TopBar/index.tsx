@@ -1,4 +1,6 @@
+import { cn } from '@app/lib/utils/cn';
 import type { HTMLAttributes } from 'react';
+import styles from './TopBar.module.css';
 
 interface Breadcrumb {
   label: string;
@@ -20,21 +22,16 @@ export default function TopBar({
   className = '',
   ...props
 }: TopBarProps) {
-  const positionClass = sticky ? 'sticky top-0 z-10' : '';
-
   return (
-    <div
-      className={`bg-slate-900 border-b border-slate-700 px-6 py-4 ${positionClass} ${className}`}
-      {...props}
-    >
-      <div className="flex items-center justify-between">
+    <div className={cn(styles.container, sticky && styles.isSticky, className)} {...props}>
+      <div className={styles.inner}>
         <div>
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <nav className="flex items-center gap-2 text-sm text-slate-400 mb-1">
+            <nav className={styles.breadcrumbsNav}>
               {breadcrumbs.map((crumb, index) => (
-                <div key={`breadcrumb-${crumb.label}-${index}`} className="flex items-center gap-2">
+                <div key={`breadcrumb-${crumb.label}-${index}`} className={styles.breadcrumbItem}>
                   {crumb.href ? (
-                    <a href={crumb.href} className="hover:text-teal-400 transition-colors">
+                    <a href={crumb.href} className={styles.breadcrumbLink}>
                       {crumb.label}
                     </a>
                   ) : (
@@ -45,10 +42,10 @@ export default function TopBar({
               ))}
             </nav>
           )}
-          {title && <h1 className="text-2xl font-bold text-white">{title}</h1>}
+          {title && <h1 className={styles.title}>{title}</h1>}
         </div>
 
-        {actions && <div className="flex items-center gap-3">{actions}</div>}
+        {actions && <div className={styles.actions}>{actions}</div>}
       </div>
     </div>
   );

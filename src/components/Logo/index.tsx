@@ -1,4 +1,6 @@
+import { cn } from '@app/lib/utils/cn';
 import React from 'react';
+import styles from './Logo.module.css';
 
 export const MaintainarrLogo = ({
   className = 'w-24 h-24',
@@ -8,9 +10,9 @@ export const MaintainarrLogo = ({
   const teeth = Array.from({ length: 8 }, (_, i) => i * 45);
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
+    <div className={cn(styles.container, className)}>
       {/* 1. Conditional Mounting Glow: Only shows if not in loader mode */}
-      {!isLoader && <div className="absolute inset-0 bg-teal-500/20 blur-2xl rounded-full" />}
+      {!isLoader && <div className={styles.glow} />}
 
       <svg
         viewBox="0 0 24 24"
@@ -18,7 +20,11 @@ export const MaintainarrLogo = ({
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-labelledby={`${id}-title`}
-        className={`relative z-10 ${!isLoader ? 'drop-shadow-[0_0_8px_rgba(20,184,166,0.5)]' : ''} ${isLoader ? 'animate-spin-slow' : ''}`}
+        className={cn(
+          styles.svgBase,
+          !isLoader && styles.svgDropShadow,
+          isLoader && styles.svgSpin
+        )}
       >
         <title id={`${id}-title`}>Maintainarr Logo</title>
 
@@ -28,24 +34,24 @@ export const MaintainarrLogo = ({
             <rect
               key={angle}
               x="-2"
-              y="-9.5" /* Moved closer to center */
+              y="-9.5"
               width="4"
-              height="3" /* Shorter teeth */
+              height="3"
               rx="1"
               transform={`rotate(${angle})`}
-              className="fill-teal-500"
+              className={styles.teeth}
             />
           ))}
         </g>
 
         {/* Cog Face - Increased depth/radius */}
-        <circle cx="12" cy="12" r="8" className="fill-teal-500" />
+        <circle cx="12" cy="12" r="8" className={styles.face} />
 
         {/* Inner Hub Cutout */}
-        <circle cx="12" cy="12" r="4.5" className="fill-slate-950" />
+        <circle cx="12" cy="12" r="4.5" className={styles.hubCutout} />
 
         {/* Central Metadata Hub */}
-        <g className="fill-teal-400">
+        <g className={styles.metadataHub}>
           <circle cx="12" cy="12" r="1.3" />
           <circle cx="12" cy="10" r="0.6" />
           <circle cx="13.7" cy="11" r="0.6" />

@@ -70,7 +70,7 @@ describe('Sidebar', () => {
     render(<Sidebar items={itemsWithActive} />);
 
     const dashboardLink = screen.getByText('Dashboard').closest('a');
-    expect(dashboardLink).toHaveClass('bg-teal-500');
+    expect(dashboardLink?.className).toMatch(/itemActive/);
   });
 
   it('renders correct href for items', () => {
@@ -92,7 +92,7 @@ describe('Sidebar', () => {
 
   it('renders divider between main and bottom items', () => {
     const { container } = render(<Sidebar items={sampleItems} bottomItems={bottomItems} />);
-    const divider = container.querySelector('.border-t.border-slate-700');
+    const divider = container.querySelector('[class*="divider"]');
     expect(divider).toBeInTheDocument();
   });
 });

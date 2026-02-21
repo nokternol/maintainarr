@@ -1,5 +1,7 @@
+import { cn } from '@app/lib/utils/cn';
 import type { SidebarItem as SidebarItemType } from '@app/types/navigation';
 import type { HTMLAttributes } from 'react';
+import styles from './Sidebar.module.css';
 import SidebarItem from './SidebarItem';
 
 interface SidebarProps extends HTMLAttributes<HTMLDivElement> {
@@ -24,15 +26,12 @@ export default function Sidebar({
   }
 
   return (
-    <div
-      className={`flex flex-col h-full bg-slate-900 border-r border-slate-700 ${className}`}
-      {...props}
-    >
+    <div className={cn(styles.sidebar, className)} {...props}>
       {/* Logo/Header */}
-      {logo && <div className="p-4 border-b border-slate-700">{logo}</div>}
+      {logo && <div className={styles.logoWrapper}>{logo}</div>}
 
       {/* Main Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className={styles.navMain}>
         {items.map((item) => (
           <SidebarItem key={item.id} item={item} onClick={onItemClick} />
         ))}
@@ -41,8 +40,8 @@ export default function Sidebar({
       {/* Bottom Section */}
       {bottomItems && bottomItems.length > 0 && (
         <>
-          <div className="border-t border-slate-700" />
-          <nav className="p-3 space-y-1">
+          <div className={styles.divider} />
+          <nav className={styles.navBottom}>
             {bottomItems.map((item) => (
               <SidebarItem key={item.id} item={item} onClick={onItemClick} />
             ))}

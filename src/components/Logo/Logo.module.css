@@ -1,0 +1,36 @@
+.container {
+  @apply relative flex items-center justify-center;
+}
+
+.glow {
+  background-color: rgb(from var(--color-primary) r g b / 0.2);
+  @apply absolute inset-0 blur-2xl rounded-full;
+}
+
+.svgBase {
+  @apply relative z-10;
+}
+
+.svgDropShadow {
+  filter: drop-shadow(0 0 8px rgba(20, 184, 166, 0.5));
+}
+
+.svgSpin {
+  @apply animate-spin-slow;
+}
+
+.teeth {
+  @apply fill-primary;
+}
+
+.face {
+  @apply fill-primary;
+}
+
+.hubCutout {
+  @apply fill-[var(--color-surface-bg)];
+}
+
+.metadataHub {
+  @apply fill-teal-400;
+}

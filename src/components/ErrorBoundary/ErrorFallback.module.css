@@ -1,0 +1,31 @@
+.container {
+  @apply min-h-screen bg-surface-bg flex items-center justify-center p-4;
+}
+
+.card {
+  @apply max-w-md w-full bg-surface-panel border border-border rounded-lg p-6;
+}
+
+.title {
+  @apply text-xl font-semibold text-danger mb-2;
+}
+
+.description {
+  @apply text-text-secondary text-sm mb-4;
+}
+
+.details {
+  @apply mb-4;
+}
+
+.summary {
+  @apply text-sm text-text-muted cursor-pointer hover:text-text-primary;
+}
+
+.pre {
+  @apply mt-2 text-xs text-danger bg-surface-bg p-2 rounded overflow-auto max-h-48;
+}
+
+.actions {
+  @apply flex gap-2;
+}

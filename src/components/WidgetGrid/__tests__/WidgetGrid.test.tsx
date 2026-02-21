@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import WidgetGrid from '../index';
 
@@ -15,89 +15,75 @@ describe('WidgetGrid', () => {
   });
 
   it('applies grid class', () => {
-    const { container } = render(
-      <WidgetGrid>
+    render(
+      <WidgetGrid data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('grid');
+    expect(screen.getByTestId('grid').className).toMatch(/gridContainer/);
   });
 
   it('applies 1 column layout', () => {
-    const { container } = render(
-      <WidgetGrid columns={1}>
+    render(
+      <WidgetGrid columns={1} data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('grid-cols-1');
+    expect(screen.getByTestId('grid').className).toMatch(/cols_1/);
   });
 
   it('applies 2 column layout', () => {
-    const { container } = render(
-      <WidgetGrid columns={2}>
+    render(
+      <WidgetGrid columns={2} data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('grid-cols-1');
-    expect(grid).toHaveClass('md:grid-cols-2');
+    expect(screen.getByTestId('grid').className).toMatch(/cols_2/);
   });
 
   it('applies 3 column layout', () => {
-    const { container } = render(
-      <WidgetGrid columns={3}>
+    render(
+      <WidgetGrid columns={3} data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('grid-cols-1');
-    expect(grid).toHaveClass('md:grid-cols-2');
-    expect(grid).toHaveClass('lg:grid-cols-3');
+    expect(screen.getByTestId('grid').className).toMatch(/cols_3/);
   });
 
   it('applies 4 column layout by default', () => {
-    const { container } = render(
-      <WidgetGrid>
+    render(
+      <WidgetGrid data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('grid-cols-1');
-    expect(grid).toHaveClass('md:grid-cols-2');
-    expect(grid).toHaveClass('lg:grid-cols-3');
-    expect(grid).toHaveClass('xl:grid-cols-4');
+    expect(screen.getByTestId('grid').className).toMatch(/cols_4/);
   });
 
   it('applies small gap', () => {
-    const { container } = render(
-      <WidgetGrid gap="sm">
+    render(
+      <WidgetGrid gap="sm" data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('gap-3');
+    expect(screen.getByTestId('grid').className).toMatch(/gap_sm/);
   });
 
   it('applies medium gap by default', () => {
-    const { container } = render(
-      <WidgetGrid>
+    render(
+      <WidgetGrid data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('gap-4');
+    expect(screen.getByTestId('grid').className).toMatch(/gap_md/);
   });
 
   it('applies large gap', () => {
-    const { container } = render(
-      <WidgetGrid gap="lg">
+    render(
+      <WidgetGrid gap="lg" data-testid="grid">
         <div>Widget</div>
       </WidgetGrid>
     );
-    const grid = container.firstChild as HTMLElement;
-    expect(grid).toHaveClass('gap-6');
+    expect(screen.getByTestId('grid').className).toMatch(/gap_lg/);
   });
 
   it('accepts custom className', () => {

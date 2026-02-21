@@ -50,24 +50,33 @@ describe('StatCard', () => {
   });
 
   it('applies correct color for upward trend', () => {
-    const { container } = render(
-      <StatCard value={100} label="Test" trend={{ value: 12, direction: 'up' }} />
+    render(
+      <StatCard
+        value={100}
+        label="Test"
+        trend={{ value: 12, direction: 'up' }}
+        data-testid="stat-card"
+      />
     );
-    const trendElement = container.querySelector('.text-emerald-500');
-    expect(trendElement).toBeInTheDocument();
+    expect(screen.getByText('↑').parentElement!.className).toMatch(/trendUp/);
   });
 
   it('applies correct color for downward trend', () => {
-    const { container } = render(
-      <StatCard value={100} label="Test" trend={{ value: 8, direction: 'down' }} />
+    render(
+      <StatCard
+        value={100}
+        label="Test"
+        trend={{ value: 8, direction: 'down' }}
+        data-testid="stat-card"
+      />
     );
-    const trendElement = container.querySelector('.text-red-500');
-    expect(trendElement).toBeInTheDocument();
+    expect(screen.getByText('↓').parentElement!.className).toMatch(/trendDown/);
   });
 
   it('does not render trend when not provided', () => {
     const { container } = render(<StatCard value={100} label="Test" />);
-    const trend = container.querySelector('.text-emerald-500, .text-red-500');
+    // There shouldn't be any trend icon wrapper
+    const trend = container.querySelector('[class*="trendWrapper"]');
     expect(trend).not.toBeInTheDocument();
   });
 

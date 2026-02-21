@@ -11,32 +11,49 @@ describe('Button', () => {
   });
 
   it('applies primary variant styles by default', () => {
-    render(<Button>Primary</Button>);
-    const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-primary');
+    render(<Button data-testid="button">Primary</Button>);
+    expect(screen.getByTestId('button').className).toMatch(/primary/);
   });
 
   it('applies secondary variant styles', () => {
-    render(<Button variant="secondary">Secondary</Button>);
-    const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-secondary');
+    render(
+      <Button variant="secondary" data-testid="button">
+        Secondary
+      </Button>
+    );
+    expect(screen.getByTestId('button').className).toMatch(/secondary/);
   });
 
   it('applies danger variant styles', () => {
-    render(<Button variant="danger">Danger</Button>);
-    const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-danger');
+    render(
+      <Button variant="danger" data-testid="button">
+        Danger
+      </Button>
+    );
+    expect(screen.getByTestId('button').className).toMatch(/danger/);
   });
 
   it('applies size styles correctly', () => {
-    const { rerender } = render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole('button')).toHaveClass('px-3 py-1.5 text-sm');
+    const { rerender } = render(
+      <Button size="sm" data-testid="button">
+        Small
+      </Button>
+    );
+    expect(screen.getByTestId('button').className).toMatch(/sm/);
 
-    rerender(<Button size="md">Medium</Button>);
-    expect(screen.getByRole('button')).toHaveClass('px-4 py-2 text-base');
+    rerender(
+      <Button size="md" data-testid="button">
+        Medium
+      </Button>
+    );
+    expect(screen.getByTestId('button').className).toMatch(/md/);
 
-    rerender(<Button size="lg">Large</Button>);
-    expect(screen.getByRole('button')).toHaveClass('px-6 py-3 text-lg');
+    rerender(
+      <Button size="lg" data-testid="button">
+        Large
+      </Button>
+    );
+    expect(screen.getByTestId('button').className).toMatch(/lg/);
   });
 
   it('handles click events', async () => {

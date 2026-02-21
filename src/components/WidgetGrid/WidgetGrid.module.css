@@ -1,0 +1,31 @@
+.gridContainer {
+  @apply grid;
+}
+
+.gap_sm {
+  @apply gap-3;
+}
+
+.gap_md {
+  @apply gap-4;
+}
+
+.gap_lg {
+  @apply gap-6;
+}
+
+.cols_1 {
+  @apply grid-cols-1;
+}
+
+.cols_2 {
+  @apply grid-cols-1 md:grid-cols-2;
+}
+
+.cols_3 {
+  @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+}
+
+.cols_4 {
+  @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+}

@@ -1,0 +1,27 @@
+.container {
+  @apply inline-flex items-center justify-center;
+}
+
+.icon {
+  @apply animate-spin text-primary;
+}
+
+.sm {
+  @apply h-4 w-4;
+}
+
+.md {
+  @apply h-6 w-6;
+}
+
+.lg {
+  @apply h-8 w-8;
+}
+
+.circle {
+  @apply opacity-25;
+}
+
+.path {
+  @apply opacity-75;
+}

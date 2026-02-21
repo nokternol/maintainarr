@@ -9,42 +9,49 @@ describe('Card', () => {
   });
 
   it('applies default variant styles', () => {
-    const { container } = render(<Card>Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('bg-slate-900');
-    expect(card).not.toHaveClass('border');
+    render(<Card data-testid="card">Content</Card>);
+    expect(screen.getByTestId('card').className).toMatch(/default/);
   });
 
   it('applies outlined variant styles', () => {
-    const { container } = render(<Card variant="outlined">Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('bg-slate-900');
-    expect(card).toHaveClass('border');
-    expect(card).toHaveClass('border-slate-700');
+    render(
+      <Card variant="outlined" data-testid="card">
+        Content
+      </Card>
+    );
+    expect(screen.getByTestId('card').className).toMatch(/outlined/);
   });
 
   it('applies elevated variant styles', () => {
-    const { container } = render(<Card variant="elevated">Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('shadow-lg');
+    render(
+      <Card variant="elevated" data-testid="card">
+        Content
+      </Card>
+    );
+    expect(screen.getByTestId('card').className).toMatch(/elevated/);
   });
 
   it('applies default padding', () => {
-    const { container } = render(<Card>Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('p-4');
+    render(<Card data-testid="card">Content</Card>);
+    expect(screen.getByTestId('card').className).toMatch(/padding_md/);
   });
 
   it('applies small padding', () => {
-    const { container } = render(<Card padding="sm">Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('p-3');
+    render(
+      <Card padding="sm" data-testid="card">
+        Content
+      </Card>
+    );
+    expect(screen.getByTestId('card').className).toMatch(/padding_sm/);
   });
 
   it('applies large padding', () => {
-    const { container } = render(<Card padding="lg">Content</Card>);
-    const card = container.firstChild as HTMLElement;
-    expect(card).toHaveClass('p-6');
+    render(
+      <Card padding="lg" data-testid="card">
+        Content
+      </Card>
+    );
+    expect(screen.getByTestId('card').className).toMatch(/padding_lg/);
   });
 
   it('applies no padding when specified', () => {
@@ -67,12 +74,22 @@ describe('Card', () => {
 
   it('renders header and footer with border separators', () => {
     const { container } = render(
-      <Card header={<h3>Header</h3>} footer={<div>Footer</div>}>
+      <Card header="Header" footer="Footer" data-testid="card">
         Content
       </Card>
     );
-    const borders = container.querySelectorAll('.border-slate-700');
-    expect(borders.length).toBeGreaterThan(0);
+
+    // First child is header, it should have header class
+    expect(container.firstChild?.childNodes[0]).toHaveProperty(
+      'className',
+      expect.stringMatching(/header/)
+    );
+
+    // Last child is footer, it should have footer class
+    expect(container.firstChild?.childNodes[2]).toHaveProperty(
+      'className',
+      expect.stringMatching(/footer/)
+    );
   });
 
   it('accepts custom className', () => {

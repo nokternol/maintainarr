@@ -61,24 +61,21 @@ describe('AppLayout', () => {
   });
 
   it('applies flex layout', () => {
-    const { container } = render(
-      <AppLayout>
+    render(
+      <AppLayout data-testid="layout">
         <div>Content</div>
       </AppLayout>
     );
-    const layout = container.firstChild as HTMLElement;
-    expect(layout).toHaveClass('flex');
+    expect(screen.getByTestId('layout').className).toMatch(/container/);
   });
 
   it('applies min-h-screen and background', () => {
-    const { container } = render(
-      <AppLayout>
+    render(
+      <AppLayout data-testid="layout">
         <div>Content</div>
       </AppLayout>
     );
-    const layout = container.firstChild as HTMLElement;
-    expect(layout).toHaveClass('min-h-screen');
-    expect(layout).toHaveClass('bg-slate-950');
+    expect(screen.getByTestId('layout').className).toMatch(/container/);
   });
 
   it('sidebar is hidden on mobile', () => {
@@ -88,8 +85,7 @@ describe('AppLayout', () => {
       </AppLayout>
     );
     const aside = container.querySelector('aside');
-    expect(aside).toHaveClass('hidden');
-    expect(aside).toHaveClass('md:block');
+    expect(aside?.className).toMatch(/sidebarWrapper/);
   });
 
   it('accepts custom className', () => {

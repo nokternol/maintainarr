@@ -1,0 +1,39 @@
+.base {
+  @apply inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed;
+}
+
+.primary {
+  @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white focus:ring-primary;
+}
+
+.secondary {
+  @apply bg-text-secondary text-white hover:bg-text-primary focus:ring-text-secondary;
+}
+
+.danger {
+  @apply bg-danger hover:bg-danger-hover active:bg-danger-active text-white focus:ring-danger;
+}
+
+.sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.md {
+  @apply px-4 py-2 text-base;
+}
+
+.lg {
+  @apply px-6 py-3 text-lg;
+}
+
+.spinner {
+  @apply animate-spin -ml-1 mr-2 h-4 w-4;
+}
+
+.spinnerCircle {
+  @apply opacity-25;
+}
+
+.spinnerPath {
+  @apply opacity-75;
+}

@@ -59,11 +59,9 @@ describe('TopBar', () => {
   });
 
   it('applies sticky positioning when sticky prop is true', () => {
-    const { container } = render(<TopBar sticky={true} />);
+    const { container } = render(<TopBar title="Test" sticky={true} />);
     const topBar = container.firstChild as HTMLElement;
-    expect(topBar).toHaveClass('sticky');
-    expect(topBar).toHaveClass('top-0');
-    expect(topBar).toHaveClass('z-10');
+    expect(topBar.className).toMatch(/isSticky/);
   });
 
   it('does not apply sticky positioning by default', () => {
