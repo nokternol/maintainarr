@@ -38,7 +38,7 @@ describe('config', () => {
     });
 
     it('respects env var overrides', () => {
-      process.env.NODE_ENV = 'production';
+      Object.assign(process.env, { NODE_ENV: 'production' });
       process.env.PORT = '3000';
       process.env.LOG_LEVEL = 'debug';
       process.env.TRUST_PROXY = 'true';
@@ -69,7 +69,7 @@ describe('config', () => {
     });
 
     it('rejects invalid NODE_ENV', () => {
-      process.env.NODE_ENV = 'staging';
+      Object.assign(process.env, { NODE_ENV: 'staging' });
       expect(() => loadConfig()).toThrow('Invalid configuration');
     });
 

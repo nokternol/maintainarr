@@ -67,3 +67,5 @@ build
 
 #agents
 .claude
+# Agent Context Files
+.agent/plans/

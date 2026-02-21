@@ -12,6 +12,8 @@ describe('database', () => {
     DB_PATH: ':memory:',
     DB_LOGGING: false,
     TRUST_PROXY: false,
+    TMDB_API_KEY: 'test-tmdb-key',
+    SESSION_SECRET: 'test-session-secret',
   };
 
   afterEach(async () => {

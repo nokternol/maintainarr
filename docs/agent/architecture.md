@@ -3,7 +3,8 @@
 ## High-Level Stack
 - **Frontend**: Next.js 15, React 18, Tailwind CSS, SWR
 - **Backend**: Express (v4), SQLite, TypeORM, Zod
-- **Testing**: Vitest (Unit), Cypress (E2E), Ladle (Components), MSW (API Mocking)
+- **HTTP Client**: `ky` (lightweight TypeScript-first wrapper around Node 24 native `fetch`) — used by external media service integrations
+- **Testing**: Vitest (Unit), Cypress (E2E), Ladle (Components), MSW (API Mocking — client *and* server-side)
 - **Tooling**: Biome (Lint/Format), TypeScript, Yarn v1
 
 ## Backend Architecture (Server)

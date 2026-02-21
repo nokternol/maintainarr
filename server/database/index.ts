@@ -3,9 +3,11 @@ import { DataSource } from 'typeorm';
 import type { AppConfig } from '../config';
 import { getChildLogger } from '../logger';
 import { BaseEntity } from './entities/BaseEntity';
+import { MetadataProvider } from './entities/MetadataProvider';
 import { Session } from './entities/Session';
 import { User } from './entities/User';
 import { CreateUserAndSession1770848674421 } from './migrations/1770848674421-CreateUserAndSession';
+import { CreateMetadataProvider1770848674422 } from './migrations/1770848674422-CreateMetadataProvider';
 
 const log = getChildLogger('Database');
 
@@ -36,8 +38,8 @@ export async function initializeDatabase(config: AppConfig): Promise<DataSource>
       database: dbPath,
       synchronize: false, // Use migrations in production
       logging: config.DB_LOGGING ? ['query', 'error', 'warn'] : ['error'],
-      entities: [BaseEntity, User, Session],
-      migrations: [CreateUserAndSession1770848674421],
+      entities: [BaseEntity, User, Session, MetadataProvider],
+      migrations: [CreateUserAndSession1770848674421, CreateMetadataProvider1770848674422],
       migrationsRun: config.NODE_ENV !== 'test', // Auto-run in dev/prod, manual in tests
     });
 

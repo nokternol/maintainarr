@@ -101,7 +101,7 @@ describe('Health API Integration', () => {
     });
 
     it('handles malformed JSON gracefully', async () => {
-      const response = await client.post('/api/health', 'invalid-json', {
+      const response = await client.post('/api/health', 'invalid-json' as unknown as object, {
         headers: { 'Content-Type': 'application/json' },
       });
 

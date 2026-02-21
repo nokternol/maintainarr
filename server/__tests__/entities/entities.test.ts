@@ -13,6 +13,7 @@ import 'reflect-metadata';
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, initializeDatabase } from '@server/database';
 import { BaseEntity } from '@server/database/entities/BaseEntity';
+import { MetadataProvider, MetadataProviderType } from '@server/database/entities/MetadataProvider';
 import { Session } from '@server/database/entities/Session';
 import { User, UserType } from '@server/database/entities/User';
 import { getMetadataArgsStorage } from 'typeorm';
@@ -27,6 +28,8 @@ const testConfig: AppConfig = {
   DB_PATH: ':memory:',
   DB_LOGGING: false,
   TRUST_PROXY: false,
+  TMDB_API_KEY: 'test-tmdb-key',
+  SESSION_SECRET: 'test-session-secret',
 };
 
 // ---------------------------------------------------------------------------
@@ -97,6 +100,26 @@ describe('TypeORM decorator metadata', () => {
     expect(colNames).toContain('id');
     expect(colNames).toContain('expiredAt');
     expect(colNames).toContain('json');
+  });
+
+  it('MetadataProvider entity is registered in TypeORM metadata storage', () => {
+    const storage = getMetadataArgsStorage();
+    const tableArgs = storage.tables.filter((t) => t.target === MetadataProvider);
+
+    expect(tableArgs).toHaveLength(1);
+  });
+
+  it('MetadataProvider entity has expected columns', () => {
+    const storage = getMetadataArgsStorage();
+    const cols = storage.columns.filter((c) => c.target === MetadataProvider);
+    const colNames = cols.map((c) => c.propertyName);
+
+    expect(colNames).toContain('type');
+    expect(colNames).toContain('name');
+    expect(colNames).toContain('url');
+    expect(colNames).toContain('apiKey');
+    expect(colNames).toContain('settings');
+    expect(colNames).toContain('isActive');
   });
 });
 
@@ -170,5 +193,30 @@ describe('User & Session schema (integration)', () => {
     expect(found).not.toBeNull();
     expect(found!.email).toBe('test@example.com');
     expect(found!.plexToken).toBeUndefined();
+  });
+
+  it('can save and retrieve a MetadataProvider entity', async () => {
+    const { getDataSource } = await import('@server/database');
+    const ds = getDataSource();
+    const repo = ds.getRepository(MetadataProvider);
+
+    const provider = repo.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Local Radarr',
+      url: 'http://localhost:7878',
+      apiKey: 'secret-api-key',
+      settings: { profileId: 1 },
+      isActive: true,
+    });
+
+    const saved = await repo.save(provider);
+    expect(saved.id).toBeDefined();
+    expect(saved.createdAt).toBeInstanceOf(Date);
+
+    // apiKey has select: false - not returned by default
+    const found = await repo.findOneBy({ id: saved.id });
+    expect(found).not.toBeNull();
+    expect(found!.name).toBe('Local Radarr');
+    expect(found!.apiKey).toBeUndefined();
   });
 });

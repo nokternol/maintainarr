@@ -15,8 +15,15 @@ Provide shared API mocks for all test frameworks:
 mocks/
   handlers/       # API mock handlers by domain
     index.ts      # Combined handlers array
+    auth.ts       # Auth endpoint mocks
+    backdrops.ts  # Backdrop endpoint mocks
+    radarr.ts     # Radarr API mocks (outbound)
+    sonarr.ts     # Sonarr API mocks (outbound)
+    tautulli.ts   # Tautulli API mocks (outbound)
+    jellyfin.ts   # Jellyfin API mocks (outbound)
+    overseerr.ts  # Overseerr & Seerr API mocks (outbound)
   browser.ts      # MSW browser worker (Cypress, Ladle)
-  server.ts       # MSW Node server (Vitest)
+  server.ts       # MSW Node server (Vitest — both client and server tests)
 ```
 
 ## Creating Handlers
@@ -72,9 +79,15 @@ it('handles 404', async () => {
 
 ## Test Framework Setup
 
-Handlers are initialized automatically:
-- **Vitest**: `tests/setup/vitest.ts`
-- **Cypress**: `cypress/support/e2e.ts`
-- **Ladle**: `.ladle/components.tsx`
+MSW is initialized in two places depending on the test environment:
+
+| Setup file | Environment | Purpose |
+|---|---|---|
+| `tests/setup/vitest.ts` | `happy-dom` (client tests) | Starts MSW browser worker; intercepts requests made by client-side React code |
+| `tests/setup/vitest.server.ts` | `node` (server tests) | Starts MSW node server; intercepts **outbound** `fetch`/`ky` calls made by server-side services to external APIs (Radarr, Sonarr, etc.) |
+
+The `vitest.server.ts` setup uses `onUnhandledRequest: 'warn'` so service tests that fire unexpected requests produce a console warning rather than failing the suite.
+
+Both setup files call `server.resetHandlers()` in `afterEach` so per-test overrides don't leak.
 
 See [../TESTING.md](../../TESTING.md) for architecture details.

@@ -85,7 +85,11 @@ export function createExampleHandlers({ exampleService }: { exampleService: Exam
 
 ## Testing Services
 
-Services are tested without Express. Pass mock dependencies via constructor:
+Services are tested without Express. There are two patterns depending on service type:
+
+### Internal Services (DataSource-backed)
+
+Pass mock dependencies via constructor:
 
 ```typescript
 const mockDataSource = {
@@ -98,11 +102,44 @@ const service = new ExampleService(mockDataSource);
 await expect(service.getById(999)).rejects.toThrow(NotFoundError);
 ```
 
+### External Services (extending `BaseMetadataProvider`)
+
+External service tests use **MSW** to mock the network layer — not the `ky` client itself. This tests actual URL construction, headers, and response parsing against a real HTTP shape.
+
+```typescript
+// tests/mocks/handlers/example.ts
+import { http, HttpResponse } from 'msw';
+export const exampleHandlers = [
+  http.get('http://localhost:1234/api/v1/items', () =>
+    HttpResponse.json([{ id: 1, name: 'foo' }])
+  ),
+];
+
+// server/__tests__/services/exampleService.test.ts
+// MSW is started automatically via tests/setup/vitest.server.ts
+it('fetches items', async () => {
+  const service = new ExampleService(mockProvider, logger);
+  const items = await service.getItems();
+  expect(items[0].name).toBe('foo');
+});
+```
+
+The MSW node server is started for all server tests via `tests/setup/vitest.server.ts`. Handlers are declared in `tests/mocks/handlers/` and registered in `tests/mocks/handlers/index.ts`.
+
 ## Service Lifetime
 
-Services are registered as `.scoped()` in Awilix, meaning:
-- A new instance is created per HTTP request
-- Each request gets its own isolated service instances
-- Services can safely maintain per-request state (like request-specific logging metadata)
+Services registered in Awilix can be:
+- **`.scoped()`** — new instance per HTTP request (default; safe for per-request state)
+- **`.singleton()`** — shared across all requests (use for caches, connection pools)
 
-If you need a singleton service (e.g., caching, connection pools), use `.singleton()` instead.
+## External Service Integrations
+
+Media server integrations (Radarr, Sonarr, Tautulli, Jellyfin, Overseerr, Seerr) extend `BaseMetadataProvider` rather than the standard pattern above.
+
+- **`BaseMetadataProvider`** (`server/services/baseMetadataProvider.ts`) — abstract base class providing a pre-configured [`ky`](https://github.com/sindresorhus/ky) instance (Node 24 native `fetch` wrapper). Handles `prefixUrl` construction from the stored URL + optional `urlBase` setting, 10s timeout, JSON `Accept` header, and error logging hooks.
+- Individual services extend it and call `this.client.get('endpoint').json<T>()` — no auth boilerplate needed per-method.
+- **Auth patterns**:
+  - Radarr/Sonarr/Tautulli: API key as `?apikey=` query param
+  - Jellyfin: `X-Emby-Authorization` header
+  - Overseerr/Seerr: `X-Api-Key` header
+- Connection config (URL, API key, settings) is stored in the `MetadataProvider` database entity.
