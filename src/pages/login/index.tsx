@@ -46,7 +46,7 @@ export default function LoginPage() {
       {/* Background with Theme Tint */}
       <div className="absolute inset-0 z-0">
         <ImageFader images={backdrops || []} className="opacity-100 dark:opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/20 to-slate-50/80 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/5 to-slate-50/20 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
@@ -74,14 +74,17 @@ export default function LoginPage() {
         )}
 
         {/* Login Card */}
-        <div className="bg-surface-panel/60 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-2xl">
-          <div className="bg-primary/10 py-2 border-b border-border">
+        <div className="relative bg-surface-panel/80 dark:bg-surface-panel/60 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-2xl">
+          {/* Subtle contrast gradient for light mode */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/10 dark:opacity-0 pointer-events-none" />
+
+          <div className="relative bg-primary/10 py-2 border-b border-border">
             <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
               Authorized Access Only
             </span>
           </div>
 
-          <div className="p-8">
+          <div className="relative p-8">
             <button
               type="button"
               onClick={handlePlexLogin}
@@ -91,7 +94,7 @@ export default function LoginPage() {
               <span>Sign in with Plex</span>
             </button>
 
-            <p className="mt-6 text-xs text-text-muted">
+            <p className="mt-6 text-xs text-text-secondary dark:text-text-muted font-medium">
               By signing in, you agree to your server's automation policies.
             </p>
           </div>
