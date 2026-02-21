@@ -42,30 +42,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-surface-bg px-6">
-      {/* Background with Theme Tint */}
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
+      {/* Background with Cinematic Tint */}
       <div className="absolute inset-0 z-0">
-        <ImageFader images={backdrops || []} className="opacity-100 dark:opacity-50" />
-        {/* Base wash */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/5 to-slate-50/30 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
+        <ImageFader images={backdrops || []} className="opacity-50" />
+        {/* Base cinematic wash */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/30 via-slate-950/50 to-slate-950/90" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
         {/* SVG Logo Container */}
         <div className="mb-6 flex justify-center">
-          <div className="p-4 rounded-3xl bg-surface-panel/80 border border-primary/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+          <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
             {/* SVG Logo here */}
             <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
-        <div className="inline-block p-6 rounded-3xl bg-surface-bg/60 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none border border-white/20 dark:border-transparent mb-6 shadow-xl dark:shadow-none">
-          <h1 className="text-4xl font-black text-text-primary tracking-tighter mb-2 uppercase drop-shadow-sm dark:drop-shadow-none">
-            Maintain<span className="text-primary">arr</span>
+        <div className="inline-block p-6 rounded-3xl mb-6">
+          <h1 className="text-4xl font-black text-slate-50 tracking-tighter mb-2 uppercase">
+            Maintain<span className="text-teal-500">arr</span>
           </h1>
-          <p className="text-text-primary dark:text-text-muted text-sm font-medium tracking-wide px-4 leading-relaxed max-w-sm mx-auto">
+          <p className="text-slate-400 text-sm font-medium tracking-wide px-4 leading-relaxed max-w-sm mx-auto">
             Task automation and metadata-driven grouping <br /> for the{' '}
-            <span className="text-primary italic">*arr ecosystem</span>
+            <span className="text-teal-500 italic">*arr ecosystem</span>
           </p>
         </div>
 
@@ -77,9 +77,9 @@ export default function LoginPage() {
         )}
 
         {/* Login Card */}
-        <div className="bg-surface-panel/60 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-2xl">
-          <div className="bg-primary/10 py-2 border-b border-border">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-teal-600/10 py-2 border-b border-slate-800">
+            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-teal-500">
               Authorized Access Only
             </span>
           </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
               <span>Sign in with Plex</span>
             </button>
 
-            <p className="mt-6 text-xs text-text-secondary dark:text-text-muted font-medium bg-surface-bg/50 dark:bg-transparent px-3 py-1.5 rounded-md inline-block">
+            <p className="mt-6 text-xs text-slate-400 font-medium">
               By signing in, you agree to your server's automation policies.
             </p>
           </div>
