@@ -9,6 +9,9 @@ export enum MetadataProviderType {
   JELLYFIN = 'JELLYFIN',
   OVERSEERR = 'OVERSEERR',
   SEERR = 'SEERR',
+  TMDB = 'TMDB',
+  OMDB = 'OMDB',
+  TVMAZE = 'TVMAZE',
 }
 
 @Entity()

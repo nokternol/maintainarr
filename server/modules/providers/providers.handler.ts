@@ -1,11 +1,15 @@
 import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
+import { OmdbProvider } from '@server/providers/omdbProvider';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
+import { TmdbProvider } from '@server/providers/tmdbProvider';
+import { TvMazeProvider } from '@server/providers/tvmazeProvider';
+import { RatingsAggregationService } from '@server/services/ratingsAggregationService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { providersSchemas } from './providers.schemas';
 
@@ -35,6 +39,8 @@ function makeEntity(
 }
 
 export function createProvidersHandlers(_cradle: object) {
+  const ratingsService = new RatingsAggregationService();
+
   return {
     getMetadata: defineRoute({
       schemas: providersSchemas.getMetadata,
@@ -96,6 +102,84 @@ export function createProvidersHandlers(_cradle: object) {
             return { type, data: { requests } };
           }
         }
+      },
+    }),
+
+    getRatings: defineRoute({
+      schemas: providersSchemas.getRatings,
+      handler: async ({ query }) => {
+        const { title, year, tmdbApiKey, omdbApiKey } = query;
+
+        log.debug('Fetching aggregated ratings', { title, year });
+
+        // Fetch from all providers in parallel (gracefully handle failures)
+        const [tmdbRating, omdbRating, tvmazeRating] = await Promise.all([
+          // TMDB
+          tmdbApiKey
+            ? (async () => {
+                try {
+                  const provider = new TmdbProvider(
+                    makeEntity(
+                      MetadataProviderType.TMDB,
+                      'https://api.themoviedb.org/3',
+                      tmdbApiKey,
+                      {}
+                    ),
+                    log
+                  );
+                  return await provider.getRatings(title, year);
+                } catch (error) {
+                  log.warn('TMDB fetch failed', { error });
+                  return { source: 'tmdb' as const, found: false };
+                }
+              })()
+            : Promise.resolve(undefined),
+
+          // OMDB
+          omdbApiKey
+            ? (async () => {
+                try {
+                  const provider = new OmdbProvider(
+                    makeEntity(
+                      MetadataProviderType.OMDB,
+                      'https://www.omdbapi.com',
+                      omdbApiKey,
+                      {}
+                    ),
+                    log
+                  );
+                  return await provider.getRatings(title, year);
+                } catch (error) {
+                  log.warn('OMDB fetch failed', { error });
+                  return { source: 'omdb' as const, found: false };
+                }
+              })()
+            : Promise.resolve(undefined),
+
+          // TVMaze (no API key needed!)
+          (async () => {
+            try {
+              const provider = new TvMazeProvider(
+                makeEntity(MetadataProviderType.TVMAZE, 'https://api.tvmaze.com', '', {}),
+                log
+              );
+              return await provider.getRatings(title, year);
+            } catch (error) {
+              log.warn('TVMaze fetch failed', { error });
+              return { source: 'tvmaze' as const, found: false };
+            }
+          })(),
+        ]);
+
+        const aggregated = ratingsService.aggregate(
+          title,
+          year,
+          tmdbRating,
+          omdbRating,
+          tvmazeRating
+        );
+
+        return aggregated;
       },
     }),
   };

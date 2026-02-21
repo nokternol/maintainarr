@@ -71,6 +71,36 @@ const RESPONSE_BY_TYPE: Record<string, unknown> = {
   OVERSEERR: OVERSEERR_RESPONSE,
 };
 
+const RATINGS_RESPONSE = {
+  title: 'Breaking Bad',
+  year: 2008,
+  tmdb: {
+    source: 'tmdb',
+    tvRating: 8.9,
+    tvVotes: 5234,
+    popularity: 123.45,
+    found: true,
+  },
+  omdb: {
+    source: 'omdb',
+    imdbRating: 9.5,
+    imdbVotes: 1823456,
+    rottenTomatoesRating: 96,
+    metacriticRating: 99,
+    found: true,
+  },
+  tvmaze: {
+    source: 'tvmaze',
+    rating: 9.1,
+    found: true,
+  },
+  summary: {
+    averageRating: 9.17,
+    totalSources: 3,
+    foundSources: 3,
+  },
+};
+
 export const providersHandlers = [
   http.get('/api/providers/metadata', ({ request }) => {
     const url = new URL(request.url);
@@ -95,5 +125,22 @@ export const providersHandlers = [
     }
 
     return HttpResponse.json({ status: 'ok', data });
+  }),
+
+  http.get('/api/providers/ratings', ({ request }) => {
+    const url = new URL(request.url);
+    const title = url.searchParams.get('title');
+
+    if (!title) {
+      return HttpResponse.json(
+        {
+          status: 'error',
+          error: { type: 'VALIDATION_ERROR', message: 'Title is required' },
+        },
+        { status: 400 }
+      );
+    }
+
+    return HttpResponse.json({ status: 'ok', data: RATINGS_RESPONSE });
   }),
 ];
