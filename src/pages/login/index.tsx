@@ -46,7 +46,7 @@ export default function LoginPage() {
       {/* Background with Theme Tint */}
       <div className="absolute inset-0 z-0">
         <ImageFader images={backdrops || []} className="opacity-100 dark:opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/40 to-slate-50/90 dark:from-teal-600/30 dark:via-slate-950/60 dark:to-slate-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/20 to-slate-50/80 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
