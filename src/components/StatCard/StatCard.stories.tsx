@@ -35,19 +35,19 @@ const ChartIcon = () => (
 );
 
 export const BasicNumber: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard value={142} label="Active Tasks" />
   </div>
 );
 
 export const WithIcon: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard value={142} label="Active Tasks" icon={<TaskIcon />} />
   </div>
 );
 
 export const WithTrendUp: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard
       value={142}
       label="Active Tasks"
@@ -58,7 +58,7 @@ export const WithTrendUp: Story = () => (
 );
 
 export const WithTrendDown: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard
       value={89}
       label="Pending Items"
@@ -69,7 +69,7 @@ export const WithTrendDown: Story = () => (
 );
 
 export const WithSubtitle: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard
       value={28}
       label="Collections"
@@ -80,13 +80,13 @@ export const WithSubtitle: Story = () => (
 );
 
 export const StringValue: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard value="Running" label="System Status" subtitle="All services operational" />
   </div>
 );
 
 export const AllFeatures: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <StatCard
       value={1248}
       label="Total Items"
@@ -98,7 +98,7 @@ export const AllFeatures: Story = () => (
 );
 
 export const GridExample: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         value={142}

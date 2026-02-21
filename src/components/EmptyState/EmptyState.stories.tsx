@@ -24,13 +24,13 @@ const FolderIcon = () => (
 );
 
 export const Basic: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <EmptyState title="No items found" />
   </div>
 );
 
 export const WithDescription: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <EmptyState
       title="No items found"
       description="There are no items to display at this time. Try adjusting your filters or creating a new item."
@@ -39,7 +39,7 @@ export const WithDescription: Story = () => (
 );
 
 export const WithIcon: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <EmptyState
       icon={<InboxIcon />}
       title="Your inbox is empty"
@@ -49,7 +49,7 @@ export const WithIcon: Story = () => (
 );
 
 export const WithAction: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <EmptyState
       icon={<FolderIcon />}
       title="No collections yet"
@@ -63,8 +63,8 @@ export const WithAction: Story = () => (
 );
 
 export const InCard: Story = () => (
-  <div className="bg-slate-950 p-8">
-    <div className="bg-slate-900 rounded-lg border border-slate-700 min-h-[400px]">
+  <div className="bg-surface-bg p-8">
+    <div className="bg-surface-panel rounded-lg border border-border border min-h-[400px]">
       <EmptyState
         icon={<InboxIcon />}
         title="No results"
@@ -79,7 +79,7 @@ export const InCard: Story = () => (
 );
 
 export const MinimalWithAction: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <EmptyState
       title="No data available"
       action={{

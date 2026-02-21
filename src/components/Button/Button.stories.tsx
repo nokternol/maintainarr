@@ -12,7 +12,7 @@ export const ThemeShowcase: Story = () => (
   <div className="flex flex-col gap-8 p-8">
     {/* Light Mode Section */}
     <div className="p-8 rounded-xl bg-surface border border-gray-200">
-      <h3 className="text-slate-950 font-bold mb-4">Light Mode Surface (gray-50)</h3>
+      <h3 className="text-text-primary font-bold mb-4">Light Mode Surface (gray-50)</h3>
       <div className="flex gap-4 p-6 bg-white rounded-lg shadow-sm border border-gray-100">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
@@ -21,7 +21,7 @@ export const ThemeShowcase: Story = () => (
 
     {/* Dark Mode Section */}
     <div className="p-8 rounded-xl bg-surface-dark dark">
-      <h3 className="text-white font-bold mb-4">Dark Mode Surface (slate-950)</h3>
+      <h3 className="text-text-primary font-bold mb-4">Dark Mode Surface (slate-950)</h3>
       <div className="flex gap-4 p-6 bg-surface-panel rounded-lg border border-gray-800">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>

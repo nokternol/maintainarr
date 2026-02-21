@@ -20,8 +20,8 @@ styles/
 
 Dark theme with teal accent colors:
 
-- **Background**: `slate-950` (very dark blue-gray)
-- **Surface**: `slate-900` (dark panel background)
+- **Background**: `surface-bg` (Very dark blue-gray in dark mode, light slate in light mode)
+- **Surface**: `surface-panel` (Dark panel background in dark mode, white in light mode)
 - **Primary**: `teal-600` (accent color)
 - **Text**: `white` / `gray-400`
 
@@ -29,7 +29,7 @@ Dark theme with teal accent colors:
 
 ```typescript
 // Utility classes
-<div className="bg-slate-950 text-white p-4 rounded-lg">
+<div className="bg-surface-bg text-text-primary p-4 rounded-lg">
   <Button className="bg-teal-600 hover:bg-teal-700">
     Click me
   </Button>
@@ -37,7 +37,7 @@ Dark theme with teal accent colors:
 
 // Custom surface colors (defined in tailwind.config.js)
 <div className="bg-surface">         {/* gray-50 */}
-<div className="dark:bg-surface-dark"> {/* slate-950 */}
+<div className="dark:bg-surface-bg"> {/* slate.950 equivalent mapping */}
 ```
 
 ## Customizing Theme

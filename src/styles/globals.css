@@ -18,32 +18,32 @@
     --color-danger-active: #b91c1c;
     /* red.700 */
 
-    --color-surface-bg: #f9fafb;
-    /* gray.50 */
+    --color-surface-bg: #f8fafc;
+    /* slate.50 */
     --color-surface-panel: #ffffff;
-    --color-text-primary: #111827;
-    /* gray.900 */
-    --color-text-secondary: #4b5563;
-    /* gray.600 */
-    --color-text-muted: #9ca3af;
-    /* gray.400 */
-    --color-border: #e5e7eb;
-    /* gray.200 */
+    --color-text-primary: #0f172a;
+    /* slate.900 */
+    --color-text-secondary: #475569;
+    /* slate.600 */
+    --color-text-muted: #94a3b8;
+    /* slate.400 */
+    --color-border: #e2e8f0;
+    /* slate.200 */
   }
 
   .dark {
     --color-surface-bg: #020617;
     /* slate.950 */
-    --color-surface-panel: #111827;
-    /* gray.900 */
-    --color-text-primary: #f9fafb;
-    /* gray.50 */
-    --color-text-secondary: #9ca3af;
-    /* gray.400 */
-    --color-text-muted: #6b7280;
-    /* gray.500 */
-    --color-border: #1f2937;
-    /* gray.800 */
+    --color-surface-panel: #0f172a;
+    /* slate.900 */
+    --color-text-primary: #f8fafc;
+    /* slate.50 */
+    --color-text-secondary: #94a3b8;
+    /* slate.400 */
+    --color-text-muted: #64748b;
+    /* slate.500 */
+    --color-border: #1e293b;
+    /* slate.800 */
   }
 
   body {

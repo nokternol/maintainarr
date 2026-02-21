@@ -42,28 +42,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
-      {/* Background with Teal Tint */}
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-surface-bg px-6">
+      {/* Background with Theme Tint */}
       <div className="absolute inset-0 z-0">
         <ImageFader images={backdrops || []} className="opacity-60" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 via-slate-950/50 to-slate-950/80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-surface-bg/50 to-surface-bg/90" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
         {/* SVG Logo Container */}
         <div className="mb-6 flex justify-center">
-          <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+          <div className="p-4 rounded-3xl bg-surface-panel/80 border border-primary/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
             {/* SVG Logo here */}
             <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
-        <h1 className="text-4xl font-black text-white tracking-tighter mb-2 uppercase">
-          Maintain<span className="text-teal-400">arr</span>
+        <h1 className="text-4xl font-black text-text-primary tracking-tighter mb-2 uppercase">
+          Maintain<span className="text-primary">arr</span>
         </h1>
-        <p className="text-slate-400 text-sm font-medium tracking-wide mb-10 px-4 leading-relaxed">
+        <p className="text-text-muted text-sm font-medium tracking-wide mb-10 px-4 leading-relaxed">
           Task automation and metadata-driven grouping <br /> for the{' '}
-          <span className="text-teal-500 italic">*arr ecosystem</span>
+          <span className="text-primary italic">*arr ecosystem</span>
         </p>
 
         {error && (
@@ -74,9 +74,9 @@ export default function LoginPage() {
         )}
 
         {/* Login Card */}
-        <div className="dark:bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-          <div className="bg-teal-500/10 py-2 border-b border-white/5">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-teal-400">
+        <div className="bg-surface-panel/60 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-primary/10 py-2 border-b border-border">
+            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
               Authorized Access Only
             </span>
           </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
               <span>Sign in with Plex</span>
             </button>
 
-            <p className="mt-6 text-xs text-slate-500">
+            <p className="mt-6 text-xs text-text-muted">
               By signing in, you agree to your server's automation policies.
             </p>
           </div>

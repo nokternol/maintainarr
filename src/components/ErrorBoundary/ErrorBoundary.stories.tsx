@@ -10,9 +10,9 @@ function BuggyComponent({ shouldThrow }: { shouldThrow: boolean }) {
     throw new Error('This component intentionally crashed!');
   }
   return (
-    <div className="p-8 bg-slate-900 rounded-lg">
+    <div className="p-8 bg-surface-panel rounded-lg">
       <h2 className="text-xl font-semibold text-green-400 mb-2">Component Working!</h2>
-      <p className="text-slate-400">Everything is functioning normally.</p>
+      <p className="text-text-muted">Everything is functioning normally.</p>
     </div>
   );
 }
@@ -22,11 +22,11 @@ export const Interactive: Story = () => {
   const [shouldThrow, setShouldThrow] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8">
+    <div className="min-h-screen bg-surface-bg p-8">
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-2">Error Boundary Demo</h3>
-          <p className="text-slate-400 text-sm mb-4">
+        <div className="bg-surface-panel p-4 rounded-lg border border-border border">
+          <h3 className="text-lg font-semibold text-text-primary mb-2">Error Boundary Demo</h3>
+          <p className="text-text-muted text-sm mb-4">
             Click the button to trigger an error in the component below. The ErrorBoundary will
             catch it and show a fallback UI instead of crashing the entire app.
           </p>
@@ -61,7 +61,7 @@ export const WithErrorFallback: Story = () => (
 export const CustomFallback: Story = () => (
   <ErrorBoundary
     fallback={(error, reset) => (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-bg flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-orange-900/20 border border-orange-700 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-orange-400 mb-2">🔥 Custom Error Handler</h2>
           <p className="text-orange-200 text-sm mb-4">
@@ -69,7 +69,7 @@ export const CustomFallback: Story = () => (
           </p>
           <details className="mb-4">
             <summary className="text-sm text-orange-300 cursor-pointer">Error message</summary>
-            <pre className="mt-2 text-xs text-orange-100 bg-slate-950 p-2 rounded overflow-auto">
+            <pre className="mt-2 text-xs text-orange-100 bg-surface-bg p-2 rounded overflow-auto">
               {error.message}
             </pre>
           </details>
@@ -90,20 +90,20 @@ export const NestedBoundaries: Story = () => {
       throw new Error(`Widget ${id} crashed!`);
     }
     return (
-      <div className="bg-slate-800 p-4 rounded border border-slate-700">
-        <h3 className="text-white font-medium">Widget {id}</h3>
-        <p className="text-slate-400 text-sm mt-1">Working normally</p>
+      <div className="bg-surface-panel p-4 rounded border border-border border">
+        <h3 className="text-text-primary font-medium">Widget {id}</h3>
+        <p className="text-text-muted text-sm mt-1">Working normally</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8">
+    <div className="min-h-screen bg-surface-bg p-8">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-white mb-6">
+        <h2 className="text-2xl font-bold text-text-primary mb-6">
           Dashboard with Isolated Error Boundaries
         </h2>
-        <p className="text-slate-400 mb-8">
+        <p className="text-text-muted mb-8">
           Each widget has its own ErrorBoundary. If one crashes, the others keep working.
         </p>
 
@@ -185,11 +185,11 @@ export const WithErrorLogging: Story = () => {
   const [logs, setLogs] = useState<string[]>([]);
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8">
+    <div className="min-h-screen bg-surface-bg p-8">
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-2">Error Logging Demo</h3>
-          <p className="text-slate-400 text-sm">
+        <div className="bg-surface-panel p-4 rounded-lg border border-border border">
+          <h3 className="text-lg font-semibold text-text-primary mb-2">Error Logging Demo</h3>
+          <p className="text-text-muted text-sm">
             The onError callback is triggered when an error is caught. In production, this would
             send errors to a logging service.
           </p>
@@ -209,11 +209,11 @@ export const WithErrorLogging: Story = () => {
         </ErrorBoundary>
 
         {logs.length > 0 && (
-          <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-            <h4 className="text-white font-medium mb-2">Error Logs:</h4>
+          <div className="bg-surface-panel p-4 rounded-lg border border-border border">
+            <h4 className="text-text-primary font-medium mb-2">Error Logs:</h4>
             <div className="space-y-1">
               {logs.map((log, i) => (
-                <p key={i} className="text-xs text-slate-400 font-mono">
+                <p key={i} className="text-xs text-text-muted font-mono">
                   {log}
                 </p>
               ))}

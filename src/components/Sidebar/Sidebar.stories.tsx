@@ -106,7 +106,7 @@ const bottomItems: SidebarItem[] = [
 ];
 
 export const Basic: Story = () => (
-  <div className="bg-slate-950 h-screen">
+  <div className="bg-surface-bg h-screen">
     <div className="h-full w-64">
       <Sidebar items={sampleItems} />
     </div>
@@ -114,7 +114,7 @@ export const Basic: Story = () => (
 );
 
 export const WithBottomItems: Story = () => (
-  <div className="bg-slate-950 h-screen">
+  <div className="bg-surface-bg h-screen">
     <div className="h-full w-64">
       <Sidebar items={sampleItems} bottomItems={bottomItems} />
     </div>
@@ -122,17 +122,17 @@ export const WithBottomItems: Story = () => (
 );
 
 export const WithLogo: Story = () => (
-  <div className="bg-slate-950 h-screen">
+  <div className="bg-surface-bg h-screen">
     <div className="h-full w-64">
       <Sidebar
         items={sampleItems}
         bottomItems={bottomItems}
         logo={
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">
+            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-text-primary font-bold">
               M
             </div>
-            <span className="text-xl font-bold text-white">Maintainarr</span>
+            <span className="text-xl font-bold text-text-primary">Maintainarr</span>
           </div>
         }
       />
@@ -141,7 +141,7 @@ export const WithLogo: Story = () => (
 );
 
 export const WithBadges: Story = () => (
-  <div className="bg-slate-950 h-screen">
+  <div className="bg-surface-bg h-screen">
     <div className="h-full w-64">
       <Sidebar
         items={[
@@ -162,24 +162,24 @@ export const WithBadges: Story = () => (
             badge: 3,
           },
         ]}
-        logo={<div className="text-lg font-bold text-white">Badge Example</div>}
+        logo={<div className="text-lg font-bold text-text-primary">Badge Example</div>}
       />
     </div>
   </div>
 );
 
 export const DifferentActiveStates: Story = () => (
-  <div className="bg-slate-950 h-screen flex gap-4 p-4">
+  <div className="bg-surface-bg h-screen flex gap-4 p-4">
     <div className="h-full w-64">
       <Sidebar
         items={sampleItems.map((item, i) => ({ ...item, active: i === 0 }))}
-        logo={<div className="text-white font-bold">Dashboard Active</div>}
+        logo={<div className="text-text-primary font-bold">Dashboard Active</div>}
       />
     </div>
     <div className="h-full w-64">
       <Sidebar
         items={sampleItems.map((item, i) => ({ ...item, active: i === 1 }))}
-        logo={<div className="text-white font-bold">Tasks Active</div>}
+        logo={<div className="text-text-primary font-bold">Tasks Active</div>}
       />
     </div>
   </div>

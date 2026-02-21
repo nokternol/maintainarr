@@ -15,7 +15,7 @@ const StarIcon = () => (
 );
 
 export const ExtraSmall: Story = () => (
-  <div className="bg-slate-950 p-8 text-white">
+  <div className="bg-surface-bg p-8 text-text-primary">
     <Icon size="xs">
       <CheckIcon />
     </Icon>
@@ -23,7 +23,7 @@ export const ExtraSmall: Story = () => (
 );
 
 export const Small: Story = () => (
-  <div className="bg-slate-950 p-8 text-white">
+  <div className="bg-surface-bg p-8 text-text-primary">
     <Icon size="sm">
       <CheckIcon />
     </Icon>
@@ -31,7 +31,7 @@ export const Small: Story = () => (
 );
 
 export const Medium: Story = () => (
-  <div className="bg-slate-950 p-8 text-white">
+  <div className="bg-surface-bg p-8 text-text-primary">
     <Icon size="md">
       <CheckIcon />
     </Icon>
@@ -39,7 +39,7 @@ export const Medium: Story = () => (
 );
 
 export const Large: Story = () => (
-  <div className="bg-slate-950 p-8 text-white">
+  <div className="bg-surface-bg p-8 text-text-primary">
     <Icon size="lg">
       <CheckIcon />
     </Icon>
@@ -47,7 +47,7 @@ export const Large: Story = () => (
 );
 
 export const ExtraLarge: Story = () => (
-  <div className="bg-slate-950 p-8 text-white">
+  <div className="bg-surface-bg p-8 text-text-primary">
     <Icon size="xl">
       <CheckIcon />
     </Icon>
@@ -55,7 +55,7 @@ export const ExtraLarge: Story = () => (
 );
 
 export const AllSizes: Story = () => (
-  <div className="bg-slate-950 p-8 flex items-center gap-4 text-teal-400">
+  <div className="bg-surface-bg p-8 flex items-center gap-4 text-teal-400">
     <Icon size="xs">
       <CheckIcon />
     </Icon>
@@ -75,7 +75,7 @@ export const AllSizes: Story = () => (
 );
 
 export const ColoredIcons: Story = () => (
-  <div className="bg-slate-950 p-8 flex gap-4">
+  <div className="bg-surface-bg p-8 flex gap-4">
     <Icon size="lg" className="text-teal-400">
       <StarIcon />
     </Icon>

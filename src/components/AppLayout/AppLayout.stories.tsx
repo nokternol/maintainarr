@@ -76,9 +76,9 @@ const bottomItems: SidebarItem[] = [
 
 export const BasicWithContent: Story = () => (
   <AppLayout>
-    <div className="p-6 text-white">
+    <div className="p-6 text-text-primary">
       <h2 className="text-2xl font-bold mb-4">Main Content</h2>
-      <p className="text-slate-400">This is the main content area without sidebar or top bar.</p>
+      <p className="text-text-muted">This is the main content area without sidebar or top bar.</p>
     </div>
   </AppLayout>
 );
@@ -91,18 +91,18 @@ export const WithSidebar: Story = () => (
         bottomItems={bottomItems}
         logo={
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">
+            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-text-primary font-bold">
               M
             </div>
-            <span className="text-xl font-bold text-white">Maintainarr</span>
+            <span className="text-xl font-bold text-text-primary">Maintainarr</span>
           </div>
         }
       />
     }
   >
-    <div className="p-6 text-white">
+    <div className="p-6 text-text-primary">
       <h2 className="text-2xl font-bold mb-4">Main Content</h2>
-      <p className="text-slate-400">This layout includes a sidebar.</p>
+      <p className="text-text-muted">This layout includes a sidebar.</p>
     </div>
   </AppLayout>
 );
@@ -113,16 +113,16 @@ export const WithTopBar: Story = () => (
       <TopBar
         title="Dashboard"
         actions={
-          <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
+          <button className="px-4 py-2 bg-primary hover:bg-primary-hover text-text-primary rounded-lg transition-colors">
             New Task
           </button>
         }
       />
     }
   >
-    <div className="p-6 text-white">
+    <div className="p-6 text-text-primary">
       <h2 className="text-2xl font-bold mb-4">Main Content</h2>
-      <p className="text-slate-400">This layout includes a top bar.</p>
+      <p className="text-text-muted">This layout includes a top bar.</p>
     </div>
   </AppLayout>
 );
@@ -135,10 +135,10 @@ export const CompleteLayout: Story = () => (
         bottomItems={bottomItems}
         logo={
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">
+            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-text-primary font-bold">
               M
             </div>
-            <span className="text-xl font-bold text-white">Maintainarr</span>
+            <span className="text-xl font-bold text-text-primary">Maintainarr</span>
           </div>
         }
       />
@@ -148,7 +148,7 @@ export const CompleteLayout: Story = () => (
         title="Dashboard"
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Dashboard' }]}
         actions={
-          <button className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
+          <button className="px-4 py-2 bg-primary hover:bg-primary-hover text-text-primary rounded-lg transition-colors">
             New Task
           </button>
         }
@@ -170,9 +170,9 @@ export const CompleteLayout: Story = () => (
         <div className="col-span-1 md:col-span-2 lg:col-span-4">
           <Card
             variant="outlined"
-            header={<h3 className="text-white font-semibold">Recent Tasks</h3>}
+            header={<h3 className="text-text-primary font-semibold">Recent Tasks</h3>}
           >
-            <div className="text-slate-400">Task list content would go here...</div>
+            <div className="text-text-muted">Task list content would go here...</div>
           </Card>
         </div>
       </WidgetGrid>
@@ -185,7 +185,7 @@ export const ScrollableContent: Story = () => (
     sidebar={
       <Sidebar
         items={sampleItems}
-        logo={<div className="text-xl font-bold text-white">Maintainarr</div>}
+        logo={<div className="text-xl font-bold text-text-primary">Maintainarr</div>}
       />
     }
     topBar={<TopBar title="Scrollable Page" sticky={true} />}
@@ -193,8 +193,8 @@ export const ScrollableContent: Story = () => (
     <div className="p-6 space-y-4">
       {Array.from({ length: 30 }, (_, i) => (
         <Card key={i} variant="outlined">
-          <p className="text-white">Content block {i + 1}</p>
-          <p className="text-slate-400 text-sm">
+          <p className="text-text-primary">Content block {i + 1}</p>
+          <p className="text-text-muted text-sm">
             This demonstrates scrollable content with a sticky top bar.
           </p>
         </Card>

@@ -2,11 +2,13 @@ import type { Story } from '@ladle/react';
 import WidgetGrid from './index';
 
 const DemoWidget = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-slate-900 rounded-lg p-6 border border-slate-700 text-white">{children}</div>
+  <div className="bg-surface-panel rounded-lg p-6 border border-border border text-text-primary">
+    {children}
+  </div>
 );
 
 export const OneColumn: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={1}>
       <DemoWidget>Widget 1</DemoWidget>
       <DemoWidget>Widget 2</DemoWidget>
@@ -16,7 +18,7 @@ export const OneColumn: Story = () => (
 );
 
 export const TwoColumns: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={2}>
       <DemoWidget>Widget 1</DemoWidget>
       <DemoWidget>Widget 2</DemoWidget>
@@ -27,7 +29,7 @@ export const TwoColumns: Story = () => (
 );
 
 export const ThreeColumns: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={3}>
       <DemoWidget>Widget 1</DemoWidget>
       <DemoWidget>Widget 2</DemoWidget>
@@ -40,7 +42,7 @@ export const ThreeColumns: Story = () => (
 );
 
 export const FourColumns: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={4}>
       <DemoWidget>Widget 1</DemoWidget>
       <DemoWidget>Widget 2</DemoWidget>
@@ -55,7 +57,7 @@ export const FourColumns: Story = () => (
 );
 
 export const SmallGap: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={3} gap="sm">
       <DemoWidget>Small gap</DemoWidget>
       <DemoWidget>Small gap</DemoWidget>
@@ -65,7 +67,7 @@ export const SmallGap: Story = () => (
 );
 
 export const MediumGap: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={3} gap="md">
       <DemoWidget>Medium gap (default)</DemoWidget>
       <DemoWidget>Medium gap (default)</DemoWidget>
@@ -75,7 +77,7 @@ export const MediumGap: Story = () => (
 );
 
 export const LargeGap: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={3} gap="lg">
       <DemoWidget>Large gap</DemoWidget>
       <DemoWidget>Large gap</DemoWidget>
@@ -85,34 +87,34 @@ export const LargeGap: Story = () => (
 );
 
 export const DashboardExample: Story = () => (
-  <div className="bg-slate-950 p-8">
+  <div className="bg-surface-bg p-8">
     <WidgetGrid columns={4}>
       <DemoWidget>
-        <div className="text-sm text-slate-500 mb-1">Active Tasks</div>
+        <div className="text-sm text-text-muted mb-1">Active Tasks</div>
         <div className="text-3xl font-bold">142</div>
       </DemoWidget>
       <DemoWidget>
-        <div className="text-sm text-slate-500 mb-1">Collections</div>
+        <div className="text-sm text-text-muted mb-1">Collections</div>
         <div className="text-3xl font-bold">28</div>
       </DemoWidget>
       <DemoWidget>
-        <div className="text-sm text-slate-500 mb-1">System Status</div>
+        <div className="text-sm text-text-muted mb-1">System Status</div>
         <div className="text-3xl font-bold">Running</div>
       </DemoWidget>
       <DemoWidget>
-        <div className="text-sm text-slate-500 mb-1">Recent Activity</div>
+        <div className="text-sm text-text-muted mb-1">Recent Activity</div>
         <div className="text-3xl font-bold">5</div>
       </DemoWidget>
       <div className="col-span-1 md:col-span-2">
         <DemoWidget>
           <div className="text-lg font-semibold mb-2">Recent Tasks</div>
-          <div className="text-slate-400">Task list content...</div>
+          <div className="text-text-muted">Task list content...</div>
         </DemoWidget>
       </div>
       <div className="col-span-1 md:col-span-2 lg:col-span-2">
         <DemoWidget>
           <div className="text-lg font-semibold mb-2">Activity Feed</div>
-          <div className="text-slate-400">Activity content...</div>
+          <div className="text-text-muted">Activity content...</div>
         </DemoWidget>
       </div>
     </WidgetGrid>

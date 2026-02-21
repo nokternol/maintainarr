@@ -206,10 +206,10 @@ export default function DashboardPage() {
           bottomItems={bottomItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-text-primary font-bold">
                 M
               </div>
-              <span className="text-xl font-bold text-white">Maintainarr</span>
+              <span className="text-xl font-bold text-text-primary">Maintainarr</span>
             </div>
           }
         />
@@ -221,7 +221,7 @@ export default function DashboardPage() {
           actions={
             <button
               type="button"
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-bg"
             >
               New Task
             </button>
@@ -261,25 +261,25 @@ export default function DashboardPage() {
             variant="outlined"
             header={
               <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Recent Tasks</h3>
+                <h3 className="text-text-primary font-semibold">Recent Tasks</h3>
                 <Badge variant="teal">Active</Badge>
               </div>
             }
           >
             <div className="space-y-3">
-              <div className="flex items-start justify-between pb-3 border-b border-slate-700">
+              <div className="flex items-start justify-between pb-3 border-b border-border">
                 <div>
-                  <p className="text-white font-medium">Update library metadata</p>
-                  <p className="text-sm text-slate-400">Started 2 hours ago</p>
+                  <p className="text-text-primary font-medium">Update library metadata</p>
+                  <p className="text-sm text-text-muted">Started 2 hours ago</p>
                 </div>
                 <Badge variant="success" size="sm">
                   Running
                 </Badge>
               </div>
-              <div className="flex items-start justify-between pb-3 border-b border-slate-700">
+              <div className="flex items-start justify-between pb-3 border-b border-border">
                 <div>
-                  <p className="text-white font-medium">Organize collections</p>
-                  <p className="text-sm text-slate-400">Completed 1 day ago</p>
+                  <p className="text-text-primary font-medium">Organize collections</p>
+                  <p className="text-sm text-text-muted">Completed 1 day ago</p>
                 </div>
                 <Badge variant="default" size="sm">
                   Completed
@@ -287,8 +287,8 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-white font-medium">Clean up duplicates</p>
-                  <p className="text-sm text-slate-400">Scheduled for tomorrow</p>
+                  <p className="text-text-primary font-medium">Clean up duplicates</p>
+                  <p className="text-sm text-text-muted">Scheduled for tomorrow</p>
                 </div>
                 <Badge variant="warning" size="sm">
                   Pending
@@ -300,7 +300,7 @@ export default function DashboardPage() {
           {/* Activity Feed Card */}
           <Card
             variant="outlined"
-            header={<h3 className="text-white font-semibold">Recent Activity</h3>}
+            header={<h3 className="text-text-primary font-semibold">Recent Activity</h3>}
           >
             <EmptyState
               icon={<InboxIcon />}
@@ -313,42 +313,42 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <Card
           variant="elevated"
-          header={<h3 className="text-white font-semibold">Quick Actions</h3>}
+          header={<h3 className="text-text-primary font-semibold">Quick Actions</h3>}
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button
               type="button"
-              className="p-4 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
+              className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
             >
               <div className="flex items-center gap-3">
                 <TaskIcon />
                 <div>
-                  <p className="text-white font-medium">Create Task</p>
-                  <p className="text-sm text-slate-400">Automate a new workflow</p>
+                  <p className="text-text-primary font-medium">Create Task</p>
+                  <p className="text-sm text-text-muted">Automate a new workflow</p>
                 </div>
               </div>
             </button>
             <button
               type="button"
-              className="p-4 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
+              className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
             >
               <div className="flex items-center gap-3">
                 <FolderIcon />
                 <div>
-                  <p className="text-white font-medium">New Collection</p>
-                  <p className="text-sm text-slate-400">Organize your items</p>
+                  <p className="text-text-primary font-medium">New Collection</p>
+                  <p className="text-sm text-text-muted">Organize your items</p>
                 </div>
               </div>
             </button>
             <button
               type="button"
-              className="p-4 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
+              className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
             >
               <div className="flex items-center gap-3">
                 <SettingsIcon />
                 <div>
-                  <p className="text-white font-medium">Configure</p>
-                  <p className="text-sm text-slate-400">Adjust system settings</p>
+                  <p className="text-text-primary font-medium">Configure</p>
+                  <p className="text-sm text-text-muted">Adjust system settings</p>
                 </div>
               </div>
             </button>

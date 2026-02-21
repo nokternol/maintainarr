@@ -33,7 +33,7 @@ describe('StatCard', () => {
 
   it('does not render subtitle when not provided', () => {
     const { container } = render(<StatCard value={100} label="Test" />);
-    const subtitle = container.querySelector('.text-sm.text-slate-400');
+    const subtitle = container.querySelector('[class*="subtitle_"]');
     expect(subtitle).not.toBeInTheDocument();
   });
 
