@@ -47,9 +47,9 @@ export default function LoginPage() {
       <div className="absolute inset-0 z-0">
         <ImageFader images={backdrops || []} className="opacity-100 dark:opacity-50" />
         {/* Base wash */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/20 to-slate-50/80 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
-        {/* Central stabilizing halo for text legibility */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-50/60 via-transparent to-transparent dark:from-slate-950/60 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/15 via-slate-50/5 to-slate-50/30 dark:from-teal-600/30 dark:via-slate-950/40 dark:to-slate-950/80" />
+        {/* Central stabilizing halo for text legibility (Darker in light mode, hidden in dark mode) */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900/15 via-transparent to-transparent dark:hidden pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
@@ -94,7 +94,7 @@ export default function LoginPage() {
               <span>Sign in with Plex</span>
             </button>
 
-            <p className="mt-6 text-xs text-text-muted">
+            <p className="mt-6 text-xs text-text-secondary dark:text-text-muted">
               By signing in, you agree to your server's automation policies.
             </p>
           </div>
