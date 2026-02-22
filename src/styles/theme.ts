@@ -113,8 +113,8 @@ export const semanticTokens = {
   surfacePanel: '#ffffff',
 
   // Surface (dark) — overridden in .dark via CSS vars
-  surfaceBgDark: palette.slate[950],
-  surfacePanelDark: palette.slate[900],
+  surfaceBgDark: palette.slate[900],
+  surfacePanelDark: palette.slate[800],
 
   // Text (light)
   textPrimary: palette.slate[900],
