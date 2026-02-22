@@ -2,56 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  CSS custom properties (:root and .dark) are injected by the Tailwind plugin
+  in tailwind.config.js, sourced from `cssVarMap` / `cssVarMapDark` in:
+    src/styles/theme.ts
+
+  To change a token value, edit `semanticTokens` in theme.ts only.
+  No hex values should ever appear in this file.
+*/
+
 @layer base {
-  :root {
-    --color-primary: #0d9488;
-    /* teal.600 */
-    --color-primary-hover: #14b8a6;
-    /* teal.500 */
-    --color-primary-active: #0f766e;
-    /* teal.700 */
-
-    --color-danger: #dc2626;
-    /* red.600 */
-    --color-danger-hover: #ef4444;
-    /* red.500 */
-    --color-danger-active: #b91c1c;
-    /* red.700 */
-
-    --color-surface-bg: #f8fafc;
-    /* slate.50 */
-    --color-surface-panel: #ffffff;
-    --color-text-primary: #0f172a;
-    /* slate.900 */
-    --color-text-secondary: #475569;
-    /* slate.600 */
-    --color-text-muted: #94a3b8;
-    /* slate.400 */
-    --color-border: #e2e8f0;
-    /* slate.200 */
-  }
-
-  .dark {
-    --color-surface-bg: #020617;
-    /* slate.950 */
-    --color-surface-panel: #0f172a;
-    /* slate.900 */
-    --color-text-primary: #f8fafc;
-    /* slate.50 */
-    --color-text-secondary: #94a3b8;
-    /* slate.400 */
-    --color-text-muted: #64748b;
-    /* slate.500 */
-    --color-border: #1e293b;
-    /* slate.800 */
-  }
-
   body {
-    /* This ensures your app background matches the Ladle preview instantly */
     @apply bg-surface-bg text-text-primary antialiased transition-colors duration-150;
   }
 
-  /* Smooth out focus rings across the whole app */
   :focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-surface-bg;
   }

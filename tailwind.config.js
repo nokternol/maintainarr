@@ -1,4 +1,4 @@
-const { themeColors } = require('./src/styles/theme');
+const { themeColors, cssVarMap, cssVarMapDark } = require('./src/styles/theme');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -14,5 +14,19 @@ module.exports = {
       },
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+
+    // ─── Inject semantic CSS variables ────────────────────────────────────────
+    // Single source of truth: theme.ts → cssVarMap / cssVarMapDark.
+    // These are written into @layer base by Tailwind at build time so globals.css
+    // never has to repeat a hex value.
+    function ({ addBase }) {
+      addBase({
+        ':root': cssVarMap,
+        '.dark': cssVarMapDark,
+      });
+    },
+  ],
 };
