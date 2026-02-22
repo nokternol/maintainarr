@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '@app/components/Button';
 import styles from './RatingsForm.module.css';
 
 export interface RatingsFormValues {
@@ -95,7 +96,7 @@ export default function RatingsForm({ onSubmit, isLoading = false }: RatingsForm
         />
         <a
           href="https://www.omdbapi.com/apikey.aspx"
-          className={styles.hint}
+          className={styles.hintLink}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -103,9 +104,9 @@ export default function RatingsForm({ onSubmit, isLoading = false }: RatingsForm
         </a>
       </div>
 
-      <button type="submit" className={styles.button} disabled={isLoading}>
-        {isLoading ? 'Loading...' : 'Fetch Ratings'}
-      </button>
+      <Button type="submit" variant="primary" size="md" loading={isLoading}>
+        Fetch Ratings
+      </Button>
     </form>
   );
 }

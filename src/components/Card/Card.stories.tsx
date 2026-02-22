@@ -1,5 +1,7 @@
 import type { Story } from '@ladle/react';
-import Card from './index';
+import { Card } from './index';
+
+// ─── Variant stories ──────────────────────────────────────────────────────────
 
 export const Default: Story = () => (
   <div className="bg-surface-bg p-8">
@@ -25,19 +27,35 @@ export const Elevated: Story = () => (
   </div>
 );
 
-export const WithHeader: Story = () => (
+// ─── Composable sub-component stories ─────────────────────────────────────────
+
+export const WithComposableHeader: Story = () => (
   <div className="bg-surface-bg p-8">
-    <Card header={<h3 className="text-text-primary font-semibold">Card Title</h3>}>
-      <p className="text-text-secondary">This card has a header section with a title.</p>
+    <Card variant="outlined">
+      <Card.Header>
+        <h3 className="text-text-primary font-semibold">Card Title</h3>
+      </Card.Header>
+      <Card.Content divided>
+        <p className="text-text-secondary">
+          This card uses the composable Card.Header + Card.Content pattern.
+        </p>
+      </Card.Content>
     </Card>
   </div>
 );
 
-export const WithHeaderAndFooter: Story = () => (
+export const WithComposableHeaderAndFooter: Story = () => (
   <div className="bg-surface-bg p-8">
-    <Card
-      header={<h3 className="text-text-primary font-semibold">Card Title</h3>}
-      footer={
+    <Card variant="outlined">
+      <Card.Header>
+        <h3 className="text-text-primary font-semibold">Card Title</h3>
+      </Card.Header>
+      <Card.Content divided>
+        <p className="text-text-secondary">
+          This card uses Card.Header, Card.Content, and Card.Footer sub-components.
+        </p>
+      </Card.Content>
+      <Card.Footer>
         <div className="flex justify-end gap-2">
           <button className="px-3 py-1.5 text-sm bg-surface-panel border border-border hover:bg-surface-bg text-text-primary rounded-md transition-colors">
             Cancel
@@ -46,12 +64,12 @@ export const WithHeaderAndFooter: Story = () => (
             Save
           </button>
         </div>
-      }
-    >
-      <p className="text-text-secondary">This card has both a header and footer section.</p>
+      </Card.Footer>
     </Card>
   </div>
 );
+
+// ─── Padding sizes ────────────────────────────────────────────────────────────
 
 export const PaddingSizes: Story = () => (
   <div className="bg-surface-bg p-8 space-y-4">

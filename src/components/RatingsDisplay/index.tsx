@@ -1,3 +1,5 @@
+import { Card } from '@app/components/Card';
+import Badge from '@app/components/Badge';
 import styles from './RatingsDisplay.module.css';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -40,29 +42,14 @@ export interface AggregatedRatings {
   summary: RatingSummary;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-interface SourceCardProps {
-  name: string;
-  found: boolean;
-  children?: React.ReactNode;
-}
-
-const SourceCard = ({ name, found, children }: SourceCardProps) => (
-  <div className={styles.sourceCard}>
-    <div className={styles.sourceHeader}>
-      <span className={styles.sourceName}>{name}</span>
-      {!found && <span className={styles.notFound}>Not found</span>}
-    </div>
-    {found && children && <div className={styles.sourceBody}>{children}</div>}
-  </div>
-);
+// ─── Atom sub-components ──────────────────────────────────────────────────────
 
 interface RatingRowProps {
   label: string;
   value?: number | string;
 }
 
+/** A label / value pair row inside a source card. */
 const RatingRow = ({ label, value }: RatingRowProps) => {
   if (value === undefined || value === null) return null;
   return (
@@ -72,6 +59,33 @@ const RatingRow = ({ label, value }: RatingRowProps) => {
     </div>
   );
 };
+
+interface SourceCardProps {
+  name: string;
+  found: boolean;
+  children?: React.ReactNode;
+}
+
+/** A per-source ratings panel built on top of the Card atom. */
+const SourceCard = ({ name, found, children }: SourceCardProps) => (
+  <Card variant="outlined">
+    <Card.Header padding="sm">
+      <div className={styles.sourceHeader}>
+        <span className={styles.sourceName}>{name}</span>
+        {!found && (
+          <Badge variant="default" size="sm">
+            Not found
+          </Badge>
+        )}
+      </div>
+    </Card.Header>
+    {found && children && (
+      <Card.Content padding="sm" divided>
+        <div className={styles.sourceBody}>{children}</div>
+      </Card.Content>
+    )}
+  </Card>
+);
 
 // ─── Root Component ───────────────────────────────────────────────────────────
 
@@ -86,20 +100,24 @@ const Root = ({ ratings }: RatingsDisplayProps) => {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.titleGroup}>
-          <h2 className={styles.title}>{title}</h2>
-          {year && <span className={styles.year}>{year}</span>}
-        </div>
-        <div className={styles.averageBlock}>
-          <span className={styles.averageLabel}>Average</span>
-          <span className={styles.averageValue}>{summary.averageRating.toFixed(2)}</span>
-          <span className={styles.sourcesCount}>
-            {summary.foundSources} of {summary.totalSources} sources
-          </span>
-        </div>
-      </div>
+      {/* Summary header card */}
+      <Card variant="outlined">
+        <Card.Content>
+          <div className={styles.headerContent}>
+            <div className={styles.titleGroup}>
+              <h2 className={styles.title}>{title}</h2>
+              {year && <span className={styles.year}>{year}</span>}
+            </div>
+            <div className={styles.averageBlock}>
+              <span className={styles.averageLabel}>Average</span>
+              <span className={styles.averageValue}>{summary.averageRating.toFixed(2)}</span>
+              <span className={styles.sourcesCount}>
+                {summary.foundSources} of {summary.totalSources} sources
+              </span>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Source Ratings */}
       <div className={styles.sources}>
