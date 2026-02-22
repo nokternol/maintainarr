@@ -1,3 +1,4 @@
+import { getConfig } from '@server/config';
 import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
@@ -109,20 +110,22 @@ export function createProvidersHandlers(_cradle: object) {
       schemas: providersSchemas.getRatings,
       handler: async ({ query }) => {
         const { title, year, tmdbApiKey, omdbApiKey } = query;
+        // Resolve TMDB key: form input → server config fallback → skip
+        const resolvedTmdbKey = tmdbApiKey || getConfig().TMDB_API_KEY || undefined;
 
-        log.debug('Fetching aggregated ratings', { title, year });
+        log.debug('Fetching aggregated ratings', { title, year, hasTmdb: !!resolvedTmdbKey });
 
         // Fetch from all providers in parallel (gracefully handle failures)
         const [tmdbRating, omdbRating, tvmazeRating] = await Promise.all([
-          // TMDB
-          tmdbApiKey
+          // TMDB — uses form key, or falls back to server-configured key
+          resolvedTmdbKey
             ? (async () => {
                 try {
                   const provider = new TmdbProvider(
                     makeEntity(
                       MetadataProviderType.TMDB,
                       'https://api.themoviedb.org/3',
-                      tmdbApiKey,
+                      resolvedTmdbKey,
                       {}
                     ),
                     log

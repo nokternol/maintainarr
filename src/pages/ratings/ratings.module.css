@@ -1,0 +1,77 @@
+.page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 56rem;
+}
+
+/* ── Instructions ── */
+.instructions {
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
+
+.instructionsTitle {
+  margin: 0 0 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.instructionsList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.instructionsList li {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.instructionsList strong {
+  color: var(--color-text-primary);
+}
+
+.link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ── Form Panel ── */
+.formPanel {
+  padding: 1.5rem;
+  background: var(--color-surface-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* ── Error ── */
+.error {
+  padding: 0.875rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+}
