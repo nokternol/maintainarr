@@ -110,7 +110,7 @@ export const semanticTokens = {
 
   // Surface (light)
   surfaceBg: palette.slate[50],
-  surfacePanel: '#ffffff',
+  surfacePanel: palette.slate[150],
 
   // Surface (dark) — overridden in .dark via CSS vars
   surfaceBgDark: palette.slate[900],
