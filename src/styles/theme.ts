@@ -123,8 +123,8 @@ export const semanticTokens = {
 
   // Text (dark)
   textPrimaryDark: palette.slate[50],
-  textSecondaryDark: palette.slate[400],
-  textMutedDark: palette.slate[500],
+  textSecondaryDark: palette.slate[300],
+  textMutedDark: palette.slate[400],
 
   // Border (light / dark)
   border: palette.slate[200],
