@@ -129,36 +129,121 @@ export const semanticTokens = {
   // Border (light / dark)
   border: palette.slate[200],
   borderDark: palette.slate[800],
+
+  // ── Primary RGB channels ──────────────────────────────────────────────────
+  // Stored as an r,g,b triplet so shadow definitions can compose
+  // rgba(var(--color-primary-glow), alpha) without duplicating the hex.
+  // Must stay in sync with `primary` above.
+  primaryGlow: '13, 148, 136', // teal[600]
+
+  // ── Elevation shadows — light mode ───────────────────────────────────────
+  shadowSm: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+  shadowMd: '0 4px 24px rgba(0,0,0,0.10)',
+  shadowLg: '0 8px 32px rgba(0,0,0,0.14)',
+
+  // ── Card variant shadows — light mode (no teal glow) ─────────────────────
+  shadowCardDefault: 'none',
+  shadowCardOutlined: '0 1px 4px rgba(0,0,0,0.06)',
+  shadowCardElevated: '0 4px 24px rgba(0,0,0,0.10)',
+
+  // ── Card variant shadows — dark mode (teal ambient glow) ─────────────────
+  // Opacities are calibrated against surfaceBgDark = slate[900] (#0f172a).
+  // If the background shifts lighter again, increase these proportionally.
+  shadowCardDefaultDark: [
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.24)',  // edge
+    '0 0 0 1px rgba(var(--color-primary-glow), 0.08)',        // outer ring
+    '0 4px 24px rgba(var(--color-primary-glow), 0.10)',       // ambient
+    '0 1px 6px rgba(0,0,0,0.55)',                             // depth
+  ].join(', '),
+  shadowCardOutlinedDark: [
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.18)',  // edge
+    '0 4px 24px rgba(var(--color-primary-glow), 0.08)',       // ambient
+    '0 1px 6px rgba(0,0,0,0.50)',                             // depth
+  ].join(', '),
+  shadowCardElevatedDark: [
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.35)',  // edge — stronger on lighter bg
+    '0 0 0 1px rgba(var(--color-primary-glow), 0.14)',        // outer ring
+    '0 10px 48px rgba(var(--color-primary-glow), 0.16)',      // wide ambient — key for lift
+    '0 3px 12px rgba(0,0,0,0.70)',                            // deep drop — restores depth
+  ].join(', '),
+
+  // ── Card outlined dark border ─────────────────────────────────────────────
+  borderCardOutlinedDark: 'rgba(var(--color-primary-glow), 0.25)',
+
+  // ── Card glass highlight (dark only) ──────────────────────────────────────
+  // Slightly brighter sheen to restore perceived surface lift on lighter bg.
+  cardGlassHighlight: 'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 55%)',
+
+  // ── Interaction states ────────────────────────────────────────────────────
+  disabledOpacity: '0.4',
 } as const;
 
 // Convenience: CSS-var name → light value pairs consumed by globals.css codegen.
 // You can import this in a script or just use it as reference when editing globals.css.
 export const cssVarMap = {
+  // ── Brand ────────────────────────────────────────────────────────────────
   '--color-primary': semanticTokens.primary,
   '--color-primary-hover': semanticTokens.primaryHover,
   '--color-primary-active': semanticTokens.primaryActive,
+  // RGB triplet for rgba() shadow composition (tracks primary)
+  '--color-primary-glow': semanticTokens.primaryGlow,
 
+  // ── Danger ───────────────────────────────────────────────────────────────
   '--color-danger': semanticTokens.danger,
   '--color-danger-hover': semanticTokens.dangerHover,
   '--color-danger-active': semanticTokens.dangerActive,
 
+  // ── Surface ──────────────────────────────────────────────────────────────
   '--color-surface-bg': semanticTokens.surfaceBg,
   '--color-surface-panel': semanticTokens.surfacePanel,
 
+  // ── Text ─────────────────────────────────────────────────────────────────
   '--color-text-primary': semanticTokens.textPrimary,
   '--color-text-secondary': semanticTokens.textSecondary,
   '--color-text-muted': semanticTokens.textMuted,
 
+  // ── Border ───────────────────────────────────────────────────────────────
   '--color-border': semanticTokens.border,
+  '--color-border-card-outlined': semanticTokens.border,
+
+  // ── Elevation shadows (light mode) ───────────────────────────────────────
+  '--shadow-sm': semanticTokens.shadowSm,
+  '--shadow-md': semanticTokens.shadowMd,
+  '--shadow-lg': semanticTokens.shadowLg,
+
+  // ── Card shadows (light mode) ─────────────────────────────────────────────
+  '--shadow-card-default': semanticTokens.shadowCardDefault,
+  '--shadow-card-outlined': semanticTokens.shadowCardOutlined,
+  '--shadow-card-elevated': semanticTokens.shadowCardElevated,
+
+  // ── Card glass highlight (none in light mode) ─────────────────────────────
+  '--card-glass-highlight': 'none',
+
+  // ── Interaction states ────────────────────────────────────────────────────
+  '--state-disabled-opacity': semanticTokens.disabledOpacity,
 } as const;
 
 export const cssVarMapDark = {
+  // ── Surface ──────────────────────────────────────────────────────────────
   '--color-surface-bg': semanticTokens.surfaceBgDark,
   '--color-surface-panel': semanticTokens.surfacePanelDark,
+
+  // ── Text ─────────────────────────────────────────────────────────────────
   '--color-text-primary': semanticTokens.textPrimaryDark,
   '--color-text-secondary': semanticTokens.textSecondaryDark,
   '--color-text-muted': semanticTokens.textMutedDark,
+
+  // ── Border ───────────────────────────────────────────────────────────────
   '--color-border': semanticTokens.borderDark,
+  '--color-border-card-outlined': semanticTokens.borderCardOutlinedDark,
+
+  // ── Card shadows (dark mode — teal glow via --color-primary-glow) ─────────
+  '--shadow-card-default': semanticTokens.shadowCardDefaultDark,
+  '--shadow-card-outlined': semanticTokens.shadowCardOutlinedDark,
+  '--shadow-card-elevated': semanticTokens.shadowCardElevatedDark,
+
+  // ── Card glass highlight ──────────────────────────────────────────────────
+  '--card-glass-highlight': semanticTokens.cardGlassHighlight,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,4 +283,18 @@ export const themeColors = {
   border: {
     DEFAULT: 'var(--color-border)',
   },
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 3b — Tailwind shadow map
+// Spread into tailwind.config.js `theme.extend.boxShadow`.
+// Values reference CSS vars so they flip automatically between light/dark.
+// ─────────────────────────────────────────────────────────────────────────────
+export const themeShadows = {
+  'elevation-sm': 'var(--shadow-sm)',
+  'elevation-md': 'var(--shadow-md)',
+  'elevation-lg': 'var(--shadow-lg)',
+  'card': 'var(--shadow-card-default)',
+  'card-outlined': 'var(--shadow-card-outlined)',
+  'card-elevated': 'var(--shadow-card-elevated)',
 } as const;

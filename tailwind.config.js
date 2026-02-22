@@ -1,4 +1,4 @@
-const { themeColors, cssVarMap, cssVarMapDark } = require('./src/styles/theme');
+const { themeColors, themeShadows, cssVarMap, cssVarMapDark } = require('./src/styles/theme');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -11,6 +11,9 @@ module.exports = {
       },
       colors: {
         ...themeColors,
+      },
+      boxShadow: {
+        ...themeShadows,
       },
     },
   },
