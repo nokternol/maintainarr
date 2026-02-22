@@ -130,6 +130,12 @@ export const semanticTokens = {
   border: palette.slate[200],
   borderDark: palette.slate[800],
 
+  // Internal section dividers (header/footer rules inside a card).
+  // Must be visually distinct from the card surface.
+  // In dark mode, surfacePanel = slate[800], so divider must step above it.
+  borderDivider: palette.slate[200],
+  borderDividerDark: palette.slate[700],
+
   // ── Primary RGB channels ──────────────────────────────────────────────────
   // Stored as an r,g,b triplet so shadow definitions can compose
   // rgba(var(--color-primary-glow), alpha) without duplicating the hex.
