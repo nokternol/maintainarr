@@ -210,6 +210,7 @@ export const cssVarMap = {
 
   // ── Border ───────────────────────────────────────────────────────────────
   '--color-border': semanticTokens.border,
+  '--color-divider': semanticTokens.borderDivider,
   '--color-border-card-outlined': semanticTokens.border,
 
   // ── Elevation shadows (light mode) ───────────────────────────────────────
@@ -241,6 +242,7 @@ export const cssVarMapDark = {
 
   // ── Border ───────────────────────────────────────────────────────────────
   '--color-border': semanticTokens.borderDark,
+  '--color-divider': semanticTokens.borderDividerDark,
   '--color-border-card-outlined': semanticTokens.borderCardOutlinedDark,
 
   // ── Card shadows (dark mode — teal glow via --color-primary-glow) ─────────
@@ -289,6 +291,7 @@ export const themeColors = {
   border: {
     DEFAULT: 'var(--color-border)',
   },
+  divider: 'var(--color-divider)',
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
