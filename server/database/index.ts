@@ -1,15 +1,15 @@
 import path from 'node:path';
-import { createClient } from '@libsql/client';
+import { type Client, createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
-import { migrate } from 'drizzle-orm/libsql/migrator';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { migrate } from 'drizzle-orm/libsql/migrator';
 import type { AppConfig } from '../config';
 import { getChildLogger } from '../logger';
 import * as schema from './schema';
 
 const log = getChildLogger('Database');
 
-export type DrizzleDb = LibSQLDatabase<typeof schema>;
+export type DrizzleDb = LibSQLDatabase<typeof schema> & { $client: Client };
 
 let _db: DrizzleDb | null = null;
 let _client: ReturnType<typeof createClient> | null = null;

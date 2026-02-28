@@ -1,7 +1,4 @@
-import {
-  type MetadataProvider,
-  MetadataProviderType,
-} from '@server/database/schema';
+import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { describe, expect, it } from 'vitest';

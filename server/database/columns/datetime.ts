@@ -1,23 +1,28 @@
 import { sql } from 'drizzle-orm';
-import { text } from 'drizzle-orm/sqlite-core';
+import { customType } from 'drizzle-orm/sqlite-core';
 
-/** SQLite datetime format: 'YYYY-MM-DD HH:MM:SS' (UTC) */
-const nowUtc = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+/** SQLite UTC datetime format: 'YYYY-MM-DD HH:MM:SS' ↔ Date */
+const sqliteDateTime = customType<{ data: Date; driverData: string }>({
+  dataType: () => 'text',
+  fromDriver: (value: string) => new Date(`${value.replace(' ', 'T')}Z`),
+  toDriver: (value: Date) => value.toISOString().slice(0, 19).replace('T', ' '),
+});
 
 /**
  * A text column storing UTC datetime in SQLite's native format.
+ * Returns a Date on read, accepts a Date on write.
  * Defaults to the current time on INSERT.
  */
 export const createdAt = (name: string) =>
-  text(name).notNull().default(sql`(datetime('now'))`);
+  sqliteDateTime(name).notNull().default(sql`(datetime('now'))`);
 
 /**
  * A text column storing UTC datetime in SQLite's native format.
- * Defaults to the current time on INSERT and auto-updates on every UPDATE
- * via Drizzle's client-side $onUpdateFn hook.
+ * Returns a Date on read, accepts a Date on write.
+ * Defaults to the current time on INSERT and auto-updates on every UPDATE.
  */
 export const updatedAt = (name: string) =>
-  text(name)
+  sqliteDateTime(name)
     .notNull()
     .default(sql`(datetime('now'))`)
-    .$onUpdateFn(nowUtc);
+    .$onUpdateFn(() => new Date());

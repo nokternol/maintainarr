@@ -37,7 +37,9 @@ function makePlexService(overrides: Partial<PlexService> = {}): PlexService {
   } as unknown as PlexService;
 }
 
-function makePlexUser(overrides: Partial<{ id: number; email: string; username: string; thumb?: string }> = {}) {
+function makePlexUser(
+  overrides: Partial<{ id: number; email: string; username: string; thumb?: string }> = {}
+) {
   return {
     id: 111,
     email: 'plex@example.com',
@@ -80,7 +82,9 @@ describe('AuthService', () => {
     });
 
     it('lowercases the email when creating a new user', async () => {
-      vi.mocked(plexService.getUserByToken).mockResolvedValue(makePlexUser({ email: 'Plex@EXAMPLE.COM' }));
+      vi.mocked(plexService.getUserByToken).mockResolvedValue(
+        makePlexUser({ email: 'Plex@EXAMPLE.COM' })
+      );
 
       const user = await authService.authenticateWithPlex('token-abc');
 

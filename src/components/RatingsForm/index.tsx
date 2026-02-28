@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import Button from '@app/components/Button';
+import { useState } from 'react';
 import styles from './RatingsForm.module.css';
 
 export interface RatingsFormValues {

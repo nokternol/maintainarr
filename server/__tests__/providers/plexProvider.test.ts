@@ -1,7 +1,4 @@
-import {
-  type MetadataProvider,
-  MetadataProviderType,
-} from '@server/database/schema';
+import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { describe, expect, it } from 'vitest';

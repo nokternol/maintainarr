@@ -1,5 +1,4 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { User } from '../database/schema';
 import { UnauthorizedError } from '../errors';
 import { getChildLogger } from '../logger';
 
@@ -7,16 +6,7 @@ const log = getChildLogger('AuthMiddleware');
 
 declare module 'express-session' {
   interface SessionData {
-    userId: number; //plexId?
-  }
-}
-
-// Extend Express types
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
+    userId?: number;
   }
 }
 

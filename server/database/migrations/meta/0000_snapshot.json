@@ -77,9 +77,7 @@
       "indexes": {
         "IDX_metadata_provider_type": {
           "name": "IDX_metadata_provider_type",
-          "columns": [
-            "type"
-          ],
+          "columns": ["type"],
           "isUnique": false
         }
       },
@@ -116,9 +114,7 @@
       "indexes": {
         "IDX_session_expiredAt": {
           "name": "IDX_session_expiredAt",
-          "columns": [
-            "expiredAt"
-          ],
+          "columns": ["expiredAt"],
           "isUnique": false
         }
       },
@@ -208,23 +204,17 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         },
         "IDX_user_email": {
           "name": "IDX_user_email",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         },
         "IDX_user_plexId": {
           "name": "IDX_user_plexId",
-          "columns": [
-            "plexId"
-          ],
+          "columns": ["plexId"],
           "isUnique": false
         }
       },

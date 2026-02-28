@@ -156,21 +156,21 @@ export const semanticTokens = {
   // Opacities are calibrated against surfaceBgDark = slate[900] (#0f172a).
   // If the background shifts lighter again, increase these proportionally.
   shadowCardDefaultDark: [
-    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.24)',  // edge
-    '0 0 0 1px rgba(var(--color-primary-glow), 0.08)',        // outer ring
-    '0 4px 24px rgba(var(--color-primary-glow), 0.10)',       // ambient
-    '0 1px 6px rgba(0,0,0,0.55)',                             // depth
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.24)', // edge
+    '0 0 0 1px rgba(var(--color-primary-glow), 0.08)', // outer ring
+    '0 4px 24px rgba(var(--color-primary-glow), 0.10)', // ambient
+    '0 1px 6px rgba(0,0,0,0.55)', // depth
   ].join(', '),
   shadowCardOutlinedDark: [
-    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.18)',  // edge
-    '0 4px 24px rgba(var(--color-primary-glow), 0.08)',       // ambient
-    '0 1px 6px rgba(0,0,0,0.50)',                             // depth
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.18)', // edge
+    '0 4px 24px rgba(var(--color-primary-glow), 0.08)', // ambient
+    '0 1px 6px rgba(0,0,0,0.50)', // depth
   ].join(', '),
   shadowCardElevatedDark: [
-    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.35)',  // edge — stronger on lighter bg
-    '0 0 0 1px rgba(var(--color-primary-glow), 0.14)',        // outer ring
-    '0 10px 48px rgba(var(--color-primary-glow), 0.16)',      // wide ambient — key for lift
-    '0 3px 12px rgba(0,0,0,0.70)',                            // deep drop — restores depth
+    'inset 0 0 0 1px rgba(var(--color-primary-glow), 0.35)', // edge — stronger on lighter bg
+    '0 0 0 1px rgba(var(--color-primary-glow), 0.14)', // outer ring
+    '0 10px 48px rgba(var(--color-primary-glow), 0.16)', // wide ambient — key for lift
+    '0 3px 12px rgba(0,0,0,0.70)', // deep drop — restores depth
   ].join(', '),
 
   // ── Card outlined dark border ─────────────────────────────────────────────
@@ -303,7 +303,7 @@ export const themeShadows = {
   'elevation-sm': 'var(--shadow-sm)',
   'elevation-md': 'var(--shadow-md)',
   'elevation-lg': 'var(--shadow-lg)',
-  'card': 'var(--shadow-card-default)',
+  card: 'var(--shadow-card-default)',
   'card-outlined': 'var(--shadow-card-outlined)',
   'card-elevated': 'var(--shadow-card-elevated)',
 } as const;

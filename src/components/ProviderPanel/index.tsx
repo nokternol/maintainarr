@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Card } from '@app/components/Card';
 import Button from '@app/components/Button';
+import { Card } from '@app/components/Card';
+import { useState } from 'react';
 import styles from './ProviderPanel.module.css';
 
 type ProviderType = 'SONARR' | 'RADARR' | 'PLEX' | 'JELLYFIN' | 'TAUTULLI' | 'OVERSEERR';

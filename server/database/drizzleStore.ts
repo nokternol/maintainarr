@@ -87,8 +87,11 @@ export class DrizzleStore extends session.Store {
 
     if (expired.length === 0) return;
 
-    await this.db
-      .delete(sessions)
-      .where(inArray(sessions.id, expired.map((r) => r.id)));
+    await this.db.delete(sessions).where(
+      inArray(
+        sessions.id,
+        expired.map((r) => r.id)
+      )
+    );
   }
 }

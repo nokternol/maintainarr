@@ -15,9 +15,7 @@ export function createAuthHandlers({ authService }: { authService: AuthService }
           req.session.userId = user.id;
         }
 
-        // Remove sensitive field
-        const { plexToken, ...safeUser } = user;
-        return safeUser;
+        return user;
       },
     }),
 

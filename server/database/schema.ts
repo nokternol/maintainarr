@@ -39,10 +39,7 @@ export const users = sqliteTable(
     createdAt: createdAt('createdAt'),
     updatedAt: updatedAt('updatedAt'),
   },
-  (table) => [
-    index('IDX_user_email').on(table.email),
-    index('IDX_user_plexId').on(table.plexId),
-  ]
+  (table) => [index('IDX_user_email').on(table.email), index('IDX_user_plexId').on(table.plexId)]
 );
 
 // ---------------------------------------------------------------------------
@@ -85,5 +82,24 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 /** User shape returned from standard read queries — plexToken intentionally excluded */
 export type PublicUser = Omit<User, 'plexToken'>;
-export type MetadataProvider = typeof metadataProviders.$inferSelect;
+
+/** Raw DB-inferred type — settings is a JSON string, dates are strings */
+export type RawMetadataProvider = typeof metadataProviders.$inferSelect;
 export type NewMetadataProvider = typeof metadataProviders.$inferInsert;
+
+/**
+ * Parsed domain type for MetadataProvider — used in provider classes and handlers.
+ * Settings is a deserialized object, timestamps are Date instances,
+ * and type is narrowed to the MetadataProviderType enum.
+ */
+export type MetadataProvider = {
+  id: number;
+  type: MetadataProviderType;
+  name: string;
+  url: string;
+  apiKey: string | null;
+  settings: Record<string, unknown> | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};

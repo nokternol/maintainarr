@@ -1,5 +1,5 @@
-import { Card } from '@app/components/Card';
 import Badge from '@app/components/Badge';
+import { Card } from '@app/components/Card';
 import styles from './RatingsDisplay.module.css';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

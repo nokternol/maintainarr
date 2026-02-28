@@ -67,10 +67,7 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 
 /** Renders a top slot separated by a border-bottom. */
 const Header = ({ children, padding = 'md', className, ...props }: CardHeaderProps) => (
-  <div
-    className={cn(styles.header, styles[`headerPadding_${padding}`], className)}
-    {...props}
-  >
+  <div className={cn(styles.header, styles[`headerPadding_${padding}`], className)} {...props}>
     {children}
   </div>
 );
@@ -107,10 +104,7 @@ export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
 
 /** Renders a bottom slot separated by a border-top. */
 const Footer = ({ children, padding = 'md', className, ...props }: CardFooterProps) => (
-  <div
-    className={cn(styles.footer, styles[`footerPadding_${padding}`], className)}
-    {...props}
-  >
+  <div className={cn(styles.footer, styles[`footerPadding_${padding}`], className)} {...props}>
     {children}
   </div>
 );
