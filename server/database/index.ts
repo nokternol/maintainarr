@@ -1,80 +1,74 @@
 import path from 'node:path';
-import { DataSource } from 'typeorm';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
+import { migrate } from 'drizzle-orm/libsql/migrator';
+import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type { AppConfig } from '../config';
 import { getChildLogger } from '../logger';
-import { BaseEntity } from './entities/BaseEntity';
-import { MetadataProvider } from './entities/MetadataProvider';
-import { Session } from './entities/Session';
-import { User } from './entities/User';
-import { CreateUserAndSession1770848674421 } from './migrations/1770848674421-CreateUserAndSession';
-import { CreateMetadataProvider1770848674422 } from './migrations/1770848674422-CreateMetadataProvider';
+import * as schema from './schema';
 
 const log = getChildLogger('Database');
 
-let _dataSource: DataSource | null = null;
+export type DrizzleDb = LibSQLDatabase<typeof schema>;
+
+let _db: DrizzleDb | null = null;
+let _client: ReturnType<typeof createClient> | null = null;
 
 /**
- * Initialize the TypeORM DataSource connection.
+ * Initialize the Drizzle database connection and run migrations.
  * Call once at server startup. Throws on connection failure.
  */
-export async function initializeDatabase(config: AppConfig): Promise<DataSource> {
-  if (_dataSource?.isInitialized) {
+export async function initializeDatabase(config: AppConfig): Promise<DrizzleDb> {
+  if (_db) {
     log.warn('Database already initialized, skipping');
-    return _dataSource;
+    return _db;
   }
 
   try {
-    // Resolve DB_PATH relative to project root (unless it's :memory:)
-    const dbPath =
-      config.DB_PATH === ':memory:' ? ':memory:' : path.resolve(process.cwd(), config.DB_PATH);
+    const url =
+      config.DB_PATH === ':memory:'
+        ? ':memory:'
+        : `file:${path.resolve(process.cwd(), config.DB_PATH)}`;
 
-    log.info('Initializing database connection', {
-      path: dbPath,
-      logging: config.DB_LOGGING,
+    log.info('Initializing database connection', { url });
+
+    _client = createClient({ url });
+    _db = drizzle(_client, { schema });
+
+    await migrate(_db, {
+      migrationsFolder: path.resolve(__dirname, 'migrations'),
     });
 
-    _dataSource = new DataSource({
-      type: 'sqlite',
-      database: dbPath,
-      synchronize: false, // Use migrations in production
-      logging: config.DB_LOGGING ? ['query', 'error', 'warn'] : ['error'],
-      entities: [BaseEntity, User, Session, MetadataProvider],
-      migrations: [CreateUserAndSession1770848674421, CreateMetadataProvider1770848674422],
-      migrationsRun: config.NODE_ENV !== 'test', // Auto-run in dev/prod, manual in tests
-    });
+    log.info('Database connection established and migrations applied');
 
-    await _dataSource.initialize();
-
-    log.info('Database connection established', {
-      migrations: _dataSource.migrations.length,
-      entities: _dataSource.entityMetadatas.length,
-    });
-
-    return _dataSource;
+    return _db;
   } catch (error) {
     log.error('Failed to initialize database', { error });
+    _db = null;
+    _client = null;
     throw error;
   }
 }
 
 /**
- * Get the initialized DataSource. Throws if not initialized.
+ * Get the initialized Drizzle db handle. Throws if not initialized.
  */
-export function getDataSource(): DataSource {
-  if (!_dataSource || !_dataSource.isInitialized) {
+export function getDb(): DrizzleDb {
+  if (!_db) {
     throw new Error('Database not initialized. Call initializeDatabase() at startup.');
   }
-  return _dataSource;
+  return _db;
 }
 
 /**
  * Close the database connection. Used for graceful shutdown.
  */
 export async function closeDatabase(): Promise<void> {
-  if (_dataSource?.isInitialized) {
+  if (_client) {
     log.info('Closing database connection');
-    await _dataSource.destroy();
-    _dataSource = null;
+    _client.close();
+    _client = null;
+    _db = null;
   }
 }
 

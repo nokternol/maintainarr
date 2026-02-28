@@ -1,4 +1,4 @@
-import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
+import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import { http, HttpResponse } from 'msw';

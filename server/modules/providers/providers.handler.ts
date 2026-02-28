@@ -1,5 +1,5 @@
 import { getConfig } from '@server/config';
-import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
+import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { OmdbProvider } from '@server/providers/omdbProvider';

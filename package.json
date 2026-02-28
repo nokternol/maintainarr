@@ -36,7 +36,8 @@
   "dependencies": {
     "awilix": "^12.1.0",
     "axios": "^1.7.9",
-    "connect-typeorm": "^2.0.0",
+    "@libsql/client": "^0.15.0",
+    "drizzle-orm": "^0.44.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "date-fns": "^3.6.0",
@@ -50,10 +51,7 @@
     "node-cache": "^5.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "reflect-metadata": "^0.2.2",
-    "sqlite3": "^5.1.7",
     "swr": "^2.2.5",
-    "typeorm": "^0.3.20",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.3.6"
@@ -82,6 +80,7 @@
     "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.20",
     "cypress": "13.17.0",
+    "drizzle-kit": "^0.31.0",
     "happy-dom": "^20.6.0",
     "jsdom": "^25.0.1",
     "msw": "^2.7.0",

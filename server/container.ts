@@ -1,7 +1,7 @@
 import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
-import type { DataSource } from 'typeorm';
 import type { AppConfig } from './config';
+import type { DrizzleDb } from './database';
 import { getChildLogger } from './logger';
 import { AuthService } from './services/authService';
 import type { AuthService as AuthServiceType } from './services/authService';
@@ -18,7 +18,7 @@ const log = getChildLogger('Container');
  */
 export interface Cradle {
   config: AppConfig;
-  dataSource: DataSource;
+  db: DrizzleDb;
   tmdbService: TmdbServiceType;
   plexService: PlexServiceType;
   authService: AuthServiceType;
@@ -32,7 +32,7 @@ let container: AwilixContainer<Cradle> | null = null;
  */
 export function buildContainer(deps: {
   config: AppConfig;
-  dataSource: DataSource;
+  db: DrizzleDb;
 }): AwilixContainer<Cradle> {
   container = createContainer<Cradle>({
     injectionMode: InjectionMode.PROXY,
@@ -41,7 +41,7 @@ export function buildContainer(deps: {
 
   container.register({
     config: asValue(deps.config),
-    dataSource: asValue(deps.dataSource),
+    db: asValue(deps.db),
 
     // Services
     tmdbService: asClass(TmdbService).singleton(), // Singleton for caching

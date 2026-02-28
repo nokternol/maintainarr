@@ -14,8 +14,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "strictPropertyInitialization": false,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "useUnknownInCatchVariables": false,
     "incremental": true,
     "baseUrl": "src",

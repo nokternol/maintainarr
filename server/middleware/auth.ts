@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { User } from '../database/entities/User';
+import type { User } from '../database/schema';
 import { UnauthorizedError } from '../errors';
 import { getChildLogger } from '../logger';
 

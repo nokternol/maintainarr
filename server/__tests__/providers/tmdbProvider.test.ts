@@ -1,4 +1,4 @@
-import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
+import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { http, HttpResponse } from 'msw';

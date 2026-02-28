@@ -1,4 +1,4 @@
-import type { MetadataProvider } from '@server/database/entities/MetadataProvider';
+import type { MetadataProvider } from '@server/database/schema';
 import ky, { type KyInstance } from 'ky';
 import type { Logger } from 'winston';
 

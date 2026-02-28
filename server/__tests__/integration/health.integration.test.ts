@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { closeDatabase, initializeDatabase } from '@server/database';
@@ -40,10 +39,10 @@ describe('Health API Integration', () => {
     const config = loadConfig();
 
     // 2. Initialize database (in-memory for tests)
-    const dataSource = await initializeDatabase(config);
+    const db = await initializeDatabase(config);
 
     // 3. Build DI container
-    const container = buildContainer({ config, dataSource });
+    const container = buildContainer({ config, db });
 
     // 4. Create Express app with middleware
     app = express();

@@ -7,8 +7,6 @@
     "outDir": "../dist",
     "noEmit": false,
     "jsx": "react",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
       "@server/*": ["*"],

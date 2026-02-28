@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { closeDatabase, initializeDatabase } from '@server/database';
@@ -27,8 +26,8 @@ describe('Providers API Integration', () => {
     }
 
     const config = loadConfig();
-    const dataSource = await initializeDatabase(config);
-    const container = buildContainer({ config, dataSource });
+    const db = await initializeDatabase(config);
+    const container = buildContainer({ config, db });
 
     app = express();
     app.use(express.json());

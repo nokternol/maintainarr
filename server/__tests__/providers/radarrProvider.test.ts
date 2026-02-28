@@ -1,7 +1,7 @@
 import {
   type MetadataProvider,
   MetadataProviderType,
-} from '@server/database/entities/MetadataProvider';
+} from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import { describe, expect, it } from 'vitest';

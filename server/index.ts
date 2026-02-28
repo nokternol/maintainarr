@@ -1,8 +1,6 @@
-import 'reflect-metadata';
 import { loadEnv } from './env';
 // Must run before any import that reads process.env (including loadConfig).
 loadEnv();
-import { TypeormStore } from 'connect-typeorm';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
@@ -11,8 +9,8 @@ import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
 import { buildContainer, scopePerRequest } from './container';
-import { initializeDatabase } from './database';
-import { Session } from './database/entities/Session';
+import { closeDatabase, initializeDatabase } from './database';
+import { DrizzleStore } from './database/drizzleStore';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
@@ -31,13 +29,13 @@ async function startServer() {
     await app.prepare();
     log.info('Next.js prepared successfully');
 
-    // Initialize database connection
-    const dataSource = await initializeDatabase(config);
+    // Initialize database connection and run migrations
+    const db = await initializeDatabase(config);
 
     // Build DI container with initialized dependencies
     const container = buildContainer({
       config,
-      dataSource,
+      db,
     });
 
     const server = express();
@@ -57,7 +55,6 @@ async function startServer() {
     server.use(cookieParser());
 
     // Session middleware (before API routes)
-    const sessionRepo = dataSource.getRepository(Session);
     server.use(
       '/api',
       session({
@@ -70,10 +67,11 @@ async function startServer() {
           sameSite: 'lax',
           secure: config.NODE_ENV === 'production',
         },
-        store: new TypeormStore({
-          cleanupLimit: 2,
+        store: new DrizzleStore({
+          db,
           ttl: 86400 * 30, // 30 days in seconds
-        }).connect(sessionRepo),
+          cleanupLimit: 2,
+        }),
       })
     );
 
@@ -110,7 +108,7 @@ async function startServer() {
       log.info(`${signal} received, closing server gracefully`);
       httpServer.close(async () => {
         log.info('HTTP server closed');
-        await dataSource.destroy();
+        await closeDatabase();
         log.info('Database connection closed');
         process.exit(0);
       });

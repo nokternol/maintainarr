@@ -1,4 +1,4 @@
-import { MetadataProviderType } from '@server/database/entities/MetadataProvider';
+import { MetadataProviderType } from '@server/database/schema';
 import { z } from 'zod';
 
 const providerType = z.nativeEnum(MetadataProviderType);

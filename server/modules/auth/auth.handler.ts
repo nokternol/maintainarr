@@ -28,8 +28,7 @@ export function createAuthHandlers({ authService }: { authService: AuthService }
           throw new UnauthorizedError('Not authenticated');
         }
 
-        const { plexToken, ...safeUser } = req.user;
-        return safeUser;
+        return req.user;
       },
     }),
 
