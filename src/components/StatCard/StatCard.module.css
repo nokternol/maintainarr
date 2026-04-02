@@ -19,7 +19,7 @@
 }
 
 .trendUp {
-  @apply text-emerald-500;
+  @apply text-success;
 }
 
 .trendDown {

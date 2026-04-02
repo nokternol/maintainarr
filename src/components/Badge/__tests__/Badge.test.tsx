@@ -49,13 +49,13 @@ describe('Badge', () => {
     expect(screen.getByTestId('badge').className).toMatch(/info/);
   });
 
-  it('applies teal variant styles', () => {
+  it('applies primary variant styles', () => {
     render(
-      <Badge variant="teal" data-testid="badge">
-        Teal
+      <Badge variant="primary" data-testid="badge">
+        Primary
       </Badge>
     );
-    expect(screen.getByTestId('badge').className).toMatch(/teal/);
+    expect(screen.getByTestId('badge').className).toMatch(/primary/);
   });
 
   it('applies small size styles', () => {

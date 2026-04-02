@@ -13,7 +13,7 @@
 
 @layer base {
   body {
-    @apply bg-surface-bg text-text-primary antialiased transition-colors duration-150;
+    @apply bg-surface-bg text-text-primary antialiased transition-colors duration-150 font-sans;
   }
 
   :focus-visible {

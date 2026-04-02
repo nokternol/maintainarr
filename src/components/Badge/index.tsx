@@ -4,7 +4,7 @@ import styles from './Badge.module.css';
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   // We'll keep these intents but map them to your theme colors
-  variant?: 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary' | 'teal';
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary';
   size?: 'sm' | 'md' | 'lg';
 }
 

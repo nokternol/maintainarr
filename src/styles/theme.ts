@@ -88,6 +88,16 @@ export const palette = {
     900: '#111827',
     950: '#030712',
   },
+  // Status color primitives (fixed; no light/dark flip needed)
+  emerald: {
+    500: '#10b981',
+  },
+  amber: {
+    500: '#f59e0b',
+  },
+  blue: {
+    500: '#3b82f6',
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,6 +125,8 @@ export const semanticTokens = {
   // Surface (dark) — overridden in .dark via CSS vars
   surfaceBgDark: palette.slate[900],
   surfacePanelDark: palette.slate[800],
+  // Third elevation level for modals / dropdowns / tooltips
+  surfaceElevatedDark: palette.slate[750],
 
   // Text (light)
   textPrimary: palette.slate[900],
@@ -180,6 +192,11 @@ export const semanticTokens = {
   // Slightly brighter sheen to restore perceived surface lift on lighter bg.
   cardGlassHighlight: 'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 55%)',
 
+  // ── Status colors (semantic, same in light/dark) ──────────────────────────
+  colorSuccess: palette.emerald[500],
+  colorWarning: palette.amber[500],
+  colorInfo: palette.blue[500],
+
   // ── Interaction states ────────────────────────────────────────────────────
   disabledOpacity: '0.4',
 } as const;
@@ -226,6 +243,14 @@ export const cssVarMap = {
   // ── Card glass highlight (none in light mode) ─────────────────────────────
   '--card-glass-highlight': 'none',
 
+  // ── Status colors ─────────────────────────────────────────────────────────
+  '--color-success': semanticTokens.colorSuccess,
+  '--color-warning': semanticTokens.colorWarning,
+  '--color-info': semanticTokens.colorInfo,
+
+  // ── Elevated surface (light mode = same as panel; elevated context handled by shadow) ──
+  '--color-surface-elevated': semanticTokens.surfacePanel,
+
   // ── Interaction states ────────────────────────────────────────────────────
   '--state-disabled-opacity': semanticTokens.disabledOpacity,
 } as const;
@@ -252,6 +277,9 @@ export const cssVarMapDark = {
 
   // ── Card glass highlight ──────────────────────────────────────────────────
   '--card-glass-highlight': semanticTokens.cardGlassHighlight,
+
+  // ── Elevated surface (modals / dropdowns / tooltips) ─────────────────────
+  '--color-surface-elevated': semanticTokens.surfaceElevatedDark,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,6 +310,7 @@ export const themeColors = {
   surface: {
     bg: 'var(--color-surface-bg)',
     panel: 'var(--color-surface-panel)',
+    elevated: 'var(--color-surface-elevated)',
   },
   text: {
     primary: 'var(--color-text-primary)',
@@ -292,6 +321,20 @@ export const themeColors = {
     DEFAULT: 'var(--color-border)',
   },
   divider: 'var(--color-divider)',
+
+  // Status colors
+  success: 'var(--color-success)',
+  warning: 'var(--color-warning)',
+  info: 'var(--color-info)',
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LAYER 3c — Tailwind font family map
+// Spread into tailwind.config.js `theme.extend.fontFamily`.
+// ─────────────────────────────────────────────────────────────────────────────
+export const themeFonts = {
+  sans: ['Inter', 'system-ui', 'sans-serif'],
+  mono: ['"JetBrains Mono"', 'monospace'],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

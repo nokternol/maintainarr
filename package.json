@@ -37,6 +37,7 @@
     "@libsql/client": "^0.15.0",
     "awilix": "^12.1.0",
     "axios": "^1.7.9",
+    "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "date-fns": "^3.6.0",
@@ -53,6 +54,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "swr": "^2.2.5",
+    "tailwind-merge": "^3.5.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.3.6"

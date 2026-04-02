@@ -1,7 +1,6 @@
-/**
- * Utility function to merge Tailwind CSS classes
- * Filters out falsy values and joins remaining classes with a space
- */
-export function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ');
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
 }

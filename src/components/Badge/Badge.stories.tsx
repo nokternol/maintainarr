@@ -31,9 +31,9 @@ export const Info: Story = () => (
   </div>
 );
 
-export const Teal: Story = () => (
+export const Primary: Story = () => (
   <div className="bg-surface-bg p-8">
-    <Badge variant="teal">New</Badge>
+    <Badge variant="primary">New</Badge>
   </div>
 );
 
@@ -62,19 +62,19 @@ export const AllVariants: Story = () => (
     <Badge variant="warning">Warning</Badge>
     <Badge variant="error">Error</Badge>
     <Badge variant="info">Info</Badge>
-    <Badge variant="teal">Teal</Badge>
+    <Badge variant="primary">Primary</Badge>
   </div>
 );
 
 export const AllSizes: Story = () => (
   <div className="bg-surface-bg p-8 flex flex-wrap items-center gap-3">
-    <Badge size="sm" variant="teal">
+    <Badge size="sm" variant="primary">
       Small
     </Badge>
-    <Badge size="md" variant="teal">
+    <Badge size="md" variant="primary">
       Medium
     </Badge>
-    <Badge size="lg" variant="teal">
+    <Badge size="lg" variant="primary">
       Large
     </Badge>
   </div>
@@ -82,7 +82,7 @@ export const AllSizes: Story = () => (
 
 export const WithNumbers: Story = () => (
   <div className="bg-surface-bg p-8 flex flex-wrap gap-3">
-    <Badge variant="teal">5</Badge>
+    <Badge variant="primary">5</Badge>
     <Badge variant="warning">12</Badge>
     <Badge variant="error">99+</Badge>
     <Badge variant="success">142</Badge>
@@ -105,7 +105,7 @@ export const StatusIndicators: Story = () => (
     </div>
     <div className="flex items-center gap-2">
       <span className="text-text-primary">New Features:</span>
-      <Badge variant="teal">3</Badge>
+      <Badge variant="primary">3</Badge>
     </div>
   </div>
 );

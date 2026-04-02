@@ -206,7 +206,7 @@ export default function DashboardPage() {
           bottomItems={bottomItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-text-primary font-bold">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                 M
               </div>
               <span className="text-xl font-bold text-text-primary">Maintainarr</span>
@@ -262,7 +262,7 @@ export default function DashboardPage() {
             header={
               <div className="flex items-center justify-between">
                 <h3 className="text-text-primary font-semibold">Recent Tasks</h3>
-                <Badge variant="teal">Active</Badge>
+                <Badge variant="primary">Active</Badge>
               </div>
             }
           >

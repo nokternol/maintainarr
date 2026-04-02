@@ -23,7 +23,7 @@ export default function SidebarItem({ item, onClick }: SidebarItemProps) {
       <div className={styles.itemIcon}>{item.icon}</div>
       <span className={styles.itemLabel}>{item.label}</span>
       {item.badge !== undefined && (
-        <Badge size="sm" variant={item.active ? 'default' : 'teal'}>
+        <Badge size="sm" variant={item.active ? 'default' : 'primary'}>
           {item.badge}
         </Badge>
       )}

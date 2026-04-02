@@ -7,7 +7,7 @@
 }
 
 .secondary {
-  @apply bg-text-secondary text-white hover:bg-text-primary focus:ring-text-secondary;
+  @apply bg-surface-panel border border-border text-text-primary hover:bg-surface-bg focus:ring-border;
 }
 
 .danger {
