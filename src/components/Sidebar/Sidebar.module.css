@@ -19,7 +19,7 @@
 }
 
 .itemBase {
-  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium;
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-sm transition-colors text-sm font-medium;
 }
 
 .itemActive {

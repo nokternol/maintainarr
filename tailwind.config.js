@@ -15,6 +15,10 @@ module.exports = {
       fontFamily: {
         ...themeFonts,
       },
+      borderRadius: {
+        sm: 'var(--radius-sm)', // 4px — buttons, inputs, sidebar items
+        lg: 'var(--radius-md)', // 8px — cards, panels (same value, now token-controlled)
+      },
       boxShadow: {
         ...themeShadows,
       },

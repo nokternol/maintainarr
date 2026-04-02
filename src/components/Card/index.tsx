@@ -17,47 +17,22 @@ export interface CardRootProps extends HTMLAttributes<HTMLDivElement> {
    * to control their own padding, and wrap body content in <Card.Content>.
    */
   padding?: CardPadding;
-  /** @deprecated Prefer <Card.Header> sub-component */
-  header?: React.ReactNode;
-  /** @deprecated Prefer <Card.Footer> sub-component */
-  footer?: React.ReactNode;
 }
 
 const Root = ({
   children,
   variant = 'default',
   padding = 'md',
-  header,
-  footer,
   className = '',
   ...props
-}: CardRootProps) => {
-  const isDivided = Boolean(header || footer);
-
-  return (
-    <div
-      className={cn(
-        styles.base,
-        styles[variant],
-        !isDivided && styles[`padding_${padding}`],
-        className
-      )}
-      {...props}
-    >
-      {header && (
-        <div className={cn(styles.header, styles[`headerPadding_${padding}`])}>{header}</div>
-      )}
-      {isDivided ? (
-        <div className={styles[`contentPadding_divided_${padding}`]}>{children}</div>
-      ) : (
-        children
-      )}
-      {footer && (
-        <div className={cn(styles.footer, styles[`footerPadding_${padding}`])}>{footer}</div>
-      )}
-    </div>
-  );
-};
+}: CardRootProps) => (
+  <div
+    className={cn(styles.base, styles[variant], styles[`padding_${padding}`], className)}
+    {...props}
+  >
+    {children}
+  </div>
+);
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

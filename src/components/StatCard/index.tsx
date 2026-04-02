@@ -1,3 +1,4 @@
+import Card from '@app/components/Card';
 import { cn } from '@app/lib/utils/cn';
 import type { HTMLAttributes } from 'react';
 import styles from './StatCard.module.css';
@@ -26,7 +27,7 @@ export default function StatCard({
   const trendIcon = trend?.direction === 'up' ? '↑' : '↓';
 
   return (
-    <div className={cn(styles.card, className)} {...props}>
+    <Card className={cn(styles.root, className)} {...props}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className={styles.label}>{label}</p>
@@ -41,6 +42,6 @@ export default function StatCard({
         </div>
         {icon && <div className={styles.iconWrapper}>{icon}</div>}
       </div>
-    </div>
+    </Card>
   );
 }

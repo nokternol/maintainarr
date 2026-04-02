@@ -197,6 +197,17 @@ export const semanticTokens = {
   colorWarning: palette.amber[500],
   colorInfo: palette.blue[500],
 
+  // ── Radius ───────────────────────────────────────────────────────────────
+  radiusSm: '4px',   // buttons, inputs, sidebar items
+  radiusMd: '8px',   // cards, panels
+
+  // ── Layout ───────────────────────────────────────────────────────────────
+  layoutSidebarWidth: '220px',
+  layoutContentGutter: '24px',
+
+  // ── Transition ───────────────────────────────────────────────────────────
+  transitionFast: '150ms',
+
   // ── Interaction states ────────────────────────────────────────────────────
   disabledOpacity: '0.4',
 } as const;
@@ -250,6 +261,17 @@ export const cssVarMap = {
 
   // ── Elevated surface (light mode = same as panel; elevated context handled by shadow) ──
   '--color-surface-elevated': semanticTokens.surfacePanel,
+
+  // ── Radius ───────────────────────────────────────────────────────────────
+  '--radius-sm': semanticTokens.radiusSm,
+  '--radius-md': semanticTokens.radiusMd,
+
+  // ── Layout ───────────────────────────────────────────────────────────────
+  '--layout-sidebar-width': semanticTokens.layoutSidebarWidth,
+  '--layout-content-gutter': semanticTokens.layoutContentGutter,
+
+  // ── Transition ───────────────────────────────────────────────────────────
+  '--transition-fast': semanticTokens.transitionFast,
 
   // ── Interaction states ────────────────────────────────────────────────────
   '--state-disabled-opacity': semanticTokens.disabledOpacity,

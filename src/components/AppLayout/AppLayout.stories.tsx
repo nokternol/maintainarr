@@ -168,11 +168,13 @@ export const CompleteLayout: Story = () => (
         <StatCard value={5} label="Recent Activity" trend={{ value: 8, direction: 'down' }} />
 
         <div className="col-span-1 md:col-span-2 lg:col-span-4">
-          <Card
-            variant="outlined"
-            header={<h3 className="text-text-primary font-semibold">Recent Tasks</h3>}
-          >
-            <div className="text-text-muted">Task list content would go here...</div>
+          <Card variant="outlined" padding="none">
+            <Card.Header>
+              <h3 className="text-text-primary font-semibold">Recent Tasks</h3>
+            </Card.Header>
+            <Card.Content divided>
+              <div className="text-text-muted">Task list content would go here...</div>
+            </Card.Content>
           </Card>
         </div>
       </WidgetGrid>

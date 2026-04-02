@@ -62,20 +62,32 @@ describe('Card', () => {
     expect(card).not.toHaveClass('p-6');
   });
 
-  it('renders header when provided', () => {
-    render(<Card header={<h3>Header</h3>}>Content</Card>);
+  it('renders Card.Header sub-component', () => {
+    render(
+      <Card>
+        <Card.Header><h3>Header</h3></Card.Header>
+        Content
+      </Card>
+    );
     expect(screen.getByText('Header')).toBeInTheDocument();
   });
 
-  it('renders footer when provided', () => {
-    render(<Card footer={<div>Footer</div>}>Content</Card>);
+  it('renders Card.Footer sub-component', () => {
+    render(
+      <Card>
+        Content
+        <Card.Footer><div>Footer</div></Card.Footer>
+      </Card>
+    );
     expect(screen.getByText('Footer')).toBeInTheDocument();
   });
 
-  it('renders header and footer with border separators', () => {
+  it('renders Card.Header and Card.Footer with border separators', () => {
     const { container } = render(
-      <Card header="Header" footer="Footer" data-testid="card">
-        Content
+      <Card data-testid="card">
+        <Card.Header>Header</Card.Header>
+        <Card.Content divided>Content</Card.Content>
+        <Card.Footer>Footer</Card.Footer>
       </Card>
     );
 

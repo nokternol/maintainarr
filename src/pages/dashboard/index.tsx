@@ -221,7 +221,7 @@ export default function DashboardPage() {
           actions={
             <button
               type="button"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-bg"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-bg"
             >
               New Task
             </button>
@@ -257,15 +257,14 @@ export default function DashboardPage() {
         {/* Content Grid */}
         <WidgetGrid columns={2}>
           {/* Recent Tasks Card */}
-          <Card
-            variant="outlined"
-            header={
+          <Card variant="outlined" padding="none">
+            <Card.Header>
               <div className="flex items-center justify-between">
                 <h3 className="text-text-primary font-semibold">Recent Tasks</h3>
                 <Badge variant="primary">Active</Badge>
               </div>
-            }
-          >
+            </Card.Header>
+            <Card.Content divided>
             <div className="space-y-3">
               <div className="flex items-start justify-between pb-3 border-b border-border">
                 <div>
@@ -295,26 +294,30 @@ export default function DashboardPage() {
                 </Badge>
               </div>
             </div>
+            </Card.Content>
           </Card>
 
           {/* Activity Feed Card */}
-          <Card
-            variant="outlined"
-            header={<h3 className="text-text-primary font-semibold">Recent Activity</h3>}
-          >
+          <Card variant="outlined" padding="none">
+            <Card.Header>
+              <h3 className="text-text-primary font-semibold">Recent Activity</h3>
+            </Card.Header>
+            <Card.Content divided>
             <EmptyState
               icon={<InboxIcon />}
               title="No recent activity"
               description="Activity from automated tasks and manual actions will appear here"
             />
+            </Card.Content>
           </Card>
         </WidgetGrid>
 
         {/* Quick Actions */}
-        <Card
-          variant="elevated"
-          header={<h3 className="text-text-primary font-semibold">Quick Actions</h3>}
-        >
+        <Card variant="elevated" padding="none">
+          <Card.Header>
+            <h3 className="text-text-primary font-semibold">Quick Actions</h3>
+          </Card.Header>
+          <Card.Content divided>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button
               type="button"
@@ -353,6 +356,7 @@ export default function DashboardPage() {
               </div>
             </button>
           </div>
+          </Card.Content>
         </Card>
       </div>
     </AppLayout>

@@ -3,7 +3,8 @@
 }
 
 .sidebarWrapper {
-  @apply hidden md:block w-64 flex-shrink-0;
+  @apply hidden md:block flex-shrink-0;
+  width: var(--layout-sidebar-width);
 }
 
 .mainContent {
