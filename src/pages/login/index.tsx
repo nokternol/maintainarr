@@ -5,7 +5,7 @@ import { MaintainarrLogo, PlexIcon } from '@app/components/Logo';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,12 +13,20 @@ export default function LoginPage() {
 
   const { backdrops } = useBackdrops();
 
+  // Redirect already-authenticated users away from the login page
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => { if (r.ok) window.location.href = '/dashboard'; })
+      .catch(() => { /* not authenticated, stay on login */ });
+  }, []);
+
   const handlePlexLogin = async () => {
     setIsLoading(true);
     setError(null);
 
+    const oauth = new PlexOAuth();
+
     try {
-      const oauth = new PlexOAuth();
       const authToken = await oauth.login();
 
       const response = await fetch('/api/auth/plex', {
@@ -31,10 +39,8 @@ export default function LoginPage() {
         throw new Error('Authentication failed');
       }
 
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (err) {
-      if ('message' in err && err.message === 'Authentication cancelled') return;
-
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsLoading(false);

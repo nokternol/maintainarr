@@ -51,6 +51,9 @@ export class PlexOAuth {
     });
 
     const url = `https://app.plex.tv/auth/#!?${params.toString()}`;
+    // Open directly to the Plex URL so the Window reference is a cross-origin
+    // proxy from the start. Opening to about:blank first then navigating causes
+    // a same→cross-origin transition that incorrectly sets popup.closed = true.
     this.popup = window.open(url, 'Plex-Auth', 'width=600,height=700');
   }
 
@@ -60,32 +63,34 @@ export class PlexOAuth {
     }
 
     return new Promise((resolve, reject) => {
-      const interval = setInterval(async () => {
-        if (this.popup?.closed) {
-          clearInterval(interval);
-          reject(new Error('Authentication cancelled'));
-        }
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Authentication timeout'));
+      }, 300000); // 5 minutes
 
+      const poll = async () => {
         try {
           const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
             headers: this.plexHeaders,
           });
 
           if (response.data.authToken) {
-            clearInterval(interval);
-            if (this.popup) this.popup.close();
+            clearTimeout(timeoutId);
+            // Call close() unconditionally — popup.closed is unreliable for cross-origin
+            // windows in Chrome (always returns true), so we can't use it as a guard.
+            try { this.popup?.close(); } catch { /* ignore cross-origin close errors */ }
             resolve(response.data.authToken);
+            return;
           }
         } catch (error) {
-          clearInterval(interval);
+          clearTimeout(timeoutId);
           reject(error);
+          return;
         }
-      }, 1000);
 
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(new Error('Authentication timeout'));
-      }, 300000); // 5 minutes
+        setTimeout(poll, 1000);
+      };
+
+      setTimeout(poll, 1000);
     });
   }
 
