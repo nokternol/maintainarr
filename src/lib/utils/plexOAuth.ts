@@ -41,6 +41,13 @@ export class PlexOAuth {
     return this.pin;
   }
 
+  // Must be called synchronously inside the click handler (requires a user gesture).
+  // Opening to about:blank gives us a same-origin proxy that retains close() permission
+  // even after the popup navigates cross-origin to Plex.
+  preparePopup(): void {
+    this.popup = window.open('about:blank', 'Plex-Auth', 'width=600,height=700');
+  }
+
   openPopup(): void {
     if (!this.pin) return;
 
@@ -51,10 +58,14 @@ export class PlexOAuth {
     });
 
     const url = `https://app.plex.tv/auth/#!?${params.toString()}`;
-    // Open directly to the Plex URL so the Window reference is a cross-origin
-    // proxy from the start. Opening to about:blank first then navigating causes
-    // a same→cross-origin transition that incorrectly sets popup.closed = true.
-    this.popup = window.open(url, 'Plex-Auth', 'width=600,height=700');
+
+    if (this.popup) {
+      // Navigate the already-open popup (opened via preparePopup)
+      this.popup.location.href = url;
+    } else {
+      // Fallback: open directly (close may not work in Chrome)
+      this.popup = window.open(url, 'Plex-Auth', 'width=600,height=700');
+    }
   }
 
   async pollForToken(): Promise<string> {
@@ -109,8 +120,7 @@ export class PlexOAuth {
 
           if (response.data.authToken) {
             finish(() => {
-              // popup.closed is unreliable; call close() unconditionally
-              try { this.popup?.close(); } catch { /* ignore cross-origin close errors */ }
+              try { this.popup?.close(); } catch { /* ignore */ }
               resolve(response.data.authToken);
             });
             return;

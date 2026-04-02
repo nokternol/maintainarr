@@ -25,6 +25,9 @@ export default function LoginPage() {
     setError(null);
 
     const oauth = new PlexOAuth();
+    // Must run synchronously here (user gesture context) so the browser
+    // allows window.open and we get a same-origin proxy we can later close.
+    oauth.preparePopup();
 
     try {
       const authToken = await oauth.login();

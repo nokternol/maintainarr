@@ -30,23 +30,23 @@ describe('Login page', () => {
     cy.contains('button', 'Sign in with Plex').should('be.visible');
   });
 
-  it('opens Plex OAuth popup directly to Plex auth URL when sign in button is clicked', () => {
+  it('opens popup to about:blank then navigates to Plex auth URL', () => {
     cy.window().then((win) => {
-      cy.stub(win, 'open').as('windowOpen').returns({
+      const fakePopup = {
         closed: false,
         close: cy.stub().as('popupClose'),
-        location: { href: '' },
-      });
+        location: { href: 'about:blank' },
+      };
+      cy.stub(win, 'open').as('windowOpen').returns(fakePopup);
     });
 
     cy.contains('button', 'Sign in with Plex').click();
 
-    // Popup opens directly to Plex URL — a cross-origin proxy from the start,
-    // so popup.closed correctly reports false while the window is open.
-    cy.get('@windowOpen').should('have.been.calledWith',
-      Cypress.sinon.match(/app\.plex\.tv\/auth/),
-      'Plex-Auth'
-    );
+    // preparePopup() opens about:blank first (user gesture, same-origin proxy)
+    cy.get('@windowOpen').should('have.been.calledWith', 'about:blank', 'Plex-Auth');
+
+    // openPopup() then navigates via location.href (not a second window.open)
+    cy.get('@windowOpen').should('have.been.calledOnce');
   });
 
   it('completes full auth flow: creates PIN, polls for token, posts to backend, navigates to /dashboard', () => {
