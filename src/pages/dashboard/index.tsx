@@ -198,12 +198,18 @@ const bottomItems: SidebarItem[] = [
 ];
 
 export default function DashboardPage() {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  };
+
   return (
     <AppLayout
       sidebar={
         <Sidebar
           items={sidebarItems}
           bottomItems={bottomItems}
+          onLogout={handleLogout}
           logo={
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">

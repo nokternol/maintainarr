@@ -63,27 +63,60 @@ export class PlexOAuth {
     }
 
     return new Promise((resolve, reject) => {
+      let done = false;
+      const startTime = Date.now();
+
+      const finish = (fn: () => void) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeoutId);
+        window.removeEventListener('focus', onFocus);
+        fn();
+      };
+
       const timeoutId = setTimeout(() => {
-        reject(new Error('Authentication timeout'));
+        finish(() => reject(new Error('Authentication timeout')));
       }, 300000); // 5 minutes
 
+      // When the main window regains focus the popup was likely closed.
+      // popup.closed is unreliable for cross-origin windows (always true in Chrome),
+      // so we use window focus + a final token check instead.
+      const onFocus = () => {
+        // Ignore spurious focus events during the first 3 s (popup still opening)
+        if (Date.now() - startTime < 3000) return;
+        // Small debounce so an in-flight poll tick can resolve first
+        setTimeout(async () => {
+          if (done) return;
+          try {
+            const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
+              headers: this.plexHeaders,
+            });
+            if (!response.data.authToken) {
+              finish(() => reject(new Error('Authentication cancelled')));
+            }
+            // If there IS a token the poll loop will resolve it on the next tick
+          } catch { /* ignore — let the poll loop handle errors */ }
+        }, 500);
+      };
+      window.addEventListener('focus', onFocus);
+
       const poll = async () => {
+        if (done) return;
         try {
           const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
             headers: this.plexHeaders,
           });
 
           if (response.data.authToken) {
-            clearTimeout(timeoutId);
-            // Call close() unconditionally — popup.closed is unreliable for cross-origin
-            // windows in Chrome (always returns true), so we can't use it as a guard.
-            try { this.popup?.close(); } catch { /* ignore cross-origin close errors */ }
-            resolve(response.data.authToken);
+            finish(() => {
+              // popup.closed is unreliable; call close() unconditionally
+              try { this.popup?.close(); } catch { /* ignore cross-origin close errors */ }
+              resolve(response.data.authToken);
+            });
             return;
           }
         } catch (error) {
-          clearTimeout(timeoutId);
-          reject(error);
+          finish(() => reject(error));
           return;
         }
 

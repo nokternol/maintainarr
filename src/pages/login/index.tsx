@@ -41,6 +41,7 @@ export default function LoginPage() {
 
       window.location.href = '/dashboard';
     } catch (err) {
+      if (err instanceof Error && err.message === 'Authentication cancelled') return;
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
