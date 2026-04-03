@@ -1,14 +1,14 @@
 .container {
-  @apply min-h-screen bg-surface-bg flex;
+  @apply h-screen bg-surface-bg flex overflow-hidden;
 }
 
 .sidebarWrapper {
-  @apply hidden md:block flex-shrink-0;
+  @apply hidden md:flex flex-col flex-shrink-0 h-full overflow-y-auto;
   width: var(--layout-sidebar-width);
 }
 
 .mainContent {
-  @apply flex-1 flex flex-col overflow-x-hidden;
+  @apply flex-1 flex flex-col overflow-x-hidden overflow-y-auto;
 }
 
 .contentWrapper {
