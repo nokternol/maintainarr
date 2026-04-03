@@ -7,6 +7,8 @@ import { AuthService } from './services/authService';
 import type { AuthService as AuthServiceType } from './services/authService';
 import { PlexService } from './services/plexService';
 import type { PlexService as PlexServiceType } from './services/plexService';
+import { ProviderSettingsService } from './services/providerSettingsService';
+import type { ProviderSettingsService as ProviderSettingsServiceType } from './services/providerSettingsService';
 import { TmdbService } from './services/tmdbService';
 import type { TmdbService as TmdbServiceType } from './services/tmdbService';
 
@@ -22,6 +24,7 @@ export interface Cradle {
   tmdbService: TmdbServiceType;
   plexService: PlexServiceType;
   authService: AuthServiceType;
+  providerSettingsService: ProviderSettingsServiceType;
 }
 
 let container: AwilixContainer<Cradle> | null = null;
@@ -47,6 +50,7 @@ export function buildContainer(deps: {
     tmdbService: asClass(TmdbService).singleton(), // Singleton for caching
     plexService: asClass(PlexService).scoped(), // Per-request
     authService: asClass(AuthService).scoped(), // Per-request
+    providerSettingsService: asClass(ProviderSettingsService).scoped(), // Per-request
   });
 
   log.info('Container built', {

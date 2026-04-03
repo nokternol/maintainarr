@@ -6,16 +6,30 @@
  *
  * Run: vitest run --project server
  */
+import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+const testConfig: AppConfig = {
+  NODE_ENV: 'test',
+  PORT: 5057,
+  COMMIT_TAG: 'test',
+  LOG_LEVEL: 'error',
+  LOG_DIR: './config/logs',
+  DB_PATH: ':memory:',
+  DB_LOGGING: false,
+  TRUST_PROXY: false,
+  TMDB_API_KEY: '',
+  SESSION_SECRET: 'test-secret',
+};
+
 describe('ProviderSettingsService', () => {
   let service: ProviderSettingsService;
 
   beforeEach(async () => {
-    await initializeDatabase(':memory:');
+    await initializeDatabase(testConfig);
     service = new ProviderSettingsService({ db: getDb() });
   });
 
