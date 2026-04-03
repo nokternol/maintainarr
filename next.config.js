@@ -1,29 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  output: 'standalone',
+    reactStrictMode: true,
+    output: "standalone",
+    devIndicators: false,
 
-  images: {
-    domains: ['image.tmdb.org'],
-  },
+    images: {
+        domains: ["image.tmdb.org"],
+    },
 
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
+    webpack(config) {
+        config.module.rules.push({
+            test: /\.svg$/,
+            use: ["@svgr/webpack"],
+        });
 
-    return config;
-  },
+        return config;
+    },
 
-  experimental: {
-    scrollRestoration: true,
-    largePageDataBytes: 256 * 1000,
-  },
+    experimental: {
+        scrollRestoration: true,
+        largePageDataBytes: 256 * 1000,
+    },
 
-  env: {
-    COMMIT_TAG: process.env.COMMIT_TAG || 'local',
-  },
+    env: {
+        COMMIT_TAG: process.env.COMMIT_TAG || "local",
+    },
 };
 
 module.exports = nextConfig;
