@@ -1,11 +1,13 @@
 import AppLayout from '@app/components/AppLayout';
 import MediaCard from '@app/components/MediaCard';
 import MediaGrid from '@app/components/MediaGrid';
+import RatingsPanel from '@app/components/RatingsPanel';
 import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import { useMedia } from '@app/hooks/useMedia';
 import type { ManagedMovie, ManagedSeries } from '@app/hooks/useMedia';
 import type { SidebarItem } from '@app/types/navigation';
+import { useState } from 'react';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -34,8 +36,14 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+interface SelectedMedia {
+  title: string;
+  year?: number;
+}
+
 export default function MediaPage() {
   const { movies, series, isLoading } = useMedia();
+  const [selected, setSelected] = useState<SelectedMedia | null>(null);
 
   return (
     <AppLayout
@@ -66,22 +74,25 @@ export default function MediaPage() {
               items={movies ?? []}
               isLoading={isLoading && !movies}
               renderItem={(movie: ManagedMovie) => (
-                <MediaCard
+                <div
                   key={`movie-${movie.id}`}
-                  id={`movie-${movie.id}`}
+                  data-testid={`media-card-movie-${movie.id}`}
+                  onClick={() => setSelected({ title: movie.title, year: movie.year })}
                 >
-                  <MediaCard.Poster
-                    src={getPosterUrl(movie.images)}
-                    alt={movie.title}
-                  />
-                  <MediaCard.Content>
-                    <MediaCard.Title>{movie.title}</MediaCard.Title>
-                    <MediaCard.Year>{movie.year}</MediaCard.Year>
-                    <MediaCard.StatusBadge
-                      status={movie.hasFile ? 'downloaded' : 'missing'}
+                  <MediaCard id={`movie-${movie.id}`}>
+                    <MediaCard.Poster
+                      src={getPosterUrl(movie.images)}
+                      alt={movie.title}
                     />
-                  </MediaCard.Content>
-                </MediaCard>
+                    <MediaCard.Content>
+                      <MediaCard.Title>{movie.title}</MediaCard.Title>
+                      <MediaCard.Year>{movie.year}</MediaCard.Year>
+                      <MediaCard.StatusBadge
+                        status={movie.hasFile ? 'downloaded' : 'missing'}
+                      />
+                    </MediaCard.Content>
+                  </MediaCard>
+                </div>
               )}
             />
           </section>
@@ -122,6 +133,13 @@ export default function MediaPage() {
           </div>
         )}
       </div>
+
+      <RatingsPanel
+        isOpen={selected !== null}
+        onClose={() => setSelected(null)}
+        title={selected?.title ?? ''}
+        year={selected?.year}
+      />
     </AppLayout>
   );
 }
