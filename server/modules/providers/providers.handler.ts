@@ -10,8 +10,10 @@ import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
+import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { RatingsAggregationService } from '@server/services/ratingsAggregationService';
 import { defineRoute } from '@server/utils/defineRoute';
+import { resolveApiKey } from '@server/utils/keyResolver';
 import { providersSchemas } from './providers.schemas';
 
 const log = getChildLogger('ProvidersHandler');
@@ -39,7 +41,12 @@ function makeEntity(
   };
 }
 
-export function createProvidersHandlers(_cradle: object) {
+interface ProvidersCradle {
+  providerSettingsService: ProviderSettingsService;
+}
+
+export function createProvidersHandlers(cradle: ProvidersCradle) {
+  const { providerSettingsService } = cradle;
   const ratingsService = new RatingsAggregationService();
 
   return {
@@ -110,8 +117,22 @@ export function createProvidersHandlers(_cradle: object) {
       schemas: providersSchemas.getRatings,
       handler: async ({ query }) => {
         const { title, year, tmdbApiKey, omdbApiKey } = query;
-        // Resolve TMDB key: form input → server config fallback → skip
-        const resolvedTmdbKey = tmdbApiKey || getConfig().TMDB_API_KEY || undefined;
+
+        // Fetch saved keys from DB (one query each, null when none saved)
+        const [tmdbProviders, omdbProviders] = await Promise.all([
+          providerSettingsService.findActiveByTypes([MetadataProviderType.TMDB]),
+          providerSettingsService.findActiveByTypes([MetadataProviderType.OMDB]),
+        ]);
+        const dbTmdbKey = tmdbProviders[0]?.apiKey ?? null;
+        const dbOmdbKey = omdbProviders[0]?.apiKey ?? null;
+
+        // Resolve keys: explicit param → DB saved key → env/config → skip
+        const { key: resolvedTmdbKey } = resolveApiKey(
+          tmdbApiKey,
+          dbTmdbKey,
+          getConfig().TMDB_API_KEY || undefined
+        );
+        const { key: resolvedOmdbKey } = resolveApiKey(omdbApiKey, dbOmdbKey, undefined);
 
         log.debug('Fetching aggregated ratings', { title, year, hasTmdb: !!resolvedTmdbKey });
 
@@ -139,14 +160,14 @@ export function createProvidersHandlers(_cradle: object) {
             : Promise.resolve(undefined),
 
           // OMDB
-          omdbApiKey
+          resolvedOmdbKey
             ? (async () => {
                 try {
                   const provider = new OmdbProvider(
                     makeEntity(
                       MetadataProviderType.OMDB,
                       'https://www.omdbapi.com',
-                      omdbApiKey,
+                      resolvedOmdbKey,
                       {}
                     ),
                     log
