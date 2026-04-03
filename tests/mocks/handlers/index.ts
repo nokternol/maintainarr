@@ -1,4 +1,5 @@
 import { authHandlers } from './auth';
+import { mediaHandlers } from './media';
 import { backdropsHandlers } from './backdrops';
 import { jellyfinHandlers } from './jellyfin';
 import { overseerrHandlers } from './overseerr';
@@ -20,4 +21,5 @@ export const handlers = [
   ...plexProviderHandlers,
   ...providersHandlers,
   ...settingsHandlers,
+  ...mediaHandlers,
 ];
