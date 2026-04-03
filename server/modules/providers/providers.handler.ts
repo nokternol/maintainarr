@@ -118,13 +118,15 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
       handler: async ({ query }) => {
         const { title, year, tmdbApiKey, omdbApiKey } = query;
 
-        // Fetch saved keys from DB (one query each, null when none saved)
-        const [tmdbProviders, omdbProviders] = await Promise.all([
-          providerSettingsService.findActiveByTypes([MetadataProviderType.TMDB]),
-          providerSettingsService.findActiveByTypes([MetadataProviderType.OMDB]),
+        // Fetch saved keys from DB in a single query
+        const dbProviders = await providerSettingsService.findActiveByTypes([
+          MetadataProviderType.TMDB,
+          MetadataProviderType.OMDB,
         ]);
-        const dbTmdbKey = tmdbProviders[0]?.apiKey ?? null;
-        const dbOmdbKey = omdbProviders[0]?.apiKey ?? null;
+        const dbTmdbKey =
+          dbProviders.find((p) => p.type === MetadataProviderType.TMDB)?.apiKey ?? null;
+        const dbOmdbKey =
+          dbProviders.find((p) => p.type === MetadataProviderType.OMDB)?.apiKey ?? null;
 
         // Resolve keys: explicit param → DB saved key → env/config → skip
         const { key: resolvedTmdbKey } = resolveApiKey(
@@ -138,7 +140,7 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
 
         // Fetch from all providers in parallel (gracefully handle failures)
         const [tmdbRating, omdbRating, tvmazeRating] = await Promise.all([
-          // TMDB — uses form key, or falls back to server-configured key
+          // TMDB — resolved via param → DB → env/config
           resolvedTmdbKey
             ? (async () => {
                 try {
