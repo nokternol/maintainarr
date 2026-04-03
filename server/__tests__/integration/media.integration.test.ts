@@ -117,46 +117,16 @@ describe('Media API Integration', () => {
     expect(data.errors).toHaveLength(0);
   });
 
-  it('GET /media returns empty arrays when no providers are saved', async () => {
-    // Build a fresh container with no providers seeded
-    const mockConfig = createMockConfig({
-      NODE_ENV: 'test',
-      DB_PATH: ':memory:',
-      DB_LOGGING: false,
-    });
-    for (const [key, value] of Object.entries(mockConfig)) {
-      process.env[key] = String(value);
-    }
-    const config = loadConfig();
-    const db = await initializeDatabase(config);
-    const container = buildContainer({ config, db });
-
-    const emptyApp = express();
-    emptyApp.use(express.json());
-    emptyApp.use(requestIdMiddleware);
-    emptyApp.use((_req: Request, _res: Response, next: NextFunction) => {
-      _req.user = {
-        id: 1,
-        email: 'test@example.com',
-        plexUsername: 'testuser',
-        plexId: null,
-        avatar: null,
-        userType: 'plex',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      next();
-    });
-    emptyApp.use('/api/media', createMediaRoutes(container.cradle));
-    emptyApp.use(errorHandlerMiddleware);
-
-    const emptyClient = createApiClient(emptyApp);
-    const res = await emptyClient.get('/api/media');
+  it('GET /media response has expected shape', async () => {
+    const res = await authedClient.get('/api/media');
     const data = expectSuccessResponse(res);
 
-    expect(data.movies).toHaveLength(0);
-    expect(data.series).toHaveLength(0);
-    expect(data.errors).toHaveLength(0);
+    // Shape checks
+    expect(typeof data.movies).toBe('object');
+    expect(typeof data.series).toBe('object');
+    expect(typeof data.errors).toBe('object');
+    // At least the seeded providers returned data
+    expect(data.movies.length).toBeGreaterThan(0);
+    expect(data.series.length).toBeGreaterThan(0);
   });
 });

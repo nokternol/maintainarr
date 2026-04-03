@@ -5,6 +5,7 @@ import { createAuthRoutes } from './auth/auth.routes';
 import { createBackdropsRoutes } from './backdrops/backdrops.routes';
 import { createHealthRoutes } from './health/health.routes';
 import { createProvidersRoutes } from './providers/providers.routes';
+import { createMediaRoutes } from './media/media.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
 
 /**
@@ -23,6 +24,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/auth', createAuthRoutes(cradle));
   router.use('/providers', createProvidersRoutes(cradle));
   router.use('/settings', createSettingsRoutes(cradle));
+  router.use('/media', createMediaRoutes(cradle));
 
   return router;
 }

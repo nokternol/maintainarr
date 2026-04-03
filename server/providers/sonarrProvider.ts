@@ -5,9 +5,15 @@ export interface SonarrSeason {
   monitored: boolean;
 }
 
+export interface SonarrImage {
+  coverType: string;
+  remoteUrl: string;
+}
+
 export interface SonarrSeries {
   id: number;
   title: string;
+  year?: number;
   status: string;
   monitored: boolean;
   tvdbId: number;
@@ -17,6 +23,7 @@ export interface SonarrSeries {
   tags: number[];
   path: string;
   seasons: SonarrSeason[];
+  images?: SonarrImage[];
 }
 
 export interface SonarrProfile {

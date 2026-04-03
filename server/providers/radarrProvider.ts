@@ -1,8 +1,14 @@
 import { BaseMetadataProvider } from './baseMetadataProvider';
 
+export interface RadarrImage {
+  coverType: string;
+  remoteUrl: string;
+}
+
 export interface RadarrMovie {
   id: number;
   title: string;
+  year?: number;
   hasFile: boolean;
   monitored: boolean;
   tmdbId: number;
@@ -11,6 +17,7 @@ export interface RadarrMovie {
   tags: number[];
   folderName: string;
   path: string;
+  images?: RadarrImage[];
 }
 
 export interface RadarrProfile {
