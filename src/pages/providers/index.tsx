@@ -1,5 +1,7 @@
 import AppLayout from '@app/components/AppLayout';
-import ProviderPanel from '@app/components/ProviderPanel';
+import ProviderForm from '@app/components/ProviderForm';
+import type { ProviderFormParams, ProviderFormType } from '@app/components/ProviderForm';
+import ProviderTestResult from '@app/components/ProviderTestResult';
 import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import WidgetGrid from '@app/components/WidgetGrid';
@@ -7,7 +9,6 @@ import { useProviderMetadata } from '@app/hooks/useProviderMetadata';
 import type { SidebarItem } from '@app/types/navigation';
 import { useState } from 'react';
 
-// Icons (reusing from dashboard)
 const DashboardIcon = () => (
   <svg
     className="w-5 h-5"
@@ -49,6 +50,7 @@ const SettingsIcon = () => (
     />
   </svg>
 );
+
 const StarIcon = () => (
   <svg
     className="w-5 h-5"
@@ -68,28 +70,10 @@ const StarIcon = () => (
 );
 
 const sidebarItems: SidebarItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: <DashboardIcon />,
-    href: '/dashboard',
-  },
-  {
-    id: 'providers',
-    label: 'Providers',
-    icon: <SettingsIcon />,
-    href: '/providers',
-    active: true,
-  },
-  {
-    id: 'ratings',
-    label: 'Ratings',
-    icon: <StarIcon />,
-    href: '/ratings',
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
+  { id: 'providers', label: 'Providers', icon: <SettingsIcon />, href: '/providers', active: true },
+  { id: 'ratings', label: 'Ratings', icon: <StarIcon />, href: '/ratings' },
 ];
-
-type ProviderType = 'SONARR' | 'RADARR' | 'PLEX' | 'JELLYFIN' | 'TAUTULLI' | 'OVERSEERR';
 
 interface ProviderState {
   data?: Record<string, unknown>;
@@ -97,30 +81,39 @@ interface ProviderState {
   isLoading: boolean;
 }
 
-type ProvidersState = Record<ProviderType, ProviderState>;
+type ProvidersState = Record<ProviderFormType, ProviderState>;
+
+const PROVIDER_TYPES: ProviderFormType[] = [
+  'PLEX',
+  'JELLYFIN',
+  'SONARR',
+  'RADARR',
+  'TAUTULLI',
+  'OVERSEERR',
+];
+
+const PROVIDER_TITLES: Record<ProviderFormType, string> = {
+  PLEX: 'Plex',
+  JELLYFIN: 'Jellyfin',
+  SONARR: 'Sonarr',
+  RADARR: 'Radarr',
+  TAUTULLI: 'Tautulli',
+  OVERSEERR: 'Overseerr',
+  TMDB: 'TMDB',
+  OMDB: 'OMDB',
+};
 
 export default function ProvidersPage() {
   const { trigger } = useProviderMetadata();
-  const [providers, setProviders] = useState<ProvidersState>({
-    PLEX: { isLoading: false },
-    JELLYFIN: { isLoading: false },
-    SONARR: { isLoading: false },
-    RADARR: { isLoading: false },
-    TAUTULLI: { isLoading: false },
-    OVERSEERR: { isLoading: false },
-  });
+  const [providers, setProviders] = useState<ProvidersState>(
+    Object.fromEntries(PROVIDER_TYPES.map((t) => [t, { isLoading: false }])) as ProvidersState
+  );
 
-  const handleFetch = async (params: {
-    type: ProviderType;
-    url: string;
-    apiKey: string;
-    settings?: string;
-  }) => {
+  const handleTest = async (params: ProviderFormParams) => {
     setProviders((prev) => ({
       ...prev,
       [params.type]: { isLoading: true, error: undefined, data: undefined },
     }));
-
     try {
       const result = await trigger(params);
       setProviders((prev) => ({
@@ -162,54 +155,21 @@ export default function ProvidersPage() {
     >
       <div className="p-6 space-y-6">
         <WidgetGrid columns={2}>
-          <ProviderPanel
-            title="Plex"
-            type="PLEX"
-            onFetch={handleFetch}
-            isLoading={providers.PLEX.isLoading}
-            error={providers.PLEX.error}
-            data={providers.PLEX.data}
-          />
-          <ProviderPanel
-            title="Jellyfin"
-            type="JELLYFIN"
-            onFetch={handleFetch}
-            isLoading={providers.JELLYFIN.isLoading}
-            error={providers.JELLYFIN.error}
-            data={providers.JELLYFIN.data}
-          />
-          <ProviderPanel
-            title="Sonarr"
-            type="SONARR"
-            onFetch={handleFetch}
-            isLoading={providers.SONARR.isLoading}
-            error={providers.SONARR.error}
-            data={providers.SONARR.data}
-          />
-          <ProviderPanel
-            title="Radarr"
-            type="RADARR"
-            onFetch={handleFetch}
-            isLoading={providers.RADARR.isLoading}
-            error={providers.RADARR.error}
-            data={providers.RADARR.data}
-          />
-          <ProviderPanel
-            title="Tautulli"
-            type="TAUTULLI"
-            onFetch={handleFetch}
-            isLoading={providers.TAUTULLI.isLoading}
-            error={providers.TAUTULLI.error}
-            data={providers.TAUTULLI.data}
-          />
-          <ProviderPanel
-            title="Overseerr"
-            type="OVERSEERR"
-            onFetch={handleFetch}
-            isLoading={providers.OVERSEERR.isLoading}
-            error={providers.OVERSEERR.error}
-            data={providers.OVERSEERR.data}
-          />
+          {PROVIDER_TYPES.map((type) => (
+            <div key={type}>
+              <ProviderForm
+                title={PROVIDER_TITLES[type]}
+                type={type}
+                onTest={handleTest}
+                isLoading={providers[type]?.isLoading}
+              />
+              <ProviderTestResult
+                isLoading={providers[type]?.isLoading}
+                error={providers[type]?.error}
+                data={providers[type]?.data}
+              />
+            </div>
+          ))}
         </WidgetGrid>
       </div>
     </AppLayout>
