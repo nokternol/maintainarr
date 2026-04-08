@@ -3,6 +3,12 @@ import { z } from 'zod';
 
 const providerType = z.nativeEnum(MetadataProviderType);
 
+export const testProviderQuery = z.object({
+  type: providerType,
+  url: z.string().url(),
+  apiKey: z.string().optional(),
+});
+
 const idParams = z.object({
   id: z
     .string()
@@ -45,3 +51,4 @@ export const settingsSchemas = {
 export type CreateProviderBody = z.infer<typeof settingsSchemas.createProvider.body>;
 export type UpdateProviderBody = z.infer<typeof settingsSchemas.updateProvider.body>;
 export type ProviderIdParams = z.infer<typeof idParams>;
+export type TestProviderQuery = z.infer<typeof testProviderQuery>;

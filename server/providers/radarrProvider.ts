@@ -61,4 +61,10 @@ export class RadarrProvider extends BaseMetadataProvider {
   public async getTags(): Promise<RadarrTag[]> {
     return this.client.get('tag', { searchParams: this.apiParams }).json<RadarrTag[]>();
   }
+
+  public async lookupMovies(term: string): Promise<RadarrMovie[]> {
+    return this.client
+      .get('movie/lookup', { searchParams: { ...this.apiParams, term } })
+      .json<RadarrMovie[]>();
+  }
 }

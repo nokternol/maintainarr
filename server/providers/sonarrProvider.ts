@@ -67,4 +67,10 @@ export class SonarrProvider extends BaseMetadataProvider {
   public async getTags(): Promise<SonarrTag[]> {
     return this.client.get('tag', { searchParams: this.apiParams }).json<SonarrTag[]>();
   }
+
+  public async lookupSeries(term: string): Promise<SonarrSeries[]> {
+    return this.client
+      .get('series/lookup', { searchParams: { ...this.apiParams, term } })
+      .json<SonarrSeries[]>();
+  }
 }

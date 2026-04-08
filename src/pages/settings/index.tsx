@@ -4,7 +4,7 @@ import TopBar from '@app/components/TopBar';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { CreateProviderParams, ProviderSummary } from '@app/hooks/useProviderSettings';
 import type { SidebarItem } from '@app/types/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -21,10 +21,60 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-label="Icon">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
 const sidebarItems: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
+  { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, href: '/settings', active: true },
 ];
+
+// ─── API suffix map ────────────────────────────────────────────────────────────
+
+const API_SUFFIXES: Record<string, string> = {
+  SONARR: '/api/v3',
+  RADARR: '/api/v3',
+  PLEX: '',
+  JELLYFIN: '',
+  TAUTULLI: '',
+  OVERSEERR: '',
+  TMDB: '',
+  OMDB: '',
+};
+
+// ─── Connection status ────────────────────────────────────────────────────────
+
+type TestStatus = 'idle' | 'loading' | 'pass' | 'fail';
+
+function ConnectionIcon({ status }: { status: TestStatus }) {
+  if (status === 'idle') {
+    return <span className="inline-block w-3 h-3 rounded-full bg-gray-400" title="Not tested" />;
+  }
+  if (status === 'loading') {
+    return (
+      <svg className="inline-block w-4 h-4 animate-spin text-text-secondary" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+      </svg>
+    );
+  }
+  if (status === 'pass') {
+    return (
+      <svg className="inline-block w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="inline-block w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
 
 // ─── Add Provider Form ────────────────────────────────────────────────────────
 
@@ -35,14 +85,67 @@ interface AddFormState {
   name: string;
   url: string;
   apiKey: string;
+  userId: string;
 }
 
 function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProviderParams) => void; onCancel: () => void }) {
-  const [form, setForm] = useState<AddFormState>({ type: 'RADARR', name: '', url: '', apiKey: '' });
+  const [form, setForm] = useState<AddFormState>({ type: 'RADARR', name: '', url: '', apiKey: '', userId: '' });
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
+  const [testError, setTestError] = useState<string | undefined>();
+  const testAbortRef = useRef<AbortController | null>(null);
+
+  const runTest = async (url: string, apiKey: string, type: string) => {
+    if (!url) return;
+    testAbortRef.current?.abort();
+    const ac = new AbortController();
+    testAbortRef.current = ac;
+
+    setTestStatus('loading');
+    setTestError(undefined);
+    try {
+      const params = new URLSearchParams({ type, url });
+      if (apiKey) params.set('apiKey', apiKey);
+      const res = await fetch(`/api/settings/providers/test?${params}`, { signal: ac.signal });
+      const json = await res.json();
+      if (json.data?.ok) {
+        setTestStatus('pass');
+      } else {
+        setTestStatus('fail');
+        setTestError(json.data?.error ?? 'Connection failed');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setTestStatus('fail');
+      setTestError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  };
+
+  const handleBlur = () => {
+    runTest(form.url, form.apiKey, form.type);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ type: form.type, name: form.name, url: form.url, apiKey: form.apiKey || undefined });
+    const suffix = API_SUFFIXES[form.type] ?? '';
+    const host = form.url.replace(/\/+$/, '');
+    const fullUrl = suffix ? `${host}${suffix}` : host;
+
+    const settings = form.type === 'JELLYFIN' && form.userId
+      ? { userId: form.userId }
+      : undefined;
+
+    onSubmit({
+      type: form.type,
+      name: form.name,
+      url: fullUrl,
+      apiKey: form.apiKey || undefined,
+      settings,
+    });
+  };
+
+  const resetTest = () => {
+    setTestStatus('idle');
+    setTestError(undefined);
   };
 
   return (
@@ -52,7 +155,7 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
           <label className="block text-sm text-text-secondary mb-1">Type</label>
           <select
             value={form.type}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+            onChange={(e) => { setForm((f) => ({ ...f, type: e.target.value })); resetTest(); }}
             className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
           >
             {PROVIDER_TYPES.map((t) => (
@@ -71,13 +174,20 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
             required
           />
         </div>
-        <div>
-          <label className="block text-sm text-text-secondary mb-1">URL</label>
+        <div className="col-span-2">
+          <label className="block text-sm text-text-secondary mb-1">
+            Host URL
+            <span className="ml-2">
+              <ConnectionIcon status={testStatus} />
+            </span>
+            {testError && <span className="ml-2 text-xs text-red-400">{testError}</span>}
+          </label>
           <input
             type="url"
             value={form.url}
-            onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
-            placeholder="http://localhost:7878/api/v3"
+            onChange={(e) => { setForm((f) => ({ ...f, url: e.target.value })); resetTest(); }}
+            onBlur={handleBlur}
+            placeholder="http://localhost:7878"
             className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
             required
           />
@@ -87,11 +197,24 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
           <input
             type="password"
             value={form.apiKey}
-            onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
+            onChange={(e) => { setForm((f) => ({ ...f, apiKey: e.target.value })); resetTest(); }}
+            onBlur={handleBlur}
             placeholder="Optional"
             className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
           />
         </div>
+        {form.type === 'JELLYFIN' && (
+          <div>
+            <label className="block text-sm text-text-secondary mb-1">User ID</label>
+            <input
+              type="text"
+              value={form.userId}
+              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              placeholder="Jellyfin user ID"
+              className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+            />
+          </div>
+        )}
       </div>
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-text-secondary hover:text-text-primary">

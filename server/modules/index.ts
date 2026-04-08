@@ -7,6 +7,7 @@ import { createHealthRoutes } from './health/health.routes';
 import { createProvidersRoutes } from './providers/providers.routes';
 import { createMediaRoutes } from './media/media.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
+import { createSearchRoutes } from './search/search.routes';
 
 /**
  * Creates the API router with all module routes mounted.
@@ -25,6 +26,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/providers', createProvidersRoutes(cradle));
   router.use('/settings', createSettingsRoutes(cradle));
   router.use('/media', createMediaRoutes(cradle));
+  router.use('/search', createSearchRoutes(cradle));
 
   return router;
 }

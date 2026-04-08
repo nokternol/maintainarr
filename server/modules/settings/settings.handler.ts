@@ -1,7 +1,54 @@
 import { isAuthenticated } from '@server/middleware/auth';
 import { defineRoute } from '@server/utils/defineRoute';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { settingsSchemas } from './settings.schemas';
+import { MetadataProviderType } from '@server/database/schema';
+import ky from 'ky';
+import { settingsSchemas, testProviderQuery } from './settings.schemas';
+
+const API_SUFFIXES: Record<string, string> = {
+  SONARR: '/api/v3',
+  RADARR: '/api/v3',
+  PLEX: '',
+  JELLYFIN: '',
+  TAUTULLI: '',
+  OVERSEERR: '',
+  TMDB: '',
+  OMDB: '',
+};
+
+async function probeProvider(type: MetadataProviderType, host: string, apiKey?: string): Promise<void> {
+  const suffix = API_SUFFIXES[type] ?? '';
+  const base = host.replace(/\/+$/, '') + suffix;
+  const key = apiKey ?? '';
+  const timeout = 8000;
+
+  switch (type) {
+    case MetadataProviderType.SONARR:
+    case MetadataProviderType.RADARR:
+      await ky.get(`${base}/system/status`, { searchParams: { apikey: key }, timeout }).json();
+      break;
+    case MetadataProviderType.PLEX:
+      await ky.get(`${base}/identity`, { headers: { 'X-Plex-Token': key, Accept: 'application/json' }, timeout }).json();
+      break;
+    case MetadataProviderType.JELLYFIN:
+      await ky.get(`${base}/System/Ping`, { headers: { 'X-Emby-Authorization': `MediaBrowser Token="${key}"` }, timeout }).text();
+      break;
+    case MetadataProviderType.TAUTULLI:
+      await ky.get(`${base}/api/v2`, { searchParams: { cmd: 'get_server_info', apikey: key }, timeout }).json();
+      break;
+    case MetadataProviderType.OVERSEERR:
+      await ky.get(`${base}/api/v1/status`, { headers: { 'X-Api-Key': key }, timeout }).json();
+      break;
+    case MetadataProviderType.TMDB:
+      await ky.get(`${base}/configuration`, { searchParams: { api_key: key }, timeout }).json();
+      break;
+    case MetadataProviderType.OMDB:
+      await ky.get(base, { searchParams: { apikey: key, t: 'test' }, timeout }).json();
+      break;
+    default:
+      throw new Error(`Unsupported provider type: ${type}`);
+  }
+}
 
 interface SettingsCradle {
   providerSettingsService: ProviderSettingsService;
@@ -47,6 +94,21 @@ export function createSettingsHandlers(cradle: SettingsCradle) {
         handler: async ({ params }) => {
           await providerSettingsService.delete(params.id);
           return null;
+        },
+      }),
+    ],
+
+    testProvider: [
+      isAuthenticated(),
+      defineRoute({
+        schemas: { query: testProviderQuery },
+        handler: async ({ query }) => {
+          try {
+            await probeProvider(query.type, query.url, query.apiKey);
+            return { ok: true };
+          } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : String(err) };
+          }
         },
       }),
     ],

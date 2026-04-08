@@ -186,8 +186,8 @@ const sidebarItems: SidebarItem[] = [
         href: "/dashboard",
         active: true,
     },
-    { id: "providers", label: "Providers", icon: <div />, href: "/providers" },
     { id: "media", label: "Media", icon: <div />, href: "/media" },
+    { id: "search", label: "Search", icon: <div />, href: "/search" },
     {
         id: "tasks",
         label: "Tasks",
