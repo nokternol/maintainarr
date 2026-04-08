@@ -46,14 +46,14 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border border-border rounded-lg bg-surface">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 border border-border rounded-lg bg-surface-panel">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-text-secondary mb-1">Type</label>
           <select
             value={form.type}
             onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-            className="w-full px-3 py-2 bg-background border border-border rounded text-text-primary"
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
           >
             {PROVIDER_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -67,7 +67,7 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             placeholder="My Radarr"
-            className="w-full px-3 py-2 bg-background border border-border rounded text-text-primary"
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
             required
           />
         </div>
@@ -78,7 +78,7 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
             value={form.url}
             onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
             placeholder="http://localhost:7878/api/v3"
-            className="w-full px-3 py-2 bg-background border border-border rounded text-text-primary"
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
             required
           />
         </div>
@@ -89,7 +89,7 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
             value={form.apiKey}
             onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
             placeholder="Optional"
-            className="w-full px-3 py-2 bg-background border border-border rounded text-text-primary"
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
           />
         </div>
       </div>
@@ -109,7 +109,7 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
 
 function ProviderRow({ provider, onDelete }: { provider: ProviderSummary; onDelete: () => void }) {
   return (
-    <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-surface">
+    <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-surface-panel">
       <div className="space-y-0.5">
         <div className="flex items-center gap-2">
           <span className="font-medium text-text-primary">{provider.name}</span>
