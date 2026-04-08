@@ -3,6 +3,7 @@ import type React from 'react';
 import { createContext, useContext } from 'react';
 import Badge from '../Badge';
 import { MediaPoster } from '../MediaPoster';
+import { Skeleton } from '../Skeleton';
 import styles from './MediaCard.module.css';
 
 interface MediaCardContextType {
@@ -94,12 +95,25 @@ const Content = ({ children, className }: { children: React.ReactNode; className
   return <div className={cn(styles.contentWrapper, className)}>{children}</div>;
 };
 
+const SkeletonCard = () => (
+  <div className={styles.card} data-testid="media-card-skeleton">
+    <div className={styles.posterWrapper}>
+      <Skeleton className="w-full aspect-[2/3] rounded-md" />
+    </div>
+    <div className={cn(styles.contentWrapper, 'gap-1 pt-1')}>
+      <Skeleton className="h-3 w-3/4 rounded" />
+      <Skeleton className="h-3 w-1/2 rounded" />
+    </div>
+  </div>
+);
+
 export const MediaCard = Object.assign(Root, {
   Poster,
   Title,
   Year,
   StatusBadge,
   Content,
+  Skeleton: SkeletonCard,
 });
 
 export default MediaCard;
