@@ -1,0 +1,225 @@
+/**
+ * Paginated Media API integration tests.
+ *
+ * Covers /api/media/movies and /api/media/series paginated endpoints.
+ * MSW intercepts Radarr/Sonarr HTTP calls; per-test overrides supply
+ * a larger dataset for meaningful pagination assertions.
+ *
+ * Run: vitest run --project server
+ */
+import { loadConfig } from '@server/config';
+import { buildContainer } from '@server/container';
+import { closeDatabase, initializeDatabase } from '@server/database';
+import { MetadataProviderType } from '@server/database/schema';
+import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/middleware/requestId';
+import { createMediaRoutes } from '@server/modules/media/media.routes';
+import { createMockConfig } from '@tests/factories';
+import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';
+import { server } from '@tests/mocks/server';
+import express, { type Express } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { http, HttpResponse } from 'msw';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+function makeMovies(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i + 1,
+    title: `Movie ${i + 1}`,
+    hasFile: i % 2 === 0,
+    monitored: true,
+    tmdbId: 1000 + i,
+    profileId: 1,
+    qualityProfileId: 1,
+    tags: [],
+    folderName: `/movies/Movie${i + 1}`,
+    path: `/movies/Movie${i + 1}`,
+  }));
+}
+
+const mockUser = {
+  id: 1,
+  email: 'test@example.com',
+  plexUsername: 'testuser',
+  plexId: null,
+  avatar: null,
+  userType: 'plex' as const,
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+// ─── Suite ────────────────────────────────────────────────────────────────────
+
+describe('Paginated Media API', () => {
+  let authedApp: Express;
+  let unauthedApp: Express;
+  let authedClient: ReturnType<typeof createApiClient>;
+  let unauthedClient: ReturnType<typeof createApiClient>;
+
+  beforeAll(async () => {
+    const mockConfig = createMockConfig({
+      NODE_ENV: 'test',
+      DB_PATH: ':memory:',
+      DB_LOGGING: false,
+    });
+    for (const [key, value] of Object.entries(mockConfig)) {
+      process.env[key] = String(value);
+    }
+
+    const config = loadConfig();
+    const db = await initializeDatabase(config);
+    const container = buildContainer({ config, db });
+    const { providerSettingsService } = container.cradle;
+
+    await providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Radarr',
+      url: 'http://localhost:7878/api/v3',
+      apiKey: 'fake-key',
+    });
+    await providerSettingsService.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Sonarr',
+      url: 'http://localhost:8989/api/v3',
+      apiKey: 'fake-key',
+    });
+
+    const mediaRoutes = createMediaRoutes(container.cradle);
+
+    authedApp = express();
+    authedApp.use(express.json());
+    authedApp.use(requestIdMiddleware);
+    authedApp.use((_req: Request, _res: Response, next: NextFunction) => {
+      _req.user = mockUser;
+      next();
+    });
+    authedApp.use('/api/media', mediaRoutes);
+    authedApp.use(errorHandlerMiddleware);
+
+    unauthedApp = express();
+    unauthedApp.use(express.json());
+    unauthedApp.use(requestIdMiddleware);
+    unauthedApp.use('/api/media', mediaRoutes);
+    unauthedApp.use(errorHandlerMiddleware);
+
+    authedClient = createApiClient(authedApp);
+    unauthedClient = createApiClient(unauthedApp);
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  // Override Radarr to return 5 movies before each test so the cache is
+  // populated with predictable data. vitest.server.ts resets handlers in
+  // afterEach, so we re-apply here.
+  beforeEach(() => {
+    server.use(
+      http.get('http://localhost:7878/api/v3/movie', () => HttpResponse.json(makeMovies(5)))
+    );
+  });
+
+  // ─── /api/media/movies ──────────────────────────────────────────────────────
+
+  describe('GET /api/media/movies', () => {
+    it('returns 401 when unauthenticated', async () => {
+      const res = await unauthedClient.get('/api/media/movies');
+      expectErrorResponse(res, 401);
+    });
+
+    it('returns paginated result shape', async () => {
+      const res = await authedClient.get('/api/media/movies?page=1&pageSize=2');
+      const data = expectSuccessResponse(res);
+
+      expect(data).toHaveProperty('items');
+      expect(data).toHaveProperty('totalCount');
+      expect(data).toHaveProperty('page', 1);
+      expect(data).toHaveProperty('pageSize', 2);
+      expect(Array.isArray(data.items)).toBe(true);
+    });
+
+    it('returns first page correctly', async () => {
+      const res = await authedClient.get('/api/media/movies?page=1&pageSize=2');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toHaveLength(2);
+      expect(data.totalCount).toBe(5);
+      expect(data.items[0]).toMatchObject({ title: 'Movie 1' });
+      expect(data.items[1]).toMatchObject({ title: 'Movie 2' });
+    });
+
+    it('returns second page correctly', async () => {
+      const res = await authedClient.get('/api/media/movies?page=2&pageSize=2');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toHaveLength(2);
+      expect(data.items[0]).toMatchObject({ title: 'Movie 3' });
+      expect(data.items[1]).toMatchObject({ title: 'Movie 4' });
+    });
+
+    it('returns last partial page', async () => {
+      const res = await authedClient.get('/api/media/movies?page=3&pageSize=2');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toHaveLength(1);
+      expect(data.items[0]).toMatchObject({ title: 'Movie 5' });
+      expect(data.totalCount).toBe(5);
+    });
+
+    it('returns empty items for out-of-range page', async () => {
+      const res = await authedClient.get('/api/media/movies?page=99&pageSize=2');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toHaveLength(0);
+      expect(data.totalCount).toBe(5);
+    });
+
+    it('defaults to page=1 and pageSize=48 when params are absent', async () => {
+      const res = await authedClient.get('/api/media/movies');
+      const data = expectSuccessResponse(res);
+
+      expect(data.page).toBe(1);
+      expect(data.pageSize).toBe(48);
+      expect(Array.isArray(data.items)).toBe(true);
+    });
+  });
+
+  // ─── /api/media/series ──────────────────────────────────────────────────────
+
+  describe('GET /api/media/series', () => {
+    it('returns 401 when unauthenticated', async () => {
+      const res = await unauthedClient.get('/api/media/series');
+      expectErrorResponse(res, 401);
+    });
+
+    it('returns paginated result shape', async () => {
+      const res = await authedClient.get('/api/media/series?page=1&pageSize=48');
+      const data = expectSuccessResponse(res);
+
+      expect(data).toHaveProperty('items');
+      expect(data).toHaveProperty('totalCount');
+      expect(data).toHaveProperty('page', 1);
+      expect(data).toHaveProperty('pageSize', 48);
+      expect(Array.isArray(data.items)).toBe(true);
+    });
+
+    it('returns series items from provider', async () => {
+      const res = await authedClient.get('/api/media/series?page=1&pageSize=48');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items[0]).toMatchObject({ title: 'Breaking Bad' });
+      expect(data.totalCount).toBe(1);
+    });
+
+    it('defaults to page=1 and pageSize=48 when params are absent', async () => {
+      const res = await authedClient.get('/api/media/series');
+      const data = expectSuccessResponse(res);
+
+      expect(data.page).toBe(1);
+      expect(data.pageSize).toBe(48);
+    });
+  });
+});

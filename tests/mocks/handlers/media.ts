@@ -1,6 +1,58 @@
 import { http, HttpResponse } from 'msw';
 
+const MOCK_MOVIES = Array.from({ length: 96 }, (_, i) => ({
+  id: i + 1,
+  title: `Movie ${i + 1}`,
+  year: 2000 + (i % 30),
+  hasFile: i % 2 === 0,
+  monitored: true,
+  tmdbId: 1000 + i,
+  images: [{ coverType: 'poster', remoteUrl: `https://example.com/movie${i + 1}.jpg` }],
+}));
+
+const MOCK_SERIES = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  title: i === 0 ? 'Breaking Bad' : `Series ${i + 1}`,
+  year: 2008 + i,
+  status: 'ended',
+  monitored: true,
+  tvdbId: 81189 + i,
+  images: [{ coverType: 'poster', remoteUrl: `https://example.com/series${i + 1}.jpg` }],
+}));
+
 export const mediaHandlers = [
+  http.get('/api/media/movies', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const pageSize = Number(url.searchParams.get('pageSize') ?? '48');
+    const start = (page - 1) * pageSize;
+    return HttpResponse.json({
+      status: 'ok',
+      data: {
+        items: MOCK_MOVIES.slice(start, start + pageSize),
+        totalCount: MOCK_MOVIES.length,
+        page,
+        pageSize,
+      },
+    });
+  }),
+
+  http.get('/api/media/series', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const pageSize = Number(url.searchParams.get('pageSize') ?? '48');
+    const start = (page - 1) * pageSize;
+    return HttpResponse.json({
+      status: 'ok',
+      data: {
+        items: MOCK_SERIES.slice(start, start + pageSize),
+        totalCount: MOCK_SERIES.length,
+        page,
+        pageSize,
+      },
+    });
+  }),
+
   http.get('/api/media', () => {
     return HttpResponse.json({
       status: 'ok',
