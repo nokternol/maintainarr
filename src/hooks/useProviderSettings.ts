@@ -26,6 +26,7 @@ export interface UpdateProviderParams {
   name?: string;
   url?: string;
   apiKey?: string;
+  settings?: Record<string, unknown>;
   isActive?: boolean;
 }
 

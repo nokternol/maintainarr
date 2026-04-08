@@ -2,7 +2,7 @@ import AppLayout from '@app/components/AppLayout';
 import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
-import type { CreateProviderParams, ProviderSummary } from '@app/hooks/useProviderSettings';
+import type { CreateProviderParams, UpdateProviderParams, ProviderSummary } from '@app/hooks/useProviderSettings';
 import type { SidebarItem } from '@app/types/navigation';
 import { useState, useRef } from 'react';
 
@@ -230,34 +230,193 @@ function AddProviderForm({ onSubmit, onCancel }: { onSubmit: (params: CreateProv
 
 // ─── Provider Row ─────────────────────────────────────────────────────────────
 
-function ProviderRow({ provider, onDelete }: { provider: ProviderSummary; onDelete: () => void }) {
-  return (
-    <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-surface-panel">
-      <div className="space-y-0.5">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-text-primary">{provider.name}</span>
-          <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded">{provider.type}</span>
-          {!provider.isActive && (
-            <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">Inactive</span>
-          )}
+function stripSuffix(url: string, type: string): string {
+  const suffix = API_SUFFIXES[type] ?? '';
+  if (suffix && url.endsWith(suffix)) return url.slice(0, -suffix.length);
+  return url;
+}
+
+interface EditFormState {
+  name: string;
+  url: string;
+  apiKey: string;
+  userId: string;
+}
+
+function ProviderRow({
+  provider,
+  onUpdate,
+  onDelete,
+}: {
+  provider: ProviderSummary;
+  onUpdate: (patch: UpdateProviderParams) => Promise<unknown>;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<EditFormState>({
+    name: provider.name,
+    url: stripSuffix(provider.url, provider.type),
+    apiKey: '',
+    userId: typeof provider.settings?.userId === 'string' ? provider.settings.userId : '',
+  });
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
+  const [testError, setTestError] = useState<string | undefined>();
+  const testAbortRef = useRef<AbortController | null>(null);
+
+  const runTest = async (url: string, apiKey: string, type: string) => {
+    if (!url) return;
+    testAbortRef.current?.abort();
+    const ac = new AbortController();
+    testAbortRef.current = ac;
+    setTestStatus('loading');
+    setTestError(undefined);
+    try {
+      const params = new URLSearchParams({ type, url });
+      if (apiKey) params.set('apiKey', apiKey);
+      const res = await fetch(`/api/settings/providers/test?${params}`, { signal: ac.signal });
+      const json = await res.json();
+      if (json.data?.ok) {
+        setTestStatus('pass');
+      } else {
+        setTestStatus('fail');
+        setTestError(json.data?.error ?? 'Connection failed');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setTestStatus('fail');
+      setTestError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  };
+
+  const handleBlur = () => runTest(form.url, form.apiKey, provider.type);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const suffix = API_SUFFIXES[provider.type] ?? '';
+    const host = form.url.replace(/\/+$/, '');
+    const fullUrl = suffix ? `${host}${suffix}` : host;
+
+    const patch: UpdateProviderParams = { name: form.name, url: fullUrl };
+    if (form.apiKey) patch.apiKey = form.apiKey;
+    if (provider.type === 'JELLYFIN') patch.settings = { userId: form.userId };
+
+    await onUpdate(patch);
+    setEditing(false);
+    setTestStatus('idle');
+  };
+
+  const handleCancel = () => {
+    setForm({
+      name: provider.name,
+      url: stripSuffix(provider.url, provider.type),
+      apiKey: '',
+      userId: typeof provider.settings?.userId === 'string' ? provider.settings.userId : '',
+    });
+    setEditing(false);
+    setTestStatus('idle');
+    setTestError(undefined);
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-surface-panel">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-text-primary">{provider.name}</span>
+            <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded">{provider.type}</span>
+            {!provider.isActive && (
+              <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">Inactive</span>
+            )}
+          </div>
+          <div className="text-sm text-text-secondary">{provider.url}</div>
         </div>
-        <div className="text-sm text-text-secondary">{provider.url}</div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-bg rounded"
+            aria-label={`Edit ${provider.name}`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded"
+            aria-label={`Delete ${provider.name}`}
+          >
+            Delete
+          </button>
+        </div>
       </div>
-      <button
-        onClick={onDelete}
-        className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded"
-        aria-label={`Delete ${provider.name}`}
-      >
-        Delete
-      </button>
-    </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSave} className="p-4 border border-primary/40 rounded-lg bg-surface-panel space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-text-secondary mb-1">Name</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-text-secondary mb-1">
+            Host URL
+            <span className="ml-2"><ConnectionIcon status={testStatus} /></span>
+            {testError && <span className="ml-2 text-xs text-red-400">{testError}</span>}
+          </label>
+          <input
+            type="url"
+            value={form.url}
+            onChange={(e) => { setForm((f) => ({ ...f, url: e.target.value })); setTestStatus('idle'); }}
+            onBlur={handleBlur}
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-text-secondary mb-1">API Key <span className="text-xs opacity-60">(leave blank to keep existing)</span></label>
+          <input
+            type="password"
+            value={form.apiKey}
+            onChange={(e) => { setForm((f) => ({ ...f, apiKey: e.target.value })); setTestStatus('idle'); }}
+            onBlur={handleBlur}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+          />
+        </div>
+        {provider.type === 'JELLYFIN' && (
+          <div>
+            <label className="block text-sm text-text-secondary mb-1">User ID</label>
+            <input
+              type="text"
+              value={form.userId}
+              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2 justify-end">
+        <button type="button" onClick={handleCancel} className="px-4 py-2 text-text-secondary hover:text-text-primary">
+          Cancel
+        </button>
+        <button type="submit" className="px-4 py-2 bg-primary text-text-primary rounded hover:opacity-90">
+          Save
+        </button>
+      </div>
+    </form>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { providers, isLoading, create, remove } = useProviderSettings();
+  const { providers, isLoading, create, update, remove } = useProviderSettings();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleCreate = async (params: CreateProviderParams) => {
@@ -303,7 +462,7 @@ export default function SettingsPage() {
 
         <div className="space-y-3">
           {providers?.map((p) => (
-            <ProviderRow key={p.id} provider={p} onDelete={() => remove(p.id)} />
+            <ProviderRow key={p.id} provider={p} onUpdate={(patch) => update(p.id, patch)} onDelete={() => remove(p.id)} />
           ))}
         </div>
       </div>
