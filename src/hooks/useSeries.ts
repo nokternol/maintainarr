@@ -39,7 +39,10 @@ export function useSeries(filters?: MediaFilters) {
 
   const getKey = (pageIndex: number, prev: PaginatedPage | null) => {
     if (prev && prev.items.length === 0) return null;
-    const params = new URLSearchParams({ page: String(pageIndex + 1), pageSize: String(PAGE_SIZE) });
+    const params = new URLSearchParams({
+      page: String(pageIndex + 1),
+      pageSize: String(PAGE_SIZE),
+    });
     if (filters) {
       for (const [k, v] of Object.entries(filters)) {
         if (v !== undefined) params.set(k, String(v));
@@ -50,11 +53,11 @@ export function useSeries(filters?: MediaFilters) {
 
   const { data, isLoading, isValidating, setSize, error } = useSWRInfinite(getKey, fetcher);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change. setSize is stable (SWR memoises it).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filtersKey is a deliberate trigger dep, not consumed inside the effect
   useEffect(() => {
     void setSize(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey]);
+  }, [filtersKey, setSize]);
 
   const items = data ? data.flatMap((page) => page.items) : [];
   const totalCount = data?.[0]?.totalCount ?? 0;

@@ -1,7 +1,7 @@
-import { isAuthenticated } from '@server/middleware/auth';
-import { defineRoute } from '@server/utils/defineRoute';
-import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { MetadataProviderType } from '@server/database/schema';
+import { isAuthenticated } from '@server/middleware/auth';
+import type { ProviderSettingsService } from '@server/services/providerSettingsService';
+import { defineRoute } from '@server/utils/defineRoute';
 import ky from 'ky';
 import { settingsSchemas, testProviderQuery } from './settings.schemas';
 
@@ -16,7 +16,11 @@ const API_SUFFIXES: Record<string, string> = {
   OMDB: '',
 };
 
-async function probeProvider(type: MetadataProviderType, host: string, apiKey?: string): Promise<void> {
+async function probeProvider(
+  type: MetadataProviderType,
+  host: string,
+  apiKey?: string
+): Promise<void> {
   const suffix = API_SUFFIXES[type] ?? '';
   const base = host.replace(/\/+$/, '') + suffix;
   const key = apiKey ?? '';
@@ -28,13 +32,25 @@ async function probeProvider(type: MetadataProviderType, host: string, apiKey?: 
       await ky.get(`${base}/system/status`, { searchParams: { apikey: key }, timeout }).json();
       break;
     case MetadataProviderType.PLEX:
-      await ky.get(`${base}/identity`, { headers: { 'X-Plex-Token': key, Accept: 'application/json' }, timeout }).json();
+      await ky
+        .get(`${base}/identity`, {
+          headers: { 'X-Plex-Token': key, Accept: 'application/json' },
+          timeout,
+        })
+        .json();
       break;
     case MetadataProviderType.JELLYFIN:
-      await ky.get(`${base}/System/Ping`, { headers: { 'X-Emby-Authorization': `MediaBrowser Token="${key}"` }, timeout }).text();
+      await ky
+        .get(`${base}/System/Ping`, {
+          headers: { 'X-Emby-Authorization': `MediaBrowser Token="${key}"` },
+          timeout,
+        })
+        .text();
       break;
     case MetadataProviderType.TAUTULLI:
-      await ky.get(`${base}/api/v2`, { searchParams: { cmd: 'get_server_info', apikey: key }, timeout }).json();
+      await ky
+        .get(`${base}/api/v2`, { searchParams: { cmd: 'get_server_info', apikey: key }, timeout })
+        .json();
       break;
     case MetadataProviderType.OVERSEERR:
       await ky.get(`${base}/api/v1/status`, { headers: { 'X-Api-Key': key }, timeout }).json();

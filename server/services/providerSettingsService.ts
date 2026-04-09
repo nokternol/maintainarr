@@ -2,7 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type MetadataProvider,
-  MetadataProviderType,
+  type MetadataProviderType,
   type NewMetadataProvider,
   type RawMetadataProvider,
   metadataProviders,

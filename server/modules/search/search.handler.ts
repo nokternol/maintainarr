@@ -1,15 +1,15 @@
-import { isAuthenticated } from '@server/middleware/auth';
-import { defineRoute } from '@server/utils/defineRoute';
-import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { MetadataProviderType } from '@server/database/schema';
 import type { MetadataProvider } from '@server/database/schema';
-import { SonarrProvider } from '@server/providers/sonarrProvider';
-import { RadarrProvider } from '@server/providers/radarrProvider';
-import { PlexProvider } from '@server/providers/plexProvider';
-import { JellyfinProvider } from '@server/providers/jellyfinProvider';
-import { TautulliProvider } from '@server/providers/tautulliProvider';
-import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { getChildLogger } from '@server/logger';
+import { isAuthenticated } from '@server/middleware/auth';
+import { JellyfinProvider } from '@server/providers/jellyfinProvider';
+import { OverseerrProvider } from '@server/providers/overseerrProvider';
+import { PlexProvider } from '@server/providers/plexProvider';
+import { RadarrProvider } from '@server/providers/radarrProvider';
+import { SonarrProvider } from '@server/providers/sonarrProvider';
+import { TautulliProvider } from '@server/providers/tautulliProvider';
+import type { ProviderSettingsService } from '@server/services/providerSettingsService';
+import { defineRoute } from '@server/utils/defineRoute';
 import { searchMetadataQuery } from './search.schemas';
 
 const log = getChildLogger('SearchHandler');
@@ -60,13 +60,17 @@ async function searchProvider(provider: MetadataProvider, title: string): Promis
         const libraries = await p.getLibraries();
         const allItems = await Promise.all(libraries.map((lib) => p.getLibraryContents(lib.key)));
         const lowerTitle = title.toLowerCase();
-        const data = allItems.flat().filter((item) => item.title.toLowerCase().includes(lowerTitle));
+        const data = allItems
+          .flat()
+          .filter((item) => item.title.toLowerCase().includes(lowerTitle));
         return { ...base, status: 'ok', data };
       }
       case MetadataProviderType.JELLYFIN: {
         const p = new JellyfinProvider(provider, log);
         const libraries = await p.getLibraries();
-        const allItems = await Promise.all(libraries.map((lib) => p.getLibraryContents(lib.ItemId)));
+        const allItems = await Promise.all(
+          libraries.map((lib) => p.getLibraryContents(lib.ItemId))
+        );
         const lowerTitle = title.toLowerCase();
         const data = allItems.flat().filter((item) => item.Name.toLowerCase().includes(lowerTitle));
         return { ...base, status: 'ok', data };
@@ -110,7 +114,13 @@ export function createSearchHandlers(cradle: SearchCradle) {
           return results.map((r) =>
             r.status === 'fulfilled'
               ? r.value
-              : { providerId: -1, name: 'unknown', type: 'unknown', status: 'error' as const, error: String(r.reason) }
+              : {
+                  providerId: -1,
+                  name: 'unknown',
+                  type: 'unknown',
+                  status: 'error' as const,
+                  error: String(r.reason),
+                }
           );
         },
       }),

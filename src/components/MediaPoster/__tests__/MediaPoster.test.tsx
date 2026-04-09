@@ -36,28 +36,30 @@ describe('MediaPoster', () => {
     );
 
     const img = screen.getByRole('img');
-
-    // Fire React synthetic error event
     fireEvent.error(img);
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByText(fallbackText)).toBeInTheDocument();
   });
 
-  it('displays a loading skeleton state while the image is loading', async () => {
-    render(<MediaPoster src="https://example.com/loading.jpg" alt="Poster" />);
-    // It should render skeleton right away before onLoad
-    expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-
-    // Image should be present but possibly invisible/hidden to assistive tech or styled
-    const img = screen.getByAltText('Poster');
-
-    // Fire load event
-    fireEvent.load(img);
-
-    // After load, skeleton should be gone
+  it('does not render a skeleton overlay — blur placeholder is handled by next/image', () => {
+    render(<MediaPoster src="https://example.com/poster.jpg" alt="Poster" />);
+    // Manual skeleton is removed; next/image blur placeholder handles the transition
     expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
-    // Image should be fully visible and accessible
-    expect(screen.getByRole('img', { name: 'Poster' })).toBeInTheDocument();
+  });
+
+  it('renders image with fill layout via next/image', () => {
+    render(<MediaPoster src="https://example.com/poster.jpg" alt="Poster" />);
+    const img = screen.getByRole('img', { name: 'Poster' });
+    // The next/image mock applies position:absolute when fill is true
+    expect(img).toHaveStyle({ position: 'absolute' });
+  });
+
+  it('passes placeholder="blur" and blurDataURL to next/image', () => {
+    render(<MediaPoster src="https://example.com/poster.jpg" alt="Poster" />);
+    const img = screen.getByRole('img', { name: 'Poster' });
+    // The mock exposes these as data attributes so tests can assert them
+    expect(img).toHaveAttribute('data-placeholder', 'blur');
+    expect(img).toHaveAttribute('data-blur-url');
   });
 });

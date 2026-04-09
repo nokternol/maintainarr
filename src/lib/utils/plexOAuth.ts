@@ -106,7 +106,9 @@ export class PlexOAuth {
               finish(() => reject(new Error('Authentication cancelled')));
             }
             // If there IS a token the poll loop will resolve it on the next tick
-          } catch { /* ignore — let the poll loop handle errors */ }
+          } catch {
+            /* ignore — let the poll loop handle errors */
+          }
         }, 500);
       };
       window.addEventListener('focus', onFocus);
@@ -120,7 +122,11 @@ export class PlexOAuth {
 
           if (response.data.authToken) {
             finish(() => {
-              try { this.popup?.close(); } catch { /* ignore */ }
+              try {
+                this.popup?.close();
+              } catch {
+                /* ignore */
+              }
               resolve(response.data.authToken);
             });
             return;

@@ -34,12 +34,7 @@ describe('MediaCard.Skeleton', () => {
 describe('VirtualMediaGrid', () => {
   it('renders skeletonCount skeleton cards when isLoading is true', () => {
     render(
-      <VirtualMediaGrid
-        items={[]}
-        renderItem={renderItem}
-        isLoading={true}
-        skeletonCount={12}
-      />
+      <VirtualMediaGrid items={[]} renderItem={renderItem} isLoading={true} skeletonCount={12} />
     );
 
     const skeletons = screen.getAllByTestId('media-card-skeleton');
@@ -53,13 +48,7 @@ describe('VirtualMediaGrid', () => {
   });
 
   it('does not render skeleton cards when isLoading is false and items are present', async () => {
-    render(
-      <VirtualMediaGrid
-        items={makeItems(4)}
-        renderItem={renderItem}
-        isLoading={false}
-      />
-    );
+    render(<VirtualMediaGrid items={makeItems(4)} renderItem={renderItem} isLoading={false} />);
 
     await waitFor(() => {
       expect(screen.getByTestId('item-1')).toBeInTheDocument();
@@ -69,9 +58,7 @@ describe('VirtualMediaGrid', () => {
   });
 
   it('renders items when not loading', async () => {
-    render(
-      <VirtualMediaGrid items={makeItems(4)} renderItem={renderItem} isLoading={false} />
-    );
+    render(<VirtualMediaGrid items={makeItems(4)} renderItem={renderItem} isLoading={false} />);
 
     await waitFor(() => {
       expect(screen.getByTestId('item-1')).toBeInTheDocument();
@@ -86,13 +73,7 @@ describe('VirtualMediaGrid', () => {
   });
 
   it('renders a skeleton row when isFetchingMore is true', async () => {
-    render(
-      <VirtualMediaGrid
-        items={makeItems(4)}
-        renderItem={renderItem}
-        isFetchingMore={true}
-      />
-    );
+    render(<VirtualMediaGrid items={makeItems(4)} renderItem={renderItem} isFetchingMore={true} />);
 
     await waitFor(() => {
       const skeletons = screen.getAllByTestId('media-card-skeleton');
@@ -102,11 +83,7 @@ describe('VirtualMediaGrid', () => {
 
   it('does not render skeleton row when isFetchingMore is false', async () => {
     render(
-      <VirtualMediaGrid
-        items={makeItems(4)}
-        renderItem={renderItem}
-        isFetchingMore={false}
-      />
+      <VirtualMediaGrid items={makeItems(4)} renderItem={renderItem} isFetchingMore={false} />
     );
 
     await waitFor(() => {

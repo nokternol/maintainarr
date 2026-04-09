@@ -4,10 +4,10 @@ import { checkUser } from '../middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
 import { createBackdropsRoutes } from './backdrops/backdrops.routes';
 import { createHealthRoutes } from './health/health.routes';
-import { createProvidersRoutes } from './providers/providers.routes';
 import { createMediaRoutes } from './media/media.routes';
-import { createSettingsRoutes } from './settings/settings.routes';
+import { createProvidersRoutes } from './providers/providers.routes';
 import { createSearchRoutes } from './search/search.routes';
+import { createSettingsRoutes } from './settings/settings.routes';
 
 /**
  * Creates the API router with all module routes mounted.

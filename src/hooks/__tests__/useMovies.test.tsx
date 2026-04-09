@@ -71,10 +71,10 @@ describe('useMovies', () => {
   });
 
   it('resets to page 1 when filters change', async () => {
-    const { result, rerender } = renderHook(
-      ({ filters }: { filters?: Record<string, string> }) => useMovies(filters),
-      { wrapper, initialProps: { filters: undefined } }
-    );
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useMovies>,
+      { filters?: Record<string, string> }
+    >(({ filters }) => useMovies(filters), { wrapper, initialProps: { filters: undefined } });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 

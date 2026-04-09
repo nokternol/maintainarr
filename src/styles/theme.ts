@@ -198,8 +198,8 @@ export const semanticTokens = {
   colorInfo: palette.blue[500],
 
   // ── Radius ───────────────────────────────────────────────────────────────
-  radiusSm: '4px',   // buttons, inputs, sidebar items
-  radiusMd: '8px',   // cards, panels
+  radiusSm: '4px', // buttons, inputs, sidebar items
+  radiusMd: '8px', // cards, panels
 
   // ── Layout ───────────────────────────────────────────────────────────────
   layoutSidebarWidth: '220px',

@@ -16,7 +16,7 @@ import { createSettingsRoutes } from '@server/modules/settings/settings.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';
 import express, { type Express } from 'express';
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 describe('Settings API Integration', () => {
@@ -45,7 +45,7 @@ describe('Settings API Integration', () => {
     authedApp = express();
     authedApp.use(express.json());
     authedApp.use(requestIdMiddleware);
-    authedApp.use((_req: Request, res: Response, next: NextFunction) => {
+    authedApp.use((_req: Request, _res: Response, next: NextFunction) => {
       _req.user = {
         id: 1,
         email: 'test@example.com',

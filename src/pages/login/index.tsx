@@ -16,8 +16,12 @@ export default function LoginPage() {
   // Redirect already-authenticated users away from the login page
   useEffect(() => {
     fetch('/api/auth/me')
-      .then((r) => { if (r.ok) window.location.href = '/dashboard'; })
-      .catch(() => { /* not authenticated, stay on login */ });
+      .then((r) => {
+        if (r.ok) window.location.href = '/dashboard';
+      })
+      .catch(() => {
+        /* not authenticated, stay on login */
+      });
   }, []);
 
   const handlePlexLogin = async () => {

@@ -65,7 +65,9 @@ describe('Card', () => {
   it('renders Card.Header sub-component', () => {
     render(
       <Card>
-        <Card.Header><h3>Header</h3></Card.Header>
+        <Card.Header>
+          <h3>Header</h3>
+        </Card.Header>
         Content
       </Card>
     );
@@ -76,7 +78,9 @@ describe('Card', () => {
     render(
       <Card>
         Content
-        <Card.Footer><div>Footer</div></Card.Footer>
+        <Card.Footer>
+          <div>Footer</div>
+        </Card.Footer>
       </Card>
     );
     expect(screen.getByText('Footer')).toBeInTheDocument();

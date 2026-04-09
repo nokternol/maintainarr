@@ -1,5 +1,5 @@
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '@app/lib/utils/cn';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { MediaCard } from '../MediaCard';
@@ -95,7 +95,7 @@ export function VirtualMediaGrid<T>({
 // ─── Inner component — separates hooks from conditional logic ─────────────────
 
 interface VirtualRowsProps<T> {
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
   items: T[];
   renderItem: (item: T) => React.ReactNode;
   columnCount: number;

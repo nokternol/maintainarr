@@ -25,7 +25,7 @@ export const settingsSchemas = {
       name: z.string().min(1),
       url: z.string().url(),
       apiKey: z.string().optional(),
-      settings: z.record(z.unknown()).optional(),
+      settings: z.record(z.string(), z.unknown()).optional(),
       isActive: z.boolean().optional(),
     }),
   },
@@ -37,7 +37,7 @@ export const settingsSchemas = {
         name: z.string().min(1).optional(),
         url: z.string().url().optional(),
         apiKey: z.string().optional(),
-        settings: z.record(z.unknown()).optional(),
+        settings: z.record(z.string(), z.unknown()).optional(),
         isActive: z.boolean().optional(),
       })
       .refine((d) => Object.keys(d).length > 0, { message: 'At least one field required' }),

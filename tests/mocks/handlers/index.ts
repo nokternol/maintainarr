@@ -1,7 +1,7 @@
 import { authHandlers } from './auth';
-import { mediaHandlers } from './media';
 import { backdropsHandlers } from './backdrops';
 import { jellyfinHandlers } from './jellyfin';
+import { mediaHandlers } from './media';
 import { overseerrHandlers } from './overseerr';
 import { plexProviderHandlers } from './plex';
 import { providersHandlers } from './providers';
