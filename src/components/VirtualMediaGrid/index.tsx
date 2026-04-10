@@ -145,6 +145,7 @@ function VirtualRows<T>({
                   position: 'absolute',
                   top: 0,
                   transform: `translateY(${virtualRow.start}px)`,
+                  paddingBottom: '1rem',
                 }}
               >
                 {Array.from({ length: columnCount }, (_, i) => (
@@ -168,6 +169,7 @@ function VirtualRows<T>({
                 position: 'absolute',
                 top: 0,
                 transform: `translateY(${virtualRow.start}px)`,
+                paddingBottom: '1rem',
               }}
             >
               {rowItems.map(renderItem)}

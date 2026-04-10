@@ -3,16 +3,6 @@ import Image from 'next/image';
 import { useState } from 'react';
 import styles from './MediaPoster.module.css';
 
-// 1×1 dark pixel — static blur placeholder shown by next/image while the
-// real poster loads. No per-poster fetch needed; blur is purely aesthetic.
-const STATIC_BLUR =
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoH' +
-  'BwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQME' +
-  'BAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU' +
-  'FBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/' +
-  'EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAA' +
-  'AAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/ACWQAB//2Q==';
-
 // Matches the VirtualMediaGrid / MediaGrid responsive column breakpoints.
 const POSTER_SIZES = [
   '(min-width: 1536px) 12.5vw',
@@ -22,6 +12,12 @@ const POSTER_SIZES = [
   '(min-width: 640px) 33.33vw',
   '50vw',
 ].join(', ');
+
+// Swap the original image size segment for w92 to get a tiny TMDB thumbnail.
+// Covers /t/p/original/, /t/p/w500/, /t/p/w780/, etc.
+function toTmdbThumbnail(src: string): string {
+  return src.replace(/\/t\/p\/[^/]+\//, '/t/p/w92/');
+}
 
 export interface MediaPosterProps {
   src?: string;
@@ -54,15 +50,21 @@ export const MediaPoster = ({
 
   return (
     <div className={containerClassName}>
+      {/* Tiny TMDB thumbnail blurred as poster-specific loading placeholder */}
+      {/* biome-ignore lint/performance/noImgElement: thumbnail intentionally uses <img> — it is a decorative placeholder, not content */}
+      <img
+        src={toTmdbThumbnail(src)}
+        aria-hidden="true"
+        alt=""
+        className={styles.thumbBlur}
+      />
       <Image
         src={src}
         alt={alt}
         fill
-        placeholder="blur"
-        blurDataURL={STATIC_BLUR}
         sizes={POSTER_SIZES}
         onError={() => setHasError(true)}
-        style={{ objectFit: 'cover' }}
+        style={{ objectFit: 'cover', zIndex: 1 }}
       />
     </div>
   );

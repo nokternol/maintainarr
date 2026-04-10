@@ -34,3 +34,13 @@
 .skeleton {
   @apply absolute inset-0 z-10;
 }
+
+/* Tiny TMDB thumbnail (w92), blurred and scaled up to fill the container.
+   Acts as a per-poster loading placeholder — each card gets its own colors.
+   Sits below the real next/image (z-index: 0) and is covered once it loads. */
+.thumbBlur {
+  @apply absolute inset-0 w-full h-full object-cover;
+  z-index: 0;
+  filter: blur(20px) saturate(1.2);
+  transform: scale(1.15);
+}

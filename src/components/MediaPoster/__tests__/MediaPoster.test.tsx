@@ -55,11 +55,15 @@ describe('MediaPoster', () => {
     expect(img).toHaveStyle({ position: 'absolute' });
   });
 
-  it('passes placeholder="blur" and blurDataURL to next/image', () => {
-    render(<MediaPoster src="https://example.com/poster.jpg" alt="Poster" />);
-    const img = screen.getByRole('img', { name: 'Poster' });
-    // The mock exposes these as data attributes so tests can assert them
-    expect(img).toHaveAttribute('data-placeholder', 'blur');
-    expect(img).toHaveAttribute('data-blur-url');
+  it('renders a per-poster thumbnail as the loading placeholder', () => {
+    const src = 'https://image.tmdb.org/t/p/original/abc123.jpg';
+    const { container } = render(<MediaPoster src={src} alt="Poster" />);
+    // The thumbnail is aria-hidden and uses the TMDB w92 variant
+    const thumb = container.querySelector('img[aria-hidden]');
+    expect(thumb).toBeInTheDocument();
+    expect(thumb).toHaveAttribute('src', 'https://image.tmdb.org/t/p/w92/abc123.jpg');
+    // The main next/image does not use the static blur placeholder
+    const main = screen.getByRole('img', { name: 'Poster' });
+    expect(main).not.toHaveAttribute('data-placeholder', 'blur');
   });
 });
