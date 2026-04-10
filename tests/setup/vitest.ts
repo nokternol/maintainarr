@@ -1,7 +1,9 @@
 import '@testing-library/jest-dom';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
-// Mock ResizeObserver — fires the callback immediately with a 1200px wide container.
+// Mock ResizeObserver — fires the callback immediately with a 1200x800 container.
+// Includes borderBoxSize so @tanstack/virtual-core's observeElementRect picks up the height
+// (it prefers borderBoxSize over contentRect).
 // Required for components that use ResizeObserver (e.g. VirtualMediaGrid).
 class ResizeObserverMock {
   private callback: ResizeObserverCallback;
@@ -10,7 +12,13 @@ class ResizeObserverMock {
   }
   observe(target: Element) {
     this.callback(
-      [{ contentRect: { width: 1200, height: 800 }, target } as ResizeObserverEntry],
+      [
+        {
+          contentRect: { width: 1200, height: 800 },
+          borderBoxSize: [{ inlineSize: 1200, blockSize: 800 }],
+          target,
+        } as unknown as ResizeObserverEntry,
+      ],
       this as unknown as ResizeObserver
     );
   }
@@ -19,7 +27,7 @@ class ResizeObserverMock {
 }
 global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
 
-// Large viewport so useWindowVirtualizer renders all rows without scrolling in tests.
+// Large viewport so virtualizers render all rows without scrolling in tests.
 Object.defineProperty(window, 'innerHeight', { value: 10000, configurable: true, writable: true });
 
 // Only start MSW in jsdom environment (client tests).
