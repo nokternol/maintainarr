@@ -74,23 +74,29 @@ export const MediaPoster = ({
     const thumb = toTmdbThumbnail(src);
     const cached = _thumbCache.has(thumb);
 
+    // Keeps useState and the ref mirror in sync atomically. Any path that
+    // calls one must call both — this helper makes omission impossible.
+    function transition(next: LoadState) {
+      setLoadState(next);
+      loadStateRef.current = next;
+    }
+
     // Reset on src change. Cache hits start in 'loading' (skip dwell).
-    const initial: LoadState = cached ? 'loading' : 'idle';
-    setLoadState(initial);
-    loadStateRef.current = initial;
+    transition(cached ? 'loading' : 'idle');
 
     let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    function startDwellTimer() {
+      timerId = setTimeout(() => {
+        transition('loading');
+        timerId = null;
+      }, DWELL_MS);
+    }
 
     // ── Primary mechanism: dwell timer ────────────────────────────────────
     // Only started for non-cached items. If the component unmounts before
     // DWELL_MS elapses, the cleanup cancels the timer and no request fires.
-    if (!cached) {
-      timerId = setTimeout(() => {
-        setLoadState('loading');
-        loadStateRef.current = 'loading';
-        timerId = null;
-      }, DWELL_MS);
-    }
+    if (!cached) startDwellTimer();
 
     // ── IntersectionObserver ───────────────────────────────────────────────
     // Dual purpose:
@@ -104,13 +110,7 @@ export const MediaPoster = ({
       ([entry]) => {
         if (entry.isIntersecting) {
           // Restart dwell timer only when idle and no timer is running.
-          if (timerId === null && loadStateRef.current === 'idle') {
-            timerId = setTimeout(() => {
-              setLoadState('loading');
-              loadStateRef.current = 'loading';
-              timerId = null;
-            }, DWELL_MS);
-          }
+          if (timerId === null && loadStateRef.current === 'idle') startDwellTimer();
         } else {
           // Cancel pending timer (idle path).
           if (timerId !== null) {
@@ -118,10 +118,7 @@ export const MediaPoster = ({
             timerId = null;
           }
           // Abort in-flight request (loading path).
-          if (loadStateRef.current === 'loading') {
-            setLoadState('idle');
-            loadStateRef.current = 'idle';
-          }
+          if (loadStateRef.current === 'loading') transition('idle');
         }
       },
       { threshold: 0.1 },
