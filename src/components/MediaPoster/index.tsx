@@ -67,19 +67,24 @@ export const MediaPoster = ({
   // without capturing a stale closure.
   const loadStateRef = useRef<LoadState>(loadState);
 
+  // Stored so the onLoad handler can disconnect the observer eagerly —
+  // once the poster is painted there is nothing left to abort.
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Keeps useState and the ref mirror in sync atomically. Any path that
+  // calls one must call both — this helper makes omission impossible.
+  // Defined at component scope so the JSX onLoad handler can also use it.
+  function transition(next: LoadState) {
+    setLoadState(next);
+    loadStateRef.current = next;
+  }
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el || !src) return;
 
     const thumb = toTmdbThumbnail(src);
     const cached = _thumbCache.has(thumb);
-
-    // Keeps useState and the ref mirror in sync atomically. Any path that
-    // calls one must call both — this helper makes omission impossible.
-    function transition(next: LoadState) {
-      setLoadState(next);
-      loadStateRef.current = next;
-    }
 
     // Reset on src change. Cache hits start in 'loading' (skip dwell).
     transition(cached ? 'loading' : 'idle');
@@ -124,11 +129,13 @@ export const MediaPoster = ({
       { threshold: 0.1 },
     );
 
+    observerRef.current = observer;
     observer.observe(el);
 
     return () => {
       if (timerId !== null) clearTimeout(timerId);
       observer.disconnect();
+      observerRef.current = null;
     };
   }, [src]);
 
@@ -165,6 +172,11 @@ export const MediaPoster = ({
           alt={alt}
           fill
           sizes={POSTER_SIZES}
+          onLoad={() => {
+            transition('loaded');
+            observerRef.current?.disconnect();
+            observerRef.current = null;
+          }}
           onError={() => setHasError(true)}
           style={{ objectFit: 'cover', zIndex: 1 }}
         />
