@@ -33,6 +33,7 @@ export const mediaHandlers = [
         totalCount: MOCK_MOVIES.length,
         page,
         pageSize,
+        yearRange: { min: 2000, max: 2029 },
       },
     });
   }),
@@ -49,6 +50,36 @@ export const mediaHandlers = [
         totalCount: MOCK_SERIES.length,
         page,
         pageSize,
+        yearRange: { min: 2008, max: 2017 },
+      },
+    });
+  }),
+
+  http.get('/api/media/tags', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: {
+        radarr: [
+          { id: 1, label: 'action' },
+          { id: 2, label: 'sci-fi' },
+        ],
+        sonarr: [{ id: 1, label: 'drama' }],
+      },
+    });
+  }),
+
+  http.get('/api/media/quality-profiles', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: {
+        radarr: [
+          { id: 1, name: 'HD-1080p' },
+          { id: 2, name: 'Any' },
+        ],
+        sonarr: [
+          { id: 1, name: 'HD-1080p' },
+          { id: 2, name: 'Any' },
+        ],
       },
     });
   }),

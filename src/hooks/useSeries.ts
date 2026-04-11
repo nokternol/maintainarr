@@ -18,11 +18,17 @@ export interface MediaFilters {
   [key: string]: string | number | boolean | undefined;
 }
 
+interface YearRange {
+  min: number | null;
+  max: number | null;
+}
+
 interface PaginatedPage {
   items: ManagedSeries[];
   totalCount: number;
   page: number;
   pageSize: number;
+  yearRange?: YearRange;
 }
 
 const PAGE_SIZE = 48;
@@ -61,10 +67,12 @@ export function useSeries(filters?: MediaFilters) {
 
   const items = data ? data.flatMap((page) => page.items) : [];
   const totalCount = data?.[0]?.totalCount ?? 0;
+  const yearRange = data?.[0]?.yearRange ?? null;
 
   return {
     items,
     totalCount,
+    yearRange,
     isLoading,
     isFetchingMore: isValidating && !isLoading,
     hasMore: items.length < totalCount,

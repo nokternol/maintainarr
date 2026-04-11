@@ -1,9 +1,12 @@
 import AppLayout from '@app/components/AppLayout';
+import { MediaFilterBar } from '@app/components/MediaFilterBar';
 import MediaCard from '@app/components/MediaCard';
 import RatingsPanel from '@app/components/RatingsPanel';
 import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
+import { useMediaFilters } from '@app/hooks/useMediaFilters';
+import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
@@ -82,11 +85,6 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
 // ─── Infinite scroll sentinel ─────────────────────────────────────────────────
 
 function useSentinel(onIntersect: () => void) {
-  // Callback ref: fires when the sentinel element mounts or unmounts.
-  // useEffect + useRef misses the case where the sentinel is conditionally
-  // rendered — the element may not exist when the effect first runs, and a
-  // stable onIntersect (from useCallback) means the effect never re-runs to
-  // pick up the element when it eventually appears.
   const onIntersectRef = useRef(onIntersect);
   useEffect(() => { onIntersectRef.current = onIntersect; }, [onIntersect]);
 
@@ -112,8 +110,26 @@ interface SelectedMedia {
 }
 
 export default function MediaPage() {
-  const movies = useMovies();
-  const series = useSeries();
+  const {
+    filterState,
+    debouncedFilters,
+    setTitle,
+    setHasFile,
+    setMonitored,
+    setSeriesStatus,
+    setYearMin,
+    setYearMax,
+    setMovieTagIds,
+    setSeriesTagIds,
+    setMovieQualityProfileIds,
+    setSeriesQualityProfileIds,
+    clearAll,
+    isActive,
+  } = useMediaFilters();
+
+  const movies = useMovies(debouncedFilters);
+  const series = useSeries(debouncedFilters);
+  const lookups = useMediaLookups();
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
 
   const movieSentinelRef = useSentinel(movies.fetchMore);
@@ -141,10 +157,30 @@ export default function MediaPage() {
         />
       }
       topBar={
-        <TopBar
-          title="Managed Media"
-          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Media' }]}
-        />
+        <div className="sticky top-0 z-10">
+          <TopBar
+            title="Managed Media"
+            breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Media' }]}
+          />
+          <MediaFilterBar
+            filterState={filterState}
+            setTitle={setTitle}
+            setHasFile={setHasFile}
+            setMonitored={setMonitored}
+            setSeriesStatus={setSeriesStatus}
+            setYearMin={setYearMin}
+            setYearMax={setYearMax}
+            setMovieTagIds={setMovieTagIds}
+            setSeriesTagIds={setSeriesTagIds}
+            setMovieQualityProfileIds={setMovieQualityProfileIds}
+            setSeriesQualityProfileIds={setSeriesQualityProfileIds}
+            clearAll={clearAll}
+            isActive={isActive}
+            movieYearRange={movies.yearRange}
+            seriesYearRange={series.yearRange}
+            lookups={lookups}
+          />
+        </div>
       }
     >
       <div className="p-6 space-y-8">
@@ -174,7 +210,6 @@ export default function MediaPage() {
               </button>
             )}
           />
-          {/* Unmount during fetch so the IO re-fires on remount when the next page is ready */}
           {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
         </section>
 
@@ -204,7 +239,6 @@ export default function MediaPage() {
               </button>
             )}
           />
-          {/* Unmount during fetch so the IO re-fires on remount when the next page is ready */}
           {series.hasMore && !series.isFetchingMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
         </section>
 
