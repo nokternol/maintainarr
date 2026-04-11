@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import useSWRInfinite from 'swr/infinite';
 import type { MediaImage } from './useMedia';
 
@@ -68,7 +68,7 @@ export function useSeries(filters?: MediaFilters) {
     isLoading,
     isFetchingMore: isValidating && !isLoading,
     hasMore: items.length < totalCount,
-    fetchMore: () => setSize((s) => s + 1),
+    fetchMore: useCallback(() => setSize((s) => s + 1), [setSize]),
     error: error as Error | undefined,
   };
 }

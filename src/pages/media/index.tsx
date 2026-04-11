@@ -9,7 +9,7 @@ import { useMovies } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import type { SidebarItem } from '@app/types/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -82,20 +82,26 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
 // ─── Infinite scroll sentinel ─────────────────────────────────────────────────
 
 function useSentinel(onIntersect: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
+  // Callback ref: fires when the sentinel element mounts or unmounts.
+  // useEffect + useRef misses the case where the sentinel is conditionally
+  // rendered — the element may not exist when the effect first runs, and a
+  // stable onIntersect (from useCallback) means the effect never re-runs to
+  // pick up the element when it eventually appears.
+  const onIntersectRef = useRef(onIntersect);
+  useEffect(() => { onIntersectRef.current = onIntersect; }, [onIntersect]);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  return useCallback((el: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
     if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) onIntersect();
-      },
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) onIntersectRef.current(); },
       { rootMargin: '200px' }
     );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [onIntersect]);
-  return ref;
+    observerRef.current.observe(el);
+  }, []);
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -168,7 +174,8 @@ export default function MediaPage() {
               </button>
             )}
           />
-          {movies.hasMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
+          {/* Unmount during fetch so the IO re-fires on remount when the next page is ready */}
+          {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
         </section>
 
         {/* Series */}
@@ -197,7 +204,8 @@ export default function MediaPage() {
               </button>
             )}
           />
-          {series.hasMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
+          {/* Unmount during fetch so the IO re-fires on remount when the next page is ready */}
+          {series.hasMore && !series.isFetchingMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
         </section>
 
         {nothingToShow && (

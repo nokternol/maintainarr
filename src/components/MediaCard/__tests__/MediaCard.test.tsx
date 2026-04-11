@@ -1,30 +1,42 @@
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from '@tests/helpers/component';
+import { act, render, screen } from '@tests/helpers/component';
 import { describe, expect, it, vi } from 'vitest';
+import { _thumbCache } from '../../MediaPoster';
 import { MediaCard } from '../index';
 
 describe('MediaCard', () => {
   it('renders the title and passes poster attributes correctly', () => {
-    const title = 'Inception';
-    const posterUrl = 'https://example.com/inception.jpg';
+    vi.useFakeTimers();
+    _thumbCache.clear();
 
-    render(
-      <MediaCard id="123">
-        <MediaCard.Poster src={posterUrl} alt={title} />
-        <MediaCard.Content>
-          <MediaCard.Title>{title}</MediaCard.Title>
-        </MediaCard.Content>
-      </MediaCard>
-    );
+    try {
+      const title = 'Inception';
+      const posterUrl = 'https://example.com/inception.jpg';
 
-    // Check title rendering
-    expect(screen.getByText(title)).toBeInTheDocument();
+      render(
+        <MediaCard id="123">
+          <MediaCard.Poster src={posterUrl} alt={title} />
+          <MediaCard.Content>
+            <MediaCard.Title>{title}</MediaCard.Title>
+          </MediaCard.Content>
+        </MediaCard>,
+      );
 
-    // Check image (delegated to MediaPoster)
-    const img = screen.getByRole('img', { name: title });
-    expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', posterUrl);
+      // Check title rendering
+      expect(screen.getByText(title)).toBeInTheDocument();
+
+      // Poster uses a dwell timer — advance past it before asserting on images
+      act(() => vi.advanceTimersByTime(100));
+
+      // Check image (delegated to MediaPoster)
+      const img = screen.getByRole('img', { name: title });
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', posterUrl);
+    } finally {
+      vi.useRealTimers();
+      _thumbCache.clear();
+    }
   });
 
   it('supports missing sub-components correctly', () => {
@@ -33,7 +45,7 @@ describe('MediaCard', () => {
         <MediaCard.Content>
           <MediaCard.Title>Custom Composition</MediaCard.Title>
         </MediaCard.Content>
-      </MediaCard>
+      </MediaCard>,
     );
     expect(screen.getByText('Custom Composition')).toBeInTheDocument();
   });
@@ -45,7 +57,7 @@ describe('MediaCard', () => {
     render(
       <MediaCard id="456" onClick={onClick}>
         <MediaCard.Title>The Matrix</MediaCard.Title>
-      </MediaCard>
+      </MediaCard>,
     );
 
     const card = screen.getByTestId('media-card');
@@ -72,7 +84,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="monitored" />
-      </MediaCard>
+      </MediaCard>,
     );
     expect(screen.getByText(/monitored/i)).toBeInTheDocument();
 
@@ -80,7 +92,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="missing" />
-      </MediaCard>
+      </MediaCard>,
     );
     expect(screen.getByText(/missing/i)).toBeInTheDocument();
 
@@ -88,7 +100,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="downloaded" />
-      </MediaCard>
+      </MediaCard>,
     );
     expect(screen.getByText(/downloaded/i)).toBeInTheDocument();
   });

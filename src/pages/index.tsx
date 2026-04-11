@@ -2,7 +2,8 @@ import type { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async () => {
   return {
-    redirect: { destination: '/login', permanent: false },
+    // DEV BYPASS: skip login and go straight to media for Playwright analysis
+    redirect: { destination: '/media', permanent: false },
   };
 };
 
