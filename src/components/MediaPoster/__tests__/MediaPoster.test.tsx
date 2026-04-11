@@ -221,3 +221,49 @@ describe('MediaPoster — IO abort mechanism', () => {
     expect(container.querySelector('img[aria-hidden]')).not.toBeInTheDocument();
   });
 });
+
+// ── Load lock + observer teardown ──────────────────────────────────────────────
+
+describe('MediaPoster — load lock and observer teardown', () => {
+  let fireIO: (isIntersecting: boolean) => void;
+  let disconnectSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    _thumbCache.clear();
+    ({ fireIO, disconnectSpy } = makeIOControl());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    _thumbCache.clear();
+  });
+
+  // A02 — once onLoad fires, IO out-of-viewport must not remove the poster
+  it('keeps images in DOM when IO fires out-of-viewport after poster has loaded (load lock)', () => {
+    render(
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+    );
+    passDwell();
+    const poster = screen.getByRole('img', { name: 'Poster' });
+
+    fireEvent.load(poster);
+    fireIO(false);
+
+    expect(screen.getByRole('img', { name: 'Poster' })).toBeInTheDocument();
+  });
+
+  // A06 — observer must be disconnected when poster onLoad fires
+  it('disconnects the IntersectionObserver when the poster finishes loading', () => {
+    render(
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+    );
+    passDwell();
+    const poster = screen.getByRole('img', { name: 'Poster' });
+
+    expect(disconnectSpy).not.toHaveBeenCalled();
+    fireEvent.load(poster);
+    expect(disconnectSpy).toHaveBeenCalledTimes(1);
+  });
+});
