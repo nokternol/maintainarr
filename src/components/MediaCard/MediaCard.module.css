@@ -3,7 +3,7 @@
 }
 
 .interactive {
-  @apply cursor-pointer hover:scale-[1.02];
+  @apply cursor-pointer hover:scale-[1.02] active:scale-[0.97];
 }
 
 .posterWrapper {
@@ -16,6 +16,8 @@
 
 .badgeWrapper {
   @apply absolute top-2 right-2 z-20;
+  /* Drop shadow ensures badge is legible on both light and dark poster images */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
 }
 
 .contentWrapper {
@@ -24,6 +26,14 @@
 
 .title {
   @apply text-sm font-medium line-clamp-1 text-text-primary;
+}
+
+/* Show 2 lines on mobile where poster width gives enough context */
+@media (max-width: 767px) {
+  .title {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
 }
 
 .year {

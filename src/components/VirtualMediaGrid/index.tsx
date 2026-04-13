@@ -5,18 +5,25 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { ScrollContainerContext } from '../AppLayout';
 import { MediaCard } from '../MediaCard';
 
-// ─── Column breakpoints (matches Tailwind grid in MediaGrid) ──────────────────
+// ─── Column breakpoints ────────────────────────────────────────────────────────
+// Uses container width (not viewport) so sidebar-narrowed areas get correct cols.
+// 520px threshold prevents the "2 huge columns" problem at tablet (sidebar ~220px
+// narrows a 768px viewport to ~548px, which was previously trapped at 2 cols).
 
 function getColumnCount(width: number): number {
   if (width >= 1536) return 8;
   if (width >= 1280) return 6;
   if (width >= 1024) return 5;
   if (width >= 768) return 4;
-  if (width >= 640) return 3;
+  if (width >= 480) return 3;
   return 2;
 }
 
-const ESTIMATED_ROW_HEIGHT = 320;
+function getEstimatedRowHeight(cols: number): number {
+  if (cols <= 2) return 480;
+  if (cols === 3) return 380;
+  return 320;
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -56,7 +63,7 @@ export function VirtualMediaGrid<T>({
   const gridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-    gap: '1rem',
+    gap: columnCount <= 2 ? '0.75rem' : '1rem',
     width: '100%',
   };
 
@@ -121,7 +128,7 @@ function VirtualRows<T>({
 
   const rowVirtualizer = useVirtualizer({
     count: totalRows,
-    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    estimateSize: () => getEstimatedRowHeight(columnCount),
     overscan: 5,
     getScrollElement: () =>
       scrollElement.current ?? (typeof document !== 'undefined' ? document.documentElement : null),

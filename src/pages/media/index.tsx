@@ -12,6 +12,7 @@ import { useMovies } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import type { SidebarItem } from '@app/types/navigation';
+import { cn } from '@app/lib/utils/cn';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -70,6 +71,17 @@ const SearchIcon = () => (
   </svg>
 );
 
+const FilterIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
+    />
+  </svg>
+);
+
 const sidebarItems: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
   { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media', active: true },
@@ -80,6 +92,31 @@ const sidebarItems: SidebarItem[] = [
 
 function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): string | undefined {
   return images?.find((img) => img.coverType === 'poster')?.remoteUrl;
+}
+
+function countActiveFilters(filterState: {
+  title: string;
+  hasFile?: string;
+  monitored?: string;
+  seriesStatus?: string;
+  yearMin?: number;
+  yearMax?: number;
+  movieTagIds?: string;
+  seriesTagIds?: string;
+  movieQualityProfileIds?: string;
+  seriesQualityProfileIds?: string;
+}): number {
+  return [
+    filterState.title ? 1 : 0,
+    filterState.hasFile !== undefined ? 1 : 0,
+    filterState.monitored !== undefined ? 1 : 0,
+    filterState.seriesStatus !== undefined ? 1 : 0,
+    filterState.yearMin !== undefined || filterState.yearMax !== undefined ? 1 : 0,
+    filterState.movieTagIds ? 1 : 0,
+    filterState.seriesTagIds ? 1 : 0,
+    filterState.movieQualityProfileIds ? 1 : 0,
+    filterState.seriesQualityProfileIds ? 1 : 0,
+  ].reduce((a, b) => a + b, 0);
 }
 
 // ─── Infinite scroll sentinel ─────────────────────────────────────────────────
@@ -109,6 +146,8 @@ interface SelectedMedia {
   year?: number;
 }
 
+type ActiveTab = 'movies' | 'series';
+
 export default function MediaPage() {
   const {
     filterState,
@@ -130,7 +169,11 @@ export default function MediaPage() {
   const movies = useMovies(debouncedFilters);
   const series = useSeries(debouncedFilters);
   const lookups = useMediaLookups();
+
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('movies');
 
   const movieSentinelRef = useSentinel(movies.fetchMore);
   const seriesSentinelRef = useSentinel(series.fetchMore);
@@ -141,8 +184,54 @@ export default function MediaPage() {
     movies.items.length === 0 &&
     series.items.length === 0;
 
+  const activeFilterCount = countActiveFilters(filterState);
+
+  // ─── Mobile bottom navigation ──────────────────────────────────────────────
+
+  const mobileNav = (
+    <nav className="flex items-center justify-around h-16 px-2">
+      {sidebarItems.map((item) => (
+        <a
+          key={item.id}
+          href={item.href}
+          className={cn(
+            'flex flex-col items-center gap-0.5 px-4 py-2 text-xs transition-colors min-h-[44px] justify-center',
+            item.active
+              ? 'text-primary'
+              : 'text-text-muted hover:text-text-primary'
+          )}
+        >
+          {item.icon}
+          <span>{item.label}</span>
+        </a>
+      ))}
+    </nav>
+  );
+
+  // ─── Shared filter props ───────────────────────────────────────────────────
+
+  const filterBarProps = {
+    filterState,
+    setTitle,
+    setHasFile,
+    setMonitored,
+    setSeriesStatus,
+    setYearMin,
+    setYearMax,
+    setMovieTagIds,
+    setSeriesTagIds,
+    setMovieQualityProfileIds,
+    setSeriesQualityProfileIds,
+    clearAll,
+    isActive,
+    movieYearRange: movies.yearRange,
+    seriesYearRange: series.yearRange,
+    lookups,
+  };
+
   return (
     <AppLayout
+      mobileNav={mobileNav}
       sidebar={
         <Sidebar
           items={sidebarItems}
@@ -161,32 +250,68 @@ export default function MediaPage() {
           <TopBar
             title="Managed Media"
             breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Media' }]}
+            actions={
+              // Mobile-only filter trigger — hidden on md+
+              <button
+                type="button"
+                className={cn(
+                  'md:hidden flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border transition-colors min-h-[44px]',
+                  isActive
+                    ? 'bg-primary text-text-primary border-primary'
+                    : 'bg-transparent text-text-secondary border-border hover:bg-surface-hover'
+                )}
+                onClick={() => setFilterSheetOpen(true)}
+              >
+                <FilterIcon />
+                Filters
+                {isActive && (
+                  <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            }
           />
+          {/* Desktop filter bar rendered here; mobile sheet is portal-like (fixed) */}
           <MediaFilterBar
-            filterState={filterState}
-            setTitle={setTitle}
-            setHasFile={setHasFile}
-            setMonitored={setMonitored}
-            setSeriesStatus={setSeriesStatus}
-            setYearMin={setYearMin}
-            setYearMax={setYearMax}
-            setMovieTagIds={setMovieTagIds}
-            setSeriesTagIds={setSeriesTagIds}
-            setMovieQualityProfileIds={setMovieQualityProfileIds}
-            setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-            clearAll={clearAll}
-            isActive={isActive}
-            movieYearRange={movies.yearRange}
-            seriesYearRange={series.yearRange}
-            lookups={lookups}
+            {...filterBarProps}
+            mobileOpen={filterSheetOpen}
+            onMobileClose={() => setFilterSheetOpen(false)}
           />
         </div>
       }
     >
-      <div className="p-6 space-y-8">
-        {/* Movies */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Movies</h2>
+      <div className="p-3 sm:p-6 space-y-6">
+        {/* ── Movies / Series segment tabs ────────────────────────────────── */}
+        <div className="flex items-center gap-1">
+          {(['movies', 'series'] as const).map((tab) => {
+            const count = tab === 'movies' ? movies.items.length : series.items.length;
+            const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-4 py-2 rounded-full text-sm font-medium transition-colors capitalize',
+                  activeTab === tab
+                    ? 'bg-primary text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                )}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {!loading && (
+                  <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Movies section — always in DOM for tests, hidden when tab is series */}
+        <section className={cn(activeTab !== 'movies' && 'hidden')}>
           <VirtualMediaGrid
             items={movies.items}
             isLoading={movies.isLoading}
@@ -196,10 +321,19 @@ export default function MediaPage() {
                 type="button"
                 key={`movie-${movie.id}`}
                 data-testid={`media-card-movie-${movie.id}`}
-                className="block w-full cursor-pointer bg-transparent border-0 p-0 text-left"
-                onClick={() => setSelected({ title: movie.title, year: movie.year })}
+                className={cn(
+                  'block w-full cursor-pointer bg-transparent border-0 p-0 text-left transition-transform active:scale-[0.97]',
+                  selectedId !== null && selectedId !== `movie-${movie.id}` ? 'opacity-50' : ''
+                )}
+                onClick={() => {
+                  setSelected({ title: movie.title, year: movie.year });
+                  setSelectedId(`movie-${movie.id}`);
+                }}
               >
-                <MediaCard id={`movie-${movie.id}`}>
+                <MediaCard
+                  id={`movie-${movie.id}`}
+                  className={selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
+                >
                   <MediaCard.Poster src={getPosterUrl(movie.images)} alt={movie.title} />
                   <MediaCard.Content>
                     <MediaCard.Title>{movie.title}</MediaCard.Title>
@@ -213,9 +347,8 @@ export default function MediaPage() {
           {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
         </section>
 
-        {/* Series */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Series</h2>
+        {/* Series section — always in DOM for tests, hidden when tab is movies */}
+        <section className={cn(activeTab !== 'series' && 'hidden')}>
           <VirtualMediaGrid
             items={series.items}
             isLoading={series.isLoading}
@@ -225,10 +358,19 @@ export default function MediaPage() {
                 type="button"
                 key={`series-${show.id}`}
                 data-testid={`media-card-series-${show.id}`}
-                className="block w-full cursor-pointer bg-transparent border-0 p-0 text-left"
-                onClick={() => setSelected({ title: show.title, year: show.year })}
+                className={cn(
+                  'block w-full cursor-pointer bg-transparent border-0 p-0 text-left transition-transform active:scale-[0.97]',
+                  selectedId !== null && selectedId !== `series-${show.id}` ? 'opacity-50' : ''
+                )}
+                onClick={() => {
+                  setSelected({ title: show.title, year: show.year });
+                  setSelectedId(`series-${show.id}`);
+                }}
               >
-                <MediaCard id={`series-${show.id}`}>
+                <MediaCard
+                  id={`series-${show.id}`}
+                  className={selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
+                >
                   <MediaCard.Poster src={getPosterUrl(show.images)} alt={show.title} />
                   <MediaCard.Content>
                     <MediaCard.Title>{show.title}</MediaCard.Title>
@@ -251,7 +393,10 @@ export default function MediaPage() {
 
       <RatingsPanel
         isOpen={selected !== null}
-        onClose={() => setSelected(null)}
+        onClose={() => {
+          setSelected(null);
+          setSelectedId(null);
+        }}
         title={selected?.title ?? ''}
         year={selected?.year}
       />
