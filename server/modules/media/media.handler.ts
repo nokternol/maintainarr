@@ -58,7 +58,7 @@ function parseIds(csv: string | undefined): number[] {
 }
 
 function computeYearRange(items: Array<{ year?: number }>): { min: number | null; max: number | null } {
-  const years = items.map((m) => m.year).filter((y): y is number => y !== undefined && y !== null);
+  const years = items.map((m) => m.year).filter((y): y is number => y !== undefined && y !== null && y >= 1888);
   if (years.length === 0) return { min: null, max: null };
   return { min: Math.min(...years), max: Math.max(...years) };
 }

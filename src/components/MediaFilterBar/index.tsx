@@ -1,7 +1,8 @@
 import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { cn } from '@app/lib/utils/cn';
-import { useId } from 'react';
+import Slider from 'rc-slider';
+import { useEffect, useId, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +83,19 @@ function MultiSelectDropdown({
   onChange: (ids: number[]) => void;
 }) {
   const id = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
 
   if (options.length === 0) return null;
 
@@ -95,11 +109,13 @@ function MultiSelectDropdown({
   const activeCount = selectedIds.length;
 
   return (
-    <div className="relative group">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         aria-label={label}
-        aria-expanded={undefined}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        onClick={() => setIsOpen((o) => !o)}
         className={cn(
           'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
           activeCount > 0
@@ -116,36 +132,52 @@ function MultiSelectDropdown({
         </svg>
       </button>
 
-      {/* Dropdown panel — shown on hover/focus-within */}
-      <div
-        role="listbox"
-        aria-label={label}
-        aria-multiselectable="true"
-        className="absolute top-full left-0 mt-1 min-w-40 bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20 hidden group-hover:block focus-within:block"
-      >
-        {options.map((opt) => {
-          const checked = selectedIds.includes(opt.id);
-          return (
-            <label
-              key={`${id}-${opt.id}`}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-secondary hover:bg-surface-hover cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggle(opt.id)}
-                className="rounded accent-primary"
-              />
-              {opt.displayName}
-            </label>
-          );
-        })}
-      </div>
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-label={label}
+          aria-multiselectable="true"
+          className="absolute top-full left-0 mt-1 min-w-40 bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
+        >
+          {options.map((opt) => {
+            const checked = selectedIds.includes(opt.id);
+            return (
+              <label
+                key={`${id}-${opt.id}`}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-secondary hover:bg-surface-hover cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(opt.id)}
+                  className="rounded accent-primary"
+                />
+                {opt.displayName}
+              </label>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-function YearRangeInputs({
+const SLIDER_STYLES = {
+  rail: { backgroundColor: 'var(--color-border)', height: 4 },
+  track: { backgroundColor: 'var(--color-primary)', height: 4 },
+  handle: {
+    backgroundColor: 'var(--color-surface-panel)',
+    borderColor: 'var(--color-primary)',
+    borderWidth: 2,
+    opacity: 1,
+    width: 14,
+    height: 14,
+    marginTop: -5,
+    boxShadow: 'none',
+  },
+};
+
+function YearRangeSlider({
   yearMin,
   yearMax,
   sliderMin,
@@ -160,36 +192,52 @@ function YearRangeInputs({
   onChangeMin: (v: number | undefined) => void;
   onChangeMax: (v: number | undefined) => void;
 }) {
+  const [draft, setDraft] = useState<[number, number]>([
+    yearMin ?? sliderMin,
+    yearMax ?? sliderMax,
+  ]);
+  // Frozen bounds — only update when not dragging so rc-slider's
+  // position→value mapping can't shift under a live thumb.
+  const [bounds, setBounds] = useState({ min: sliderMin, max: sliderMax });
+  const isDragging = useRef(false);
+
+  // Sync draft + bounds only when the user is not actively dragging.
+  // sliderMin/sliderMax can change as SWR data arrives; freezing them
+  // prevents the handle from jumping mid-drag.
+  useEffect(() => {
+    if (isDragging.current) return;
+    setBounds({ min: sliderMin, max: sliderMax });
+    setDraft([yearMin ?? sliderMin, yearMax ?? sliderMax]);
+  }, [yearMin, yearMax, sliderMin, sliderMax]);
+
+  const commit = (v: number | number[]) => {
+    isDragging.current = false;
+    const [min, max] = v as [number, number];
+    onChangeMin(min === bounds.min ? undefined : min);
+    onChangeMax(max === bounds.max ? undefined : max);
+  };
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <span className="text-xs text-text-muted whitespace-nowrap">Year:</span>
-      <input
-        type="range"
-        aria-label="Minimum year"
-        min={sliderMin}
-        max={sliderMax}
-        value={yearMin ?? sliderMin}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          onChangeMin(v === sliderMin ? undefined : v);
-        }}
-        className="w-24 accent-primary"
-      />
-      <span className="text-xs text-text-secondary tabular-nums">
-        {yearMin ?? sliderMin}–{yearMax ?? sliderMax}
+      <div className="w-36 py-1" aria-label="Year range">
+        <Slider
+          range
+          min={bounds.min}
+          max={bounds.max}
+          value={draft}
+          onChange={(v) => {
+            isDragging.current = true;
+            setDraft(v as [number, number]);
+          }}
+          onChangeComplete={commit}
+          styles={SLIDER_STYLES}
+          allowCross={false}
+        />
+      </div>
+      <span className="text-xs text-text-secondary tabular-nums w-20">
+        {draft[0]}–{draft[1]}
       </span>
-      <input
-        type="range"
-        aria-label="Maximum year"
-        min={sliderMin}
-        max={sliderMax}
-        value={yearMax ?? sliderMax}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          onChangeMax(v === sliderMax ? undefined : v);
-        }}
-        className="w-24 accent-primary"
-      />
     </div>
   );
 }
@@ -228,15 +276,12 @@ export function MediaFilterBar({
   seriesYearRange,
   lookups,
 }: MediaFilterBarProps) {
-  // Union year range for the slider bounds
-  const globalMin = Math.min(
-    movieYearRange?.min ?? 1900,
-    seriesYearRange?.min ?? 1900
-  );
-  const globalMax = Math.max(
-    movieYearRange?.max ?? new Date().getFullYear(),
-    seriesYearRange?.max ?? new Date().getFullYear()
-  );
+  // Union year range across only the sources that have data.
+  // Fallbacks are only used when no source has a range (nothing loaded yet).
+  const availableMins = [movieYearRange?.min, seriesYearRange?.min].filter((v): v is number => v != null);
+  const availableMaxs = [movieYearRange?.max, seriesYearRange?.max].filter((v): v is number => v != null);
+  const globalMin = availableMins.length > 0 ? Math.min(...availableMins) : 1888;
+  const globalMax = availableMaxs.length > 0 ? Math.max(...availableMaxs) : new Date().getFullYear();
 
   const movieTagIds = parseCsvIds(filterState.movieTagIds);
   const seriesTagIds = parseCsvIds(filterState.seriesTagIds);
@@ -319,7 +364,7 @@ export function MediaFilterBar({
         <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
 
         {/* Year range */}
-        <YearRangeInputs
+        <YearRangeSlider
           yearMin={filterState.yearMin}
           yearMax={filterState.yearMax}
           sliderMin={globalMin}

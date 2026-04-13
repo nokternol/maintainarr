@@ -2,6 +2,7 @@ import { ErrorBoundary, ErrorFallback } from '@app/components/ErrorBoundary';
 import { ThemeProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import '@app/styles/globals.css';
+import 'rc-slider/assets/index.css';
 
 function MaintainarrApp({ Component, pageProps }: AppProps) {
   return (
