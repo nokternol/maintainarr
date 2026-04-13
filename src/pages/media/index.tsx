@@ -278,37 +278,38 @@ export default function MediaPage() {
             mobileOpen={filterSheetOpen}
             onMobileClose={() => setFilterSheetOpen(false)}
           />
+
+          {/* ── Movies / Series segment tabs — part of sticky header ─────────── */}
+          <div className="flex items-center gap-1 px-3 sm:px-6 py-2 border-b border-border">
+            {(['movies', 'series'] as const).map((tab) => {
+              const count = tab === 'movies' ? movies.totalCount : series.totalCount;
+              const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    'px-4 py-2 rounded-full text-sm font-medium transition-colors capitalize',
+                    activeTab === tab
+                      ? 'bg-primary text-text-primary'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                  )}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {!loading && (
+                    <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       }
     >
       <div className="p-3 sm:p-6 space-y-6">
-        {/* ── Movies / Series segment tabs ────────────────────────────────── */}
-        <div className="flex items-center gap-1">
-          {(['movies', 'series'] as const).map((tab) => {
-            const count = tab === 'movies' ? movies.items.length : series.items.length;
-            const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium transition-colors capitalize',
-                  activeTab === tab
-                    ? 'bg-primary text-text-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                )}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {!loading && (
-                  <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
 
         {/* Movies section — always in DOM for tests, hidden when tab is series */}
         <section className={cn(activeTab !== 'movies' && 'hidden')}>

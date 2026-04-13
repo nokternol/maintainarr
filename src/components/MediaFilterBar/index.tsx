@@ -481,56 +481,30 @@ export function MediaFilterBar({
         </div>
       </div>
 
-      {/* ── Mobile bottom sheet (< md) ───────────────────────────────────────── */}
+      {/* ── Mobile full-screen filter modal (< md) ──────────────────────────── */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-50 md:hidden"
+          className="fixed inset-0 z-50 md:hidden bg-surface-panel flex flex-col pb-16"
           role="dialog"
           aria-modal="true"
           aria-label="Filters"
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={onMobileClose}
-            aria-hidden="true"
-          />
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+            <h2 className="text-base font-semibold text-text-primary">Filters</h2>
+            {isActive && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-xs text-text-muted hover:text-text-primary underline underline-offset-2 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
 
-          {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 bg-surface-panel rounded-t-2xl max-h-[85vh] flex flex-col shadow-2xl">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 bg-border rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 pb-3 pt-1 border-b border-border flex-shrink-0">
-              <h2 className="text-base font-semibold text-text-primary">Filters</h2>
-              <div className="flex items-center gap-3">
-                {isActive && (
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    className="text-xs text-text-muted hover:text-text-primary underline underline-offset-2 transition-colors"
-                  >
-                    Clear all
-                  </button>
-                )}
-                <button
-                  type="button"
-                  aria-label="Close filters"
-                  onClick={onMobileClose}
-                  className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
               {/* Search */}
               <div>
                 <div className="relative">
@@ -654,6 +628,16 @@ export function MediaFilterBar({
                 />
               </div>
             </div>
+
+          {/* Sticky Done footer */}
+          <div className="flex-shrink-0 px-4 py-3 border-t border-border">
+            <button
+              type="button"
+              onClick={onMobileClose}
+              className="w-full py-3 rounded-xl bg-primary text-white font-semibold text-sm"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
