@@ -24,6 +24,9 @@ export interface SonarrSeries {
   path: string;
   seasons: SonarrSeason[];
   images?: SonarrImage[];
+  genres?: string[];
+  network?: string;
+  seriesType?: string;
 }
 
 export interface SonarrProfile {

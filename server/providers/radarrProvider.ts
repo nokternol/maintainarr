@@ -18,6 +18,7 @@ export interface RadarrMovie {
   folderName: string;
   path: string;
   images?: RadarrImage[];
+  genres?: string[];
 }
 
 export interface RadarrProfile {
