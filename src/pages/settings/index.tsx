@@ -91,6 +91,13 @@ const API_SUFFIXES: Record<string, string> = {
   OMDB: '',
 };
 
+// ─── Default URLs for providers with fixed base URLs ──────────────────────────
+
+const PROVIDER_DEFAULT_URLS: Partial<Record<string, string>> = {
+  TMDB: 'https://api.themoviedb.org/3',
+  OMDB: 'http://www.omdbapi.com',
+};
+
 // ─── Connection status ────────────────────────────────────────────────────────
 
 type TestStatus = 'idle' | 'loading' | 'pass' | 'fail';
@@ -247,7 +254,9 @@ function AddProviderForm({
             id="add-type"
             value={form.type}
             onChange={(e) => {
-              setForm((f) => ({ ...f, type: e.target.value }));
+              const newType = e.target.value;
+              const defaultUrl = PROVIDER_DEFAULT_URLS[newType];
+              setForm((f) => ({ ...f, type: newType, url: defaultUrl ?? f.url }));
               resetTest();
             }}
             className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
@@ -281,19 +290,29 @@ function AddProviderForm({
             </span>
             {testError && <span className="ml-2 text-xs text-red-400">{testError}</span>}
           </label>
-          <input
-            id="add-url"
-            type="url"
-            value={form.url}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, url: e.target.value }));
-              resetTest();
-            }}
-            onBlur={handleBlur}
-            placeholder="http://localhost:7878"
-            className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
-            required
-          />
+          {PROVIDER_DEFAULT_URLS[form.type] !== undefined ? (
+            <input
+              id="add-url"
+              type="url"
+              value={form.url}
+              readOnly
+              className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-muted cursor-not-allowed opacity-70"
+            />
+          ) : (
+            <input
+              id="add-url"
+              type="url"
+              value={form.url}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, url: e.target.value }));
+                resetTest();
+              }}
+              onBlur={handleBlur}
+              placeholder="http://localhost:7878"
+              className="w-full px-3 py-2 bg-surface-bg border border-border rounded text-text-primary"
+              required
+            />
+          )}
         </div>
         <div>
           <label htmlFor="add-apikey" className="block text-sm text-text-secondary mb-1">
