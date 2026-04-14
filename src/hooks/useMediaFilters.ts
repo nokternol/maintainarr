@@ -19,6 +19,7 @@ export interface FilterState {
   seriesGenres: string | undefined;
   seriesType: string | undefined;
   network: string | undefined;
+  tautulliWatched: 'true' | 'false' | undefined;
 }
 
 const EMPTY_FILTER_STATE: FilterState = {
@@ -36,6 +37,7 @@ const EMPTY_FILTER_STATE: FilterState = {
   seriesGenres: undefined,
   seriesType: undefined,
   network: undefined,
+  tautulliWatched: undefined,
 };
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
@@ -65,6 +67,7 @@ function parseQuery(query: Record<string, string | string[] | undefined>): Filte
     seriesGenres: str('seriesGenres'),
     seriesType: str('seriesType'),
     network: str('network'),
+    tautulliWatched: str('tautulliWatched') as 'true' | 'false' | undefined,
   };
 }
 
@@ -84,6 +87,7 @@ function buildQuery(state: FilterState): Record<string, string> {
   if (state.seriesGenres !== undefined) q.seriesGenres = state.seriesGenres;
   if (state.seriesType !== undefined) q.seriesType = state.seriesType;
   if (state.network !== undefined) q.network = state.network;
+  if (state.tautulliWatched !== undefined) q.tautulliWatched = state.tautulliWatched;
   return q;
 }
 
@@ -102,7 +106,8 @@ function isAnyFilterActive(state: FilterState): boolean {
     state.movieGenres !== undefined ||
     state.seriesGenres !== undefined ||
     state.seriesType !== undefined ||
-    state.network !== undefined
+    state.network !== undefined ||
+    state.tautulliWatched !== undefined
   );
 }
 
@@ -155,6 +160,7 @@ export function useMediaFilters() {
     if (filterState.seriesGenres !== undefined) f.seriesGenres = filterState.seriesGenres;
     if (filterState.seriesType !== undefined) f.seriesType = filterState.seriesType;
     if (filterState.network !== undefined) f.network = filterState.network;
+    if (filterState.tautulliWatched !== undefined) f.tautulliWatched = filterState.tautulliWatched;
     return f;
   }, [
     debouncedTitle,
@@ -171,6 +177,7 @@ export function useMediaFilters() {
     filterState.seriesGenres,
     filterState.seriesType,
     filterState.network,
+    filterState.tautulliWatched,
   ]);
 
   const isActive = isAnyFilterActive(filterState);
@@ -192,6 +199,7 @@ export function useMediaFilters() {
     setSeriesGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesGenres: v })),
     setSeriesType: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesType: v })),
     setNetwork: (v: string | undefined) => setFilterState((s) => ({ ...s, network: v })),
+    setTautulliWatched: (v: 'true' | 'false' | undefined) => setFilterState((s) => ({ ...s, tautulliWatched: v })),
     clearAll: () => setFilterState(EMPTY_FILTER_STATE),
     isActive,
   };

@@ -30,6 +30,22 @@ interface OverseerrRequestsResponse {
   };
 }
 
+export interface OverseerrSearchResult {
+  id: number;
+  mediaType: string;
+  title?: string;
+  name?: string;
+  overview?: string;
+  mediaInfo?: unknown;
+}
+
+interface OverseerrSearchResponse {
+  results: OverseerrSearchResult[];
+  page: number;
+  totalPages: number;
+  totalResults: number;
+}
+
 export class OverseerrProvider extends BaseMetadataProvider {
   private get authHeader() {
     return { 'X-Api-Key': this.provider.apiKey ?? '' };
@@ -39,6 +55,13 @@ export class OverseerrProvider extends BaseMetadataProvider {
     const resp = await this.client
       .get('api/v1/request', { headers: this.authHeader })
       .json<OverseerrRequestsResponse>();
+    return resp.results;
+  }
+
+  public async search(query: string): Promise<OverseerrSearchResult[]> {
+    const resp = await this.client
+      .get('api/v1/search', { headers: this.authHeader, searchParams: { query } })
+      .json<OverseerrSearchResponse>();
     return resp.results;
   }
 }

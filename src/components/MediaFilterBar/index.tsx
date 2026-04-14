@@ -34,6 +34,7 @@ export interface MediaFilterBarProps {
   setSeriesGenres: (v: string | undefined) => void;
   setSeriesType: (v: string | undefined) => void;
   setNetwork: (v: string | undefined) => void;
+  setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   movieYearRange: YearRange | null;
@@ -149,7 +150,7 @@ function MultiSelectDropdown({
           role="listbox"
           aria-label={label}
           aria-multiselectable="true"
-          className="absolute top-full left-0 mt-1 min-w-40 bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
+          className="absolute top-full left-0 mt-1 min-w-40 max-h-60 overflow-y-auto bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
         >
           {options.map((opt) => {
             const checked = selectedIds.includes(opt.id);
@@ -433,6 +434,7 @@ export function MediaFilterBar({
   setSeriesGenres,
   setSeriesType,
   setNetwork,
+  setTautulliWatched,
   clearAll,
   isActive,
   movieYearRange,
@@ -457,6 +459,7 @@ export function MediaFilterBar({
 
   const hasMovieSection = configuredTypes.has('RADARR');
   const hasSeriesSection = configuredTypes.has('SONARR');
+  const hasTautulliSection = configuredTypes.has('TAUTULLI');
 
   const hasMovieDropdowns =
     lookups.tags.radarr.length > 0 || lookups.qualityProfiles.radarr.length > 0;
@@ -550,6 +553,22 @@ export function MediaFilterBar({
                     onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
                   />
                 </div>
+              </>
+            )}
+
+            {hasTautulliSection && (
+              <>
+                <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+                <ChipGroup
+                  label="Watched"
+                  options={[
+                    { value: undefined, label: 'All' },
+                    { value: 'true' as const, label: 'Watched' },
+                    { value: 'false' as const, label: 'Unwatched' },
+                  ]}
+                  value={filterState.tautulliWatched}
+                  onChange={setTautulliWatched}
+                />
               </>
             )}
           </div>
@@ -799,6 +818,25 @@ export function MediaFilterBar({
                       onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Tautulli Watched section */}
+              {hasTautulliSection && (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                    Play History
+                  </h3>
+                  <ChipGroup
+                    label="Watched"
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'true' as const, label: 'Watched' },
+                      { value: 'false' as const, label: 'Unwatched' },
+                    ]}
+                    value={filterState.tautulliWatched}
+                    onChange={setTautulliWatched}
+                  />
                 </div>
               )}
 

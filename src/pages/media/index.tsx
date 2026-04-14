@@ -110,6 +110,7 @@ function countActiveFilters(filterState: {
   seriesGenres?: string;
   seriesType?: string;
   network?: string;
+  tautulliWatched?: string;
 }): number {
   return [
     filterState.title ? 1 : 0,
@@ -125,6 +126,7 @@ function countActiveFilters(filterState: {
     filterState.seriesGenres ? 1 : 0,
     filterState.seriesType !== undefined ? 1 : 0,
     filterState.network ? 1 : 0,
+    filterState.tautulliWatched !== undefined ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 }
 
@@ -175,6 +177,7 @@ export default function MediaPage() {
     setSeriesGenres,
     setSeriesType,
     setNetwork,
+    setTautulliWatched,
     clearAll,
     isActive,
   } = useMediaFilters();
@@ -245,6 +248,7 @@ export default function MediaPage() {
     setSeriesGenres,
     setSeriesType,
     setNetwork,
+    setTautulliWatched,
     clearAll,
     isActive,
     movieYearRange: movies.yearRange,

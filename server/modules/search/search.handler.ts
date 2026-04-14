@@ -77,16 +77,12 @@ async function searchProvider(provider: MetadataProvider, title: string): Promis
       }
       case MetadataProviderType.TAUTULLI: {
         const p = new TautulliProvider(provider, log);
-        const history = await p.getHistory();
-        const lowerTitle = title.toLowerCase();
-        const data = history.filter((item) => item.title.toLowerCase().includes(lowerTitle));
+        const data = await p.searchHistory(title);
         return { ...base, status: 'ok', data };
       }
       case MetadataProviderType.OVERSEERR: {
         const p = new OverseerrProvider(provider, log);
-        const requests = await p.getRequests();
-        const lowerTitle = title.toLowerCase();
-        const data = requests.filter((req) => req.media?.title?.toLowerCase().includes(lowerTitle));
+        const data = await p.search(title);
         return { ...base, status: 'ok', data };
       }
       default:

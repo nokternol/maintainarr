@@ -1,6 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
+import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
@@ -36,6 +37,7 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   movieQualityProfileIds: z.string().optional(),
   movieGenres: z.string().optional(),
   sort: z.enum(['title_asc', 'title_desc']).optional().default('title_asc'),
+  tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
 const seriesQuerySchema = paginationQuerySchema.extend({
@@ -53,6 +55,7 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   seriesType: z.string().optional(),
   network: z.string().optional(),
   sort: z.enum(['title_asc', 'title_desc']).optional().default('title_asc'),
+  tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
 // ─── Filter helpers ────────────────────────────────────────────────────────────
@@ -204,6 +207,25 @@ export function createMediaHandlers(cradle: MediaCradle) {
     return all;
   }
 
+  async function fetchWatchedTitles(): Promise<Set<string>> {
+    const tautulliProviders = await providerSettingsService.findActiveByTypes([
+      MetadataProviderType.TAUTULLI,
+    ]);
+    const allTitles = new Set<string>();
+    await Promise.all(
+      tautulliProviders.map(async (provider) => {
+        try {
+          const tautulli = new TautulliProvider(provider, log);
+          const titles = await tautulli.getWatchedTitles();
+          titles.forEach((t) => allTitles.add(t));
+        } catch (err) {
+          log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
+        }
+      })
+    );
+    return allTitles;
+  }
+
   async function fetchAllSeries(): Promise<SonarrSeries[]> {
     const providers = await providerSettingsService.findActiveByTypes([
       MetadataProviderType.SONARR,
@@ -268,7 +290,14 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const all = moviesCache.get('movies') ?? await fetchAllMovies();
 
         const yearRange = computeYearRange(all);
-        const filtered = applyMovieFilters(all, query);
+        let filtered = applyMovieFilters(all, query);
+
+        if (query.tautulliWatched !== undefined) {
+          const watchedTitles = await fetchWatchedTitles();
+          const want = query.tautulliWatched === 'true';
+          filtered = filtered.filter((m) => watchedTitles.has(m.title.toLowerCase()) === want);
+        }
+
         const sorted = filtered.slice().sort((a, b) =>
           query.sort === 'title_desc'
             ? b.title.localeCompare(a.title)
@@ -284,7 +313,14 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const all = seriesCache.get('series') ?? await fetchAllSeries();
 
         const yearRange = computeYearRange(all);
-        const filtered = applySeriesFilters(all, query);
+        let filtered = applySeriesFilters(all, query);
+
+        if (query.tautulliWatched !== undefined) {
+          const watchedTitles = await fetchWatchedTitles();
+          const want = query.tautulliWatched === 'true';
+          filtered = filtered.filter((s) => watchedTitles.has(s.title.toLowerCase()) === want);
+        }
+
         const sorted = filtered.slice().sort((a, b) =>
           query.sort === 'title_desc'
             ? b.title.localeCompare(a.title)

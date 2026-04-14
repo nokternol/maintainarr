@@ -58,4 +58,17 @@ export class TautulliProvider extends BaseMetadataProvider {
     const data = await this.command<{ data: TautulliHistoryItem[] }>('get_history');
     return data.data;
   }
+
+  public async searchHistory(title: string): Promise<TautulliHistoryItem[]> {
+    const data = await this.command<{ data: TautulliHistoryItem[] }>('get_history', {
+      search: title,
+      length: 100,
+    });
+    return data.data;
+  }
+
+  public async getWatchedTitles(): Promise<string[]> {
+    const data = await this.command<{ data: TautulliHistoryItem[] }>('get_history', { length: 10000 });
+    return data.data.map((item) => item.title.toLowerCase());
+  }
 }
