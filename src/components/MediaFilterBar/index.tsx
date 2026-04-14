@@ -14,6 +14,8 @@ interface YearRange {
 interface Lookups {
   tags: { radarr: MediaTag[]; sonarr: MediaTag[] };
   qualityProfiles: { radarr: MediaQualityProfile[]; sonarr: MediaQualityProfile[] };
+  genres: { movies: string[]; series: string[] };
+  networks: string[];
 }
 
 export interface MediaFilterBarProps {
@@ -28,11 +30,17 @@ export interface MediaFilterBarProps {
   setSeriesTagIds: (v: string | undefined) => void;
   setMovieQualityProfileIds: (v: string | undefined) => void;
   setSeriesQualityProfileIds: (v: string | undefined) => void;
+  setMovieGenres: (v: string | undefined) => void;
+  setSeriesGenres: (v: string | undefined) => void;
+  setSeriesType: (v: string | undefined) => void;
+  setNetwork: (v: string | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   movieYearRange: YearRange | null;
   seriesYearRange: YearRange | null;
   lookups: Lookups;
+  /** Set of active provider types, used to gate filter sections */
+  configuredTypes: Set<string>;
   /** Mobile bottom sheet open state */
   mobileOpen?: boolean;
   /** Callback to close the mobile bottom sheet */
@@ -157,6 +165,97 @@ function MultiSelectDropdown({
                   className="rounded accent-primary"
                 />
                 {opt.displayName}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StringMultiSelectDropdown({
+  label,
+  options,
+  selectedValues,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
+}) {
+  const id = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
+  if (options.length === 0) return null;
+
+  const toggle = (value: string) => {
+    const next = selectedValues.includes(value)
+      ? selectedValues.filter((x) => x !== value)
+      : [...selectedValues, value];
+    onChange(next);
+  };
+
+  const activeCount = selectedValues.length;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        onClick={() => setIsOpen((o) => !o)}
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
+          activeCount > 0
+            ? 'bg-primary text-text-primary border-primary'
+            : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
+        )}
+      >
+        {label}
+        {activeCount > 0 && (
+          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-xs">{activeCount}</span>
+        )}
+        <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-label={label}
+          aria-multiselectable="true"
+          className="absolute top-full left-0 mt-1 min-w-40 max-h-60 overflow-y-auto bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
+        >
+          {options.map((opt) => {
+            const checked = selectedValues.includes(opt);
+            return (
+              <label
+                key={`${id}-${opt}`}
+                className="flex items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(opt)}
+                  className="rounded accent-primary"
+                />
+                {opt}
               </label>
             );
           })}
@@ -307,6 +406,15 @@ function toCsvOrUndefined(ids: number[]): string | undefined {
   return ids.length > 0 ? ids.join(',') : undefined;
 }
 
+function parseCsvStrings(csv: string | undefined): string[] {
+  if (!csv) return [];
+  return csv.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function toStringCsvOrUndefined(values: string[]): string | undefined {
+  return values.length > 0 ? values.join(',') : undefined;
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MediaFilterBar({
@@ -321,11 +429,16 @@ export function MediaFilterBar({
   setSeriesTagIds,
   setMovieQualityProfileIds,
   setSeriesQualityProfileIds,
+  setMovieGenres,
+  setSeriesGenres,
+  setSeriesType,
+  setNetwork,
   clearAll,
   isActive,
   movieYearRange,
   seriesYearRange,
   lookups,
+  configuredTypes,
   mobileOpen = false,
   onMobileClose,
 }: MediaFilterBarProps) {
@@ -338,6 +451,12 @@ export function MediaFilterBar({
   const seriesTagIds = parseCsvIds(filterState.seriesTagIds);
   const movieQualityProfileIds = parseCsvIds(filterState.movieQualityProfileIds);
   const seriesQualityProfileIds = parseCsvIds(filterState.seriesQualityProfileIds);
+  const selectedMovieGenres = parseCsvStrings(filterState.movieGenres);
+  const selectedSeriesGenres = parseCsvStrings(filterState.seriesGenres);
+  const selectedNetworks = parseCsvStrings(filterState.network);
+
+  const hasMovieSection = configuredTypes.has('RADARR');
+  const hasSeriesSection = configuredTypes.has('SONARR');
 
   const hasMovieDropdowns =
     lookups.tags.radarr.length > 0 || lookups.qualityProfiles.radarr.length > 0;
@@ -392,82 +511,119 @@ export function MediaFilterBar({
               />
             </div>
 
-            <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+            {hasMovieSection && (
+              <>
+                <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
 
-            {/* Movie filter group */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
-              <ChipGroup
-                label="Movies"
-                options={[
-                  { value: undefined, label: 'All' },
-                  { value: 'true' as const, label: 'Downloaded' },
-                  { value: 'false' as const, label: 'Missing' },
-                ]}
-                value={filterState.hasFile}
-                onChange={setHasFile}
-              />
-              {hasMovieDropdowns && (
-                <>
-                  <MultiSelectDropdown
-                    label="Movie Tags"
-                    options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                    selectedIds={movieTagIds}
-                    onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+                {/* Movie filter group */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
+                  <ChipGroup
+                    label="Movies"
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'true' as const, label: 'Downloaded' },
+                      { value: 'false' as const, label: 'Missing' },
+                    ]}
+                    value={filterState.hasFile}
+                    onChange={setHasFile}
                   />
-                  <MultiSelectDropdown
-                    label="Movie Quality"
-                    options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                    selectedIds={movieQualityProfileIds}
-                    onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+                  {hasMovieDropdowns && (
+                    <>
+                      <MultiSelectDropdown
+                        label="Movie Tags"
+                        options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                        selectedIds={movieTagIds}
+                        onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+                      />
+                      <MultiSelectDropdown
+                        label="Movie Quality"
+                        options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                        selectedIds={movieQualityProfileIds}
+                        onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+                      />
+                    </>
+                  )}
+                  <StringMultiSelectDropdown
+                    label="Movie Genres"
+                    options={lookups.genres.movies}
+                    selectedValues={selectedMovieGenres}
+                    onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
                   />
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Row 2: Series filters + Year slider */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* Series filter group */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
-              <ChipGroup
-                label="Series"
-                options={[
-                  { value: undefined, label: 'All' },
-                  { value: 'true' as const, label: 'Monitored' },
-                  { value: 'false' as const, label: 'Unmonitored' },
-                ]}
-                value={filterState.monitored}
-                onChange={setMonitored}
-              />
-              <ChipGroup
-                label="Status"
-                options={[
-                  { value: undefined, label: 'All' },
-                  { value: 'continuing', label: 'Continuing' },
-                  { value: 'ended', label: 'Ended' },
-                ]}
-                value={filterState.seriesStatus}
-                onChange={setSeriesStatus}
-              />
-              {hasSeriesDropdowns && (
-                <>
-                  <MultiSelectDropdown
-                    label="Series Tags"
-                    options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                    selectedIds={seriesTagIds}
-                    onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
-                  />
-                  <MultiSelectDropdown
-                    label="Series Quality"
-                    options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                    selectedIds={seriesQualityProfileIds}
-                    onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
-                  />
-                </>
-              )}
-            </div>
+            {hasSeriesSection && (
+              /* Series filter group */
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
+                <ChipGroup
+                  label="Series"
+                  options={[
+                    { value: undefined, label: 'All' },
+                    { value: 'true' as const, label: 'Monitored' },
+                    { value: 'false' as const, label: 'Unmonitored' },
+                  ]}
+                  value={filterState.monitored}
+                  onChange={setMonitored}
+                />
+                <ChipGroup
+                  label="Status"
+                  options={[
+                    { value: undefined, label: 'All' },
+                    { value: 'continuing', label: 'Continuing' },
+                    { value: 'ended', label: 'Ended' },
+                  ]}
+                  value={filterState.seriesStatus}
+                  onChange={setSeriesStatus}
+                />
+                <ChipGroup
+                  label="Type"
+                  options={[
+                    { value: undefined, label: 'All' },
+                    { value: 'standard', label: 'Standard' },
+                    { value: 'anime', label: 'Anime' },
+                    { value: 'daily', label: 'Daily' },
+                  ]}
+                  value={filterState.seriesType}
+                  onChange={setSeriesType}
+                />
+                {hasSeriesDropdowns && (
+                  <>
+                    <MultiSelectDropdown
+                      label="Series Tags"
+                      options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                      selectedIds={seriesTagIds}
+                      onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
+                    />
+                    <MultiSelectDropdown
+                      label="Series Quality"
+                      options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                      selectedIds={seriesQualityProfileIds}
+                      onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
+                    />
+                  </>
+                )}
+                <StringMultiSelectDropdown
+                  label="Series Genres"
+                  options={lookups.genres.series}
+                  selectedValues={selectedSeriesGenres}
+                  onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
+                />
+                <StringMultiSelectDropdown
+                  label="Network"
+                  options={lookups.networks}
+                  selectedValues={selectedNetworks}
+                  onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
+                />
+              </div>
+            )}
 
-            <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+            {(hasMovieSection || hasSeriesSection) && (
+              <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+            )}
 
             <YearRangeSlider
               yearMin={filterState.yearMin}
@@ -534,84 +690,117 @@ export function MediaFilterBar({
               </div>
 
               {/* Movies section */}
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
-                  Movies
-                </h3>
-                <div className="space-y-3">
-                  <ChipGroup
-                    label="Movies"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Downloaded' },
-                      { value: 'false' as const, label: 'Missing' },
-                    ]}
-                    value={filterState.hasFile}
-                    onChange={setHasFile}
-                  />
-                  {lookups.tags.radarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Movie Tags"
-                      options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                      selectedIds={movieTagIds}
-                      onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+              {hasMovieSection && (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                    Movies
+                  </h3>
+                  <div className="space-y-3">
+                    <ChipGroup
+                      label="Movies"
+                      options={[
+                        { value: undefined, label: 'All' },
+                        { value: 'true' as const, label: 'Downloaded' },
+                        { value: 'false' as const, label: 'Missing' },
+                      ]}
+                      value={filterState.hasFile}
+                      onChange={setHasFile}
                     />
-                  )}
-                  {lookups.qualityProfiles.radarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Movie Quality"
-                      options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                      selectedIds={movieQualityProfileIds}
-                      onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+                    {lookups.tags.radarr.length > 0 && (
+                      <MultiSelectDropdown
+                        label="Movie Tags"
+                        options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                        selectedIds={movieTagIds}
+                        onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+                      />
+                    )}
+                    {lookups.qualityProfiles.radarr.length > 0 && (
+                      <MultiSelectDropdown
+                        label="Movie Quality"
+                        options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                        selectedIds={movieQualityProfileIds}
+                        onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+                      />
+                    )}
+                    <StringMultiSelectDropdown
+                      label="Movie Genres"
+                      options={lookups.genres.movies}
+                      selectedValues={selectedMovieGenres}
+                      onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
                     />
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Series section */}
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
-                  Series
-                </h3>
-                <div className="space-y-3">
-                  <ChipGroup
-                    label="Series"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Monitored' },
-                      { value: 'false' as const, label: 'Unmonitored' },
-                    ]}
-                    value={filterState.monitored}
-                    onChange={setMonitored}
-                  />
-                  <ChipGroup
-                    label="Status"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'continuing', label: 'Continuing' },
-                      { value: 'ended', label: 'Ended' },
-                    ]}
-                    value={filterState.seriesStatus}
-                    onChange={setSeriesStatus}
-                  />
-                  {lookups.tags.sonarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Series Tags"
-                      options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                      selectedIds={seriesTagIds}
-                      onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
+              {hasSeriesSection && (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                    Series
+                  </h3>
+                  <div className="space-y-3">
+                    <ChipGroup
+                      label="Series"
+                      options={[
+                        { value: undefined, label: 'All' },
+                        { value: 'true' as const, label: 'Monitored' },
+                        { value: 'false' as const, label: 'Unmonitored' },
+                      ]}
+                      value={filterState.monitored}
+                      onChange={setMonitored}
                     />
-                  )}
-                  {lookups.qualityProfiles.sonarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Series Quality"
-                      options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                      selectedIds={seriesQualityProfileIds}
-                      onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
+                    <ChipGroup
+                      label="Status"
+                      options={[
+                        { value: undefined, label: 'All' },
+                        { value: 'continuing', label: 'Continuing' },
+                        { value: 'ended', label: 'Ended' },
+                      ]}
+                      value={filterState.seriesStatus}
+                      onChange={setSeriesStatus}
                     />
-                  )}
+                    <ChipGroup
+                      label="Type"
+                      options={[
+                        { value: undefined, label: 'All' },
+                        { value: 'standard', label: 'Standard' },
+                        { value: 'anime', label: 'Anime' },
+                        { value: 'daily', label: 'Daily' },
+                      ]}
+                      value={filterState.seriesType}
+                      onChange={setSeriesType}
+                    />
+                    {lookups.tags.sonarr.length > 0 && (
+                      <MultiSelectDropdown
+                        label="Series Tags"
+                        options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                        selectedIds={seriesTagIds}
+                        onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
+                      />
+                    )}
+                    {lookups.qualityProfiles.sonarr.length > 0 && (
+                      <MultiSelectDropdown
+                        label="Series Quality"
+                        options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                        selectedIds={seriesQualityProfileIds}
+                        onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
+                      />
+                    )}
+                    <StringMultiSelectDropdown
+                      label="Series Genres"
+                      options={lookups.genres.series}
+                      selectedValues={selectedSeriesGenres}
+                      onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
+                    />
+                    <StringMultiSelectDropdown
+                      label="Network"
+                      options={lookups.networks}
+                      selectedValues={selectedNetworks}
+                      onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Year section */}
               <div>

@@ -11,9 +11,10 @@ import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
+import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { SidebarItem } from '@app/types/navigation';
 import { cn } from '@app/lib/utils/cn';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,10 @@ function countActiveFilters(filterState: {
   seriesTagIds?: string;
   movieQualityProfileIds?: string;
   seriesQualityProfileIds?: string;
+  movieGenres?: string;
+  seriesGenres?: string;
+  seriesType?: string;
+  network?: string;
 }): number {
   return [
     filterState.title ? 1 : 0,
@@ -116,6 +121,10 @@ function countActiveFilters(filterState: {
     filterState.seriesTagIds ? 1 : 0,
     filterState.movieQualityProfileIds ? 1 : 0,
     filterState.seriesQualityProfileIds ? 1 : 0,
+    filterState.movieGenres ? 1 : 0,
+    filterState.seriesGenres ? 1 : 0,
+    filterState.seriesType !== undefined ? 1 : 0,
+    filterState.network ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 }
 
@@ -162,6 +171,10 @@ export default function MediaPage() {
     setSeriesTagIds,
     setMovieQualityProfileIds,
     setSeriesQualityProfileIds,
+    setMovieGenres,
+    setSeriesGenres,
+    setSeriesType,
+    setNetwork,
     clearAll,
     isActive,
   } = useMediaFilters();
@@ -169,6 +182,12 @@ export default function MediaPage() {
   const movies = useMovies(debouncedFilters);
   const series = useSeries(debouncedFilters);
   const lookups = useMediaLookups();
+  const { providers } = useProviderSettings();
+
+  const configuredTypes = useMemo(
+    () => new Set((providers ?? []).filter((p) => p.isActive).map((p) => p.type)),
+    [providers]
+  );
 
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -222,11 +241,16 @@ export default function MediaPage() {
     setSeriesTagIds,
     setMovieQualityProfileIds,
     setSeriesQualityProfileIds,
+    setMovieGenres,
+    setSeriesGenres,
+    setSeriesType,
+    setNetwork,
     clearAll,
     isActive,
     movieYearRange: movies.yearRange,
     seriesYearRange: series.yearRange,
     lookups,
+    configuredTypes,
   };
 
   return (
