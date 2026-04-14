@@ -5,7 +5,10 @@ const nextConfig = {
     devIndicators: false,
 
     images: {
-        domains: ["image.tmdb.org"],
+        remotePatterns: [
+            { protocol: 'https', hostname: 'image.tmdb.org' },
+            { protocol: 'https', hostname: 'artworks.thetvdb.com' },
+        ],
     },
 
     webpack(config) {
