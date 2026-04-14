@@ -20,6 +20,11 @@ interface QualityProfilesResponse {
   sonarr: MediaQualityProfile[];
 }
 
+interface GenresResponse {
+  movies: string[];
+  series: string[];
+}
+
 async function fetcher<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch');
@@ -33,6 +38,8 @@ export function useMediaLookups() {
     '/api/media/quality-profiles',
     fetcher
   );
+  const { data: genresData } = useSWR<GenresResponse>('/api/media/genres', fetcher);
+  const { data: networksData } = useSWR<string[]>('/api/media/networks', fetcher);
 
   return {
     tags: {
@@ -43,5 +50,10 @@ export function useMediaLookups() {
       radarr: profilesData?.radarr ?? [],
       sonarr: profilesData?.sonarr ?? [],
     },
+    genres: {
+      movies: genresData?.movies ?? [],
+      series: genresData?.series ?? [],
+    },
+    networks: networksData ?? [],
   };
 }

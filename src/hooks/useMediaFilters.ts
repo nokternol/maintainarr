@@ -15,6 +15,10 @@ export interface FilterState {
   seriesTagIds: string | undefined;
   movieQualityProfileIds: string | undefined;
   seriesQualityProfileIds: string | undefined;
+  movieGenres: string | undefined;
+  seriesGenres: string | undefined;
+  seriesType: string | undefined;
+  network: string | undefined;
 }
 
 const EMPTY_FILTER_STATE: FilterState = {
@@ -28,6 +32,10 @@ const EMPTY_FILTER_STATE: FilterState = {
   seriesTagIds: undefined,
   movieQualityProfileIds: undefined,
   seriesQualityProfileIds: undefined,
+  movieGenres: undefined,
+  seriesGenres: undefined,
+  seriesType: undefined,
+  network: undefined,
 };
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
@@ -53,6 +61,10 @@ function parseQuery(query: Record<string, string | string[] | undefined>): Filte
     seriesTagIds: str('seriesTagIds'),
     movieQualityProfileIds: str('movieQualityProfileIds'),
     seriesQualityProfileIds: str('seriesQualityProfileIds'),
+    movieGenres: str('movieGenres'),
+    seriesGenres: str('seriesGenres'),
+    seriesType: str('seriesType'),
+    network: str('network'),
   };
 }
 
@@ -68,6 +80,10 @@ function buildQuery(state: FilterState): Record<string, string> {
   if (state.seriesTagIds !== undefined) q.seriesTagIds = state.seriesTagIds;
   if (state.movieQualityProfileIds !== undefined) q.movieQualityProfileIds = state.movieQualityProfileIds;
   if (state.seriesQualityProfileIds !== undefined) q.seriesQualityProfileIds = state.seriesQualityProfileIds;
+  if (state.movieGenres !== undefined) q.movieGenres = state.movieGenres;
+  if (state.seriesGenres !== undefined) q.seriesGenres = state.seriesGenres;
+  if (state.seriesType !== undefined) q.seriesType = state.seriesType;
+  if (state.network !== undefined) q.network = state.network;
   return q;
 }
 
@@ -82,7 +98,11 @@ function isAnyFilterActive(state: FilterState): boolean {
     state.movieTagIds !== undefined ||
     state.seriesTagIds !== undefined ||
     state.movieQualityProfileIds !== undefined ||
-    state.seriesQualityProfileIds !== undefined
+    state.seriesQualityProfileIds !== undefined ||
+    state.movieGenres !== undefined ||
+    state.seriesGenres !== undefined ||
+    state.seriesType !== undefined ||
+    state.network !== undefined
   );
 }
 
@@ -131,8 +151,27 @@ export function useMediaFilters() {
     if (filterState.seriesTagIds !== undefined) f.seriesTagIds = filterState.seriesTagIds;
     if (filterState.movieQualityProfileIds !== undefined) f.movieQualityProfileIds = filterState.movieQualityProfileIds;
     if (filterState.seriesQualityProfileIds !== undefined) f.seriesQualityProfileIds = filterState.seriesQualityProfileIds;
+    if (filterState.movieGenres !== undefined) f.movieGenres = filterState.movieGenres;
+    if (filterState.seriesGenres !== undefined) f.seriesGenres = filterState.seriesGenres;
+    if (filterState.seriesType !== undefined) f.seriesType = filterState.seriesType;
+    if (filterState.network !== undefined) f.network = filterState.network;
     return f;
-  }, [debouncedTitle, filterState.hasFile, filterState.monitored, filterState.seriesStatus, filterState.yearMin, filterState.yearMax, filterState.movieTagIds, filterState.seriesTagIds, filterState.movieQualityProfileIds, filterState.seriesQualityProfileIds]);
+  }, [
+    debouncedTitle,
+    filterState.hasFile,
+    filterState.monitored,
+    filterState.seriesStatus,
+    filterState.yearMin,
+    filterState.yearMax,
+    filterState.movieTagIds,
+    filterState.seriesTagIds,
+    filterState.movieQualityProfileIds,
+    filterState.seriesQualityProfileIds,
+    filterState.movieGenres,
+    filterState.seriesGenres,
+    filterState.seriesType,
+    filterState.network,
+  ]);
 
   const isActive = isAnyFilterActive(filterState);
 
@@ -149,6 +188,10 @@ export function useMediaFilters() {
     setSeriesTagIds: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesTagIds: v })),
     setMovieQualityProfileIds: (v: string | undefined) => setFilterState((s) => ({ ...s, movieQualityProfileIds: v })),
     setSeriesQualityProfileIds: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesQualityProfileIds: v })),
+    setMovieGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, movieGenres: v })),
+    setSeriesGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesGenres: v })),
+    setSeriesType: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesType: v })),
+    setNetwork: (v: string | undefined) => setFilterState((s) => ({ ...s, network: v })),
     clearAll: () => setFilterState(EMPTY_FILTER_STATE),
     isActive,
   };
