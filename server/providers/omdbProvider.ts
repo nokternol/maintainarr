@@ -15,6 +15,12 @@ export interface OmdbResponse {
   Ratings: OmdbRatings[];
   Response: 'True' | 'False';
   Error?: string;
+  Awards?: string;
+  Director?: string;
+  Actors?: string;
+  Language?: string;
+  Country?: string;
+  BoxOffice?: string;
 }
 
 export interface OmdbRating {
@@ -24,6 +30,12 @@ export interface OmdbRating {
   rottenTomatoesRating?: number;
   metacriticRating?: number;
   found: boolean;
+  awardWinner?: boolean;
+  oscarWinner?: boolean;
+  director?: string;
+  actors?: string;
+  language?: string;
+  boxOffice?: number;
 }
 
 export class OmdbProvider extends BaseMetadataProvider {
@@ -88,7 +100,38 @@ export class OmdbProvider extends BaseMetadataProvider {
       }
     }
 
+    const awards = data.Awards;
+    result.awardWinner = !this.isNaOrEmpty(awards) && /won/i.test(awards as string);
+    result.oscarWinner = !this.isNaOrEmpty(awards) && /won .+ oscar/i.test(awards as string);
+
+    const director = this.presentValue(data.Director);
+    if (director) result.director = director;
+
+    const actors = this.presentValue(data.Actors);
+    if (actors) result.actors = actors;
+
+    const language = this.presentValue(data.Language);
+    if (language) result.language = language;
+
+    const boxOffice = this.parseBoxOffice(data.BoxOffice);
+    if (boxOffice !== undefined) result.boxOffice = boxOffice;
+
     return result;
+  }
+
+  private isNaOrEmpty(value: string | undefined): boolean {
+    return !value || value === 'N/A';
+  }
+
+  private presentValue(value: string | undefined): string | undefined {
+    if (this.isNaOrEmpty(value)) return undefined;
+    return (value as string).trim();
+  }
+
+  private parseBoxOffice(value: string | undefined): number | undefined {
+    if (this.isNaOrEmpty(value)) return undefined;
+    const parsed = Number.parseInt((value as string).replace(/[$,]/g, ''), 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
   }
 
   private parseVotes(votes: string): number {
