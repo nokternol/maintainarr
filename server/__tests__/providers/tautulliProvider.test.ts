@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestTautulliProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 3,
-  type: MetadataProviderType.TAUTULLI,
+const mockConfig: ProviderConfig = {
   name: 'Test Tautulli',
   url: 'http://localhost:8181',
   apiKey: 'fake-api-key',
   settings: {},
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('TautulliProvider', () => {
-  const provider = new TautulliProvider(mockEntity, logger);
+  const provider = new TautulliProvider(mockConfig, logger);
 
   it('fetches and parses library stats correctly', async () => {
     const stats = await provider.getLibraryStats();

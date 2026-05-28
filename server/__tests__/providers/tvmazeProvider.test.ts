@@ -1,5 +1,5 @@
-import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -7,16 +7,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 const log = getChildLogger('TestTvMazeProvider');
 
-const mockProvider = {
-  id: 1,
-  type: MetadataProviderType.TVMAZE,
+const mockProvider: ProviderConfig = {
   name: 'Test TVMaze',
   url: 'https://api.tvmaze.com',
   apiKey: '',
   settings: null,
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 const server = setupServer(

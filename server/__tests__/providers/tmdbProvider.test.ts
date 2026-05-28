@@ -1,5 +1,5 @@
-import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { TmdbProvider, type TmdbStreamingServices } from '@server/providers/tmdbProvider';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -7,16 +7,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 const log = getChildLogger('TestTmdbProvider');
 
-const mockProvider = {
-  id: 1,
-  type: MetadataProviderType.TMDB,
+const mockProvider: ProviderConfig = {
   name: 'Test TMDB',
   url: 'https://api.themoviedb.org/3',
   apiKey: 'test-api-key',
   settings: null,
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 const server = setupServer(

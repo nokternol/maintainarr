@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestPlexProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 7,
-  type: MetadataProviderType.PLEX,
+const mockConfig: ProviderConfig = {
   name: 'Test Plex',
   url: 'http://localhost:32400',
   apiKey: 'fake-plex-token',
   settings: {},
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('PlexProvider', () => {
-  const provider = new PlexProvider(mockEntity, logger);
+  const provider = new PlexProvider(mockConfig, logger);
 
   it('fetches and parses libraries correctly', async () => {
     const libraries = await provider.getLibraries();

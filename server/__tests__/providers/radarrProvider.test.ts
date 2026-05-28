@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import { describe, expect, it } from 'vitest';
 
 const mockLogger = getChildLogger('TestRadarrProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 1,
-  type: MetadataProviderType.RADARR,
+const mockConfig: ProviderConfig = {
   name: 'Test Radarr',
   url: 'http://localhost:7878/api/v3',
   apiKey: 'fake-api-key',
   settings: {},
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('RadarrProvider', () => {
-  const provider = new RadarrProvider(mockEntity, mockLogger);
+  const provider = new RadarrProvider(mockConfig, mockLogger);
 
   it('fetches and parses movies correctly', async () => {
     const movies = await provider.getMovies();

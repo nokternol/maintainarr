@@ -1,5 +1,5 @@
-import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { OmdbProvider } from '@server/providers/omdbProvider';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -7,16 +7,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 const log = getChildLogger('TestOmdbProvider');
 
-const mockProvider = {
-  id: 1,
-  type: MetadataProviderType.OMDB,
+const mockProvider: ProviderConfig = {
   name: 'Test OMDB',
   url: 'https://www.omdbapi.com',
   apiKey: 'test-key',
   settings: null,
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 const server = setupServer(

@@ -18,29 +18,6 @@ import { providersSchemas } from './providers.schemas';
 
 const log = getChildLogger('ProvidersHandler');
 
-/**
- * Builds a minimal MetadataProvider-shaped entity from query params.
- * This lets us reuse the existing provider classes without touching the DB.
- */
-function makeEntity(
-  type: MetadataProviderType,
-  url: string,
-  apiKey: string,
-  settings: Record<string, unknown>
-) {
-  return {
-    id: 0,
-    type,
-    name: `adhoc-${type}`,
-    url,
-    apiKey,
-    settings,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
 interface ProvidersCradle {
   providerSettingsService: ProviderSettingsService;
 }
@@ -54,13 +31,13 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
       schemas: providersSchemas.getMetadata,
       handler: async ({ query }) => {
         const { type, url, apiKey, settings } = query;
-        const entity = makeEntity(type, url, apiKey, settings);
+        const config = { name: `adhoc-${type}`, url, apiKey, settings };
 
         log.debug('Fetching provider metadata', { type, url });
 
         switch (type) {
           case MetadataProviderType.SONARR: {
-            const provider = new SonarrProvider(entity, log);
+            const provider = new SonarrProvider(config, log);
             const [series, qualityProfiles, rootFolders, tags] = await Promise.all([
               provider.getSeries(),
               provider.getProfiles(),
@@ -71,7 +48,7 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
           }
 
           case MetadataProviderType.RADARR: {
-            const provider = new RadarrProvider(entity, log);
+            const provider = new RadarrProvider(config, log);
             const [movies, qualityProfiles, rootFolders, tags] = await Promise.all([
               provider.getMovies(),
               provider.getProfiles(),
@@ -82,19 +59,19 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
           }
 
           case MetadataProviderType.PLEX: {
-            const provider = new PlexProvider(entity, log);
+            const provider = new PlexProvider(config, log);
             const libraries = await provider.getLibraries();
             return { type, data: { libraries } };
           }
 
           case MetadataProviderType.JELLYFIN: {
-            const provider = new JellyfinProvider(entity, log);
+            const provider = new JellyfinProvider(config, log);
             const libraries = await provider.getLibraries();
             return { type, data: { libraries } };
           }
 
           case MetadataProviderType.TAUTULLI: {
-            const provider = new TautulliProvider(entity, log);
+            const provider = new TautulliProvider(config, log);
             const [libraryStats, homeStats, recentHistory] = await Promise.all([
               provider.getLibraryStats(),
               provider.getHomeStats(),
@@ -105,7 +82,7 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
 
           case MetadataProviderType.OVERSEERR:
           case MetadataProviderType.SEERR: {
-            const provider = new OverseerrProvider(entity, log);
+            const provider = new OverseerrProvider(config, log);
             const requests = await provider.getRequests();
             return { type, data: { requests } };
           }
@@ -118,7 +95,6 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
       handler: async ({ query }) => {
         const { title, year, tmdbApiKey, omdbApiKey } = query;
 
-        // Fetch saved keys from DB in a single query
         const dbProviders = await providerSettingsService.findActiveByTypes([
           MetadataProviderType.TMDB,
           MetadataProviderType.OMDB,
@@ -128,7 +104,6 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
         const dbOmdbKey =
           dbProviders.find((p) => p.type === MetadataProviderType.OMDB)?.apiKey ?? null;
 
-        // Resolve keys: explicit param → DB saved key → env/config → skip
         const { key: resolvedTmdbKey } = resolveApiKey(
           tmdbApiKey,
           dbTmdbKey,
@@ -138,19 +113,17 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
 
         log.debug('Fetching aggregated ratings', { title, year, hasTmdb: !!resolvedTmdbKey });
 
-        // Fetch from all providers in parallel (gracefully handle failures)
         const [tmdbRating, omdbRating, tvmazeRating] = await Promise.all([
-          // TMDB — resolved via param → DB → env/config
           resolvedTmdbKey
             ? (async () => {
                 try {
                   const provider = new TmdbProvider(
-                    makeEntity(
-                      MetadataProviderType.TMDB,
-                      'https://api.themoviedb.org/3',
-                      resolvedTmdbKey,
-                      {}
-                    ),
+                    {
+                      name: 'tmdb',
+                      url: 'https://api.themoviedb.org/3',
+                      apiKey: resolvedTmdbKey,
+                      settings: null,
+                    },
                     log
                   );
                   return await provider.getRatings(title, year);
@@ -161,17 +134,16 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
               })()
             : Promise.resolve(undefined),
 
-          // OMDB
           resolvedOmdbKey
             ? (async () => {
                 try {
                   const provider = new OmdbProvider(
-                    makeEntity(
-                      MetadataProviderType.OMDB,
-                      'https://www.omdbapi.com',
-                      resolvedOmdbKey,
-                      {}
-                    ),
+                    {
+                      name: 'omdb',
+                      url: 'https://www.omdbapi.com',
+                      apiKey: resolvedOmdbKey,
+                      settings: null,
+                    },
                     log
                   );
                   return await provider.getRatings(title, year);
@@ -182,11 +154,10 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
               })()
             : Promise.resolve(undefined),
 
-          // TVMaze (no API key needed!)
           (async () => {
             try {
               const provider = new TvMazeProvider(
-                makeEntity(MetadataProviderType.TVMAZE, 'https://api.tvmaze.com', '', {}),
+                { name: 'tvmaze', url: 'https://api.tvmaze.com', apiKey: null, settings: null },
                 log
               );
               return await provider.getRatings(title, year);

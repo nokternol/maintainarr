@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestOverseerrProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 5,
-  type: MetadataProviderType.OVERSEERR,
+const mockConfig: ProviderConfig = {
   name: 'Test Overseerr',
   url: 'http://localhost:5055',
   apiKey: 'fake-api-key',
   settings: {},
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('OverseerrProvider', () => {
-  const provider = new OverseerrProvider(mockEntity, logger);
+  const provider = new OverseerrProvider(mockConfig, logger);
 
   it('fetches and parses requests correctly', async () => {
     const requests = await provider.getRequests();

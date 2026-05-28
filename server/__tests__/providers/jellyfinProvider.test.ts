@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestJellyfinProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 4,
-  type: MetadataProviderType.JELLYFIN,
+const mockConfig: ProviderConfig = {
   name: 'Test Jellyfin',
   url: 'http://localhost:8096',
   apiKey: 'fake-api-key',
   settings: { userId: 'test-user-id' },
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('JellyfinProvider', () => {
-  const provider = new JellyfinProvider(mockEntity, logger);
+  const provider = new JellyfinProvider(mockConfig, logger);
 
   it('fetches and parses libraries correctly', async () => {
     const libraries = await provider.getLibraries();

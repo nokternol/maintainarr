@@ -1,24 +1,19 @@
-import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
+import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestSonarrProvider');
 
-const mockEntity: MetadataProvider = {
-  id: 2,
-  type: MetadataProviderType.SONARR,
+const mockConfig: ProviderConfig = {
   name: 'Test Sonarr',
   url: 'http://localhost:8989/api/v3',
   apiKey: 'fake-api-key',
   settings: {},
-  isActive: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('SonarrProvider', () => {
-  const provider = new SonarrProvider(mockEntity, logger);
+  const provider = new SonarrProvider(mockConfig, logger);
 
   it('fetches and parses series correctly', async () => {
     const series = await provider.getSeries();

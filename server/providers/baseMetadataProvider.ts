@@ -1,18 +1,19 @@
-import type { MetadataProvider } from '@server/database/schema';
 import ky, { type KyInstance } from 'ky';
 import type { Logger } from 'winston';
 
-/**
- * Base class for all external media-service integrations.
- * Provides a pre-configured Ky client (Node 24 native fetch) with
- * prefixUrl, timeout, JSON Accept header, and error logging hooks.
- */
+export interface ProviderConfig {
+  name: string;
+  url: string;
+  apiKey: string | null;
+  settings: Record<string, unknown> | null;
+}
+
 export abstract class BaseMetadataProvider {
-  protected provider: MetadataProvider;
+  protected provider: ProviderConfig;
   protected log: Logger;
   protected client: KyInstance;
 
-  constructor(provider: MetadataProvider, logger: Logger) {
+  constructor(provider: ProviderConfig, logger: Logger) {
     this.provider = provider;
     this.log = logger;
 
