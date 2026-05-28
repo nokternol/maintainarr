@@ -1,4 +1,4 @@
-import { getConfig } from '@server/config';
+import type { AppConfig } from '@server/config';
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
@@ -20,10 +20,11 @@ const log = getChildLogger('ProvidersHandler');
 
 interface ProvidersCradle {
   providerSettingsService: ProviderSettingsService;
+  config: AppConfig;
 }
 
 export function createProvidersHandlers(cradle: ProvidersCradle) {
-  const { providerSettingsService } = cradle;
+  const { providerSettingsService, config } = cradle;
 
   return {
     getMetadata: defineRoute({
@@ -106,7 +107,7 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
         const { key: resolvedTmdbKey } = resolveApiKey(
           tmdbApiKey,
           dbTmdbKey,
-          getConfig().TMDB_API_KEY || undefined
+          config.TMDB_API_KEY || undefined
         );
         const { key: resolvedOmdbKey } = resolveApiKey(omdbApiKey, dbOmdbKey, undefined);
 
