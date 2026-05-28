@@ -207,50 +207,48 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const networksCache = new MediaCache<string[]>();
 
   async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
-    const cached = moviesCache.get('movies');
-    if (cached) return { movies: cached, errors: [] };
-
-    const providers = await providerSettingsService.findActiveByTypes([
-      MetadataProviderType.RADARR,
-    ]);
-    const movies: RadarrMovie[] = [];
     const errors: MediaError[] = [];
-    await Promise.all(
-      providers.map(async (provider) => {
-        try {
-          const radarr = new RadarrProvider(provider, log);
-          movies.push(...(await radarr.getMovies()));
-        } catch (err) {
-          log.warn('Radarr fetch failed', { provider: provider.name, err });
-          errors.push(toMediaError(provider.name, err));
-        }
-      })
-    );
-    moviesCache.set('movies', movies);
+    const movies = await moviesCache.getOrFetch('movies', async () => {
+      const providers = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.RADARR,
+      ]);
+      const fetched: RadarrMovie[] = [];
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const radarr = new RadarrProvider(provider, log);
+            fetched.push(...(await radarr.getMovies()));
+          } catch (err) {
+            log.warn('Radarr fetch failed', { provider: provider.name, err });
+            errors.push(toMediaError(provider.name, err));
+          }
+        })
+      );
+      return fetched;
+    });
     return { movies, errors };
   }
 
   async function getSeries(): Promise<{ series: SonarrSeries[]; errors: MediaError[] }> {
-    const cached = seriesCache.get('series');
-    if (cached) return { series: cached, errors: [] };
-
-    const providers = await providerSettingsService.findActiveByTypes([
-      MetadataProviderType.SONARR,
-    ]);
-    const series: SonarrSeries[] = [];
     const errors: MediaError[] = [];
-    await Promise.all(
-      providers.map(async (provider) => {
-        try {
-          const sonarr = new SonarrProvider(provider, log);
-          series.push(...(await sonarr.getSeries()));
-        } catch (err) {
-          log.warn('Sonarr fetch failed', { provider: provider.name, err });
-          errors.push(toMediaError(provider.name, err));
-        }
-      })
-    );
-    seriesCache.set('series', series);
+    const series = await seriesCache.getOrFetch('series', async () => {
+      const providers = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.SONARR,
+      ]);
+      const fetched: SonarrSeries[] = [];
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const sonarr = new SonarrProvider(provider, log);
+            fetched.push(...(await sonarr.getSeries()));
+          } catch (err) {
+            log.warn('Sonarr fetch failed', { provider: provider.name, err });
+            errors.push(toMediaError(provider.name, err));
+          }
+        })
+      );
+      return fetched;
+    });
     return { series, errors };
   }
 
@@ -343,104 +341,84 @@ export function createMediaHandlers(cradle: MediaCradle) {
     }),
 
     listTags: defineRoute({
-      handler: async () => {
-        const cached = tagsCache.get('tags');
-        if (cached) return cached;
+      handler: () =>
+        tagsCache.getOrFetch('tags', async () => {
+          const providers = await providerSettingsService.findActiveByTypes([
+            MetadataProviderType.RADARR,
+            MetadataProviderType.SONARR,
+          ]);
 
-        const providers = await providerSettingsService.findActiveByTypes([
-          MetadataProviderType.RADARR,
-          MetadataProviderType.SONARR,
-        ]);
+          const radarrTags: RadarrTag[] = [];
+          const sonarrTags: SonarrTag[] = [];
 
-        const radarrTags: RadarrTag[] = [];
-        const sonarrTags: SonarrTag[] = [];
-
-        await Promise.all(
-          providers.map(async (provider) => {
-            try {
-              if (provider.type === MetadataProviderType.RADARR) {
-                const radarr = new RadarrProvider(provider, log);
-                radarrTags.push(...(await radarr.getTags()));
-              } else if (provider.type === MetadataProviderType.SONARR) {
-                const sonarr = new SonarrProvider(provider, log);
-                sonarrTags.push(...(await sonarr.getTags()));
+          await Promise.all(
+            providers.map(async (provider) => {
+              try {
+                if (provider.type === MetadataProviderType.RADARR) {
+                  const radarr = new RadarrProvider(provider, log);
+                  radarrTags.push(...(await radarr.getTags()));
+                } else if (provider.type === MetadataProviderType.SONARR) {
+                  const sonarr = new SonarrProvider(provider, log);
+                  sonarrTags.push(...(await sonarr.getTags()));
+                }
+              } catch (err) {
+                log.warn('Tags fetch failed', { provider: provider.name, err });
               }
-            } catch (err) {
-              log.warn('Tags fetch failed', { provider: provider.name, err });
-            }
-          })
-        );
+            })
+          );
 
-        const result = { radarr: radarrTags, sonarr: sonarrTags };
-        tagsCache.set('tags', result);
-        return result;
-      },
+          return { radarr: radarrTags, sonarr: sonarrTags };
+        }),
     }),
 
     listQualityProfiles: defineRoute({
-      handler: async () => {
-        const cached = qualityProfilesCache.get('qualityProfiles');
-        if (cached) return cached;
+      handler: () =>
+        qualityProfilesCache.getOrFetch('qualityProfiles', async () => {
+          const providers = await providerSettingsService.findActiveByTypes([
+            MetadataProviderType.RADARR,
+            MetadataProviderType.SONARR,
+          ]);
 
-        const providers = await providerSettingsService.findActiveByTypes([
-          MetadataProviderType.RADARR,
-          MetadataProviderType.SONARR,
-        ]);
+          const radarrProfiles: RadarrProfile[] = [];
+          const sonarrProfiles: SonarrProfile[] = [];
 
-        const radarrProfiles: RadarrProfile[] = [];
-        const sonarrProfiles: SonarrProfile[] = [];
-
-        await Promise.all(
-          providers.map(async (provider) => {
-            try {
-              if (provider.type === MetadataProviderType.RADARR) {
-                const radarr = new RadarrProvider(provider, log);
-                radarrProfiles.push(...(await radarr.getProfiles()));
-              } else if (provider.type === MetadataProviderType.SONARR) {
-                const sonarr = new SonarrProvider(provider, log);
-                sonarrProfiles.push(...(await sonarr.getProfiles()));
+          await Promise.all(
+            providers.map(async (provider) => {
+              try {
+                if (provider.type === MetadataProviderType.RADARR) {
+                  const radarr = new RadarrProvider(provider, log);
+                  radarrProfiles.push(...(await radarr.getProfiles()));
+                } else if (provider.type === MetadataProviderType.SONARR) {
+                  const sonarr = new SonarrProvider(provider, log);
+                  sonarrProfiles.push(...(await sonarr.getProfiles()));
+                }
+              } catch (err) {
+                log.warn('Quality profiles fetch failed', { provider: provider.name, err });
               }
-            } catch (err) {
-              log.warn('Quality profiles fetch failed', { provider: provider.name, err });
-            }
-          })
-        );
+            })
+          );
 
-        const result = { radarr: radarrProfiles, sonarr: sonarrProfiles };
-        qualityProfilesCache.set('qualityProfiles', result);
-        return result;
-      },
+          return { radarr: radarrProfiles, sonarr: sonarrProfiles };
+        }),
     }),
 
     listGenres: defineRoute({
-      handler: async () => {
-        const cached = genresCache.get('genres');
-        if (cached) return cached;
-
-        const [{ movies }, { series }] = await Promise.all([getMovies(), getSeries()]);
-
-        const movieGenres = [...new Set(movies.flatMap((m) => m.genres ?? []))].sort();
-        const seriesGenres = [...new Set(series.flatMap((s) => s.genres ?? []))].sort();
-
-        const result = { movies: movieGenres, series: seriesGenres };
-        genresCache.set('genres', result);
-        return result;
-      },
+      handler: () =>
+        genresCache.getOrFetch('genres', async () => {
+          const [{ movies }, { series }] = await Promise.all([getMovies(), getSeries()]);
+          return {
+            movies: [...new Set(movies.flatMap((m) => m.genres ?? []))].sort(),
+            series: [...new Set(series.flatMap((s) => s.genres ?? []))].sort(),
+          };
+        }),
     }),
 
     listNetworks: defineRoute({
-      handler: async () => {
-        const cached = networksCache.get('networks');
-        if (cached) return cached;
-
-        const { series: all } = await getSeries();
-        const networks = [
-          ...new Set(all.map((s) => s.network).filter((n): n is string => !!n)),
-        ].sort();
-
-        networksCache.set('networks', networks);
-        return networks;
-      },
+      handler: () =>
+        networksCache.getOrFetch('networks', async () => {
+          const { series: all } = await getSeries();
+          return [...new Set(all.map((s) => s.network).filter((n): n is string => !!n))].sort();
+        }),
     }),
   };
 }

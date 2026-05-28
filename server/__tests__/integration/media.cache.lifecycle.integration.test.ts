@@ -124,6 +124,30 @@ describe('MediaHandler cache lifecycle', () => {
     expect(data.items[0].title).toBe('The Matrix');
   });
 
+  it('two concurrent GET /api/media/movies requests coalesce into one Radarr call', async () => {
+    let radarrCallCount = 0;
+    server.use(
+      http.get('http://localhost:7878/api/v3/movie', async () => {
+        radarrCallCount++;
+        // artificial delay so the second request always arrives while the first is in-flight
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return HttpResponse.json([makeRadarrMovie('Inception')]);
+      })
+    );
+
+    const routes = createMediaRoutes(cradle);
+    const client = createApiClient(buildAuthedApp(routes));
+
+    const [res1, res2] = await Promise.all([
+      client.get('/api/media/movies'),
+      client.get('/api/media/movies'),
+    ]);
+
+    expect(radarrCallCount).toBe(1);
+    expect(expectSuccessResponse(res1).items).toHaveLength(1);
+    expect(expectSuccessResponse(res2).items).toHaveLength(1);
+  });
+
   it('two createMediaHandlers() instances have independent caches', async () => {
     // Arrange: each successive Radarr call returns a different film title so we
     // can detect whether handler B read from handler A's cache or fetched independently.

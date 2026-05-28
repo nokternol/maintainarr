@@ -5,6 +5,7 @@ interface CacheEntry<T> {
 
 export class MediaCache<T> {
   private readonly store = new Map<string, CacheEntry<T>>();
+  private readonly pending = new Map<string, Promise<T>>();
   private readonly ttlMs: number;
 
   constructor(ttlMs = 60_000) {
@@ -27,5 +28,27 @@ export class MediaCache<T> {
 
   invalidate(key: string): void {
     this.store.delete(key);
+  }
+
+  async getOrFetch(key: string, fetcher: () => Promise<T>): Promise<T> {
+    const hit = this.get(key);
+    if (hit !== null) return hit;
+
+    const inflight = this.pending.get(key);
+    if (inflight) return inflight;
+
+    const promise = fetcher().then(
+      (data) => {
+        this.set(key, data);
+        this.pending.delete(key);
+        return data;
+      },
+      (err) => {
+        this.pending.delete(key);
+        throw err;
+      }
+    );
+    this.pending.set(key, promise);
+    return promise;
   }
 }
