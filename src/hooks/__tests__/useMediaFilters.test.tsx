@@ -1,13 +1,14 @@
 /**
- * useMediaFilters — Cycle 2 RED
+ * useMediaFilters — Cycle 3 RED
  *
- * Tests filter state management, debounce, URL sync, clearAll, and isActive.
+ * Tests filter state management, debounce, URL sync, clearAll, isActive,
+ * AND the FILTER_FIELDS registry contract (single source of truth).
  *
  * Run: vitest run --project client
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useMediaFilters } from '../useMediaFilters';
+import { FILTER_FIELDS, useMediaFilters } from '../useMediaFilters';
 
 // ─── Router mock ───────────────────────────────────────────────────────────────
 
@@ -371,11 +372,204 @@ describe('useMediaFilters — URL sync', () => {
     });
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith(
-        expect.objectContaining({ query: {} }),
-        undefined,
-        { shallow: true }
-      );
+      expect(mockReplace).toHaveBeenCalledWith(expect.objectContaining({ query: {} }), undefined, {
+        shallow: true,
+      });
     });
+  });
+});
+
+// ─── FILTER_FIELDS registry — shape contract ──────────────────────────────────
+
+describe('FILTER_FIELDS registry — shape', () => {
+  it('is exported from the module', () => {
+    expect(FILTER_FIELDS).toBeDefined();
+  });
+
+  it('covers all 15 FilterState fields', () => {
+    expect(Object.keys(FILTER_FIELDS).sort()).toEqual([
+      'hasFile',
+      'monitored',
+      'movieGenres',
+      'movieQualityProfileIds',
+      'movieTagIds',
+      'network',
+      'seriesGenres',
+      'seriesQualityProfileIds',
+      'seriesStatus',
+      'seriesTagIds',
+      'seriesType',
+      'tautulliWatched',
+      'title',
+      'yearMax',
+      'yearMin',
+    ]);
+  });
+
+  it('title is a string field with empty-string default', () => {
+    expect(FILTER_FIELDS.title).toEqual({ type: 'string', default: '' });
+  });
+
+  it('yearMin and yearMax are number fields with undefined default', () => {
+    expect(FILTER_FIELDS.yearMin).toEqual({ type: 'number', default: undefined });
+    expect(FILTER_FIELDS.yearMax).toEqual({ type: 'number', default: undefined });
+  });
+
+  it('hasFile, monitored, tautulliWatched are bool3 fields with undefined default', () => {
+    expect(FILTER_FIELDS.hasFile).toEqual({ type: 'bool3', default: undefined });
+    expect(FILTER_FIELDS.monitored).toEqual({ type: 'bool3', default: undefined });
+    expect(FILTER_FIELDS.tautulliWatched).toEqual({ type: 'bool3', default: undefined });
+  });
+
+  it('remaining string fields have undefined default', () => {
+    const stringOptionalKeys = [
+      'seriesStatus',
+      'movieTagIds',
+      'seriesTagIds',
+      'movieQualityProfileIds',
+      'seriesQualityProfileIds',
+      'movieGenres',
+      'seriesGenres',
+      'seriesType',
+      'network',
+    ] as const;
+    for (const key of stringOptionalKeys) {
+      expect(FILTER_FIELDS[key]).toEqual({ type: 'string', default: undefined });
+    }
+  });
+});
+
+// ─── Complete round-trips (all 15 fields) ─────────────────────────────────────
+
+describe('parseQuery — complete round-trip for all 15 fields', () => {
+  it('parses all 15 registry fields from query', () => {
+    mockRouterQuery = {
+      title: 'batman',
+      hasFile: 'true',
+      monitored: 'false',
+      seriesStatus: 'ended',
+      yearMin: '2000',
+      yearMax: '2020',
+      movieTagIds: '1,2',
+      seriesTagIds: '3,4',
+      movieQualityProfileIds: '5',
+      seriesQualityProfileIds: '6',
+      movieGenres: 'Action',
+      seriesGenres: 'Drama',
+      seriesType: 'standard',
+      network: 'HBO',
+      tautulliWatched: 'false',
+    };
+    const { result } = renderHook(() => useMediaFilters());
+
+    expect(result.current.filterState).toMatchObject({
+      title: 'batman',
+      hasFile: 'true',
+      monitored: 'false',
+      seriesStatus: 'ended',
+      yearMin: 2000,
+      yearMax: 2020,
+      movieTagIds: '1,2',
+      seriesTagIds: '3,4',
+      movieQualityProfileIds: '5',
+      seriesQualityProfileIds: '6',
+      movieGenres: 'Action',
+      seriesGenres: 'Drama',
+      seriesType: 'standard',
+      network: 'HBO',
+      tautulliWatched: 'false',
+    });
+  });
+
+  it('applies registry defaults for every absent key', () => {
+    mockRouterQuery = {};
+    const { result } = renderHook(() => useMediaFilters());
+
+    expect(result.current.filterState).toEqual({
+      title: '',
+      hasFile: undefined,
+      monitored: undefined,
+      seriesStatus: undefined,
+      yearMin: undefined,
+      yearMax: undefined,
+      movieTagIds: undefined,
+      seriesTagIds: undefined,
+      movieQualityProfileIds: undefined,
+      seriesQualityProfileIds: undefined,
+      movieGenres: undefined,
+      seriesGenres: undefined,
+      seriesType: undefined,
+      network: undefined,
+      tautulliWatched: undefined,
+    });
+  });
+});
+
+describe('buildQuery — serializes all 15 non-default fields', () => {
+  it('includes every set filter key in the URL query', async () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setTitle('batman');
+      result.current.setHasFile('true');
+      result.current.setMonitored('false');
+      result.current.setSeriesStatus('ended');
+      result.current.setYearMin(2000);
+      result.current.setYearMax(2020);
+      result.current.setMovieTagIds('1,2');
+      result.current.setSeriesTagIds('3,4');
+      result.current.setMovieQualityProfileIds('5');
+      result.current.setSeriesQualityProfileIds('6');
+      result.current.setMovieGenres('Action');
+      result.current.setSeriesGenres('Drama');
+      result.current.setSeriesType('standard');
+      result.current.setNetwork('HBO');
+      result.current.setTautulliWatched('false');
+    });
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+    const query = mockReplace.mock.calls[0][0].query as Record<string, string>;
+
+    expect(Object.keys(query).sort()).toEqual([
+      'hasFile',
+      'monitored',
+      'movieGenres',
+      'movieQualityProfileIds',
+      'movieTagIds',
+      'network',
+      'seriesGenres',
+      'seriesQualityProfileIds',
+      'seriesStatus',
+      'seriesTagIds',
+      'seriesType',
+      'tautulliWatched',
+      'title',
+      'yearMax',
+      'yearMin',
+    ]);
+  });
+});
+
+describe('isActive — fields not covered by earlier tests', () => {
+  it.each([
+    ['monitored', 'setMonitored', 'false' as const],
+    ['seriesStatus', 'setSeriesStatus', 'ended'],
+    ['yearMax', 'setYearMax', 2020],
+    ['seriesTagIds', 'setSeriesTagIds', '3,4'],
+    ['movieQualityProfileIds', 'setMovieQualityProfileIds', '5'],
+    ['seriesQualityProfileIds', 'setSeriesQualityProfileIds', '6'],
+    ['movieGenres', 'setMovieGenres', 'Action'],
+    ['seriesGenres', 'setSeriesGenres', 'Drama'],
+    ['seriesType', 'setSeriesType', 'standard'],
+    ['network', 'setNetwork', 'HBO'],
+    ['tautulliWatched', 'setTautulliWatched', 'false' as const],
+  ])('isActive is true when only %s is set', (_field, setter, value) => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      (result.current[setter as keyof typeof result.current] as (v: unknown) => void)(value);
+    });
+
+    expect(result.current.isActive).toBe(true);
   });
 });
