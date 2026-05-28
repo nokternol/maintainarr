@@ -1,6 +1,6 @@
+import type { MediaFilters } from '@app/types/media';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { MediaFilters } from './useMovies';
 
 const DEBOUNCE_MS = 300;
 
@@ -81,8 +81,10 @@ function buildQuery(state: FilterState): Record<string, string> {
   if (state.yearMax !== undefined) q.yearMax = String(state.yearMax);
   if (state.movieTagIds !== undefined) q.movieTagIds = state.movieTagIds;
   if (state.seriesTagIds !== undefined) q.seriesTagIds = state.seriesTagIds;
-  if (state.movieQualityProfileIds !== undefined) q.movieQualityProfileIds = state.movieQualityProfileIds;
-  if (state.seriesQualityProfileIds !== undefined) q.seriesQualityProfileIds = state.seriesQualityProfileIds;
+  if (state.movieQualityProfileIds !== undefined)
+    q.movieQualityProfileIds = state.movieQualityProfileIds;
+  if (state.seriesQualityProfileIds !== undefined)
+    q.seriesQualityProfileIds = state.seriesQualityProfileIds;
   if (state.movieGenres !== undefined) q.movieGenres = state.movieGenres;
   if (state.seriesGenres !== undefined) q.seriesGenres = state.seriesGenres;
   if (state.seriesType !== undefined) q.seriesType = state.seriesType;
@@ -113,10 +115,10 @@ function isAnyFilterActive(state: FilterState): boolean {
 
 export function useMediaFilters() {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
-  const [filterState, setFilterState] = useState<FilterState>(() =>
-    parseQuery(router.query)
-  );
+  const [filterState, setFilterState] = useState<FilterState>(() => parseQuery(router.query));
 
   // Debounced title — only title gets the 300ms delay
   const [debouncedTitle, setDebouncedTitle] = useState(filterState.title);
@@ -135,12 +137,10 @@ export function useMediaFilters() {
       isFirstRender.current = false;
       return;
     }
-    void router.replace(
-      { pathname: router.pathname, query: buildQuery(filterState) },
-      undefined,
-      { shallow: true }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const r = routerRef.current;
+    void r.replace({ pathname: r.pathname, query: buildQuery(filterState) }, undefined, {
+      shallow: true,
+    });
   }, [filterState]);
 
   // debouncedFilters is used by the data hooks (useMovies, useSeries)
@@ -154,8 +154,10 @@ export function useMediaFilters() {
     if (filterState.yearMax !== undefined) f.yearMax = filterState.yearMax;
     if (filterState.movieTagIds !== undefined) f.movieTagIds = filterState.movieTagIds;
     if (filterState.seriesTagIds !== undefined) f.seriesTagIds = filterState.seriesTagIds;
-    if (filterState.movieQualityProfileIds !== undefined) f.movieQualityProfileIds = filterState.movieQualityProfileIds;
-    if (filterState.seriesQualityProfileIds !== undefined) f.seriesQualityProfileIds = filterState.seriesQualityProfileIds;
+    if (filterState.movieQualityProfileIds !== undefined)
+      f.movieQualityProfileIds = filterState.movieQualityProfileIds;
+    if (filterState.seriesQualityProfileIds !== undefined)
+      f.seriesQualityProfileIds = filterState.seriesQualityProfileIds;
     if (filterState.movieGenres !== undefined) f.movieGenres = filterState.movieGenres;
     if (filterState.seriesGenres !== undefined) f.seriesGenres = filterState.seriesGenres;
     if (filterState.seriesType !== undefined) f.seriesType = filterState.seriesType;
@@ -187,19 +189,23 @@ export function useMediaFilters() {
     debouncedFilters,
     setTitle: (v: string) => setFilterState((s) => ({ ...s, title: v })),
     setHasFile: (v: 'true' | 'false' | undefined) => setFilterState((s) => ({ ...s, hasFile: v })),
-    setMonitored: (v: 'true' | 'false' | undefined) => setFilterState((s) => ({ ...s, monitored: v })),
+    setMonitored: (v: 'true' | 'false' | undefined) =>
+      setFilterState((s) => ({ ...s, monitored: v })),
     setSeriesStatus: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesStatus: v })),
     setYearMin: (v: number | undefined) => setFilterState((s) => ({ ...s, yearMin: v })),
     setYearMax: (v: number | undefined) => setFilterState((s) => ({ ...s, yearMax: v })),
     setMovieTagIds: (v: string | undefined) => setFilterState((s) => ({ ...s, movieTagIds: v })),
     setSeriesTagIds: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesTagIds: v })),
-    setMovieQualityProfileIds: (v: string | undefined) => setFilterState((s) => ({ ...s, movieQualityProfileIds: v })),
-    setSeriesQualityProfileIds: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesQualityProfileIds: v })),
+    setMovieQualityProfileIds: (v: string | undefined) =>
+      setFilterState((s) => ({ ...s, movieQualityProfileIds: v })),
+    setSeriesQualityProfileIds: (v: string | undefined) =>
+      setFilterState((s) => ({ ...s, seriesQualityProfileIds: v })),
     setMovieGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, movieGenres: v })),
     setSeriesGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesGenres: v })),
     setSeriesType: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesType: v })),
     setNetwork: (v: string | undefined) => setFilterState((s) => ({ ...s, network: v })),
-    setTautulliWatched: (v: 'true' | 'false' | undefined) => setFilterState((s) => ({ ...s, tautulliWatched: v })),
+    setTautulliWatched: (v: 'true' | 'false' | undefined) =>
+      setFilterState((s) => ({ ...s, tautulliWatched: v })),
     clearAll: () => setFilterState(EMPTY_FILTER_STATE),
     isActive,
   };

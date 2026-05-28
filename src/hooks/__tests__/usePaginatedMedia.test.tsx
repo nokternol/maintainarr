@@ -1,0 +1,190 @@
+import { renderHook, waitFor } from '@testing-library/react';
+import { server } from '@tests/mocks/server';
+import { http, HttpResponse } from 'msw';
+import { SWRConfig } from 'swr';
+import { describe, expect, it } from 'vitest';
+import { usePaginatedMedia } from '../usePaginatedMedia';
+
+interface MovieItem {
+  id: number;
+  title: string;
+  hasFile: boolean;
+}
+
+interface SeriesItem {
+  id: number;
+  title: string;
+  status: string;
+}
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>
+);
+
+describe('usePaginatedMedia', () => {
+  it('returns the expected interface shape on mount', () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    expect(typeof result.current.isLoading).toBe('boolean');
+    expect(typeof result.current.isFetchingMore).toBe('boolean');
+    expect(typeof result.current.hasMore).toBe('boolean');
+    expect(typeof result.current.fetchMore).toBe('function');
+    expect(result.current.error === undefined || result.current.error instanceof Error).toBe(true);
+    expect(Array.isArray(result.current.items)).toBe(true);
+    expect(typeof result.current.totalCount).toBe('number');
+  });
+
+  it('isLoading is true before first page resolves', () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('fetches first page of items from the given endpoint', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.items.length).toBe(48);
+    expect(result.current.totalCount).toBe(96);
+    expect(result.current.items[0]).toHaveProperty('title', 'Movie 1');
+    expect(result.current.items[47]).toHaveProperty('title', 'Movie 48');
+  });
+
+  it('is generic — works with the series endpoint', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<SeriesItem>('/api/media/series'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.items[0]).toHaveProperty('title', 'Breaking Bad');
+    expect(result.current.totalCount).toBe(10);
+  });
+
+  it('exposes yearRange from the first page', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.yearRange).toEqual({ min: 2000, max: 2029 });
+  });
+
+  it('hasMore is true when loaded items < totalCount', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.hasMore).toBe(true); // 48 loaded < 96 total
+  });
+
+  it('fetchMore appends the second page', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.items.length).toBe(48);
+
+    result.current.fetchMore();
+
+    await waitFor(() => expect(result.current.items.length).toBe(96));
+    expect(result.current.items[48]).toHaveProperty('title', 'Movie 49');
+    expect(result.current.items[95]).toHaveProperty('title', 'Movie 96');
+  });
+
+  it('hasMore is false when all pages are loaded', async () => {
+    const { result } = renderHook(() => usePaginatedMedia<MovieItem>('/api/media/movies'), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    result.current.fetchMore();
+    await waitFor(() => expect(result.current.items.length).toBe(96));
+
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  it('appends filter entries as query params in the request URL', async () => {
+    const capturedUrl = { value: '' };
+    server.use(
+      http.get('/api/media/movies', ({ request }) => {
+        capturedUrl.value = request.url;
+        return HttpResponse.json({
+          status: 'ok',
+          data: { items: [], totalCount: 0, page: 1, pageSize: 48 },
+        });
+      })
+    );
+
+    const { result } = renderHook(
+      () =>
+        usePaginatedMedia<MovieItem>('/api/media/movies', {
+          hasFile: 'true',
+          yearMin: 2010,
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const url = new URL(capturedUrl.value);
+    expect(url.searchParams.get('hasFile')).toBe('true');
+    expect(url.searchParams.get('yearMin')).toBe('2010');
+  });
+
+  it('undefined filter values are not appended to the URL', async () => {
+    const capturedUrl = { value: '' };
+    server.use(
+      http.get('/api/media/movies', ({ request }) => {
+        capturedUrl.value = request.url;
+        return HttpResponse.json({
+          status: 'ok',
+          data: { items: [], totalCount: 0, page: 1, pageSize: 48 },
+        });
+      })
+    );
+
+    const { result } = renderHook(
+      () =>
+        usePaginatedMedia<MovieItem>('/api/media/movies', {
+          hasFile: undefined,
+          title: 'foo',
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const url = new URL(capturedUrl.value);
+    expect(url.searchParams.has('hasFile')).toBe(false);
+    expect(url.searchParams.get('title')).toBe('foo');
+  });
+
+  it('resets to page 1 when filters change', async () => {
+    const { result, rerender } = renderHook<
+      ReturnType<typeof usePaginatedMedia<MovieItem>>,
+      { filters?: Record<string, string> }
+    >(({ filters }) => usePaginatedMedia<MovieItem>('/api/media/movies', filters), {
+      wrapper,
+      initialProps: { filters: undefined },
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    result.current.fetchMore();
+    await waitFor(() => expect(result.current.items.length).toBe(96));
+
+    rerender({ filters: { status: 'monitored' } });
+
+    await waitFor(() => {
+      expect(result.current.items.length).toBeLessThanOrEqual(48);
+    });
+  });
+});

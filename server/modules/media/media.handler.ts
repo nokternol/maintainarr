@@ -1,24 +1,17 @@
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
-import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
+import { TautulliProvider } from '@server/providers/tautulliProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
-
-const moviesCache = new MediaCache<RadarrMovie[]>();
-const seriesCache = new MediaCache<SonarrSeries[]>();
-const tagsCache = new MediaCache<{ radarr: RadarrTag[]; sonarr: SonarrTag[] }>();
-const qualityProfilesCache = new MediaCache<{ radarr: RadarrProfile[]; sonarr: SonarrProfile[] }>();
-const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
-const networksCache = new MediaCache<string[]>();
 
 const paginationQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
@@ -70,11 +63,19 @@ function parseIds(csv: string | undefined): number[] {
 
 function parseCsvStrings(csv: string | undefined): string[] {
   if (!csv) return [];
-  return csv.split(',').map((s) => s.trim()).filter(Boolean);
+  return csv
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-function computeYearRange(items: Array<{ year?: number }>): { min: number | null; max: number | null } {
-  const years = items.map((m) => m.year).filter((y): y is number => y !== undefined && y !== null && y >= 1888);
+function computeYearRange(items: Array<{ year?: number }>): {
+  min: number | null;
+  max: number | null;
+} {
+  const years = items
+    .map((m) => m.year)
+    .filter((y): y is number => y !== undefined && y !== null && y >= 1888);
   if (years.length === 0) return { min: null, max: null };
   return { min: Math.min(...years), max: Math.max(...years) };
 }
@@ -184,27 +185,73 @@ export interface MediaResult {
   errors: MediaError[];
 }
 
+function toMediaError(providerName: string, err: unknown): MediaError {
+  return {
+    provider: providerName,
+    error: err instanceof Error ? err.message : 'Unknown error',
+  };
+}
+
 export function createMediaHandlers(cradle: MediaCradle) {
   const { providerSettingsService } = cradle;
 
-  async function fetchAllMovies(): Promise<RadarrMovie[]> {
+  // Caches are owned by this factory invocation — same inputs produce isolated state.
+  const moviesCache = new MediaCache<RadarrMovie[]>();
+  const seriesCache = new MediaCache<SonarrSeries[]>();
+  const tagsCache = new MediaCache<{ radarr: RadarrTag[]; sonarr: SonarrTag[] }>();
+  const qualityProfilesCache = new MediaCache<{
+    radarr: RadarrProfile[];
+    sonarr: SonarrProfile[];
+  }>();
+  const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
+  const networksCache = new MediaCache<string[]>();
+
+  async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
+    const cached = moviesCache.get('movies');
+    if (cached) return { movies: cached, errors: [] };
+
     const providers = await providerSettingsService.findActiveByTypes([
       MetadataProviderType.RADARR,
     ]);
-    const all: RadarrMovie[] = [];
+    const movies: RadarrMovie[] = [];
+    const errors: MediaError[] = [];
     await Promise.all(
       providers.map(async (provider) => {
         try {
           const radarr = new RadarrProvider(provider, log);
-          const results = await radarr.getMovies();
-          all.push(...results);
+          movies.push(...(await radarr.getMovies()));
         } catch (err) {
           log.warn('Radarr fetch failed', { provider: provider.name, err });
+          errors.push(toMediaError(provider.name, err));
         }
       })
     );
-    moviesCache.set('movies', all);
-    return all;
+    moviesCache.set('movies', movies);
+    return { movies, errors };
+  }
+
+  async function getSeries(): Promise<{ series: SonarrSeries[]; errors: MediaError[] }> {
+    const cached = seriesCache.get('series');
+    if (cached) return { series: cached, errors: [] };
+
+    const providers = await providerSettingsService.findActiveByTypes([
+      MetadataProviderType.SONARR,
+    ]);
+    const series: SonarrSeries[] = [];
+    const errors: MediaError[] = [];
+    await Promise.all(
+      providers.map(async (provider) => {
+        try {
+          const sonarr = new SonarrProvider(provider, log);
+          series.push(...(await sonarr.getSeries()));
+        } catch (err) {
+          log.warn('Sonarr fetch failed', { provider: provider.name, err });
+          errors.push(toMediaError(provider.name, err));
+        }
+      })
+    );
+    seriesCache.set('series', series);
+    return { series, errors };
   }
 
   async function fetchWatchedTitles(): Promise<Set<string>> {
@@ -217,7 +264,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         try {
           const tautulli = new TautulliProvider(provider, log);
           const titles = await tautulli.getWatchedTitles();
-          titles.forEach((t) => allTitles.add(t));
+          for (const t of titles) allTitles.add(t);
         } catch (err) {
           log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
         }
@@ -226,68 +273,23 @@ export function createMediaHandlers(cradle: MediaCradle) {
     return allTitles;
   }
 
-  async function fetchAllSeries(): Promise<SonarrSeries[]> {
-    const providers = await providerSettingsService.findActiveByTypes([
-      MetadataProviderType.SONARR,
-    ]);
-    const all: SonarrSeries[] = [];
-    await Promise.all(
-      providers.map(async (provider) => {
-        try {
-          const sonarr = new SonarrProvider(provider, log);
-          const results = await sonarr.getSeries();
-          all.push(...results);
-        } catch (err) {
-          log.warn('Sonarr fetch failed', { provider: provider.name, err });
-        }
-      })
-    );
-    seriesCache.set('series', all);
-    return all;
-  }
-
   return {
     listMedia: defineRoute({
       handler: async () => {
-        const providers = await providerSettingsService.findActiveByTypes([
-          MetadataProviderType.RADARR,
-          MetadataProviderType.SONARR,
-        ]);
-
-        const movies: RadarrMovie[] = [];
-        const series: SonarrSeries[] = [];
-        const errors: MediaError[] = [];
-
-        await Promise.all(
-          providers.map(async (provider) => {
-            try {
-              if (provider.type === MetadataProviderType.RADARR) {
-                const radarr = new RadarrProvider(provider, log);
-                const results = await radarr.getMovies();
-                movies.push(...results);
-              } else if (provider.type === MetadataProviderType.SONARR) {
-                const sonarr = new SonarrProvider(provider, log);
-                const results = await sonarr.getSeries();
-                series.push(...results);
-              }
-            } catch (err) {
-              log.warn('Provider fetch failed', { provider: provider.name, err });
-              errors.push({
-                provider: provider.name,
-                error: err instanceof Error ? err.message : 'Unknown error',
-              });
-            }
-          })
-        );
-
-        return { movies, series, errors } satisfies MediaResult;
+        const [{ movies, errors: movieErrors }, { series, errors: seriesErrors }] =
+          await Promise.all([getMovies(), getSeries()]);
+        return {
+          movies,
+          series,
+          errors: [...movieErrors, ...seriesErrors],
+        } satisfies MediaResult;
       },
     }),
 
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {
-        const all = moviesCache.get('movies') ?? await fetchAllMovies();
+        const { movies: all } = await getMovies();
 
         const yearRange = computeYearRange(all);
         let filtered = applyMovieFilters(all, query);
@@ -298,19 +300,24 @@ export function createMediaHandlers(cradle: MediaCradle) {
           filtered = filtered.filter((m) => watchedTitles.has(m.title.toLowerCase()) === want);
         }
 
-        const sorted = filtered.slice().sort((a, b) =>
-          query.sort === 'title_desc'
-            ? b.title.localeCompare(a.title)
-            : a.title.localeCompare(b.title)
-        );
-        return { ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }), yearRange };
+        const sorted = filtered
+          .slice()
+          .sort((a, b) =>
+            query.sort === 'title_desc'
+              ? b.title.localeCompare(a.title)
+              : a.title.localeCompare(b.title)
+          );
+        return {
+          ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
+          yearRange,
+        };
       },
     }),
 
     listSeries: defineRoute({
       schemas: { query: seriesQuerySchema },
       handler: async ({ query }) => {
-        const all = seriesCache.get('series') ?? await fetchAllSeries();
+        const { series: all } = await getSeries();
 
         const yearRange = computeYearRange(all);
         let filtered = applySeriesFilters(all, query);
@@ -321,12 +328,17 @@ export function createMediaHandlers(cradle: MediaCradle) {
           filtered = filtered.filter((s) => watchedTitles.has(s.title.toLowerCase()) === want);
         }
 
-        const sorted = filtered.slice().sort((a, b) =>
-          query.sort === 'title_desc'
-            ? b.title.localeCompare(a.title)
-            : a.title.localeCompare(b.title)
-        );
-        return { ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }), yearRange };
+        const sorted = filtered
+          .slice()
+          .sort((a, b) =>
+            query.sort === 'title_desc'
+              ? b.title.localeCompare(a.title)
+              : a.title.localeCompare(b.title)
+          );
+        return {
+          ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
+          yearRange,
+        };
       },
     }),
 
@@ -405,10 +417,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const cached = genresCache.get('genres');
         if (cached) return cached;
 
-        const [movies, series] = await Promise.all([
-          moviesCache.get('movies') ?? fetchAllMovies(),
-          seriesCache.get('series') ?? fetchAllSeries(),
-        ]);
+        const [{ movies }, { series }] = await Promise.all([getMovies(), getSeries()]);
 
         const movieGenres = [...new Set(movies.flatMap((m) => m.genres ?? []))].sort();
         const seriesGenres = [...new Set(series.flatMap((s) => s.genres ?? []))].sort();
@@ -424,8 +433,10 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const cached = networksCache.get('networks');
         if (cached) return cached;
 
-        const all = seriesCache.get('series') ?? await fetchAllSeries();
-        const networks = [...new Set(all.map((s) => s.network).filter((n): n is string => !!n))].sort();
+        const { series: all } = await getSeries();
+        const networks = [
+          ...new Set(all.map((s) => s.network).filter((n): n is string => !!n)),
+        ].sort();
 
         networksCache.set('networks', networks);
         return networks;

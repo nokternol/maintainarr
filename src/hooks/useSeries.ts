@@ -1,8 +1,8 @@
-import { useCallback, useEffect } from 'react';
-import useSWRInfinite from 'swr/infinite';
+import type { MediaFilters } from '@app/types/media';
 import type { MediaImage } from './useMedia';
+import { usePaginatedMedia } from './usePaginatedMedia';
 
-export type { MediaImage };
+export type { MediaFilters };
 
 export interface ManagedSeries {
   id: number;
@@ -14,69 +14,5 @@ export interface ManagedSeries {
   images?: MediaImage[];
 }
 
-export interface MediaFilters {
-  [key: string]: string | number | boolean | undefined;
-}
-
-interface YearRange {
-  min: number | null;
-  max: number | null;
-}
-
-interface PaginatedPage {
-  items: ManagedSeries[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  yearRange?: YearRange;
-}
-
-const PAGE_SIZE = 48;
-
-async function fetcher(url: string): Promise<PaginatedPage> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch series');
-  const json = await res.json();
-  return json.data as PaginatedPage;
-}
-
-export function useSeries(filters?: MediaFilters) {
-  const filtersKey = JSON.stringify(filters ?? null);
-
-  const getKey = (pageIndex: number, prev: PaginatedPage | null) => {
-    if (prev && prev.items.length === 0) return null;
-    const params = new URLSearchParams({
-      page: String(pageIndex + 1),
-      pageSize: String(PAGE_SIZE),
-    });
-    if (filters) {
-      for (const [k, v] of Object.entries(filters)) {
-        if (v !== undefined) params.set(k, String(v));
-      }
-    }
-    return `/api/media/series?${params}`;
-  };
-
-  const { data, isLoading, isValidating, setSize, error } = useSWRInfinite(getKey, fetcher);
-
-  // Reset to page 1 when filters change. setSize is stable (SWR memoises it).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: filtersKey is a deliberate trigger dep, not consumed inside the effect
-  useEffect(() => {
-    void setSize(1);
-  }, [filtersKey, setSize]);
-
-  const items = data ? data.flatMap((page) => page.items) : [];
-  const totalCount = data?.[0]?.totalCount ?? 0;
-  const yearRange = data?.[0]?.yearRange ?? null;
-
-  return {
-    items,
-    totalCount,
-    yearRange,
-    isLoading,
-    isFetchingMore: isValidating && !isLoading,
-    hasMore: items.length < totalCount,
-    fetchMore: useCallback(() => setSize((s) => s + 1), [setSize]),
-    error: error as Error | undefined,
-  };
-}
+export const useSeries = (filters?: MediaFilters) =>
+  usePaginatedMedia<ManagedSeries>('/api/media/series', filters);

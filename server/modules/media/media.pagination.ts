@@ -1,14 +1,3 @@
-export interface MediaFilters {
-  // Extensible — add filter fields here as needed
-  [key: string]: string | number | boolean | undefined;
-}
-
-export interface MediaQueryParams {
-  page: number;
-  pageSize: number;
-  filters?: MediaFilters;
-}
-
 export interface PaginatedResult<T> {
   items: T[];
   totalCount: number;
@@ -16,7 +5,10 @@ export interface PaginatedResult<T> {
   pageSize: number;
 }
 
-export function paginateItems<T>(items: T[], params: MediaQueryParams): PaginatedResult<T> {
+export function paginateItems<T>(
+  items: T[],
+  params: { page: number; pageSize: number }
+): PaginatedResult<T> {
   const { page, pageSize } = params;
   const start = (page - 1) * pageSize;
   const end = start + pageSize;
