@@ -11,9 +11,9 @@ import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { RatingsAggregationService } from '@server/services/ratingsAggregationService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { resolveApiKey } from '@server/utils/keyResolver';
+import { aggregateRatings } from '@server/utils/ratingsAggregation';
 import { providersSchemas } from './providers.schemas';
 
 const log = getChildLogger('ProvidersHandler');
@@ -24,7 +24,6 @@ interface ProvidersCradle {
 
 export function createProvidersHandlers(cradle: ProvidersCradle) {
   const { providerSettingsService } = cradle;
-  const ratingsService = new RatingsAggregationService();
 
   return {
     getMetadata: defineRoute({
@@ -168,13 +167,7 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
           })(),
         ]);
 
-        const aggregated = ratingsService.aggregate(
-          title,
-          year,
-          tmdbRating,
-          omdbRating,
-          tvmazeRating
-        );
+        const aggregated = aggregateRatings(title, year, tmdbRating, omdbRating, tvmazeRating);
 
         return aggregated;
       },
