@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-29T00:00:00Z",
+  "title": "Design System: Warden",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Operative Teal",
+        "canonical": "#0d9488",
+        "tonalRamp": ["#042f2e", "#134e4a", "#115e59", "#0f766e", "#0d9488", "#14b8a6", "#2dd4bf", "#ccfbf1"]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Live Teal",
+        "canonical": "#14b8a6",
+        "tonalRamp": ["#042f2e", "#134e4a", "#115e59", "#0f766e", "#0d9488", "#14b8a6", "#2dd4bf", "#ccfbf1"]
+      },
+      "primary-active": {
+        "role": "primary",
+        "displayName": "Pressed Teal",
+        "canonical": "#0f766e",
+        "tonalRamp": ["#042f2e", "#134e4a", "#115e59", "#0f766e", "#0d9488", "#14b8a6", "#2dd4bf", "#ccfbf1"]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Critical Red",
+        "canonical": "#dc2626",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#fca5a5", "#fee2e2"]
+      },
+      "surface-bg": {
+        "role": "neutral",
+        "displayName": "Console Black",
+        "canonical": "#0f172a",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"]
+      },
+      "surface-panel": {
+        "role": "neutral",
+        "displayName": "Panel Slate",
+        "canonical": "#1e293b",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"]
+      },
+      "surface-elevated": {
+        "role": "neutral",
+        "displayName": "Elevated Slate",
+        "canonical": "#2a3546",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Cool White",
+        "canonical": "#f8fafc",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Text",
+        "canonical": "#cbd5e1",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#94a3b8",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+      },
+      "success": {
+        "role": "neutral",
+        "displayName": "Go Green",
+        "canonical": "#10b981",
+        "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#d1fae5"]
+      },
+      "warning": {
+        "role": "neutral",
+        "displayName": "Caution Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fcd34d", "#fef3c7"]
+      },
+      "info": {
+        "role": "neutral",
+        "displayName": "Signal Blue",
+        "canonical": "#3b82f6",
+        "tonalRamp": ["#1e1b4b", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page headings, card section titles, modal headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary content, descriptions, form field values. Max 65–75ch for prose."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Button text, navigation items, form labels, badge copy."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Timestamps, secondary metadata, helper text below fields."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Technical strings: IDs, file paths, config values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-default-dark",
+        "value": "inset 0 0 0 1px rgba(13,148,136,0.24), 0 0 0 1px rgba(13,148,136,0.08), 0 4px 24px rgba(13,148,136,0.10), 0 1px 6px rgba(0,0,0,0.55)",
+        "purpose": "Default card elevation in dark mode. Subtle teal edge + ambient glow + depth anchor."
+      },
+      {
+        "name": "card-outlined-dark",
+        "value": "inset 0 0 0 1px rgba(13,148,136,0.18), 0 4px 24px rgba(13,148,136,0.08), 0 1px 6px rgba(0,0,0,0.50)",
+        "purpose": "Outlined card in dark mode. Lighter teal edge for bordered containers."
+      },
+      {
+        "name": "card-elevated-dark",
+        "value": "inset 0 0 0 1px rgba(13,148,136,0.35), 0 0 0 1px rgba(13,148,136,0.14), 0 10px 48px rgba(13,148,136,0.16), 0 3px 12px rgba(0,0,0,0.70)",
+        "purpose": "Elevated card in dark mode. Modals, popovers, command palettes."
+      },
+      {
+        "name": "card-outlined-light",
+        "value": "0 1px 4px rgba(0,0,0,0.06)",
+        "purpose": "Outlined card in light mode. Minimal structural shadow."
+      },
+      {
+        "name": "card-elevated-light",
+        "value": "0 4px 24px rgba(0,0,0,0.10)",
+        "purpose": "Elevated card in light mode. Standard floating panel."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-fast",
+        "value": "150ms",
+        "purpose": "All UI state transitions: background-color, color, opacity, box-shadow."
+      },
+      {
+        "name": "ease-standard",
+        "value": "ease",
+        "purpose": "Default easing for state transitions. No bounce, no elastic."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action. Used for the single most important action on any given surface.",
+      "html": "<button class=\"ds-btn-primary\">Save Changes</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; font-size: 1rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; background-color: var(--color-primary); color: #ffffff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-primary:hover { background-color: var(--color-primary-hover); } .ds-btn-primary:active { background-color: var(--color-primary-active); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-surface-bg), 0 0 0 4px var(--color-primary); } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action. Sits alongside a primary button; lower visual weight.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; font-size: 1rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; background-color: var(--color-surface-panel); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 4px; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-secondary:hover { background-color: var(--color-surface-bg); color: var(--color-text-primary); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-surface-bg), 0 0 0 4px var(--color-border); } .ds-btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action. Delete, disconnect, or irreversible operations only.",
+      "html": "<button class=\"ds-btn-danger\">Delete Project</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; font-size: 1rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; background-color: var(--color-danger); color: #ffffff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-danger:hover { background-color: var(--color-danger-hover); } .ds-btn-danger:active { background-color: var(--color-danger-active); } .ds-btn-danger:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-surface-bg), 0 0 0 4px var(--color-danger); } .ds-btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Card (Default)",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Standard container. Panel surface + teal ambient glow in dark mode.",
+      "html": "<div class=\"ds-card-default\"><div class=\"ds-card-title\">Card Title</div><p class=\"ds-card-body\">Card content goes here. This is what the default card looks like at rest.</p></div>",
+      "css": ".ds-card-default { background-color: var(--color-surface-panel); border: 1px solid transparent; border-radius: 8px; padding: 1rem; box-shadow: var(--shadow-card-default); background-image: var(--card-glass-highlight); transition: box-shadow 150ms ease; } .ds-card-title { font-family: Inter, system-ui, sans-serif; font-size: 1.25rem; font-weight: 600; line-height: 1.4; color: var(--color-text-primary); margin-bottom: 0.5rem; } .ds-card-body { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1.5; color: var(--color-text-secondary); margin: 0; }"
+    },
+    {
+      "name": "Card (Outlined)",
+      "kind": "card",
+      "refersTo": "card-outlined",
+      "description": "Outlined container variant. Explicit border for edge definition.",
+      "html": "<div class=\"ds-card-outlined\"><div class=\"ds-card-title\">Outlined Card</div><p class=\"ds-card-body\">Use this variant when edge definition matters more than depth.</p></div>",
+      "css": ".ds-card-outlined { background-color: var(--color-surface-panel); border: 1px solid var(--color-border-card-outlined); border-radius: 8px; padding: 1rem; box-shadow: var(--shadow-card-outlined); background-image: var(--card-glass-highlight); } .ds-card-outlined .ds-card-title { font-family: Inter, system-ui, sans-serif; font-size: 1.25rem; font-weight: 600; line-height: 1.4; color: var(--color-text-primary); margin-bottom: 0.5rem; } .ds-card-outlined .ds-card-body { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1.5; color: var(--color-text-secondary); margin: 0; }"
+    },
+    {
+      "name": "Badge (Primary)",
+      "kind": "chip",
+      "refersTo": "badge-primary",
+      "description": "Read-only teal badge. Status indicator or category label.",
+      "html": "<span class=\"ds-badge-primary\">Active</span>",
+      "css": ".ds-badge-primary { display: inline-flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1; padding: 0.25rem 0.625rem; background-color: rgba(13, 148, 136, 0.10); color: var(--color-primary); border: 1px solid rgba(13, 148, 136, 0.20); border-radius: 9999px; white-space: nowrap; }"
+    },
+    {
+      "name": "Badge (Status)",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Status badge showing success/warning/error states using the 10%/20% opacity formula.",
+      "html": "<span class=\"ds-badge-success\">Healthy</span><span class=\"ds-badge-warning\" style=\"margin-left:8px\">Degraded</span><span class=\"ds-badge-error\" style=\"margin-left:8px\">Failed</span>",
+      "css": ".ds-badge-success, .ds-badge-warning, .ds-badge-error { display: inline-flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1; padding: 0.25rem 0.625rem; border-radius: 9999px; white-space: nowrap; } .ds-badge-success { background-color: rgba(16, 185, 129, 0.10); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.20); } .ds-badge-warning { background-color: rgba(245, 158, 11, 0.10); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.20); } .ds-badge-error { background-color: rgba(220, 38, 38, 0.10); color: var(--color-danger); border: 1px solid rgba(220, 38, 38, 0.20); }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Sidebar navigation item. Active state carries teal fill; inactive items are subdued.",
+      "html": "<div class=\"ds-nav-demo\"><a href=\"#\" class=\"ds-nav-item ds-nav-item--active\"><svg class=\"ds-nav-icon\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z\"/></svg><span>Media</span></a><a href=\"#\" class=\"ds-nav-item ds-nav-item--inactive\"><svg class=\"ds-nav-icon\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"/></svg><span>Settings</span></a></div>",
+      "css": ".ds-nav-demo { background-color: var(--color-surface-panel); padding: 0.75rem; display: flex; flex-direction: column; gap: 4px; border-radius: 8px; } .ds-nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; border-radius: 4px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; text-decoration: none; transition: background-color 150ms ease, color 150ms ease; } .ds-nav-item--active { background-color: var(--color-primary); color: #ffffff; } .ds-nav-item--inactive { color: var(--color-text-secondary); } .ds-nav-item--inactive:hover { background-color: var(--color-surface-bg); color: var(--color-text-primary); } .ds-nav-item--inactive:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary); } .ds-nav-icon { flex-shrink: 0; width: 1.25rem; height: 1.25rem; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": null,
+      "description": "Text input. Border-focus pattern, no floating label.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-input-demo\">API Endpoint</label><input class=\"ds-input\" id=\"ds-input-demo\" type=\"text\" placeholder=\"https://sonarr.local:8989\"><p class=\"ds-field-hint\">The base URL for your Sonarr instance.</p></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 0.375rem; } .ds-field-label { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; color: var(--color-text-primary); } .ds-input { padding: 0.5rem 0.75rem; background-color: var(--color-surface-bg); border: 1px solid var(--color-border); border-radius: 0.375rem; color: var(--color-text-primary); font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1.5; transition: border-color 150ms ease; } .ds-input:focus { outline: none; border-color: var(--color-primary); } .ds-input::placeholder { color: var(--color-text-muted); } .ds-field-hint { margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 400; line-height: 1.4; color: var(--color-text-muted); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Operator's Console",
+    "overview": "Warden is a control surface for the self-hosted media stack. Users arrive with a task and leave with it done. The interface is designed to disappear: dark surfaces that reduce eye strain during long sessions, teal reserved for where the system is alive (active states, live indicators, primary actions), and information density calibrated for operators who know what they are looking at.\n\nThe design is dark-first. Not dark as aesthetic flourish — dark as the designed experience. Three surface tiers (bg / panel / elevated) create hierarchy through tonal separation rather than decoration. Cards lift from the background by stepping one tier toward the light. The teal ambient glow in dark mode — layered inset edge highlights and wide ambient diffusion — signals elevation and focus, not ornament.\n\nWarden should feel at home beside Tautulli, Kometa, and Overseerr — tools that take their job seriously and don't perform friendliness they don't mean. It is not a Servarr app and carries no arr design debt; it has its own hierarchy, its own authority, and its own level of craft.",
+    "keyCharacteristics": [
+      "Dark-first: dark mode is the designed experience, not a theme variant",
+      "Teal as signal: the accent appears only where the system is active or responsive",
+      "Three surface tiers: bg / panel / elevated, enforced by tonal separation and shadow depth",
+      "Dense by default: information at a glance; whitespace earns its place",
+      "Confident and minimal: clear affordances, no surface decoration without function"
+    ],
+    "rules": [
+      {
+        "name": "The Single Voice Rule",
+        "body": "Teal appears on ≤10% of any given screen at rest. An interface where everything is teal is an interface where nothing is teal. Its rarity is its power.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Warm-Surface Rule",
+        "body": "No cream, sand, beige, or warm-tinted neutrals. The floor and panel are cool slate. Warmth is carried by the teal accent and its glow, not by background tinting.",
+        "section": "colors"
+      },
+      {
+        "name": "The Scale Constraint Rule",
+        "body": "No fluid (clamp) typography. This is a product UI used at consistent DPI. Fixed rem values only. A heading that shrinks inside a sidebar is not responsive design.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "No display fonts, no decorative pairing. Inter carries every role. Weight contrast (400 to 600) and size contrast (12px to 20px) are the hierarchy tools.",
+        "section": "typography"
+      },
+      {
+        "name": "The Teal Glow Rule",
+        "body": "The ambient glow is calibrated to Console Black (#0f172a). Never increase teal opacity beyond the elevated card values; above that threshold, the glow reads as a rendering artifact, not an elevation signal.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces are flat at rest in light mode. Shadows appear as structural differentiation or state response, never decoration.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use teal exclusively for primary actions, active selections, and live status indicators.",
+      "Do use the three-tier surface system (bg / panel / elevated) as the primary hierarchy tool. Every container belongs to one tier.",
+      "Do use the exact shadow vocabulary from Section 4. The multi-layer teal glow is calibrated; substituting generic drop shadows breaks the elevation language.",
+      "Do keep Inter as the sole UI typeface. Weight and size contrast create hierarchy; additional fonts add noise.",
+      "Do cap prose line length at 65–75ch. Dense data views may run longer; descriptions and help text must not.",
+      "Do include all six states on every interactive component: default, hover, focus, active, disabled, loading.",
+      "Do use cursor: not-allowed and 40% opacity for disabled states on every component variant.",
+      "Do verify contrast for every new surface-text pairing. Minimum: 4.5:1 for body text, 3:1 for large or bold text and interactive elements."
+    ],
+    "donts": [
+      "Don't use a cream, sand, or warm-neutral body background. This is the most common AI-generated aesthetic of 2025-2026 and reads immediately as generic.",
+      "Don't model the visual identity on Sonarr, Radarr, or any Servarr app. Warden is not a Servarr app; it has no arr suffix, no arr inheritance, and no obligation to inherit arr design patterns.",
+      "Don't build a monitoring dashboard. No metric-hero cards, no chart-heavy grid layouts. Maintainarr is a task automation tool, not Grafana.",
+      "Don't use gradient text (background-clip: text with a gradient). Prohibited. Solid teal or solid white only.",
+      "Don't use side-stripe accents (border-left or border-right greater than 1px in a brand color). Use full borders, background tints, or status badges instead.",
+      "Don't use display or decorative fonts in UI labels, buttons, nav items, or table cells.",
+      "Don't apply teal as a background fill to more than 10% of screen area at rest.",
+      "Don't default to modals. Inline editing, contextual side panels, and progressive disclosure are almost always better.",
+      "Don't animate layout properties (width, height, padding, margin). All state transitions use only background-color, color, opacity, transform, and box-shadow at 150ms.",
+      "Don't gate content visibility on entrance animations. Content must be visible by default."
+    ]
+  }
+}
