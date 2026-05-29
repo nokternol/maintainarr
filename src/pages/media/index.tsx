@@ -318,10 +318,7 @@ export default function MediaPage() {
                 key={`movie-${movie.id}`}
                 id={`movie-${movie.id}`}
                 data-testid={`media-card-movie-${movie.id}`}
-                className={cn(
-                  selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined,
-                  selectedId !== null && selectedId !== `movie-${movie.id}` ? 'opacity-50' : ''
-                )}
+                className={selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
                 onClick={(id) => {
                   setSelected({ title: movie.title, year: movie.year });
                   setSelectedId(id);
@@ -377,10 +374,7 @@ export default function MediaPage() {
                 key={`series-${show.id}`}
                 id={`series-${show.id}`}
                 data-testid={`media-card-series-${show.id}`}
-                className={cn(
-                  selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined,
-                  selectedId !== null && selectedId !== `series-${show.id}` ? 'opacity-50' : ''
-                )}
+                className={selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
                 onClick={(id) => {
                   setSelected({ title: show.title, year: show.year });
                   setSelectedId(id);
