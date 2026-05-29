@@ -78,20 +78,17 @@ export class DrizzleStore extends session.Store {
   /** Delete a small batch of expired sessions. Called on every `set`. */
   private async purgeExpired(): Promise<void> {
     if (this.cleanupLimit <= 0) return;
-
-    const expired = await this.db
-      .select({ id: sessions.id })
-      .from(sessions)
-      .where(lt(sessions.expiredAt, Date.now()))
-      .limit(this.cleanupLimit);
-
-    if (expired.length === 0) return;
-
-    await this.db.delete(sessions).where(
-      inArray(
-        sessions.id,
-        expired.map((r) => r.id)
-      )
-    );
+    await this.db
+      .delete(sessions)
+      .where(
+        inArray(
+          sessions.id,
+          this.db
+            .select({ id: sessions.id })
+            .from(sessions)
+            .where(lt(sessions.expiredAt, Date.now()))
+            .limit(this.cleanupLimit)
+        )
+      );
   }
 }

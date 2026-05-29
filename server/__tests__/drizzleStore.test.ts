@@ -172,4 +172,76 @@ describe('DrizzleStore', () => {
       await expect(storeTouch(store, 'ghost-sid', makeSession())).resolves.not.toThrow();
     });
   });
+
+  describe('purgeExpired (triggered by set)', () => {
+    /** Seed a session directly into the DB bypassing store.set so the store's
+     *  cleanup logic is not triggered during seeding. */
+    async function seedExpired(id: string): Promise<void> {
+      await getDb()
+        .insert(sessions)
+        .values({ id, expiredAt: Date.now() - 1, json: JSON.stringify(makeSession()) });
+    }
+
+    async function seedActive(id: string): Promise<void> {
+      await getDb()
+        .insert(sessions)
+        .values({ id, expiredAt: Date.now() + 60_000, json: JSON.stringify(makeSession()) });
+    }
+
+    async function allIds(): Promise<string[]> {
+      return (await getDb().select({ id: sessions.id }).from(sessions)).map((r) => r.id);
+    }
+
+    it('removes expired sessions when a new session is set', async () => {
+      await seedExpired('exp-1');
+
+      await storeSet(store, 'new-sid', makeSession());
+
+      expect(await allIds()).not.toContain('exp-1');
+    });
+
+    it('preserves non-expired sessions during cleanup', async () => {
+      await seedActive('active-1');
+      await seedExpired('exp-1');
+
+      await storeSet(store, 'new-sid', makeSession());
+
+      expect(await allIds()).toContain('active-1');
+    });
+
+    it('deletes at most cleanupLimit expired sessions per set call', async () => {
+      store = new DrizzleStore({ db: getDb(), cleanupLimit: 1 });
+
+      await seedExpired('exp-1');
+      await seedExpired('exp-2');
+
+      await storeSet(store, 'new-sid', makeSession());
+
+      // One of the two expired sessions should survive (limit=1)
+      const remaining = await allIds();
+      const expiredRemaining = remaining.filter((id) => id.startsWith('exp-'));
+      expect(expiredRemaining).toHaveLength(1);
+    });
+
+    it('skips cleanup entirely when cleanupLimit is 0', async () => {
+      store = new DrizzleStore({ db: getDb(), cleanupLimit: 0 });
+
+      await seedExpired('exp-1');
+
+      await storeSet(store, 'new-sid', makeSession());
+
+      expect(await allIds()).toContain('exp-1');
+    });
+
+    it('does not remove the session that was just set, even if it looks expired', async () => {
+      // A session with no maxAge uses the store ttl (default 86400s — far future)
+      const sessionWithNoMaxAge: Express.SessionData = {
+        // biome-ignore lint/suspicious/noExplicitAny: test helper cast
+        cookie: { originalMaxAge: null, maxAge: null, path: '/' } as any,
+      };
+      await storeSet(store, 'just-set', sessionWithNoMaxAge);
+
+      expect(await allIds()).toContain('just-set');
+    });
+  });
 });
