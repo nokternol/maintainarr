@@ -57,15 +57,17 @@ function ChipGroup<T extends string | undefined>({
   options,
   value,
   onChange,
+  hideLabel,
 }: {
   label: string;
   options: Array<{ value: T; label: string }>;
   value: T;
   onChange: (v: T) => void;
+  hideLabel?: boolean;
 }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-xs text-text-muted whitespace-nowrap">{label}:</span>
+      {!hideLabel && <span className="text-xs text-text-muted whitespace-nowrap">{label}:</span>}
       {options.map((opt) => (
         <button
           key={String(opt.value ?? 'all')}
@@ -714,12 +716,13 @@ export function MediaFilterBar({
               {/* Movies section */}
               {hasMovieSection && (
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
                     Movies
                   </h3>
                   <div className="space-y-3">
                     <ChipGroup
                       label="Movies"
+                      hideLabel
                       options={[
                         { value: undefined, label: 'All' },
                         { value: 'true' as const, label: 'Downloaded' },
@@ -757,12 +760,13 @@ export function MediaFilterBar({
               {/* Series section */}
               {hasSeriesSection && (
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
                     Series
                   </h3>
                   <div className="space-y-3">
                     <ChipGroup
                       label="Series"
+                      hideLabel
                       options={[
                         { value: undefined, label: 'All' },
                         { value: 'true' as const, label: 'Monitored' },
@@ -827,7 +831,7 @@ export function MediaFilterBar({
               {/* Tautulli Watched section */}
               {hasTautulliSection && (
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
                     Play History
                   </h3>
                   <ChipGroup
@@ -845,7 +849,7 @@ export function MediaFilterBar({
 
               {/* Year section */}
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">
                   Year Range
                 </h3>
                 <MobileYearInputs
