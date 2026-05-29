@@ -13,6 +13,7 @@ import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { SidebarItem } from '@app/types/navigation';
+import { Tabs } from '@app/components/Tabs';
 import { cn } from '@app/lib/utils/cn';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -278,32 +279,14 @@ export default function MediaPage() {
           actions={
             <>
               {/* Movies / Series tab switcher */}
-              <div className="flex items-center gap-1">
-                {(['movies', 'series'] as const).map((tab) => {
-                  const count = tab === 'movies' ? movies.totalCount : series.totalCount;
-                  const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-sm text-sm font-medium transition-colors capitalize',
-                        activeTab === tab
-                          ? 'bg-primary text-white'
-                          : 'text-text-primary hover:bg-surface-hover'
-                      )}
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      {!loading && (
-                        <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <Tabs
+                tabs={[
+                  { value: 'movies', label: 'Movies', count: movies.totalCount, loading: movies.isLoading },
+                  { value: 'series', label: 'Series', count: series.totalCount, loading: series.isLoading },
+                ]}
+                active={activeTab}
+                onChange={setActiveTab}
+              />
               {/* Mobile-only filter trigger */}
               <button
                 type="button"
