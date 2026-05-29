@@ -99,7 +99,7 @@ export const AllFeatures: Story = () => (
 
 export const GridExample: Story = () => (
   <div className="bg-surface-bg p-8">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
       <StatCard
         value={142}
         label="Active Tasks"

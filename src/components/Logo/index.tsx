@@ -2,9 +2,9 @@ import { cn } from '@app/lib/utils/cn';
 import React from 'react';
 import styles from './Logo.module.css';
 
-export const MaintainarrLogo = ({
+export const WardenLogo = ({
   className = 'w-24 h-24',
-  id = 'maintainarr-logo',
+  id = 'warden-logo',
   isLoader = false,
 }) => {
   const teeth = Array.from({ length: 8 }, (_, i) => i * 45);
@@ -26,7 +26,7 @@ export const MaintainarrLogo = ({
           isLoader && styles.svgSpin
         )}
       >
-        <title id={`${id}-title`}>Maintainarr Logo</title>
+        <title id={`${id}-title`}>Warden Logo</title>
 
         {/* Gear Teeth - Reduced depth (shorter) */}
         <g transform="translate(12, 12)">

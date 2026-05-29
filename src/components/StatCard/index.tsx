@@ -29,7 +29,7 @@ export default function StatCard({
   return (
     <Card className={cn(styles.root, className)} {...props}>
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className={styles.label}>{label}</p>
           <p className={styles.value}>{value}</p>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}

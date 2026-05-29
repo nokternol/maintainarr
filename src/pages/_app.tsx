@@ -4,7 +4,7 @@ import type { AppProps } from 'next/app';
 import '@app/styles/globals.css';
 import 'rc-slider/assets/index.css';
 
-function MaintainarrApp({ Component, pageProps }: AppProps) {
+function WardenApp({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ErrorBoundary fallback={(error, reset) => <ErrorFallback error={error} reset={reset} />}>
@@ -14,4 +14,4 @@ function MaintainarrApp({ Component, pageProps }: AppProps) {
   );
 }
 
-export default MaintainarrApp;
+export default WardenApp;

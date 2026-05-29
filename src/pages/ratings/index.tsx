@@ -124,9 +124,9 @@ export default function RatingsPage() {
           logo={
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                M
+                W
               </div>
-              <span className="text-xl font-bold text-text-primary">Maintainarr</span>
+              <span className="text-xl font-bold text-text-primary">Warden</span>
             </div>
           }
         />

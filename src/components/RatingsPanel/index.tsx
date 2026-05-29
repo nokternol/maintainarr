@@ -1,3 +1,4 @@
+import LoadingSpinner from '@app/components/LoadingSpinner';
 import RatingsDisplay from '@app/components/RatingsDisplay';
 import { useRatings } from '@app/hooks/useRatings';
 import { useEffect } from 'react';
@@ -66,7 +67,10 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading && (
-            <div className="text-text-secondary text-center py-8">Loading ratings…</div>
+            <div className="flex flex-col items-center gap-3 py-12">
+              <LoadingSpinner size="md" className="text-primary" />
+              <p className="text-sm text-text-secondary">Loading ratings…</p>
+            </div>
           )}
           {error && !isLoading && (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
@@ -79,7 +83,7 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
               <button
                 type="button"
                 onClick={() => trigger({ title, year })}
-                className="mt-1 px-4 py-2 rounded text-xs font-medium bg-surface-panel border border-border text-text-secondary hover:text-text-primary hover:bg-surface-bg transition-colors"
+                className="mt-1 px-4 py-2 rounded-sm text-sm font-medium bg-surface-panel border border-border text-text-secondary hover:text-text-primary hover:bg-surface-bg transition-colors duration-150"
               >
                 Try again
               </button>

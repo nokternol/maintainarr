@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageFader } from '@app/components/ImageFader';
-import { MaintainarrLogo, PlexIcon } from '@app/components/Logo';
+import { WardenLogo, PlexIcon } from '@app/components/Logo';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
 import Image from 'next/image';
@@ -69,17 +69,16 @@ export default function LoginPage() {
         <div className="mb-6 flex justify-center">
           <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
             {/* SVG Logo here */}
-            <MaintainarrLogo isLoader={isLoading} className="w-20 h-20" />
+            <WardenLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
         <div className="inline-block p-6 rounded-3xl mb-6">
           <h1 className="text-4xl font-black text-slate-50 tracking-tighter mb-2 uppercase">
-            Maintain<span className="text-teal-500">arr</span>
+            Warden
           </h1>
           <p className="text-slate-400 text-sm font-medium tracking-wide px-4 leading-relaxed max-w-sm mx-auto">
-            Task automation and metadata-driven grouping <br /> for the{' '}
-            <span className="text-teal-500 italic">*arr ecosystem</span>
+            Rule-based automation for your self-hosted media library
           </p>
         </div>
 
