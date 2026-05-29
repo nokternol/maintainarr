@@ -357,7 +357,7 @@ function AddProviderForm({
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-primary text-text-primary rounded hover:opacity-90"
+          className="px-4 py-2 bg-primary text-white rounded hover:opacity-90"
         >
           Save
         </button>
@@ -588,7 +588,7 @@ function ProviderRow({
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-primary text-text-primary rounded hover:opacity-90"
+          className="px-4 py-2 bg-primary text-white rounded hover:opacity-90"
         >
           Save
         </button>
@@ -615,7 +615,7 @@ export default function SettingsPage() {
           items={sidebarItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-text-primary font-bold">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                 M
               </div>
               <span className="text-xl font-bold text-text-primary">Maintainarr</span>
@@ -635,7 +635,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setShowAddForm((v) => !v)}
-            className="px-4 py-2 bg-primary text-text-primary rounded hover:opacity-90"
+            className="px-4 py-2 bg-primary text-white rounded hover:opacity-90"
           >
             Add Provider
           </button>

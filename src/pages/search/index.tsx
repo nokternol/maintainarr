@@ -145,7 +145,7 @@ export default function SearchPage() {
           items={sidebarItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-text-primary font-bold">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                 M
               </div>
               <span className="text-xl font-bold text-text-primary">Maintainarr</span>
@@ -172,7 +172,7 @@ export default function SearchPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-4 py-2 bg-primary text-text-primary rounded hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-white rounded hover:opacity-90 disabled:opacity-50"
           >
             {isLoading ? 'Searching…' : 'Search'}
           </button>

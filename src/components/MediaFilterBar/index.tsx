@@ -72,7 +72,7 @@ function ChipGroup<T extends string | undefined>({
           className={cn(
             'px-3 py-2 rounded-full text-xs font-medium transition-colors min-h-[44px] flex items-center',
             value === opt.value
-              ? 'bg-primary text-text-primary'
+              ? 'bg-primary text-white'
               : 'bg-surface-panel text-text-secondary hover:bg-surface-hover border border-border'
           )}
           aria-pressed={value === opt.value}
@@ -132,7 +132,7 @@ function MultiSelectDropdown({
         className={cn(
           'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
           activeCount > 0
-            ? 'bg-primary text-text-primary border-primary'
+            ? 'bg-primary text-white border-primary'
             : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
         )}
       >
@@ -223,7 +223,7 @@ function StringMultiSelectDropdown({
         className={cn(
           'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
           activeCount > 0
-            ? 'bg-primary text-text-primary border-primary'
+            ? 'bg-primary text-white border-primary'
             : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
         )}
       >

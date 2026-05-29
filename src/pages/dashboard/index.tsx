@@ -123,6 +123,42 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const MediaIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    role="img"
+    aria-label="Icon"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+    />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    role="img"
+    aria-label="Icon"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+);
+
 const SystemIcon = () => (
   <svg
     className="w-5 h-5"
@@ -186,8 +222,8 @@ const sidebarItems: SidebarItem[] = [
     href: '/dashboard',
     active: true,
   },
-  { id: 'media', label: 'Media', icon: <div />, href: '/media' },
-  { id: 'search', label: 'Search', icon: <div />, href: '/search' },
+  { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media' },
+  { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
   {
     id: 'tasks',
     label: 'Tasks',

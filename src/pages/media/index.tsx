@@ -262,7 +262,7 @@ export default function MediaPage() {
           items={sidebarItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-text-primary font-bold">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                 M
               </div>
               <span className="text-xl font-bold text-text-primary">Maintainarr</span>
@@ -282,7 +282,7 @@ export default function MediaPage() {
                 className={cn(
                   'md:hidden flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border transition-colors min-h-[44px]',
                   isActive
-                    ? 'bg-primary text-text-primary border-primary'
+                    ? 'bg-primary text-white border-primary'
                     : 'bg-transparent text-text-secondary border-border hover:bg-surface-hover'
                 )}
                 onClick={() => setFilterSheetOpen(true)}
@@ -317,7 +317,7 @@ export default function MediaPage() {
                   className={cn(
                     'px-4 py-2 rounded-full text-sm font-medium transition-colors capitalize',
                     activeTab === tab
-                      ? 'bg-primary text-text-primary'
+                      ? 'bg-primary text-white'
                       : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                   )}
                 >
