@@ -1,14 +1,16 @@
 /**
- * useMediaFilters — Cycle 3 RED
+ * useMediaFilters — Cycle 4 RED
  *
  * Tests filter state management, debounce, URL sync, clearAll, isActive,
  * AND the FILTER_FIELDS registry contract (single source of truth).
+ * Cycle 4 adds: narrow-type assertions proving FILTER_FIELDS is as-const
+ * and FilterState is correctly derived from it.
  *
  * Run: vitest run --project client
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FILTER_FIELDS, useMediaFilters } from '../useMediaFilters';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { FILTER_FIELDS, type FilterState, useMediaFilters } from '../useMediaFilters';
 
 // ─── Router mock ───────────────────────────────────────────────────────────────
 
@@ -571,5 +573,57 @@ describe('isActive — fields not covered by earlier tests', () => {
     });
 
     expect(result.current.isActive).toBe(true);
+  });
+});
+
+// ─── Cycle 4 RED: as-const narrow types ───────────────────────────────────────
+//
+// These tests FAIL while FILTER_FIELDS is annotated as
+// `Record<keyof FilterState, FieldSpec>`, because that annotation widens
+// every entry to the FieldSpec union and erases the literal types.
+// They PASS once FILTER_FIELDS is changed to `as const satisfies`.
+
+describe('FILTER_FIELDS — as-const narrow type preservation', () => {
+  it('title.type is narrowly typed as "string" literal', () => {
+    expectTypeOf(FILTER_FIELDS.title.type).toEqualTypeOf<'string'>();
+  });
+
+  it('yearMin.type is narrowly typed as "number" literal', () => {
+    expectTypeOf(FILTER_FIELDS.yearMin.type).toEqualTypeOf<'number'>();
+  });
+
+  it('hasFile.type is narrowly typed as "bool3" literal', () => {
+    expectTypeOf(FILTER_FIELDS.hasFile.type).toEqualTypeOf<'bool3'>();
+  });
+
+  it('title.default is narrowly typed as "" (empty string literal)', () => {
+    expectTypeOf(FILTER_FIELDS.title.default).toEqualTypeOf<''>();
+  });
+
+  it('yearMin.default is narrowly typed as undefined', () => {
+    expectTypeOf(FILTER_FIELDS.yearMin.default).toEqualTypeOf<undefined>();
+  });
+});
+
+// ─── Cycle 4: FilterState type contract ───────────────────────────────────────
+//
+// These pass with both the old interface and the new derived type, but act as
+// regression guards: if InferValue is wrong during GREEN they will catch it.
+
+describe('FilterState — type derivation contract', () => {
+  it('title is typed as string (never undefined)', () => {
+    expectTypeOf<FilterState['title']>().toEqualTypeOf<string>();
+  });
+
+  it('yearMin is typed as number | undefined', () => {
+    expectTypeOf<FilterState['yearMin']>().toEqualTypeOf<number | undefined>();
+  });
+
+  it('hasFile is typed as "true" | "false" | undefined', () => {
+    expectTypeOf<FilterState['hasFile']>().toEqualTypeOf<'true' | 'false' | undefined>();
+  });
+
+  it('seriesStatus is typed as string | undefined', () => {
+    expectTypeOf<FilterState['seriesStatus']>().toEqualTypeOf<string | undefined>();
   });
 });

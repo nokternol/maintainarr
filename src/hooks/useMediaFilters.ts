@@ -4,30 +4,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 const DEBOUNCE_MS = 300;
 
-export interface FilterState {
-  title: string;
-  hasFile: 'true' | 'false' | undefined;
-  monitored: 'true' | 'false' | undefined;
-  seriesStatus: string | undefined;
-  yearMin: number | undefined;
-  yearMax: number | undefined;
-  movieTagIds: string | undefined;
-  seriesTagIds: string | undefined;
-  movieQualityProfileIds: string | undefined;
-  seriesQualityProfileIds: string | undefined;
-  movieGenres: string | undefined;
-  seriesGenres: string | undefined;
-  seriesType: string | undefined;
-  network: string | undefined;
-  tautulliWatched: 'true' | 'false' | undefined;
-}
-
 type FieldSpec =
   | { type: 'string'; default: string | undefined }
   | { type: 'number'; default: number | undefined }
   | { type: 'bool3'; default: 'true' | 'false' | undefined };
 
-export const FILTER_FIELDS: Record<keyof FilterState, FieldSpec> = {
+type InferValue<S extends FieldSpec> = S extends { type: 'number' }
+  ? number | undefined
+  : S extends { type: 'bool3' }
+    ? 'true' | 'false' | undefined
+    : S extends { type: 'string'; default: '' }
+      ? string
+      : string | undefined;
+
+export const FILTER_FIELDS = {
   title: { type: 'string', default: '' },
   hasFile: { type: 'bool3', default: undefined },
   monitored: { type: 'bool3', default: undefined },
@@ -43,23 +33,32 @@ export const FILTER_FIELDS: Record<keyof FilterState, FieldSpec> = {
   seriesType: { type: 'string', default: undefined },
   network: { type: 'string', default: undefined },
   tautulliWatched: { type: 'bool3', default: undefined },
+} as const satisfies Record<string, FieldSpec>;
+
+export type FilterState = {
+  [K in keyof typeof FILTER_FIELDS]: InferValue<(typeof FILTER_FIELDS)[K]>;
 };
 
+// Object.fromEntries loses per-key types; FilterState correctness is enforced
+// by the satisfies check above which proves every entry is a valid FieldSpec.
 const EMPTY_FILTER_STATE = Object.fromEntries(
   Object.entries(FILTER_FIELDS).map(([key, spec]) => [key, spec.default])
-) as unknown as FilterState;
+) as FilterState;
+
+type FilterKey = keyof typeof FILTER_FIELDS;
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
   const state = { ...EMPTY_FILTER_STATE };
-  for (const [key, spec] of Object.entries(FILTER_FIELDS)) {
-    const raw = query[key];
+  for (const k of Object.keys(FILTER_FIELDS) as FilterKey[]) {
+    const spec = FILTER_FIELDS[k];
+    const raw = query[k];
     const v = typeof raw === 'string' ? raw : undefined;
     if (v === undefined) continue;
     if (spec.type === 'number') {
       const n = Number(v);
-      (state as unknown as Record<string, unknown>)[key] = Number.isNaN(n) ? spec.default : n;
+      Object.assign(state, { [k]: Number.isNaN(n) ? spec.default : n });
     } else {
-      (state as unknown as Record<string, unknown>)[key] = v;
+      Object.assign(state, { [k]: v });
     }
   }
   return state;
@@ -67,19 +66,19 @@ function parseQuery(query: Record<string, string | string[] | undefined>): Filte
 
 function buildQuery(state: FilterState): Record<string, string> {
   const q: Record<string, string> = {};
-  for (const [key, spec] of Object.entries(FILTER_FIELDS)) {
-    const value = (state as unknown as Record<string, unknown>)[key];
-    if (value !== undefined && value !== spec.default) {
-      q[key] = String(value);
+  for (const k of Object.keys(FILTER_FIELDS) as FilterKey[]) {
+    const value = state[k];
+    if (value !== undefined && value !== FILTER_FIELDS[k].default) {
+      q[k] = String(value);
     }
   }
   return q;
 }
 
 function isAnyFilterActive(state: FilterState): boolean {
-  return Object.entries(FILTER_FIELDS).some(([key, spec]) => {
-    return (state as unknown as Record<string, unknown>)[key] !== spec.default;
-  });
+  return (Object.keys(FILTER_FIELDS) as FilterKey[]).some(
+    (k) => state[k] !== FILTER_FIELDS[k].default
+  );
 }
 
 export function useMediaFilters() {
@@ -112,13 +111,13 @@ export function useMediaFilters() {
 
   const debouncedFilters: MediaFilters = useMemo(() => {
     const f: MediaFilters = {};
-    for (const [key, spec] of Object.entries(FILTER_FIELDS)) {
-      if (key === 'title') {
+    for (const k of Object.keys(FILTER_FIELDS) as FilterKey[]) {
+      if (k === 'title') {
         if (debouncedTitle) f.title = debouncedTitle;
       } else {
-        const value = (filterState as unknown as Record<string, unknown>)[key];
-        if (value !== undefined && value !== spec.default) {
-          f[key] = value as string | number;
+        const value = filterState[k];
+        if (value !== undefined && value !== FILTER_FIELDS[k].default) {
+          f[k] = value;
         }
       }
     }
