@@ -1,271 +1,326 @@
 import AppLayout from '@app/components/AppLayout';
-import Badge from '@app/components/Badge';
 import Card from '@app/components/Card';
 import EmptyState from '@app/components/EmptyState';
 import Sidebar from '@app/components/Sidebar';
-import StatCard from '@app/components/StatCard';
 import TopBar from '@app/components/TopBar';
-import WidgetGrid from '@app/components/WidgetGrid';
+import { cn } from '@app/lib/utils/cn';
 import type { SidebarItem } from '@app/types/navigation';
 
-// Icons
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+export type AutomationStatus = 'active' | 'paused' | 'error';
+
+export interface Automation {
+  id: string;
+  name: string;
+  queryName: string;
+  taskName: string;
+  schedule: string;
+  status: AutomationStatus;
+  lastRun?: { relativeTime: string; itemCount: number; action: string };
+  nextRun?: string;
+  errorMessage?: string;
+}
+
+export interface RunRecord {
+  id: string;
+  automationName: string;
+  action: string;
+  itemCount: number;
+  relativeTime: string;
+}
+
+// ── Mock data ──────────────────────────────────────────────────────────────────
+
+const AUTOMATIONS: Automation[] = [
+  {
+    id: '1',
+    name: 'Archive stale movies',
+    queryName: 'Movies > 2yr, unwatched',
+    taskName: 'Move to archive library',
+    schedule: 'Sundays at 2:00am',
+    status: 'active',
+    lastRun: { relativeTime: '2h ago', itemCount: 12, action: 'archived' },
+    nextRun: 'in 5d',
+  },
+  {
+    id: '2',
+    name: 'Refresh missing metadata',
+    queryName: 'All movies, rating absent',
+    taskName: 'Update from TMDB',
+    schedule: 'Daily at 4:00am',
+    status: 'active',
+    lastRun: { relativeTime: '22h ago', itemCount: 847, action: 'updated' },
+    nextRun: 'in 2h',
+  },
+  {
+    id: '3',
+    name: 'Purge low-rated series',
+    queryName: 'Series, TMDB score < 5.0',
+    taskName: 'Delete from library',
+    schedule: '1st of month',
+    status: 'error',
+    lastRun: { relativeTime: '3d ago', itemCount: 0, action: 'failed' },
+    errorMessage: 'Plex connection refused',
+  },
+];
+
+const RECENT_RUNS: RunRecord[] = [
+  { id: 'r1', automationName: 'Archive stale movies', action: 'archived', itemCount: 12, relativeTime: '2h ago' },
+  { id: 'r2', automationName: 'Refresh missing metadata', action: 'updated', itemCount: 847, relativeTime: '22h ago' },
+  { id: 'r3', automationName: 'Archive stale movies', action: 'archived', itemCount: 9, relativeTime: '1w ago' },
+];
+
+// ── Icons ──────────────────────────────────────────────────────────────────────
+
 const DashboardIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-    />
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   </svg>
 );
 
-const TaskIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-    />
-  </svg>
-);
-
-const FolderIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-    />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const ActivityIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M13 10V3L4 14h7v7l9-11h-7z"
-    />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-    />
+const AutomationIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
   </svg>
 );
 
 const MediaIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
-    />
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
   </svg>
 );
 
 const SearchIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-    />
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const ActivityIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 
 const SystemIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-    />
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
   </svg>
 );
 
-const ChartIcon = () => (
-  <svg
-    className="w-8 h-8"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-    />
+const EmptyAutomationIcon = () => (
+  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
   </svg>
 );
 
-const InboxIcon = () => (
-  <svg
-    className="w-16 h-16"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    role="img"
-    aria-label="Icon"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-    />
+const EmptyRunsIcon = () => (
+  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
   </svg>
 );
 
-// Navigation items
+// ── Navigation ─────────────────────────────────────────────────────────────────
+
 const sidebarItems: SidebarItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: <DashboardIcon />,
-    href: '/dashboard',
-    active: true,
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard', active: true },
   { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media' },
   { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
-  {
-    id: 'tasks',
-    label: 'Tasks',
-    icon: <TaskIcon />,
-    href: '/tasks',
-    badge: 5,
-  },
-  {
-    id: 'collections',
-    label: 'Collections',
-    icon: <FolderIcon />,
-    href: '/collections',
-  },
-  {
-    id: 'calendar',
-    label: 'Calendar',
-    icon: <CalendarIcon />,
-    href: '/calendar',
-  },
-  {
-    id: 'activity',
-    label: 'Activity',
-    icon: <ActivityIcon />,
-    href: '/activity',
-  },
+  { id: 'automations', label: 'Automations', icon: <AutomationIcon />, href: '/automations', badge: 1 },
+  { id: 'activity', label: 'Activity', icon: <ActivityIcon />, href: '/activity' },
 ];
 
 const bottomItems: SidebarItem[] = [
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: <SettingsIcon />,
-    href: '/settings',
-  },
-  {
-    id: 'system',
-    label: 'System',
-    icon: <SystemIcon />,
-    href: '/system',
-    badge: 1,
-  },
+  { id: 'settings', label: 'Settings', icon: <SettingsIcon />, href: '/settings' },
+  { id: 'system', label: 'System', icon: <SystemIcon />, href: '/system' },
 ];
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+const COL_TEMPLATE = '1fr 160px 168px 88px';
+
+function StatusDot({ status }: { status: AutomationStatus }) {
+  return (
+    <span
+      className={cn(
+        'inline-block w-2 h-2 rounded-full flex-shrink-0 mt-[3px]',
+        status === 'active' && 'bg-primary',
+        status === 'paused' && 'bg-warning',
+        status === 'error' && 'bg-danger',
+      )}
+      aria-hidden="true"
+    />
+  );
+}
+
+function AutomationRow({ automation }: { automation: Automation }) {
+  const isError = automation.status === 'error';
+
+  return (
+    <div
+      className="grid items-start px-4 py-3 border-b border-border last:border-0 transition-colors duration-150 hover:bg-surface-bg cursor-pointer"
+      style={{
+        gridTemplateColumns: COL_TEMPLATE,
+        ...(isError && { backgroundColor: 'rgba(220, 38, 38, 0.04)' }),
+      }}
+    >
+      {/* Name + query + task */}
+      <div className="min-w-0 pr-6">
+        <div className="flex items-start gap-2">
+          <StatusDot status={automation.status} />
+          <span className="text-sm font-medium text-text-primary leading-5">{automation.name}</span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5 pl-[18px] text-xs text-text-muted min-w-0">
+          <span className="truncate">{automation.queryName}</span>
+          <span className="opacity-40 flex-shrink-0">·</span>
+          <span className="truncate">{automation.taskName}</span>
+        </div>
+        {isError && automation.errorMessage && (
+          <p className="mt-1 pl-[18px] text-xs text-danger">{automation.errorMessage}</p>
+        )}
+      </div>
+
+      {/* Schedule */}
+      <div className="text-xs font-mono text-text-secondary leading-5">{automation.schedule}</div>
+
+      {/* Last run */}
+      <div>
+        {automation.lastRun ? (
+          <>
+            <p className="text-sm text-text-secondary leading-5">{automation.lastRun.relativeTime}</p>
+            {automation.lastRun.itemCount > 0 && (
+              <p className="text-xs text-text-muted mt-0.5">
+                {automation.lastRun.itemCount} items {automation.lastRun.action}
+              </p>
+            )}
+          </>
+        ) : (
+          <span className="text-xs text-text-muted">Never run</span>
+        )}
+      </div>
+
+      {/* Next run */}
+      <div className="text-right">
+        {automation.status === 'error' ? (
+          <span className="text-xs text-danger">Suspended</span>
+        ) : automation.nextRun ? (
+          <span className="text-sm text-text-muted">{automation.nextRun}</span>
+        ) : (
+          <span className="text-xs text-text-muted">—</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RunItem({ run }: { run: RunRecord }) {
+  return (
+    <div className="flex items-center gap-2 py-2.5 border-b border-border last:border-0 text-sm min-w-0">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+      <span className="font-medium text-text-secondary truncate">{run.automationName}</span>
+      <span className="text-text-muted/50 flex-shrink-0">·</span>
+      <span className="text-text-muted flex-shrink-0">{run.itemCount} items {run.action}</span>
+      <span className="ml-auto flex-shrink-0 text-xs text-text-muted">{run.relativeTime}</span>
+    </div>
+  );
+}
+
+// ── Content (exported for stories) ────────────────────────────────────────────
+
+interface DashboardContentProps {
+  automations: Automation[];
+  runs: RunRecord[];
+}
+
+export function DashboardContent({ automations, runs }: DashboardContentProps) {
+  const activeCount = automations.filter(a => a.status === 'active').length;
+  const errorCount = automations.filter(a => a.status === 'error').length;
+
+  return (
+    <div className="p-6 space-y-4">
+
+      {/* Automations */}
+      <Card variant="outlined" padding="none">
+        <Card.Header>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-text-primary">Automations</h2>
+            {automations.length > 0 && (
+              <span className="text-xs text-text-muted flex items-center gap-1.5">
+                {activeCount > 0 && <span className="text-primary">{activeCount} active</span>}
+                {activeCount > 0 && errorCount > 0 && <span className="opacity-40">·</span>}
+                {errorCount > 0 && <span className="text-danger">{errorCount} error</span>}
+              </span>
+            )}
+          </div>
+        </Card.Header>
+
+        {automations.length === 0 ? (
+          <Card.Content divided>
+            <EmptyState
+              icon={<EmptyAutomationIcon />}
+              title="No automations yet"
+              description="An automation pairs a saved query with a task on a schedule. Save a query from the media page, then create an automation to run it automatically."
+              action={{ label: '+ New automation', onClick: () => {} }}
+            />
+          </Card.Content>
+        ) : (
+          <>
+            <div
+              className="grid items-center px-4 py-2 border-b border-border"
+              style={{ gridTemplateColumns: COL_TEMPLATE }}
+            >
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Automation</span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Schedule</span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Last run</span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide text-right">Next run</span>
+            </div>
+            {automations.map(automation => (
+              <AutomationRow key={automation.id} automation={automation} />
+            ))}
+          </>
+        )}
+      </Card>
+
+      {/* Recent runs */}
+      <Card variant="outlined" padding="none">
+        <Card.Header>
+          <h2 className="text-sm font-semibold text-text-primary">Recent runs</h2>
+        </Card.Header>
+        <Card.Content divided>
+          {runs.length === 0 ? (
+            <EmptyState
+              icon={<EmptyRunsIcon />}
+              title="No runs yet"
+              description="Run history will appear here once your automations have executed."
+            />
+          ) : (
+            runs.map(run => <RunItem key={run.id} run={run} />)
+          )}
+        </Card.Content>
+      </Card>
+
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const handleLogout = async () => {
@@ -282,10 +337,10 @@ export default function DashboardPage() {
           onLogout={handleLogout}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                M
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                W
               </div>
-              <span className="text-xl font-bold text-text-primary">Maintainarr</span>
+              <span className="text-xl font-bold text-text-primary">Warden</span>
             </div>
           }
         />
@@ -297,144 +352,15 @@ export default function DashboardPage() {
           actions={
             <button
               type="button"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface-bg"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-bg"
             >
-              New Task
+              + New automation
             </button>
           }
         />
       }
     >
-      <div className="p-6 space-y-6">
-        {/* Stats Grid */}
-        <WidgetGrid columns={4}>
-          <StatCard
-            value={142}
-            label="Active Tasks"
-            icon={<TaskIcon />}
-            trend={{ value: 12, direction: 'up' }}
-            subtitle="12% increase from last week"
-          />
-          <StatCard
-            value={28}
-            label="Collections"
-            icon={<FolderIcon />}
-            subtitle="3 new this month"
-          />
-          <StatCard value="Running" label="System Status" subtitle="All services operational" />
-          <StatCard
-            value={1248}
-            label="Total Items"
-            icon={<ChartIcon />}
-            trend={{ value: 8, direction: 'down' }}
-          />
-        </WidgetGrid>
-
-        {/* Content Grid */}
-        <WidgetGrid columns={2}>
-          {/* Recent Tasks Card */}
-          <Card variant="outlined" padding="none">
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <h3 className="text-text-primary font-semibold">Recent Tasks</h3>
-                <Badge variant="primary">Active</Badge>
-              </div>
-            </Card.Header>
-            <Card.Content divided>
-              <div className="space-y-3">
-                <div className="flex items-start justify-between pb-3 border-b border-border">
-                  <div>
-                    <p className="text-text-primary font-medium">Update library metadata</p>
-                    <p className="text-sm text-text-muted">Started 2 hours ago</p>
-                  </div>
-                  <Badge variant="success" size="sm">
-                    Running
-                  </Badge>
-                </div>
-                <div className="flex items-start justify-between pb-3 border-b border-border">
-                  <div>
-                    <p className="text-text-primary font-medium">Organize collections</p>
-                    <p className="text-sm text-text-muted">Completed 1 day ago</p>
-                  </div>
-                  <Badge variant="default" size="sm">
-                    Completed
-                  </Badge>
-                </div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-text-primary font-medium">Clean up duplicates</p>
-                    <p className="text-sm text-text-muted">Scheduled for tomorrow</p>
-                  </div>
-                  <Badge variant="warning" size="sm">
-                    Pending
-                  </Badge>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Activity Feed Card */}
-          <Card variant="outlined" padding="none">
-            <Card.Header>
-              <h3 className="text-text-primary font-semibold">Recent Activity</h3>
-            </Card.Header>
-            <Card.Content divided>
-              <EmptyState
-                icon={<InboxIcon />}
-                title="No recent activity"
-                description="Activity from automated tasks and manual actions will appear here"
-              />
-            </Card.Content>
-          </Card>
-        </WidgetGrid>
-
-        {/* Quick Actions */}
-        <Card variant="elevated" padding="none">
-          <Card.Header>
-            <h3 className="text-text-primary font-semibold">Quick Actions</h3>
-          </Card.Header>
-          <Card.Content divided>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                type="button"
-                className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <TaskIcon />
-                  <div>
-                    <p className="text-text-primary font-medium">Create Task</p>
-                    <p className="text-sm text-text-muted">Automate a new workflow</p>
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <FolderIcon />
-                  <div>
-                    <p className="text-text-primary font-medium">New Collection</p>
-                    <p className="text-sm text-text-muted">Organize your items</p>
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                className="p-4 bg-surface-panel hover:bg-surface-bg border border-border rounded-lg transition-colors text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <SettingsIcon />
-                  <div>
-                    <p className="text-text-primary font-medium">Configure</p>
-                    <p className="text-sm text-text-muted">Adjust system settings</p>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </Card.Content>
-        </Card>
-      </div>
+      <DashboardContent automations={AUTOMATIONS} runs={RECENT_RUNS} />
     </AppLayout>
   );
 }
