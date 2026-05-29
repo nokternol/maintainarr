@@ -42,6 +42,8 @@ export interface MediaFilterBarProps {
   lookups: Lookups;
   /** Set of active provider types, used to gate filter sections */
   configuredTypes: Set<string>;
+  /** Scopes visible filter groups to the active tab. Omit to show all. */
+  activeTab?: 'movies' | 'series';
   /** Mobile bottom sheet open state */
   mobileOpen?: boolean;
   /** Callback to close the mobile bottom sheet */
@@ -441,6 +443,7 @@ export function MediaFilterBar({
   seriesYearRange,
   lookups,
   configuredTypes,
+  activeTab,
   mobileOpen = false,
   onMobileClose,
 }: MediaFilterBarProps) {
@@ -457,8 +460,8 @@ export function MediaFilterBar({
   const selectedSeriesGenres = parseCsvStrings(filterState.seriesGenres);
   const selectedNetworks = parseCsvStrings(filterState.network);
 
-  const hasMovieSection = configuredTypes.has('RADARR');
-  const hasSeriesSection = configuredTypes.has('SONARR');
+  const hasMovieSection = configuredTypes.has('RADARR') && (activeTab === undefined || activeTab === 'movies');
+  const hasSeriesSection = configuredTypes.has('SONARR') && (activeTab === undefined || activeTab === 'series');
   const hasTautulliSection = configuredTypes.has('TAUTULLI');
 
   const hasMovieDropdowns =

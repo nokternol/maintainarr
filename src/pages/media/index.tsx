@@ -6,6 +6,7 @@ import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
+import type { FilterState } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
@@ -93,39 +94,31 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
   return images?.find((img) => img.coverType === 'poster')?.remoteUrl;
 }
 
-function countActiveFilters(filterState: {
-  title: string;
-  hasFile?: string;
-  monitored?: string;
-  seriesStatus?: string;
-  yearMin?: number;
-  yearMax?: number;
-  movieTagIds?: string;
-  seriesTagIds?: string;
-  movieQualityProfileIds?: string;
-  seriesQualityProfileIds?: string;
-  movieGenres?: string;
-  seriesGenres?: string;
-  seriesType?: string;
-  network?: string;
-  tautulliWatched?: string;
-}): number {
-  return [
-    filterState.title ? 1 : 0,
-    filterState.hasFile !== undefined ? 1 : 0,
-    filterState.monitored !== undefined ? 1 : 0,
-    filterState.seriesStatus !== undefined ? 1 : 0,
-    filterState.yearMin !== undefined || filterState.yearMax !== undefined ? 1 : 0,
-    filterState.movieTagIds ? 1 : 0,
-    filterState.seriesTagIds ? 1 : 0,
-    filterState.movieQualityProfileIds ? 1 : 0,
-    filterState.seriesQualityProfileIds ? 1 : 0,
-    filterState.movieGenres ? 1 : 0,
-    filterState.seriesGenres ? 1 : 0,
-    filterState.seriesType !== undefined ? 1 : 0,
-    filterState.network ? 1 : 0,
-    filterState.tautulliWatched !== undefined ? 1 : 0,
-  ].reduce((a, b) => a + b, 0);
+function countActiveFilters(filterState: FilterState, tab: ActiveTab): number {
+  const shared =
+    (filterState.title ? 1 : 0) +
+    (filterState.yearMin !== undefined || filterState.yearMax !== undefined ? 1 : 0) +
+    (filterState.tautulliWatched !== undefined ? 1 : 0);
+
+  if (tab === 'movies') {
+    return (
+      shared +
+      (filterState.hasFile !== undefined ? 1 : 0) +
+      (filterState.movieTagIds ? 1 : 0) +
+      (filterState.movieQualityProfileIds ? 1 : 0) +
+      (filterState.movieGenres ? 1 : 0)
+    );
+  }
+  return (
+    shared +
+    (filterState.monitored !== undefined ? 1 : 0) +
+    (filterState.seriesStatus !== undefined ? 1 : 0) +
+    (filterState.seriesTagIds ? 1 : 0) +
+    (filterState.seriesQualityProfileIds ? 1 : 0) +
+    (filterState.seriesGenres ? 1 : 0) +
+    (filterState.seriesType !== undefined ? 1 : 0) +
+    (filterState.network ? 1 : 0)
+  );
 }
 
 // ─── Infinite scroll sentinel ─────────────────────────────────────────────────
@@ -198,13 +191,8 @@ export default function MediaPage() {
   const movieSentinelRef = useSentinel(movies.fetchMore);
   const seriesSentinelRef = useSentinel(series.fetchMore);
 
-  const nothingToShow =
-    !movies.isLoading &&
-    !series.isLoading &&
-    movies.items.length === 0 &&
-    series.items.length === 0;
-
-  const activeFilterCount = countActiveFilters(filterState);
+  const providersLoaded = providers !== undefined;
+  const activeFilterCount = countActiveFilters(filterState, activeTab);
 
   // ─── Mobile bottom navigation ──────────────────────────────────────────────
 
@@ -253,6 +241,7 @@ export default function MediaPage() {
     seriesYearRange: series.yearRange,
     lookups,
     configuredTypes,
+    activeTab,
   };
 
   return (
@@ -348,6 +337,33 @@ export default function MediaPage() {
             )}
           />
           {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
+          {!movies.isLoading && movies.items.length === 0 && providersLoaded && (
+            !configuredTypes.has('RADARR') ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+                <p className="text-sm font-medium text-text-secondary">No Radarr connection configured.</p>
+                <p className="text-xs text-text-muted">Add a Radarr provider in Settings to manage your movie library.</p>
+                <a href="/settings" className="mt-2 text-xs text-primary hover:underline underline-offset-2">
+                  Go to Settings
+                </a>
+              </div>
+            ) : activeFilterCount > 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+                <p className="text-sm text-text-secondary">No movies match your current filters.</p>
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-xs text-primary hover:underline underline-offset-2"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
+                <p className="text-sm text-text-secondary">Your movie library is empty.</p>
+                <p className="text-xs text-text-muted">Movies synced from Radarr will appear here.</p>
+              </div>
+            )
+          )}
         </section>
 
         {/* Series section — always in DOM for tests, hidden when tab is movies */}
@@ -380,13 +396,34 @@ export default function MediaPage() {
             )}
           />
           {series.hasMore && !series.isFetchingMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
+          {!series.isLoading && series.items.length === 0 && providersLoaded && (
+            !configuredTypes.has('SONARR') ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+                <p className="text-sm font-medium text-text-secondary">No Sonarr connection configured.</p>
+                <p className="text-xs text-text-muted">Add a Sonarr provider in Settings to manage your series library.</p>
+                <a href="/settings" className="mt-2 text-xs text-primary hover:underline underline-offset-2">
+                  Go to Settings
+                </a>
+              </div>
+            ) : activeFilterCount > 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+                <p className="text-sm text-text-secondary">No series match your current filters.</p>
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-xs text-primary hover:underline underline-offset-2"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
+                <p className="text-sm text-text-secondary">Your series library is empty.</p>
+                <p className="text-xs text-text-muted">Series synced from Sonarr will appear here.</p>
+              </div>
+            )
+          )}
         </section>
-
-        {nothingToShow && (
-          <div className="text-text-secondary text-center py-16">
-            No media found. Configure providers in Settings to scan your library.
-          </div>
-        )}
       </div>
 
       <RatingsPanel

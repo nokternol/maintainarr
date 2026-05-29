@@ -51,7 +51,7 @@ describe('MediaPage', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('shows "No media found" when both hooks return empty', async () => {
+  it('shows empty library message on movies tab when movies API returns empty', async () => {
     server.use(
       http.get('/api/media/movies', () =>
         HttpResponse.json({
@@ -67,8 +67,27 @@ describe('MediaPage', () => {
       )
     );
     render(<MediaPage />, { wrapper: Wrapper });
+    // Active tab defaults to 'movies'; default provider mock has RADARR active
     await waitFor(() => {
-      expect(screen.getByText(/no media found/i)).toBeInTheDocument();
+      expect(screen.getByText(/your movie library is empty/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows no-provider message on movies tab when RADARR is not configured', async () => {
+    server.use(
+      http.get('/api/settings/providers', () =>
+        HttpResponse.json({ status: 'ok', data: [] })
+      ),
+      http.get('/api/media/movies', () =>
+        HttpResponse.json({
+          status: 'ok',
+          data: { items: [], totalCount: 0, page: 1, pageSize: 48 },
+        })
+      )
+    );
+    render(<MediaPage />, { wrapper: Wrapper });
+    await waitFor(() => {
+      expect(screen.getByText(/no radarr connection configured/i)).toBeInTheDocument();
     });
   });
 });
