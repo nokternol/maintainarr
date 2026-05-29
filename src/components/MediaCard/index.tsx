@@ -23,9 +23,10 @@ export interface MediaCardRootProps {
   onClick?: (id: string) => void;
   children: React.ReactNode;
   className?: string;
+  'data-testid'?: string;
 }
 
-const Root = ({ id, children, onClick, className }: MediaCardRootProps) => {
+const Root = ({ id, children, onClick, className, 'data-testid': testId }: MediaCardRootProps) => {
   return (
     <MediaCardContext.Provider value={{ id }}>
       <div
@@ -39,7 +40,7 @@ const Root = ({ id, children, onClick, className }: MediaCardRootProps) => {
             onClick(id);
           }
         }}
-        data-testid="media-card"
+        data-testid={testId ?? 'media-card'}
       >
         {children}
       </div>

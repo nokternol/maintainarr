@@ -325,31 +325,26 @@ export default function MediaPage() {
             isLoading={movies.isLoading}
             isFetchingMore={movies.isFetchingMore}
             renderItem={(movie: ManagedMovie) => (
-              <button
-                type="button"
+              <MediaCard
                 key={`movie-${movie.id}`}
+                id={`movie-${movie.id}`}
                 data-testid={`media-card-movie-${movie.id}`}
                 className={cn(
-                  'block w-full cursor-pointer bg-transparent border-0 p-0 text-left transition-transform active:scale-[0.97]',
+                  selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined,
                   selectedId !== null && selectedId !== `movie-${movie.id}` ? 'opacity-50' : ''
                 )}
-                onClick={() => {
+                onClick={(id) => {
                   setSelected({ title: movie.title, year: movie.year });
-                  setSelectedId(`movie-${movie.id}`);
+                  setSelectedId(id);
                 }}
               >
-                <MediaCard
-                  id={`movie-${movie.id}`}
-                  className={selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
-                >
-                  <MediaCard.Poster src={getPosterUrl(movie.images)} alt={movie.title} />
-                  <MediaCard.Content>
-                    <MediaCard.Title>{movie.title}</MediaCard.Title>
-                    <MediaCard.Year>{movie.year}</MediaCard.Year>
-                    <MediaCard.StatusBadge status={movie.hasFile ? 'downloaded' : 'missing'} />
-                  </MediaCard.Content>
-                </MediaCard>
-              </button>
+                <MediaCard.Poster src={getPosterUrl(movie.images)} alt={movie.title} />
+                <MediaCard.Content>
+                  <MediaCard.Title>{movie.title}</MediaCard.Title>
+                  <MediaCard.Year>{movie.year}</MediaCard.Year>
+                  <MediaCard.StatusBadge status={movie.hasFile ? 'downloaded' : 'missing'} />
+                </MediaCard.Content>
+              </MediaCard>
             )}
           />
           {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
@@ -362,31 +357,26 @@ export default function MediaPage() {
             isLoading={series.isLoading}
             isFetchingMore={series.isFetchingMore}
             renderItem={(show: ManagedSeries) => (
-              <button
-                type="button"
+              <MediaCard
                 key={`series-${show.id}`}
+                id={`series-${show.id}`}
                 data-testid={`media-card-series-${show.id}`}
                 className={cn(
-                  'block w-full cursor-pointer bg-transparent border-0 p-0 text-left transition-transform active:scale-[0.97]',
+                  selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined,
                   selectedId !== null && selectedId !== `series-${show.id}` ? 'opacity-50' : ''
                 )}
-                onClick={() => {
+                onClick={(id) => {
                   setSelected({ title: show.title, year: show.year });
-                  setSelectedId(`series-${show.id}`);
+                  setSelectedId(id);
                 }}
               >
-                <MediaCard
-                  id={`series-${show.id}`}
-                  className={selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
-                >
-                  <MediaCard.Poster src={getPosterUrl(show.images)} alt={show.title} />
-                  <MediaCard.Content>
-                    <MediaCard.Title>{show.title}</MediaCard.Title>
-                    <MediaCard.Year>{show.year}</MediaCard.Year>
-                    <MediaCard.StatusBadge status={show.monitored ? 'monitored' : undefined} />
-                  </MediaCard.Content>
-                </MediaCard>
-              </button>
+                <MediaCard.Poster src={getPosterUrl(show.images)} alt={show.title} />
+                <MediaCard.Content>
+                  <MediaCard.Title>{show.title}</MediaCard.Title>
+                  <MediaCard.Year>{show.year}</MediaCard.Year>
+                  <MediaCard.StatusBadge status={show.monitored ? 'monitored' : undefined} />
+                </MediaCard.Content>
+              </MediaCard>
             )}
           />
           {series.hasMore && !series.isFetchingMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
