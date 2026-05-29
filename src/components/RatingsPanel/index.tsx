@@ -10,7 +10,7 @@ interface RatingsPanelProps {
 }
 
 export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPanelProps) {
-  const { trigger, data, isLoading } = useRatings();
+  const { trigger, data, error, isLoading } = useRatings();
 
   useEffect(() => {
     if (isOpen && title) {
@@ -33,7 +33,7 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
       />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-md z-50 flex flex-col bg-surface shadow-xl">
+      <div className="fixed inset-y-0 right-0 w-full max-w-md z-50 flex flex-col bg-surface-elevated shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
@@ -43,7 +43,7 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded hover:bg-background text-text-secondary hover:text-text-primary"
+            className="p-2 rounded hover:bg-surface-panel text-text-secondary hover:text-text-primary transition-colors"
             aria-label="Close"
           >
             <svg
@@ -68,7 +68,24 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
           {isLoading && (
             <div className="text-text-secondary text-center py-8">Loading ratings…</div>
           )}
-          {data && <RatingsDisplay ratings={data} />}
+          {error && !isLoading && (
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <p className="text-sm text-text-secondary max-w-xs">
+                {error.message || 'Failed to load ratings.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => trigger({ title, year })}
+                className="mt-1 px-4 py-2 rounded text-xs font-medium bg-surface-panel border border-border text-text-secondary hover:text-text-primary hover:bg-surface-bg transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {data && !error && <RatingsDisplay ratings={data} />}
         </div>
       </div>
     </dialog>

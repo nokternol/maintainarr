@@ -128,6 +128,10 @@ export const semanticTokens = {
   // Third elevation level for modals / dropdowns / tooltips
   surfaceElevatedDark: palette.slate[750],
 
+  // Hover surface for elements resting on surface-panel
+  surfaceHover: palette.slate[50],      // light: step toward the bg
+  surfaceHoverDark: palette.slate[900], // dark: dip to the floor
+
   // Text (light)
   textPrimary: palette.slate[900],
   textSecondary: palette.slate[600],
@@ -262,6 +266,9 @@ export const cssVarMap = {
   // ── Elevated surface (light mode = same as panel; elevated context handled by shadow) ──
   '--color-surface-elevated': semanticTokens.surfacePanel,
 
+  // ── Hover surface for panel-level elements ────────────────────────────────
+  '--color-surface-hover': semanticTokens.surfaceHover,
+
   // ── Radius ───────────────────────────────────────────────────────────────
   '--radius-sm': semanticTokens.radiusSm,
   '--radius-md': semanticTokens.radiusMd,
@@ -302,6 +309,9 @@ export const cssVarMapDark = {
 
   // ── Elevated surface (modals / dropdowns / tooltips) ─────────────────────
   '--color-surface-elevated': semanticTokens.surfaceElevatedDark,
+
+  // ── Hover surface for panel-level elements ────────────────────────────────
+  '--color-surface-hover': semanticTokens.surfaceHoverDark,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -333,6 +343,7 @@ export const themeColors = {
     bg: 'var(--color-surface-bg)',
     panel: 'var(--color-surface-panel)',
     elevated: 'var(--color-surface-elevated)',
+    hover: 'var(--color-surface-hover)',
   },
   text: {
     primary: 'var(--color-text-primary)',

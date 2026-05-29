@@ -24,8 +24,7 @@ const DashboardIcon = () => (
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
-    role="img"
-    aria-label="Icon"
+    aria-hidden="true"
   >
     <path
       strokeLinecap="round"
@@ -42,8 +41,7 @@ const MediaIcon = () => (
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
-    role="img"
-    aria-label="Icon"
+    aria-hidden="true"
   >
     <path
       strokeLinecap="round"
@@ -60,8 +58,7 @@ const SearchIcon = () => (
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
-    role="img"
-    aria-label="Icon"
+    aria-hidden="true"
   >
     <path
       strokeLinecap="round"
