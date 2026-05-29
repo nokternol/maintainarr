@@ -196,8 +196,8 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const { providerSettingsService } = cradle;
 
   // Caches are owned by this factory invocation — same inputs produce isolated state.
-  const moviesCache = new MediaCache<RadarrMovie[]>();
-  const seriesCache = new MediaCache<SonarrSeries[]>();
+  const moviesCache = new MediaCache<{ movies: RadarrMovie[]; errors: MediaError[] }>();
+  const seriesCache = new MediaCache<{ series: SonarrSeries[]; errors: MediaError[] }>();
   const tagsCache = new MediaCache<{ radarr: RadarrTag[]; sonarr: SonarrTag[] }>();
   const qualityProfilesCache = new MediaCache<{
     radarr: RadarrProfile[];
@@ -207,49 +207,47 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const networksCache = new MediaCache<string[]>();
 
   async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
-    const errors: MediaError[] = [];
-    const movies = await moviesCache.getOrFetch('movies', async () => {
+    return moviesCache.getOrFetch('movies', async () => {
+      const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
         MetadataProviderType.RADARR,
       ]);
-      const fetched: RadarrMovie[] = [];
+      const movies: RadarrMovie[] = [];
       await Promise.all(
         providers.map(async (provider) => {
           try {
             const radarr = new RadarrProvider(provider, log);
-            fetched.push(...(await radarr.getMovies()));
+            movies.push(...(await radarr.getMovies()));
           } catch (err) {
             log.warn('Radarr fetch failed', { provider: provider.name, err });
             errors.push(toMediaError(provider.name, err));
           }
         })
       );
-      return fetched;
+      return { movies, errors };
     });
-    return { movies, errors };
   }
 
   async function getSeries(): Promise<{ series: SonarrSeries[]; errors: MediaError[] }> {
-    const errors: MediaError[] = [];
-    const series = await seriesCache.getOrFetch('series', async () => {
+    return seriesCache.getOrFetch('series', async () => {
+      const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
         MetadataProviderType.SONARR,
       ]);
-      const fetched: SonarrSeries[] = [];
+      const series: SonarrSeries[] = [];
       await Promise.all(
         providers.map(async (provider) => {
           try {
             const sonarr = new SonarrProvider(provider, log);
-            fetched.push(...(await sonarr.getSeries()));
+            series.push(...(await sonarr.getSeries()));
           } catch (err) {
             log.warn('Sonarr fetch failed', { provider: provider.name, err });
             errors.push(toMediaError(provider.name, err));
           }
         })
       );
-      return fetched;
+      return { series, errors };
     });
-    return { series, errors };
   }
 
   async function fetchWatchedTitles(): Promise<Set<string>> {
