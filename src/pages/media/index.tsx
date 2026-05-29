@@ -271,16 +271,44 @@ export default function MediaPage() {
         />
       }
       topBar={
-        <div className="sticky top-0 z-10">
-          <TopBar
-            title="Managed Media"
-            breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Media' }]}
-            actions={
-              // Mobile-only filter trigger — hidden on md+
+        <TopBar
+          sticky
+          title="Managed Media"
+          breadcrumbs={[{ label: 'Home', href: '/' }]}
+          actions={
+            <>
+              {/* Movies / Series tab switcher */}
+              <div className="flex items-center gap-1">
+                {(['movies', 'series'] as const).map((tab) => {
+                  const count = tab === 'movies' ? movies.totalCount : series.totalCount;
+                  const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium transition-colors capitalize',
+                        activeTab === tab
+                          ? 'bg-primary text-white'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                      )}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {!loading && (
+                        <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Mobile-only filter trigger */}
               <button
                 type="button"
                 className={cn(
-                  'md:hidden flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border transition-colors min-h-[44px]',
+                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
                   isActive
                     ? 'bg-primary text-white border-primary'
                     : 'bg-transparent text-text-secondary border-border hover:bg-surface-hover'
@@ -295,45 +323,16 @@ export default function MediaPage() {
                   </span>
                 )}
               </button>
-            }
-          />
-          {/* Desktop filter bar rendered here; mobile sheet is portal-like (fixed) */}
-          <MediaFilterBar
-            {...filterBarProps}
-            mobileOpen={filterSheetOpen}
-            onMobileClose={() => setFilterSheetOpen(false)}
-          />
-
-          {/* ── Movies / Series segment tabs — part of sticky header ─────────── */}
-          <div className="flex items-center gap-1 px-3 sm:px-6 py-2 border-b border-border">
-            {(['movies', 'series'] as const).map((tab) => {
-              const count = tab === 'movies' ? movies.totalCount : series.totalCount;
-              const loading = tab === 'movies' ? movies.isLoading : series.isLoading;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={cn(
-                    'px-4 py-2 rounded-full text-sm font-medium transition-colors capitalize',
-                    activeTab === tab
-                      ? 'bg-primary text-white'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                  )}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  {!loading && (
-                    <span className={cn('ml-1.5 text-xs', activeTab === tab ? 'opacity-80' : 'text-text-muted')}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            </>
+          }
+        />
       }
     >
+      <MediaFilterBar
+        {...filterBarProps}
+        mobileOpen={filterSheetOpen}
+        onMobileClose={() => setFilterSheetOpen(false)}
+      />
       <div className="p-3 sm:p-6 space-y-6">
 
         {/* Movies section — always in DOM for tests, hidden when tab is series */}

@@ -1,5 +1,5 @@
 .container {
-  @apply bg-surface-panel border-b border-border px-6 py-4;
+  @apply bg-surface-panel border-b border-border px-6 py-3;
 }
 
 .isSticky {
@@ -7,25 +7,33 @@
 }
 
 .inner {
-  @apply flex items-center justify-between;
+  @apply flex items-center justify-between gap-4;
+}
+
+.titleGroup {
+  @apply flex items-center gap-2 min-w-0 overflow-hidden;
 }
 
 .breadcrumbsNav {
-  @apply flex items-center gap-2 text-sm text-text-muted mb-1;
+  @apply flex items-center gap-1 text-sm text-text-muted flex-shrink-0;
 }
 
 .breadcrumbItem {
-  @apply flex items-center gap-2;
+  @apply flex items-center gap-1;
 }
 
 .breadcrumbLink {
-  @apply hover:text-primary-hover transition-colors;
+  @apply hover:text-text-primary transition-colors;
+}
+
+.breadcrumbSep {
+  @apply mx-0.5;
 }
 
 .title {
-  @apply text-2xl font-bold text-text-primary;
+  @apply text-xl font-semibold text-text-primary truncate;
 }
 
 .actions {
-  @apply flex items-center gap-3;
+  @apply flex items-center gap-3 flex-shrink-0;
 }

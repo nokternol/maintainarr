@@ -25,9 +25,9 @@ export default function TopBar({
   return (
     <div className={cn(styles.container, sticky && styles.isSticky, className)} {...props}>
       <div className={styles.inner}>
-        <div>
+        <div className={styles.titleGroup}>
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <nav className={styles.breadcrumbsNav}>
+            <nav className={styles.breadcrumbsNav} aria-label="Breadcrumb">
               {breadcrumbs.map((crumb, index) => (
                 <div key={`breadcrumb-${crumb.label}-${index}`} className={styles.breadcrumbItem}>
                   {crumb.href ? (
@@ -37,7 +37,9 @@ export default function TopBar({
                   ) : (
                     <span>{crumb.label}</span>
                   )}
-                  {index < breadcrumbs.length - 1 && <span>/</span>}
+                  {(index < breadcrumbs.length - 1 || !!title) && (
+                    <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
+                  )}
                 </div>
               ))}
             </nav>
