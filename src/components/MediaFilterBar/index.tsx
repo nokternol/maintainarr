@@ -70,10 +70,10 @@ function ChipGroup<T extends string | undefined>({
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            'px-3 py-2 rounded-full text-xs font-medium transition-colors min-h-[44px] flex items-center',
+            'px-3 py-2 rounded-sm text-xs font-medium transition-colors min-h-[44px] flex items-center',
             value === opt.value
               ? 'bg-primary text-white'
-              : 'bg-surface-panel text-text-secondary hover:bg-surface-hover border border-border'
+              : 'bg-surface-panel text-text-primary hover:bg-surface-hover border border-border'
           )}
           aria-pressed={value === opt.value}
         >

@@ -288,10 +288,10 @@ export default function MediaPage() {
                       type="button"
                       onClick={() => setActiveTab(tab)}
                       className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium transition-colors capitalize',
+                        'px-3 py-1.5 rounded-sm text-sm font-medium transition-colors capitalize',
                         activeTab === tab
                           ? 'bg-primary text-white'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                          : 'text-text-primary hover:bg-surface-hover'
                       )}
                     >
                       {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -308,10 +308,10 @@ export default function MediaPage() {
               <button
                 type="button"
                 className={cn(
-                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
                   isActive
                     ? 'bg-primary text-white border-primary'
-                    : 'bg-transparent text-text-secondary border-border hover:bg-surface-hover'
+                    : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
                 )}
                 onClick={() => setFilterSheetOpen(true)}
               >
