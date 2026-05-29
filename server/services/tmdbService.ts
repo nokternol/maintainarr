@@ -1,7 +1,7 @@
-import axios from 'axios';
-import NodeCache from 'node-cache';
+import ky from 'ky';
 import type { AppConfig } from '../config';
 import { getChildLogger } from '../logger';
+import { MediaCache } from '../modules/media/media.cache';
 
 const log = getChildLogger('TmdbService');
 
@@ -11,42 +11,35 @@ interface TmdbResult {
 }
 
 export class TmdbService {
-  private cache: NodeCache;
+  private readonly cache = new MediaCache<string[]>(300_000); // 5 minutes
   private readonly config: AppConfig;
   private readonly baseUrl = 'https://api.themoviedb.org/3';
 
   constructor({ config }: { config: AppConfig }) {
     this.config = config;
-    this.cache = new NodeCache({ stdTTL: 300 }); // 5-minute cache
     log.info('TmdbService initialized');
   }
 
   async getTrendingBackdrops(): Promise<string[]> {
-    const cacheKey = 'trending-backdrops';
-    const cached = this.cache.get<string[]>(cacheKey);
-
-    if (cached) {
-      log.debug('Returning cached backdrops', { count: cached.length });
-      return cached;
-    }
-
     try {
-      log.debug('Fetching trending content from TMDB');
-      const response = await axios.get(`${this.baseUrl}/trending/all/week`, {
-        params: { api_key: this.config.TMDB_API_KEY, page: 1 },
+      return await this.cache.getOrFetch('trending-backdrops', async () => {
+        log.debug('Fetching trending content from TMDB');
+        const data = await ky
+          .get(`${this.baseUrl}/trending/all/week`, {
+            searchParams: { api_key: this.config.TMDB_API_KEY, page: 1 },
+          })
+          .json<{ results: TmdbResult[] }>();
+
+        const backdrops = (data.results ?? [])
+          .filter((item) => item.media_type !== 'person' && item.backdrop_path)
+          .map((item) => item.backdrop_path as string);
+
+        log.info('Fetched TMDB backdrops', { count: backdrops.length });
+        return backdrops;
       });
-
-      const results: TmdbResult[] = response.data.results || [];
-      const backdrops = results
-        .filter((item) => item.media_type !== 'person' && item.backdrop_path)
-        .map((item) => item.backdrop_path as string);
-
-      log.info('Fetched TMDB backdrops', { count: backdrops.length });
-      this.cache.set(cacheKey, backdrops);
-      return backdrops;
     } catch (error) {
       log.error('Failed to fetch TMDB backdrops', { error });
-      return []; // Graceful degradation
+      return [];
     }
   }
 

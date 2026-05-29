@@ -1,8 +1,14 @@
-import axios from 'axios';
+import ky from 'ky';
 
 interface PlexPin {
   id: number;
   code: string;
+}
+
+interface PlexPinResponse {
+  id: number;
+  code: string;
+  authToken?: string;
 }
 
 export class PlexOAuth {
@@ -33,11 +39,11 @@ export class PlexOAuth {
   }
 
   async getPin(): Promise<PlexPin> {
-    const response = await axios.post('https://plex.tv/api/v2/pins?strong=true', undefined, {
-      headers: this.plexHeaders,
-    });
+    const data = await ky
+      .post('https://plex.tv/api/v2/pins?strong=true', { headers: this.plexHeaders })
+      .json<PlexPinResponse>();
 
-    this.pin = { id: response.data.id, code: response.data.code };
+    this.pin = { id: data.id, code: data.code };
     return this.pin;
   }
 
@@ -60,10 +66,8 @@ export class PlexOAuth {
     const url = `https://app.plex.tv/auth/#!?${params.toString()}`;
 
     if (this.popup) {
-      // Navigate the already-open popup (opened via preparePopup)
       this.popup.location.href = url;
     } else {
-      // Fallback: open directly (close may not work in Chrome)
       this.popup = window.open(url, 'Plex-Auth', 'width=600,height=700');
     }
   }
@@ -93,19 +97,16 @@ export class PlexOAuth {
       // popup.closed is unreliable for cross-origin windows (always true in Chrome),
       // so we use window focus + a final token check instead.
       const onFocus = () => {
-        // Ignore spurious focus events during the first 3 s (popup still opening)
         if (Date.now() - startTime < 3000) return;
-        // Small debounce so an in-flight poll tick can resolve first
         setTimeout(async () => {
           if (done) return;
           try {
-            const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
-              headers: this.plexHeaders,
-            });
-            if (!response.data.authToken) {
+            const data = await ky
+              .get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, { headers: this.plexHeaders })
+              .json<PlexPinResponse>();
+            if (!data.authToken) {
               finish(() => reject(new Error('Authentication cancelled')));
             }
-            // If there IS a token the poll loop will resolve it on the next tick
           } catch {
             /* ignore — let the poll loop handle errors */
           }
@@ -116,18 +117,18 @@ export class PlexOAuth {
       const poll = async () => {
         if (done) return;
         try {
-          const response = await axios.get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, {
-            headers: this.plexHeaders,
-          });
+          const data = await ky
+            .get(`https://plex.tv/api/v2/pins/${this.pin!.id}`, { headers: this.plexHeaders })
+            .json<PlexPinResponse>();
 
-          if (response.data.authToken) {
+          if (data.authToken) {
             finish(() => {
               try {
                 this.popup?.close();
               } catch {
                 /* ignore */
               }
-              resolve(response.data.authToken);
+              resolve(data.authToken!);
             });
             return;
           }

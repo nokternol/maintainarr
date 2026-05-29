@@ -1,4 +1,4 @@
-import axios from 'axios';
+import ky from 'ky';
 import { UnauthorizedError } from '../errors';
 import { getChildLogger } from '../logger';
 
@@ -11,6 +11,14 @@ interface PlexUser {
   thumb?: string;
 }
 
+interface PlexApiUser {
+  id: number;
+  email: string;
+  username?: string;
+  title?: string;
+  thumb?: string;
+}
+
 export class PlexService {
   private readonly baseUrl = 'https://plex.tv';
 
@@ -18,20 +26,18 @@ export class PlexService {
     try {
       log.debug('Fetching Plex user info');
 
-      const response = await axios.get(`${this.baseUrl}/api/v2/user`, {
-        headers: {
-          'X-Plex-Token': authToken,
-          Accept: 'application/json',
-        },
-      });
+      const user = await ky
+        .get(`${this.baseUrl}/api/v2/user`, {
+          headers: { 'X-Plex-Token': authToken, Accept: 'application/json' },
+        })
+        .json<PlexApiUser>();
 
-      const user = response.data;
       log.info('Plex user fetched', { userId: user.id });
 
       return {
         id: user.id,
         email: user.email,
-        username: user.username || user.title,
+        username: user.username || user.title || '',
         thumb: user.thumb,
       };
     } catch (error) {
