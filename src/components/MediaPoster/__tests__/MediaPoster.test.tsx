@@ -16,7 +16,9 @@ function makeIOControl() {
       lastCallback = cb;
     }
     observe() {}
-    disconnect() { disconnectSpy(); }
+    disconnect() {
+      disconnectSpy();
+    }
     unobserve() {}
   }
 
@@ -24,10 +26,7 @@ function makeIOControl() {
 
   function fireIO(isIntersecting: boolean) {
     act(() => {
-      lastCallback?.(
-        [{ isIntersecting } as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      );
+      lastCallback?.([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver);
     });
   }
 
@@ -75,7 +74,7 @@ describe('MediaPoster', () => {
         src="https://example.com/broken.jpg"
         alt="Movie Poster"
         fallbackText={fallbackText}
-      />,
+      />
     );
     passDwell();
     const img = screen.getByRole('img');
@@ -113,7 +112,7 @@ describe('MediaPoster', () => {
 
   it('does not render any img elements before the dwell period elapses', () => {
     const { container } = render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />
     );
     // No timer advancement — neither the thumbnail nor the main image should exist
     expect(container.querySelectorAll('img')).toHaveLength(0);
@@ -121,7 +120,7 @@ describe('MediaPoster', () => {
 
   it('renders both thumbnail and main image after the dwell period elapses', () => {
     const { container } = render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />
     );
     passDwell();
     expect(screen.getByRole('img', { name: 'Poster' })).toBeInTheDocument();
@@ -130,7 +129,7 @@ describe('MediaPoster', () => {
 
   it('does not cause state updates when unmounted before dwell elapses', () => {
     const { unmount } = render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />
     );
     // Unmount clears the timer — advancing past dwell must not throw or warn
     unmount();
@@ -178,7 +177,7 @@ describe('MediaPoster — IO abort mechanism', () => {
   // A01 — abort after dwell fires, before poster loads
   it('removes both images when IO fires out-of-viewport after dwell (abort in-flight request)', () => {
     const { container } = render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
+      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />
     );
     passDwell();
     expect(screen.getByRole('img', { name: 'Poster' })).toBeInTheDocument();
@@ -191,9 +190,7 @@ describe('MediaPoster — IO abort mechanism', () => {
 
   // A03 — after abort, re-entry requires full 75ms dwell before images re-render
   it('requires full 75ms re-dwell after an abort before images re-appear', () => {
-    render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
-    );
+    render(<MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />);
     passDwell();
     fireIO(false); // abort
 
@@ -242,9 +239,7 @@ describe('MediaPoster — load lock and observer teardown', () => {
 
   // A02 — once onLoad fires, IO out-of-viewport must not remove the poster
   it('keeps images in DOM when IO fires out-of-viewport after poster has loaded (load lock)', () => {
-    render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
-    );
+    render(<MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />);
     passDwell();
     const poster = screen.getByRole('img', { name: 'Poster' });
 
@@ -256,9 +251,7 @@ describe('MediaPoster — load lock and observer teardown', () => {
 
   // A06 — observer must be disconnected when poster onLoad fires
   it('disconnects the IntersectionObserver when the poster finishes loading', () => {
-    render(
-      <MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />,
-    );
+    render(<MediaPoster src="https://image.tmdb.org/t/p/original/abc123.jpg" alt="Poster" />);
     passDwell();
     const poster = screen.getByRole('img', { name: 'Poster' });
 

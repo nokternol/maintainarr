@@ -75,9 +75,7 @@ describe('MediaPage', () => {
 
   it('shows no-provider message on movies tab when RADARR is not configured', async () => {
     server.use(
-      http.get('/api/settings/providers', () =>
-        HttpResponse.json({ status: 'ok', data: [] })
-      ),
+      http.get('/api/settings/providers', () => HttpResponse.json({ status: 'ok', data: [] })),
       http.get('/api/media/movies', () =>
         HttpResponse.json({
           status: 'ok',

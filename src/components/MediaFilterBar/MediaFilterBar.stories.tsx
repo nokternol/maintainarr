@@ -1,6 +1,6 @@
+import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import { MediaFilterBar } from './index';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -99,13 +99,13 @@ function FilterBarWrapper({
   const [mobileOpen, setMobileOpen] = useState(initialMobileOpen);
 
   const isActive = Object.entries(filterState).some(([key, v]) =>
-    key === 'title' ? v !== '' : v !== undefined,
+    key === 'title' ? v !== '' : v !== undefined
   );
 
-  const patch = (partial: Partial<FilterState>) =>
-    setFilterState((s) => ({ ...s, ...partial }));
+  const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
 
-  const types = CONFIGURED_TYPE_OPTIONS[configuredTypes] ?? CONFIGURED_TYPE_OPTIONS['All providers'];
+  const types =
+    CONFIGURED_TYPE_OPTIONS[configuredTypes] ?? CONFIGURED_TYPE_OPTIONS['All providers'];
   const lookups = richLookups ? RICH_LOOKUPS : EMPTY_LOOKUPS;
 
   return (
@@ -202,8 +202,7 @@ export const WithActiveFilters: Story = () => {
     yearMin: 2010,
   });
   const isActive = true;
-  const patch = (partial: Partial<FilterState>) =>
-    setFilterState((s) => ({ ...s, ...partial }));
+  const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
 
   return (
     <div className="bg-surface-bg min-h-screen">

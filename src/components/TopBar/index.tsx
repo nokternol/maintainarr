@@ -38,7 +38,9 @@ export default function TopBar({
                     <span>{crumb.label}</span>
                   )}
                   {(index < breadcrumbs.length - 1 || !!title) && (
-                    <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
+                    <span className={styles.breadcrumbSep} aria-hidden="true">
+                      /
+                    </span>
                   )}
                 </div>
               ))}

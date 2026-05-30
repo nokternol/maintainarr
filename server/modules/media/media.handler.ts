@@ -29,7 +29,10 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   movieTagIds: z.string().optional(),
   movieQualityProfileIds: z.string().optional(),
   movieGenres: z.string().optional(),
-  sort: z.enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc']).optional().default('title_asc'),
+  sort: z
+    .enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc'])
+    .optional()
+    .default('title_asc'),
   tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
@@ -47,7 +50,10 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   seriesGenres: z.string().optional(),
   seriesType: z.string().optional(),
   network: z.string().optional(),
-  sort: z.enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc']).optional().default('title_asc'),
+  sort: z
+    .enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc'])
+    .optional()
+    .default('title_asc'),
   tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 

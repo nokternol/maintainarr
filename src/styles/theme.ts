@@ -129,7 +129,7 @@ export const semanticTokens = {
   surfaceElevatedDark: palette.slate[750],
 
   // Hover surface for elements resting on surface-panel
-  surfaceHover: palette.slate[50],      // light: step toward the bg
+  surfaceHover: palette.slate[50], // light: step toward the bg
   surfaceHoverDark: palette.slate[900], // dark: dip to the floor
 
   // Text (light)

@@ -7,10 +7,7 @@ const POSTER_SRC =
 export const Default: Story = () => (
   <div className="p-8 flex gap-4 w-48">
     <MediaCard id="1" onClick={(id: string) => alert(`Clicked ${id}`)}>
-      <MediaCard.Poster
-        src={POSTER_SRC}
-        alt="Forrest Gump"
-      />
+      <MediaCard.Poster src={POSTER_SRC} alt="Forrest Gump" />
       <MediaCard.Content>
         <MediaCard.Title>Forrest Gump</MediaCard.Title>
         <MediaCard.Year>1994</MediaCard.Year>

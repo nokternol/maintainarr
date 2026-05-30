@@ -1,8 +1,8 @@
-import type { Story } from '@ladle/react';
-import { useState } from 'react';
 import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
+import type { Story } from '@ladle/react';
+import { useState } from 'react';
 import { MediaContent } from './index';
 import type { ActiveTab, MediaSlice } from './index';
 
@@ -42,12 +42,25 @@ function emptySlice<T>(): MediaSlice<T> {
 
 const LOOKUPS = {
   tags: {
-    radarr: [{ id: 1, label: '4K' }, { id: 2, label: 'Remux' }, { id: 3, label: 'HDR' }],
-    sonarr: [{ id: 1, label: 'Anime' }, { id: 2, label: 'Ongoing' }],
+    radarr: [
+      { id: 1, label: '4K' },
+      { id: 2, label: 'Remux' },
+      { id: 3, label: 'HDR' },
+    ],
+    sonarr: [
+      { id: 1, label: 'Anime' },
+      { id: 2, label: 'Ongoing' },
+    ],
   },
   qualityProfiles: {
-    radarr: [{ id: 1, name: 'Ultra-HD' }, { id: 2, name: 'HD-1080p' }],
-    sonarr: [{ id: 1, name: 'Ultra-HD' }, { id: 2, name: 'HD-720p/1080p' }],
+    radarr: [
+      { id: 1, name: 'Ultra-HD' },
+      { id: 2, name: 'HD-1080p' },
+    ],
+    sonarr: [
+      { id: 1, name: 'Ultra-HD' },
+      { id: 2, name: 'HD-720p/1080p' },
+    ],
   },
   genres: {
     movies: ['Action', 'Comedy', 'Crime', 'Drama', 'Horror', 'Sci-Fi', 'Thriller'],
@@ -124,13 +137,9 @@ export const MobileFiltersOpen: Story = () => (
 MobileFiltersOpen.meta = { width: 390 };
 
 /** Mobile viewport, filters closed. Shows the empty library state at mobile width. */
-export const Mobile: Story = () => (
-  <Controlled filtersOpen={false} onFiltersClose={() => {}} />
-);
+export const Mobile: Story = () => <Controlled filtersOpen={false} onFiltersClose={() => {}} />;
 Mobile.meta = { width: 390 };
 
 /** Tablet viewport (md breakpoint). Desktop filter bar is visible; mobile filter controls are hidden. */
-export const Tablet: Story = () => (
-  <Controlled filtersOpen={false} onFiltersClose={() => {}} />
-);
+export const Tablet: Story = () => <Controlled filtersOpen={false} onFiltersClose={() => {}} />;
 Tablet.meta = { width: 768 };

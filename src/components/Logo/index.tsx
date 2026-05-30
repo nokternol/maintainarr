@@ -2,11 +2,7 @@ import { cn } from '@app/lib/utils/cn';
 import React from 'react';
 import styles from './Logo.module.css';
 
-export const WardenLogo = ({
-  className = 'w-24 h-24',
-  id = 'warden-logo',
-  isLoader = false,
-}) => {
+export const WardenLogo = ({ className = 'w-24 h-24', id = 'warden-logo', isLoader = false }) => {
   const teeth = Array.from({ length: 8 }, (_, i) => i * 45);
 
   return (

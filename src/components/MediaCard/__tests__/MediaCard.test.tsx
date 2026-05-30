@@ -20,7 +20,7 @@ describe('MediaCard', () => {
           <MediaCard.Content>
             <MediaCard.Title>{title}</MediaCard.Title>
           </MediaCard.Content>
-        </MediaCard>,
+        </MediaCard>
       );
 
       // Check title rendering
@@ -45,7 +45,7 @@ describe('MediaCard', () => {
         <MediaCard.Content>
           <MediaCard.Title>Custom Composition</MediaCard.Title>
         </MediaCard.Content>
-      </MediaCard>,
+      </MediaCard>
     );
     expect(screen.getByText('Custom Composition')).toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('MediaCard', () => {
     render(
       <MediaCard id="456" onClick={onClick}>
         <MediaCard.Title>The Matrix</MediaCard.Title>
-      </MediaCard>,
+      </MediaCard>
     );
 
     const card = screen.getByTestId('media-card');
@@ -84,7 +84,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="monitored" />
-      </MediaCard>,
+      </MediaCard>
     );
     expect(screen.getByText(/monitored/i)).toBeInTheDocument();
 
@@ -92,7 +92,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="missing" />
-      </MediaCard>,
+      </MediaCard>
     );
     expect(screen.getByText(/missing/i)).toBeInTheDocument();
 
@@ -100,7 +100,7 @@ describe('MediaCard', () => {
       <MediaCard id="789">
         <MediaCard.Poster alt="Avatar" />
         <MediaCard.StatusBadge status="downloaded" />
-      </MediaCard>,
+      </MediaCard>
     );
     expect(screen.getByText(/downloaded/i)).toBeInTheDocument();
   });

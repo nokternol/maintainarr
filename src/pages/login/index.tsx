@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageFader } from '@app/components/ImageFader';
-import { WardenLogo, PlexIcon } from '@app/components/Logo';
+import { PlexIcon, WardenLogo } from '@app/components/Logo';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
 import Image from 'next/image';

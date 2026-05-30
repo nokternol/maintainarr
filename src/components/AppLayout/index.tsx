@@ -1,5 +1,5 @@
 import { cn } from '@app/lib/utils/cn';
-import { createContext, useRef, type HTMLAttributes } from 'react';
+import { type HTMLAttributes, createContext, useRef } from 'react';
 import styles from './AppLayout.module.css';
 
 export const ScrollContainerContext = createContext<React.RefObject<HTMLElement | null>>({
@@ -30,12 +30,9 @@ export default function AppLayout({
         {sidebar && <aside className={styles.sidebarWrapper}>{sidebar}</aside>}
 
         {/* Main Content */}
-        <main
-          ref={mainRef}
-          className={cn(styles.mainContent, mobileNav && 'pb-16 md:pb-0')}
-        >
+        <main ref={mainRef} className={cn(styles.mainContent, mobileNav && 'pb-16 md:pb-0')}>
           {topBar}
-          <div className={styles.contentWrapper}>{children}</div>
+          {children}
         </main>
 
         {/* Mobile bottom navigation bar — fixed, hidden on md+ */}

@@ -692,83 +692,81 @@ export default function MediaPage() {
           title="Managed Media"
           breadcrumbs={[{ label: 'Home', href: '/' }]}
           actions={
-            <button
-              type="button"
-              className={cn(
-                'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
-                isActive
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
-              )}
-              onClick={() => setFiltersOpen(true)}
-            >
-              <Filter size={16} strokeWidth={2} aria-hidden="true" />
-              Filters
-              {isActive && (
-                <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+            <>
+              <Tabs
+                tabs={[
+                  {
+                    value: 'movies',
+                    label: 'Movies',
+                    count: movies.totalCount,
+                    loading: movies.isLoading,
+                  },
+                  {
+                    value: 'series',
+                    label: 'Series',
+                    count: series.totalCount,
+                    loading: series.isLoading,
+                  },
+                ]}
+                active={activeTab}
+                onChange={setActiveTab}
+              />
+              <button
+                type="button"
+                className={cn(
+                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
+                  isActive
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
+                )}
+                onClick={() => setFiltersOpen(true)}
+              >
+                <Filter size={16} strokeWidth={2} aria-hidden="true" />
+                Filters
+                {isActive && (
+                  <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </>
           }
         />
       }
     >
-      <>
-        <div className="bg-surface-panel border-b border-border px-4 sm:px-6 py-2 flex items-center">
-          <Tabs
-            tabs={[
-              {
-                value: 'movies',
-                label: 'Movies',
-                count: movies.totalCount,
-                loading: movies.isLoading,
-              },
-              {
-                value: 'series',
-                label: 'Series',
-                count: series.totalCount,
-                loading: series.isLoading,
-              },
-            ]}
-            active={activeTab}
-            onChange={setActiveTab}
-          />
-        </div>
-        <MediaContent
-          filterState={filterState}
-          setTitle={setTitle}
-          setHasFile={setHasFile}
-          setMonitored={setMonitored}
-          setSeriesStatus={setSeriesStatus}
-          setYearMin={setYearMin}
-          setYearMax={setYearMax}
-          setMovieTagIds={setMovieTagIds}
-          setSeriesTagIds={setSeriesTagIds}
-          setMovieQualityProfileIds={setMovieQualityProfileIds}
-          setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-          setMovieGenres={setMovieGenres}
-          setSeriesGenres={setSeriesGenres}
-          setSeriesType={setSeriesType}
-          setNetwork={setNetwork}
-          setTautulliWatched={setTautulliWatched}
-          clearAll={clearAll}
-          isActive={isActive}
-          activeFilterCount={activeFilterCount}
-          movieSort={filterState.movieSort}
-          seriesSort={filterState.seriesSort}
-          setMovieSort={setMovieSort}
-          setSeriesSort={setSeriesSort}
-          activeTab={activeTab}
-          filtersOpen={filtersOpen}
-          onFiltersClose={() => setFiltersOpen(false)}
-          movies={movies}
-          series={series}
-          lookups={lookups}
-          configuredTypes={configuredTypes}
-          providersLoaded={providersLoaded}
-        />
-      </>
+      <MediaContent
+        filterState={filterState}
+        setTitle={setTitle}
+        setHasFile={setHasFile}
+        setMonitored={setMonitored}
+        setSeriesStatus={setSeriesStatus}
+        setYearMin={setYearMin}
+        setYearMax={setYearMax}
+        setMovieTagIds={setMovieTagIds}
+        setSeriesTagIds={setSeriesTagIds}
+        setMovieQualityProfileIds={setMovieQualityProfileIds}
+        setSeriesQualityProfileIds={setSeriesQualityProfileIds}
+        setMovieGenres={setMovieGenres}
+        setSeriesGenres={setSeriesGenres}
+        setSeriesType={setSeriesType}
+        setNetwork={setNetwork}
+        setTautulliWatched={setTautulliWatched}
+        clearAll={clearAll}
+        isActive={isActive}
+        activeFilterCount={activeFilterCount}
+        movieSort={filterState.movieSort}
+        seriesSort={filterState.seriesSort}
+        setMovieSort={setMovieSort}
+        setSeriesSort={setSeriesSort}
+        activeTab={activeTab}
+        filtersOpen={filtersOpen}
+        onFiltersClose={() => setFiltersOpen(false)}
+        movies={movies}
+        series={series}
+        lookups={lookups}
+        configuredTypes={configuredTypes}
+        providersLoaded={providersLoaded}
+      />
     </AppLayout>
   );
 }

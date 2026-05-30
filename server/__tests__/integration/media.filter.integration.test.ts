@@ -213,12 +213,8 @@ describe('Media Filter API', () => {
   // vitest.server.ts resets handlers in afterEach so we re-apply here.
   beforeEach(() => {
     server.use(
-      http.get('http://localhost:7878/api/v3/movie', () =>
-        HttpResponse.json(FILTER_MOVIES)
-      ),
-      http.get('http://localhost:8989/api/v3/series', () =>
-        HttpResponse.json(FILTER_SERIES)
-      )
+      http.get('http://localhost:7878/api/v3/movie', () => HttpResponse.json(FILTER_MOVIES)),
+      http.get('http://localhost:8989/api/v3/series', () => HttpResponse.json(FILTER_SERIES))
     );
   });
 
@@ -332,7 +328,7 @@ describe('Media Filter API', () => {
 
       const titles = data.items.map((m: { title: string }) => m.title);
       expect(titles).not.toContain('Batman Returns'); // 1992
-      expect(titles).not.toContain('The Matrix');    // 1999
+      expect(titles).not.toContain('The Matrix'); // 1999
     });
 
     it('yearMin alone filters out older movies', async () => {
@@ -485,9 +481,7 @@ describe('Media Filter API', () => {
           { id: 2, label: 'sci-fi' },
         ])
       );
-      expect(data.sonarr).toEqual(
-        expect.arrayContaining([{ id: 1, label: 'drama' }])
-      );
+      expect(data.sonarr).toEqual(expect.arrayContaining([{ id: 1, label: 'drama' }]));
     });
 
     it('returns 401 when unauthenticated', async () => {

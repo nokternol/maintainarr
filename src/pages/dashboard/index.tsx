@@ -66,84 +66,167 @@ const AUTOMATIONS: Automation[] = [
 ];
 
 const RECENT_RUNS: RunRecord[] = [
-  { id: 'r1', automationName: 'Archive stale movies', action: 'archived', itemCount: 12, relativeTime: '2h ago' },
-  { id: 'r2', automationName: 'Refresh missing metadata', action: 'updated', itemCount: 847, relativeTime: '22h ago' },
-  { id: 'r3', automationName: 'Archive stale movies', action: 'archived', itemCount: 9, relativeTime: '1w ago' },
+  {
+    id: 'r1',
+    automationName: 'Archive stale movies',
+    action: 'archived',
+    itemCount: 12,
+    relativeTime: '2h ago',
+  },
+  {
+    id: 'r2',
+    automationName: 'Refresh missing metadata',
+    action: 'updated',
+    itemCount: 847,
+    relativeTime: '22h ago',
+  },
+  {
+    id: 'r3',
+    automationName: 'Archive stale movies',
+    action: 'archived',
+    itemCount: 9,
+    relativeTime: '1w ago',
+  },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
 
 const DashboardIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+    />
   </svg>
 );
 
 const AutomationIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
   </svg>
 );
 
 const MediaIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+    />
   </svg>
 );
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
   </svg>
 );
 
 const ActivityIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M13 10V3L4 14h7v7l9-11h-7z"
+    />
   </svg>
 );
 
 const SettingsIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+    />
   </svg>
 );
 
 const SystemIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+    />
   </svg>
 );
 
 const EmptyAutomationIcon = () => (
-  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  <svg
+    className="w-12 h-12"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
   </svg>
 );
 
 const EmptyRunsIcon = () => (
-  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+  <svg
+    className="w-12 h-12"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+    />
   </svg>
 );
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
 
 const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard', active: true },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: <DashboardIcon />,
+    href: '/dashboard',
+    active: true,
+  },
   { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media' },
   { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
-  { id: 'automations', label: 'Automations', icon: <AutomationIcon />, href: '/automations', badge: 1 },
+  {
+    id: 'automations',
+    label: 'Automations',
+    icon: <AutomationIcon />,
+    href: '/automations',
+    badge: 1,
+  },
   { id: 'activity', label: 'Activity', icon: <ActivityIcon />, href: '/activity' },
 ];
 
@@ -163,7 +246,7 @@ function StatusDot({ status }: { status: AutomationStatus }) {
         'inline-block w-2 h-2 rounded-full flex-shrink-0 mt-[3px]',
         status === 'active' && 'bg-primary',
         status === 'paused' && 'bg-warning',
-        status === 'error' && 'bg-danger',
+        status === 'error' && 'bg-danger'
       )}
       aria-hidden="true"
     />
@@ -204,7 +287,9 @@ function AutomationRow({ automation }: { automation: Automation }) {
       <div>
         {automation.lastRun ? (
           <>
-            <p className="text-sm text-text-secondary leading-5">{automation.lastRun.relativeTime}</p>
+            <p className="text-sm text-text-secondary leading-5">
+              {automation.lastRun.relativeTime}
+            </p>
             {automation.lastRun.itemCount > 0 && (
               <p className="text-xs text-text-muted mt-0.5">
                 {automation.lastRun.itemCount} items {automation.lastRun.action}
@@ -236,7 +321,9 @@ function RunItem({ run }: { run: RunRecord }) {
       <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
       <span className="font-medium text-text-secondary truncate">{run.automationName}</span>
       <span className="text-text-muted/50 flex-shrink-0">·</span>
-      <span className="text-text-muted flex-shrink-0">{run.itemCount} items {run.action}</span>
+      <span className="text-text-muted flex-shrink-0">
+        {run.itemCount} items {run.action}
+      </span>
       <span className="ml-auto flex-shrink-0 text-xs text-text-muted">{run.relativeTime}</span>
     </div>
   );
@@ -250,12 +337,11 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ automations, runs }: DashboardContentProps) {
-  const activeCount = automations.filter(a => a.status === 'active').length;
-  const errorCount = automations.filter(a => a.status === 'error').length;
+  const activeCount = automations.filter((a) => a.status === 'active').length;
+  const errorCount = automations.filter((a) => a.status === 'error').length;
 
   return (
     <div className="p-6 space-y-4">
-
       {/* Automations */}
       <Card variant="outlined" padding="none">
         <Card.Header>
@@ -286,12 +372,20 @@ export function DashboardContent({ automations, runs }: DashboardContentProps) {
               className="grid items-center px-4 py-2 border-b border-border"
               style={{ gridTemplateColumns: COL_TEMPLATE }}
             >
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Automation</span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Schedule</span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">Last run</span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide text-right">Next run</span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                Automation
+              </span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                Schedule
+              </span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                Last run
+              </span>
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wide text-right">
+                Next run
+              </span>
             </div>
-            {automations.map(automation => (
+            {automations.map((automation) => (
               <AutomationRow key={automation.id} automation={automation} />
             ))}
           </>
@@ -311,11 +405,10 @@ export function DashboardContent({ automations, runs }: DashboardContentProps) {
               description="Run history will appear here once your automations have executed."
             />
           ) : (
-            runs.map(run => <RunItem key={run.id} run={run} />)
+            runs.map((run) => <RunItem key={run.id} run={run} />)
           )}
         </Card.Content>
       </Card>
-
     </div>
   );
 }
