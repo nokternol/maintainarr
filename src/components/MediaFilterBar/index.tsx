@@ -100,8 +100,11 @@ function MultiSelectDropdown({
   onChange: (ids: number[]) => void;
 }) {
   const id = useId();
+  const menuId = `${id}-menu`;
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -112,6 +115,12 @@ function MultiSelectDropdown({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      itemRefs.current[0]?.focus();
+    }
   }, [isOpen]);
 
   if (options.length === 0) return null;
@@ -128,11 +137,26 @@ function MultiSelectDropdown({
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        aria-label={label}
+        aria-label={activeCount > 0 ? `${label}, ${activeCount} selected` : label}
         aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
+        aria-controls={isOpen ? menuId : undefined}
         onClick={() => setIsOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && isOpen) {
+            e.preventDefault();
+            setIsOpen(false);
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) setIsOpen(true);
+            else itemRefs.current[0]?.focus();
+          } else if ((e.key === 'Enter' || e.key === ' ') && !isOpen) {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
         className={cn(
           'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
           activeCount > 0
@@ -142,35 +166,91 @@ function MultiSelectDropdown({
       >
         {label}
         {activeCount > 0 && (
-          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-xs">{activeCount}</span>
+          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-xs" aria-hidden="true">
+            {activeCount}
+          </span>
         )}
-        <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="w-3 h-3 ml-0.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
         <div
-          role="listbox"
+          role="menu"
+          id={menuId}
           aria-label={label}
-          aria-multiselectable="true"
           className="absolute top-full left-0 mt-1 min-w-40 max-h-60 overflow-y-auto bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
         >
-          {options.map((opt) => {
+          {options.map((opt, index) => {
             const checked = selectedIds.includes(opt.id);
             return (
-              <label
+              <div
                 key={`${id}-${opt.id}`}
-                className="flex items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover cursor-pointer"
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                role="menuitemcheckbox"
+                aria-checked={checked}
+                tabIndex={-1}
+                onClick={() => toggle(opt.id)}
+                onKeyDown={(e) => {
+                  switch (e.key) {
+                    case 'Escape':
+                      e.preventDefault();
+                      setIsOpen(false);
+                      triggerRef.current?.focus();
+                      break;
+                    case 'ArrowDown':
+                      e.preventDefault();
+                      itemRefs.current[Math.min(index + 1, options.length - 1)]?.focus();
+                      break;
+                    case 'ArrowUp':
+                      e.preventDefault();
+                      if (index === 0) triggerRef.current?.focus();
+                      else itemRefs.current[index - 1]?.focus();
+                      break;
+                    case 'Enter':
+                    case ' ':
+                      e.preventDefault();
+                      toggle(opt.id);
+                      break;
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer select-none"
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(opt.id)}
-                  className="rounded accent-primary"
-                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center',
+                    checked ? 'bg-primary border-primary' : 'border-border bg-surface-bg'
+                  )}
+                >
+                  {checked && (
+                    <svg
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      className="w-full h-full p-0.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
                 {opt.displayName}
-              </label>
+              </div>
             );
           })}
         </div>
@@ -191,8 +271,11 @@ function StringMultiSelectDropdown({
   onChange: (values: string[]) => void;
 }) {
   const id = useId();
+  const menuId = `${id}-menu`;
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -203,6 +286,12 @@ function StringMultiSelectDropdown({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      itemRefs.current[0]?.focus();
+    }
   }, [isOpen]);
 
   if (options.length === 0) return null;
@@ -219,11 +308,26 @@ function StringMultiSelectDropdown({
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        aria-label={label}
+        aria-label={activeCount > 0 ? `${label}, ${activeCount} selected` : label}
         aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
+        aria-controls={isOpen ? menuId : undefined}
         onClick={() => setIsOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && isOpen) {
+            e.preventDefault();
+            setIsOpen(false);
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) setIsOpen(true);
+            else itemRefs.current[0]?.focus();
+          } else if ((e.key === 'Enter' || e.key === ' ') && !isOpen) {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
         className={cn(
           'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
           activeCount > 0
@@ -233,35 +337,91 @@ function StringMultiSelectDropdown({
       >
         {label}
         {activeCount > 0 && (
-          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-xs">{activeCount}</span>
+          <span className="bg-white/20 rounded-full px-1.5 py-0.5 text-xs" aria-hidden="true">
+            {activeCount}
+          </span>
         )}
-        <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="w-3 h-3 ml-0.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
         <div
-          role="listbox"
+          role="menu"
+          id={menuId}
           aria-label={label}
-          aria-multiselectable="true"
           className="absolute top-full left-0 mt-1 min-w-40 max-h-60 overflow-y-auto bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
         >
-          {options.map((opt) => {
+          {options.map((opt, index) => {
             const checked = selectedValues.includes(opt);
             return (
-              <label
+              <div
                 key={`${id}-${opt}`}
-                className="flex items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover cursor-pointer"
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                role="menuitemcheckbox"
+                aria-checked={checked}
+                tabIndex={-1}
+                onClick={() => toggle(opt)}
+                onKeyDown={(e) => {
+                  switch (e.key) {
+                    case 'Escape':
+                      e.preventDefault();
+                      setIsOpen(false);
+                      triggerRef.current?.focus();
+                      break;
+                    case 'ArrowDown':
+                      e.preventDefault();
+                      itemRefs.current[Math.min(index + 1, options.length - 1)]?.focus();
+                      break;
+                    case 'ArrowUp':
+                      e.preventDefault();
+                      if (index === 0) triggerRef.current?.focus();
+                      else itemRefs.current[index - 1]?.focus();
+                      break;
+                    case 'Enter':
+                    case ' ':
+                      e.preventDefault();
+                      toggle(opt);
+                      break;
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer select-none"
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(opt)}
-                  className="rounded accent-primary"
-                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center',
+                    checked ? 'bg-primary border-primary' : 'border-border bg-surface-bg'
+                  )}
+                >
+                  {checked && (
+                    <svg
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      className="w-full h-full p-0.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
                 {opt}
-              </label>
+              </div>
             );
           })}
         </div>
@@ -362,11 +522,15 @@ function MobileYearInputs({
   setYearMin: (v: number | undefined) => void;
   setYearMax: (v: number | undefined) => void;
 }) {
+  const id = useId();
   return (
     <div className="flex items-end gap-3">
       <div className="flex-1">
-        <label className="block text-xs text-text-muted mb-1.5">From</label>
+        <label htmlFor={`${id}-from`} className="block text-xs text-text-muted mb-1.5">
+          From
+        </label>
         <input
+          id={`${id}-from`}
           type="number"
           min={globalMin}
           max={globalMax}
@@ -380,8 +544,11 @@ function MobileYearInputs({
       </div>
       <span className="text-text-muted pb-3">–</span>
       <div className="flex-1">
-        <label className="block text-xs text-text-muted mb-1.5">To</label>
+        <label htmlFor={`${id}-to`} className="block text-xs text-text-muted mb-1.5">
+          To
+        </label>
         <input
+          id={`${id}-to`}
           type="number"
           min={globalMin}
           max={globalMax}
@@ -413,7 +580,10 @@ function toCsvOrUndefined(ids: number[]): string | undefined {
 
 function parseCsvStrings(csv: string | undefined): string[] {
   if (!csv) return [];
-  return csv.split(',').map((s) => s.trim()).filter(Boolean);
+  return csv
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function toStringCsvOrUndefined(values: string[]): string | undefined {
@@ -449,10 +619,15 @@ export function MediaFilterBar({
   mobileOpen = false,
   onMobileClose,
 }: MediaFilterBarProps) {
-  const availableMins = [movieYearRange?.min, seriesYearRange?.min].filter((v): v is number => v != null);
-  const availableMaxs = [movieYearRange?.max, seriesYearRange?.max].filter((v): v is number => v != null);
+  const availableMins = [movieYearRange?.min, seriesYearRange?.min].filter(
+    (v): v is number => v != null
+  );
+  const availableMaxs = [movieYearRange?.max, seriesYearRange?.max].filter(
+    (v): v is number => v != null
+  );
   const globalMin = availableMins.length > 0 ? Math.min(...availableMins) : 1888;
-  const globalMax = availableMaxs.length > 0 ? Math.max(...availableMaxs) : new Date().getFullYear();
+  const globalMax =
+    availableMaxs.length > 0 ? Math.max(...availableMaxs) : new Date().getFullYear();
 
   const movieTagIds = parseCsvIds(filterState.movieTagIds);
   const seriesTagIds = parseCsvIds(filterState.seriesTagIds);
@@ -462,8 +637,65 @@ export function MediaFilterBar({
   const selectedSeriesGenres = parseCsvStrings(filterState.seriesGenres);
   const selectedNetworks = parseCsvStrings(filterState.network);
 
-  const hasMovieSection = configuredTypes.has('RADARR') && (activeTab === undefined || activeTab === 'movies');
-  const hasSeriesSection = configuredTypes.has('SONARR') && (activeTab === undefined || activeTab === 'series');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const dialogHeadingId = useId();
+  const onMobileCloseRef = useRef(onMobileClose);
+  useEffect(() => {
+    onMobileCloseRef.current = onMobileClose;
+  });
+
+  useEffect(() => {
+    if (mobileOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+    } else {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    }
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen || !dialogRef.current) return;
+    const sel = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    dialogRef.current.querySelectorAll<HTMLElement>(sel)[0]?.focus();
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const sel = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(sel));
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onMobileCloseRef.current?.();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = getFocusable();
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
+
+  const hasMovieSection =
+    configuredTypes.has('RADARR') && (activeTab === undefined || activeTab === 'movies');
+  const hasSeriesSection =
+    configuredTypes.has('SONARR') && (activeTab === undefined || activeTab === 'series');
   const hasTautulliSection = configuredTypes.has('TAUTULLI');
 
   const hasMovieDropdowns =
@@ -539,13 +771,19 @@ export function MediaFilterBar({
                     <>
                       <MultiSelectDropdown
                         label="Movie Tags"
-                        options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                        options={lookups.tags.radarr.map((t) => ({
+                          id: t.id,
+                          displayName: t.label,
+                        }))}
                         selectedIds={movieTagIds}
                         onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
                       />
                       <MultiSelectDropdown
                         label="Movie Quality"
-                        options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                        options={lookups.qualityProfiles.radarr.map((p) => ({
+                          id: p.id,
+                          displayName: p.name,
+                        }))}
                         selectedIds={movieQualityProfileIds}
                         onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
                       />
@@ -624,7 +862,10 @@ export function MediaFilterBar({
                     />
                     <MultiSelectDropdown
                       label="Series Quality"
-                      options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
+                      options={lookups.qualityProfiles.sonarr.map((p) => ({
+                        id: p.id,
+                        displayName: p.name,
+                      }))}
                       selectedIds={seriesQualityProfileIds}
                       onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
                     />
@@ -664,14 +905,17 @@ export function MediaFilterBar({
       {/* ── Mobile full-screen filter modal (< md) ──────────────────────────── */}
       {mobileOpen && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 md:hidden bg-surface-panel flex flex-col pb-16"
           role="dialog"
           aria-modal="true"
-          aria-label="Filters"
+          aria-labelledby={dialogHeadingId}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-            <h2 className="text-base font-semibold text-text-primary">Filters</h2>
+            <h2 id={dialogHeadingId} className="text-base font-semibold text-text-primary">
+              Filters
+            </h2>
             {isActive && (
               <button
                 type="button"
@@ -685,183 +929,181 @@ export function MediaFilterBar({
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-              {/* Search */}
-              <div>
-                <div className="relative">
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <input
-                    type="search"
-                    placeholder="Filter by title…"
-                    aria-label="Filter by title"
-                    value={filterState.title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+            {/* Search */}
+            <div>
+              <div className="relative">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
-                </div>
-              </div>
-
-              {/* Movies section */}
-              {hasMovieSection && (
-                <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
-                    Movies
-                  </h3>
-                  <div className="space-y-3">
-                    <ChipGroup
-                      label="Movies"
-                      hideLabel
-                      options={[
-                        { value: undefined, label: 'All' },
-                        { value: 'true' as const, label: 'Downloaded' },
-                        { value: 'false' as const, label: 'Missing' },
-                      ]}
-                      value={filterState.hasFile}
-                      onChange={setHasFile}
-                    />
-                    {lookups.tags.radarr.length > 0 && (
-                      <MultiSelectDropdown
-                        label="Movie Tags"
-                        options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                        selectedIds={movieTagIds}
-                        onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
-                      />
-                    )}
-                    {lookups.qualityProfiles.radarr.length > 0 && (
-                      <MultiSelectDropdown
-                        label="Movie Quality"
-                        options={lookups.qualityProfiles.radarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                        selectedIds={movieQualityProfileIds}
-                        onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
-                      />
-                    )}
-                    <StringMultiSelectDropdown
-                      label="Movie Genres"
-                      options={lookups.genres.movies}
-                      selectedValues={selectedMovieGenres}
-                      onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Series section */}
-              {hasSeriesSection && (
-                <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
-                    Series
-                  </h3>
-                  <div className="space-y-3">
-                    <ChipGroup
-                      label="Series"
-                      hideLabel
-                      options={[
-                        { value: undefined, label: 'All' },
-                        { value: 'true' as const, label: 'Monitored' },
-                        { value: 'false' as const, label: 'Unmonitored' },
-                      ]}
-                      value={filterState.monitored}
-                      onChange={setMonitored}
-                    />
-                    <ChipGroup
-                      label="Status"
-                      options={[
-                        { value: undefined, label: 'All' },
-                        { value: 'continuing', label: 'Continuing' },
-                        { value: 'ended', label: 'Ended' },
-                      ]}
-                      value={filterState.seriesStatus}
-                      onChange={setSeriesStatus}
-                    />
-                    <ChipGroup
-                      label="Type"
-                      options={[
-                        { value: undefined, label: 'All' },
-                        { value: 'standard', label: 'Standard' },
-                        { value: 'anime', label: 'Anime' },
-                        { value: 'daily', label: 'Daily' },
-                      ]}
-                      value={filterState.seriesType}
-                      onChange={setSeriesType}
-                    />
-                    {lookups.tags.sonarr.length > 0 && (
-                      <MultiSelectDropdown
-                        label="Series Tags"
-                        options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                        selectedIds={seriesTagIds}
-                        onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
-                      />
-                    )}
-                    {lookups.qualityProfiles.sonarr.length > 0 && (
-                      <MultiSelectDropdown
-                        label="Series Quality"
-                        options={lookups.qualityProfiles.sonarr.map((p) => ({ id: p.id, displayName: p.name }))}
-                        selectedIds={seriesQualityProfileIds}
-                        onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
-                      />
-                    )}
-                    <StringMultiSelectDropdown
-                      label="Series Genres"
-                      options={lookups.genres.series}
-                      selectedValues={selectedSeriesGenres}
-                      onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
-                    />
-                    <StringMultiSelectDropdown
-                      label="Network"
-                      options={lookups.networks}
-                      selectedValues={selectedNetworks}
-                      onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Tautulli Watched section */}
-              {hasTautulliSection && (
-                <div>
-                  <h3 className="text-sm font-semibold text-text-secondary mb-3">
-                    Play History
-                  </h3>
-                  <ChipGroup
-                    label="Watched"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Watched' },
-                      { value: 'false' as const, label: 'Unwatched' },
-                    ]}
-                    value={filterState.tautulliWatched}
-                    onChange={setTautulliWatched}
-                  />
-                </div>
-              )}
-
-              {/* Year section */}
-              <div>
-                <h3 className="text-sm font-semibold text-text-secondary mb-3">
-                  Year Range
-                </h3>
-                <MobileYearInputs
-                  yearMin={filterState.yearMin}
-                  yearMax={filterState.yearMax}
-                  globalMin={globalMin}
-                  globalMax={globalMax}
-                  setYearMin={setYearMin}
-                  setYearMax={setYearMax}
+                </svg>
+                <input
+                  type="search"
+                  placeholder="Filter by title…"
+                  aria-label="Filter by title"
+                  value={filterState.title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
+
+            {/* Movies section */}
+            {hasMovieSection && (
+              <div>
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">Movies</h3>
+                <div className="space-y-3">
+                  <ChipGroup
+                    label="Movies"
+                    hideLabel
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'true' as const, label: 'Downloaded' },
+                      { value: 'false' as const, label: 'Missing' },
+                    ]}
+                    value={filterState.hasFile}
+                    onChange={setHasFile}
+                  />
+                  {lookups.tags.radarr.length > 0 && (
+                    <MultiSelectDropdown
+                      label="Movie Tags"
+                      options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                      selectedIds={movieTagIds}
+                      onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+                    />
+                  )}
+                  {lookups.qualityProfiles.radarr.length > 0 && (
+                    <MultiSelectDropdown
+                      label="Movie Quality"
+                      options={lookups.qualityProfiles.radarr.map((p) => ({
+                        id: p.id,
+                        displayName: p.name,
+                      }))}
+                      selectedIds={movieQualityProfileIds}
+                      onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+                    />
+                  )}
+                  <StringMultiSelectDropdown
+                    label="Movie Genres"
+                    options={lookups.genres.movies}
+                    selectedValues={selectedMovieGenres}
+                    onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Series section */}
+            {hasSeriesSection && (
+              <div>
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">Series</h3>
+                <div className="space-y-3">
+                  <ChipGroup
+                    label="Series"
+                    hideLabel
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'true' as const, label: 'Monitored' },
+                      { value: 'false' as const, label: 'Unmonitored' },
+                    ]}
+                    value={filterState.monitored}
+                    onChange={setMonitored}
+                  />
+                  <ChipGroup
+                    label="Status"
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'continuing', label: 'Continuing' },
+                      { value: 'ended', label: 'Ended' },
+                    ]}
+                    value={filterState.seriesStatus}
+                    onChange={setSeriesStatus}
+                  />
+                  <ChipGroup
+                    label="Type"
+                    options={[
+                      { value: undefined, label: 'All' },
+                      { value: 'standard', label: 'Standard' },
+                      { value: 'anime', label: 'Anime' },
+                      { value: 'daily', label: 'Daily' },
+                    ]}
+                    value={filterState.seriesType}
+                    onChange={setSeriesType}
+                  />
+                  {lookups.tags.sonarr.length > 0 && (
+                    <MultiSelectDropdown
+                      label="Series Tags"
+                      options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
+                      selectedIds={seriesTagIds}
+                      onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
+                    />
+                  )}
+                  {lookups.qualityProfiles.sonarr.length > 0 && (
+                    <MultiSelectDropdown
+                      label="Series Quality"
+                      options={lookups.qualityProfiles.sonarr.map((p) => ({
+                        id: p.id,
+                        displayName: p.name,
+                      }))}
+                      selectedIds={seriesQualityProfileIds}
+                      onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
+                    />
+                  )}
+                  <StringMultiSelectDropdown
+                    label="Series Genres"
+                    options={lookups.genres.series}
+                    selectedValues={selectedSeriesGenres}
+                    onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
+                  />
+                  <StringMultiSelectDropdown
+                    label="Network"
+                    options={lookups.networks}
+                    selectedValues={selectedNetworks}
+                    onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Tautulli Watched section */}
+            {hasTautulliSection && (
+              <div>
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
+                <ChipGroup
+                  label="Watched"
+                  options={[
+                    { value: undefined, label: 'All' },
+                    { value: 'true' as const, label: 'Watched' },
+                    { value: 'false' as const, label: 'Unwatched' },
+                  ]}
+                  value={filterState.tautulliWatched}
+                  onChange={setTautulliWatched}
+                />
+              </div>
+            )}
+
+            {/* Year section */}
+            <div>
+              <h3 className="text-sm font-semibold text-text-secondary mb-3">Year Range</h3>
+              <MobileYearInputs
+                yearMin={filterState.yearMin}
+                yearMax={filterState.yearMax}
+                globalMin={globalMin}
+                globalMax={globalMax}
+                setYearMin={setYearMin}
+                setYearMax={setYearMax}
+              />
+            </div>
+          </div>
 
           {/* Sticky Done footer */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-border">
