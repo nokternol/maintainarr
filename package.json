@@ -26,12 +26,13 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "typecheck": "yarn typecheck:server && yarn typecheck:client",
-    "typecheck:server": "tsc --project server/tsconfig.json --noEmit",
+    "typecheck:server": "tsc --project server/tsconfig.json --noEmit --tsBuildInfoFile .cache/server.tsbuildinfo",
     "typecheck:client": "tsc --noEmit",
     "verify": "yarn lint && yarn typecheck && yarn test:run && yarn test:e2e:ci",
     "verify:fast": "yarn lint:fast && yarn typecheck && yarn test:run",
     "ci": "yarn lint && yarn typecheck && yarn test:run && yarn test:e2e:ci",
-    "ci:fast": "yarn lint && yarn typecheck && yarn test:run"
+    "ci:fast": "yarn lint && yarn typecheck && yarn test:run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@libsql/client": "^0.15.0",
@@ -86,7 +87,9 @@
     "cypress": "13.17.0",
     "drizzle-kit": "^0.31.0",
     "happy-dom": "^20.6.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^17.0.5",
     "msw": "^2.7.0",
     "nodemon": "^3.1.9",
     "playwright": "^1.59.1",
