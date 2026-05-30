@@ -704,8 +704,8 @@ export function MediaFilterBar({
                   </svg>
                   <input
                     type="search"
-                    placeholder="Search titles…"
-                    aria-label="Search titles"
+                    placeholder="Filter by title…"
+                    aria-label="Filter by title"
                     value={filterState.title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
