@@ -22,9 +22,13 @@ import {
   ArrowUp,
   ChevronDown,
   Clapperboard,
+  Film,
   Filter,
   LayoutDashboard,
   Search,
+  SearchX,
+  ServerOff,
+  Tv2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -73,6 +77,8 @@ function SortFieldPicker({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,14 +89,42 @@ function SortFieldPicker({
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const currentLabel = SORT_FIELDS.find((f) => f.value === field)?.label ?? 'Title';
+  // Focus the currently-selected item when the menu opens
+  useEffect(() => {
+    if (!open) return;
+    const selectedIndex = SORT_FIELDS.findIndex((f_) => f_.value === field);
+    itemRefs.current[selectedIndex >= 0 ? selectedIndex : 0]?.focus();
+  }, [open, field]);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      itemRefs.current[(index + 1) % SORT_FIELDS.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      itemRefs.current[(index - 1 + SORT_FIELDS.length) % SORT_FIELDS.length]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      itemRefs.current[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      itemRefs.current[SORT_FIELDS.length - 1]?.focus();
+    }
+  };
+
+  const currentLabel = SORT_FIELDS.find((f_) => f_.value === field)?.label ?? 'Title';
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Sort by"
         className={cn(
@@ -111,22 +145,26 @@ function SortFieldPicker({
 
       {open && (
         <div
-          role="listbox"
-          tabIndex={-1}
+          role="menu"
           aria-label="Sort by"
           className="absolute top-full left-0 mt-1 bg-surface-elevated border border-border rounded-md shadow-lg py-1 z-20 min-w-[80px]"
         >
-          {SORT_FIELDS.map((opt) => (
+          {SORT_FIELDS.map((opt, index) => (
             <button
               key={opt.value}
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
               type="button"
-              aria-selected={field === opt.value}
+              role="menuitemradio"
+              aria-checked={field === opt.value}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);
               }}
+              onKeyDown={(e) => handleMenuKeyDown(e, index)}
               className={cn(
-                'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                'w-full text-left px-3 py-1.5 text-xs transition-colors focus:outline-none focus:bg-surface-panel',
                 field === opt.value
                   ? 'text-primary font-medium'
                   : 'text-text-secondary hover:bg-surface-panel'
@@ -404,6 +442,7 @@ export function MediaContent({
           role="tabpanel"
           id="tabpanel-movies"
           aria-labelledby="tab-movies"
+          tabIndex={activeTab === 'movies' ? 0 : undefined}
           className={cn(activeTab !== 'movies' && 'hidden')}
         >
           <VirtualMediaGrid
@@ -439,7 +478,8 @@ export function MediaContent({
             movies.items.length === 0 &&
             providersLoaded &&
             (!configuredTypes.has('RADARR') ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <ServerOff size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm font-medium text-text-secondary">
                   No Radarr connection configured.
                 </p>
@@ -448,13 +488,14 @@ export function MediaContent({
                 </p>
                 <a
                   href="/settings"
-                  className="mt-2 text-xs text-primary hover:underline underline-offset-2"
+                  className="text-xs text-primary hover:underline underline-offset-2"
                 >
                   Go to Settings
                 </a>
               </div>
             ) : activeFilterCount > 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <SearchX size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">No movies match your current filters.</p>
                 <button
                   type="button"
@@ -465,7 +506,8 @@ export function MediaContent({
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Film size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">Your movie library is empty.</p>
                 <p className="text-xs text-text-muted">
                   Movies synced from Radarr will appear here.
@@ -479,6 +521,7 @@ export function MediaContent({
           role="tabpanel"
           id="tabpanel-series"
           aria-labelledby="tab-series"
+          tabIndex={activeTab === 'series' ? 0 : undefined}
           className={cn(activeTab !== 'series' && 'hidden')}
         >
           <VirtualMediaGrid
@@ -514,7 +557,8 @@ export function MediaContent({
             series.items.length === 0 &&
             providersLoaded &&
             (!configuredTypes.has('SONARR') ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <ServerOff size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm font-medium text-text-secondary">
                   No Sonarr connection configured.
                 </p>
@@ -523,13 +567,14 @@ export function MediaContent({
                 </p>
                 <a
                   href="/settings"
-                  className="mt-2 text-xs text-primary hover:underline underline-offset-2"
+                  className="text-xs text-primary hover:underline underline-offset-2"
                 >
                   Go to Settings
                 </a>
               </div>
             ) : activeFilterCount > 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <SearchX size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">No series match your current filters.</p>
                 <button
                   type="button"
@@ -540,7 +585,8 @@ export function MediaContent({
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Tv2 size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">Your series library is empty.</p>
                 <p className="text-xs text-text-muted">
                   Series synced from Sonarr will appear here.
