@@ -70,6 +70,8 @@ const DEFAULT_FILTER: FilterState = {
   seriesType: undefined,
   network: undefined,
   tautulliWatched: undefined,
+  movieSort: 'title_asc',
+  seriesSort: 'title_asc',
 };
 
 // ─── Wrapper ──────────────────────────────────────────────────────────────────

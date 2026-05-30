@@ -13,7 +13,7 @@ type InferValue<S extends FieldSpec> = S extends { type: 'number' }
   ? number | undefined
   : S extends { type: 'bool3' }
     ? 'true' | 'false' | undefined
-    : S extends { type: 'string'; default: '' }
+    : S extends { type: 'string'; default: string }
       ? string
       : string | undefined;
 
@@ -49,7 +49,7 @@ const EMPTY_FILTER_STATE = Object.fromEntries(
 
 type FilterKey = keyof typeof FILTER_FIELDS;
 
-const SORT_KEYS: ReadonlySet<FilterKey> = new Set(['movieSort', 'seriesSort']);
+const SORT_KEYS: ReadonlySet<FilterKey> = new Set<FilterKey>(['movieSort', 'seriesSort']);
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
   const state = { ...EMPTY_FILTER_STATE };

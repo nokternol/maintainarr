@@ -17,42 +17,13 @@ import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { SidebarItem } from '@app/types/navigation';
 import { Tabs } from '@app/components/Tabs';
 import { cn } from '@app/lib/utils/cn';
+import { ArrowDown, ArrowUp, ChevronDown, Clapperboard, Filter, LayoutDashboard, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-const DashboardIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-  </svg>
-);
-
-const MediaIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const FilterIcon = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-  </svg>
-);
-
 const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
-  { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media', active: true },
-  { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
+  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.75} />, href: '/dashboard' },
+  { id: 'media', label: 'Media', icon: <Clapperboard size={20} strokeWidth={1.75} />, href: '/media', active: true },
+  { id: 'search', label: 'Search', icon: <Search size={20} strokeWidth={1.75} />, href: '/search' },
 ];
 
 // ─── Sort bar ─────────────────────────────────────────────────────────────────
@@ -109,9 +80,7 @@ function SortFieldPicker({
         )}
       >
         {currentLabel}
-        <svg className="w-3 h-3 opacity-50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown size={12} strokeWidth={2.5} className="opacity-50 flex-shrink-0" aria-hidden="true" />
       </button>
 
       {open && (
@@ -182,13 +151,9 @@ function SortBar({
           )}
         >
           {dir === 'asc' ? (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-            </svg>
+            <ArrowUp size={14} strokeWidth={2.5} aria-hidden="true" />
           ) : (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ArrowDown size={14} strokeWidth={2.5} aria-hidden="true" />
           )}
         </button>
       </div>
@@ -589,7 +554,7 @@ export default function MediaPage() {
                 )}
                 onClick={() => setFiltersOpen(true)}
               >
-                <FilterIcon />
+                <Filter size={16} strokeWidth={2} aria-hidden="true" />
                 Filters
                 {isActive && (
                   <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
