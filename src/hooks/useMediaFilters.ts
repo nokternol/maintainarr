@@ -33,6 +33,8 @@ export const FILTER_FIELDS = {
   seriesType: { type: 'string', default: undefined },
   network: { type: 'string', default: undefined },
   tautulliWatched: { type: 'bool3', default: undefined },
+  movieSort: { type: 'string', default: 'title_asc' },
+  seriesSort: { type: 'string', default: 'title_asc' },
 } as const satisfies Record<string, FieldSpec>;
 
 export type FilterState = {
@@ -46,6 +48,8 @@ const EMPTY_FILTER_STATE = Object.fromEntries(
 ) as FilterState;
 
 type FilterKey = keyof typeof FILTER_FIELDS;
+
+const SORT_KEYS: ReadonlySet<FilterKey> = new Set(['movieSort', 'seriesSort']);
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
   const state = { ...EMPTY_FILTER_STATE };
@@ -77,7 +81,7 @@ function buildQuery(state: FilterState): Record<string, string> {
 
 function isAnyFilterActive(state: FilterState): boolean {
   return (Object.keys(FILTER_FIELDS) as FilterKey[]).some(
-    (k) => state[k] !== FILTER_FIELDS[k].default
+    (k) => !SORT_KEYS.has(k) && state[k] !== FILTER_FIELDS[k].default
   );
 }
 
@@ -112,6 +116,7 @@ export function useMediaFilters() {
   const debouncedFilters: MediaFilters = useMemo(() => {
     const f: MediaFilters = {};
     for (const k of Object.keys(FILTER_FIELDS) as FilterKey[]) {
+      if (SORT_KEYS.has(k)) continue;
       if (k === 'title') {
         if (debouncedTitle) f.title = debouncedTitle;
       } else {
@@ -148,6 +153,8 @@ export function useMediaFilters() {
     setNetwork: (v: string | undefined) => setFilterState((s) => ({ ...s, network: v })),
     setTautulliWatched: (v: 'true' | 'false' | undefined) =>
       setFilterState((s) => ({ ...s, tautulliWatched: v })),
+    setMovieSort: (v: string) => setFilterState((s) => ({ ...s, movieSort: v })),
+    setSeriesSort: (v: string) => setFilterState((s) => ({ ...s, seriesSort: v })),
     clearAll: () => setFilterState(EMPTY_FILTER_STATE),
     isActive,
   };

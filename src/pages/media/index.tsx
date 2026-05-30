@@ -55,6 +55,92 @@ const sidebarItems: SidebarItem[] = [
   { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
 ];
 
+// ─── Sort bar ─────────────────────────────────────────────────────────────────
+
+type SortField = 'title' | 'year' | 'status';
+
+function parseSortValue(sort: string | undefined): { field: SortField; dir: 'asc' | 'desc' } {
+  const s = sort ?? 'title_asc';
+  const dir = s.endsWith('_desc') ? 'desc' : 'asc';
+  const field = s.replace(/_(?:asc|desc)$/, '') as SortField;
+  return { field, dir };
+}
+
+function SortBar({
+  sortValue,
+  onSortChange,
+  count,
+  tab,
+  isLoading,
+}: {
+  sortValue: string;
+  onSortChange: (v: string) => void;
+  count: number;
+  tab: ActiveTab;
+  isLoading: boolean;
+}) {
+  const { field, dir } = parseSortValue(sortValue);
+  const isNonDefault = sortValue !== 'title_asc';
+
+  const handleFieldChange = (f: SortField) => onSortChange(`${f}_${dir}`);
+  const handleDirToggle = () => onSortChange(`${field}_${dir === 'asc' ? 'desc' : 'asc'}`);
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="Sort and result count"
+      className="flex items-center justify-between px-4 sm:px-6 py-2 bg-surface-panel border-b border-border"
+    >
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-text-muted select-none">Sort:</span>
+        <select
+          value={field}
+          onChange={(e) => handleFieldChange(e.target.value as SortField)}
+          aria-label="Sort by"
+          className={cn(
+            'bg-transparent text-xs font-medium border-0 outline-none cursor-pointer py-1 px-1 rounded focus:ring-1 focus:ring-primary',
+            isNonDefault ? 'text-primary' : 'text-text-secondary'
+          )}
+        >
+          <option value="title">Title</option>
+          <option value="year">Year</option>
+          <option value="status">Status</option>
+        </select>
+        <button
+          type="button"
+          onClick={handleDirToggle}
+          aria-label={dir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+          className={cn(
+            'flex items-center justify-center w-6 h-6 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-primary',
+            isNonDefault ? 'text-primary hover:text-primary-hover' : 'text-text-muted hover:text-text-secondary'
+          )}
+        >
+          {dir === 'asc' ? (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div aria-live="polite" aria-atomic="true" className="flex items-center">
+        {isLoading ? (
+          <span className="inline-block h-3 w-16 rounded bg-surface-elevated animate-pulse" />
+        ) : (
+          <span className="text-xs text-text-muted tabular-nums">
+            <span className="text-text-secondary font-medium">{count.toLocaleString()}</span>
+            {' '}{tab === 'movies' ? 'movies' : 'series'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): string | undefined {
@@ -151,6 +237,11 @@ export interface MediaContentProps {
   clearAll: () => void;
   isActive: boolean;
   activeFilterCount: number;
+  // sort
+  movieSort: string;
+  seriesSort: string;
+  setMovieSort: (v: string) => void;
+  setSeriesSort: (v: string) => void;
   // tab
   activeTab: ActiveTab;
   // mobile filter overlay
@@ -173,6 +264,7 @@ export function MediaContent({
   setMovieQualityProfileIds, setSeriesQualityProfileIds,
   setMovieGenres, setSeriesGenres, setSeriesType, setNetwork,
   setTautulliWatched, clearAll, isActive, activeFilterCount,
+  movieSort, seriesSort, setMovieSort, setSeriesSort,
   activeTab, filtersOpen, onFiltersClose,
   movies, series, lookups, configuredTypes, providersLoaded,
 }: MediaContentProps) {
@@ -209,6 +301,14 @@ export function MediaContent({
         activeTab={activeTab}
         mobileOpen={filtersOpen}
         onMobileClose={onFiltersClose}
+      />
+
+      <SortBar
+        sortValue={activeTab === 'movies' ? movieSort : seriesSort}
+        onSortChange={activeTab === 'movies' ? setMovieSort : setSeriesSort}
+        count={activeTab === 'movies' ? movies.totalCount : series.totalCount}
+        tab={activeTab}
+        isLoading={activeTab === 'movies' ? movies.isLoading : series.isLoading}
       />
 
       <div className="p-3 sm:p-6 space-y-6">
@@ -344,12 +444,14 @@ export default function MediaPage() {
     setSeriesType,
     setNetwork,
     setTautulliWatched,
+    setMovieSort,
+    setSeriesSort,
     clearAll,
     isActive,
   } = useMediaFilters();
 
-  const movies = useMovies(debouncedFilters);
-  const series = useSeries(debouncedFilters);
+  const movies = useMovies({ ...debouncedFilters, sort: filterState.movieSort });
+  const series = useSeries({ ...debouncedFilters, sort: filterState.seriesSort });
   const lookups = useMediaLookups();
   const { providers } = useProviderSettings();
 
@@ -454,6 +556,10 @@ export default function MediaPage() {
         clearAll={clearAll}
         isActive={isActive}
         activeFilterCount={activeFilterCount}
+        movieSort={filterState.movieSort}
+        seriesSort={filterState.seriesSort}
+        setMovieSort={setMovieSort}
+        setSeriesSort={setSeriesSort}
         activeTab={activeTab}
         filtersOpen={filtersOpen}
         onFiltersClose={() => setFiltersOpen(false)}

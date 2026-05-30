@@ -29,7 +29,7 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   movieTagIds: z.string().optional(),
   movieQualityProfileIds: z.string().optional(),
   movieGenres: z.string().optional(),
-  sort: z.enum(['title_asc', 'title_desc']).optional().default('title_asc'),
+  sort: z.enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc']).optional().default('title_asc'),
   tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
@@ -47,7 +47,7 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   seriesGenres: z.string().optional(),
   seriesType: z.string().optional(),
   network: z.string().optional(),
-  sort: z.enum(['title_asc', 'title_desc']).optional().default('title_asc'),
+  sort: z.enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc']).optional().default('title_asc'),
   tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
@@ -296,13 +296,15 @@ export function createMediaHandlers(cradle: MediaCradle) {
           filtered = filtered.filter((m) => watchedTitles.has(m.title.toLowerCase()) === want);
         }
 
-        const sorted = filtered
-          .slice()
-          .sort((a, b) =>
-            query.sort === 'title_desc'
-              ? b.title.localeCompare(a.title)
-              : a.title.localeCompare(b.title)
-          );
+        const sorted = (() => {
+          const dir = query.sort.endsWith('_desc') ? -1 : 1;
+          const field = query.sort.replace(/_(?:asc|desc)$/, '');
+          return filtered.slice().sort((a, b) => {
+            if (field === 'year') return dir * ((a.year ?? 0) - (b.year ?? 0));
+            if (field === 'status') return dir * (Number(a.hasFile) - Number(b.hasFile));
+            return dir * a.title.localeCompare(b.title);
+          });
+        })();
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,
@@ -324,13 +326,15 @@ export function createMediaHandlers(cradle: MediaCradle) {
           filtered = filtered.filter((s) => watchedTitles.has(s.title.toLowerCase()) === want);
         }
 
-        const sorted = filtered
-          .slice()
-          .sort((a, b) =>
-            query.sort === 'title_desc'
-              ? b.title.localeCompare(a.title)
-              : a.title.localeCompare(b.title)
-          );
+        const sorted = (() => {
+          const dir = query.sort.endsWith('_desc') ? -1 : 1;
+          const field = query.sort.replace(/_(?:asc|desc)$/, '');
+          return filtered.slice().sort((a, b) => {
+            if (field === 'year') return dir * ((a.year ?? 0) - (b.year ?? 0));
+            if (field === 'status') return dir * (Number(a.monitored) - Number(b.monitored));
+            return dir * a.title.localeCompare(b.title);
+          });
+        })();
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,

@@ -24,6 +24,8 @@ const DEFAULT_FILTER: FilterState = {
   seriesType: undefined,
   network: undefined,
   tautulliWatched: undefined,
+  movieSort: 'title_asc',
+  seriesSort: 'title_asc',
 };
 
 function emptySlice<T>(): MediaSlice<T> {
@@ -58,6 +60,8 @@ const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);
 
 // ─── Controlled wrapper ───────────────────────────────────────────────────────
 
+const SORT_KEYS = new Set(['movieSort', 'seriesSort']);
+
 function Controlled({
   filtersOpen,
   onFiltersClose,
@@ -69,9 +73,10 @@ function Controlled({
 }) {
   const [filterState, setFilterState] = useState<FilterState>(DEFAULT_FILTER);
   const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
-  const isActive = Object.entries(filterState).some(([key, v]) =>
-    key === 'title' ? v !== '' : v !== undefined
-  );
+  const isActive = Object.entries(filterState).some(([key, v]) => {
+    if (SORT_KEYS.has(key)) return false;
+    return key === 'title' ? v !== '' : v !== undefined;
+  });
 
   return (
     <MediaContent
@@ -94,6 +99,10 @@ function Controlled({
       clearAll={() => setFilterState(DEFAULT_FILTER)}
       isActive={isActive}
       activeFilterCount={0}
+      movieSort={filterState.movieSort}
+      seriesSort={filterState.seriesSort}
+      setMovieSort={(v) => patch({ movieSort: v })}
+      setSeriesSort={(v) => patch({ seriesSort: v })}
       activeTab={activeTab}
       filtersOpen={filtersOpen}
       onFiltersClose={onFiltersClose}

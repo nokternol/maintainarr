@@ -388,16 +388,18 @@ describe('FILTER_FIELDS registry — shape', () => {
     expect(FILTER_FIELDS).toBeDefined();
   });
 
-  it('covers all 15 FilterState fields', () => {
+  it('covers all 17 FilterState fields', () => {
     expect(Object.keys(FILTER_FIELDS).sort()).toEqual([
       'hasFile',
       'monitored',
       'movieGenres',
       'movieQualityProfileIds',
+      'movieSort',
       'movieTagIds',
       'network',
       'seriesGenres',
       'seriesQualityProfileIds',
+      'seriesSort',
       'seriesStatus',
       'seriesTagIds',
       'seriesType',
@@ -439,12 +441,17 @@ describe('FILTER_FIELDS registry — shape', () => {
       expect(FILTER_FIELDS[key]).toEqual({ type: 'string', default: undefined });
     }
   });
+
+  it('movieSort and seriesSort are string fields with title_asc default', () => {
+    expect(FILTER_FIELDS.movieSort).toEqual({ type: 'string', default: 'title_asc' });
+    expect(FILTER_FIELDS.seriesSort).toEqual({ type: 'string', default: 'title_asc' });
+  });
 });
 
 // ─── Complete round-trips (all 15 fields) ─────────────────────────────────────
 
-describe('parseQuery — complete round-trip for all 15 fields', () => {
-  it('parses all 15 registry fields from query', () => {
+describe('parseQuery — complete round-trip for all 17 fields', () => {
+  it('parses all 17 registry fields from query', () => {
     mockRouterQuery = {
       title: 'batman',
       hasFile: 'true',
@@ -461,6 +468,8 @@ describe('parseQuery — complete round-trip for all 15 fields', () => {
       seriesType: 'standard',
       network: 'HBO',
       tautulliWatched: 'false',
+      movieSort: 'year_desc',
+      seriesSort: 'status_asc',
     };
     const { result } = renderHook(() => useMediaFilters());
 
@@ -480,6 +489,8 @@ describe('parseQuery — complete round-trip for all 15 fields', () => {
       seriesType: 'standard',
       network: 'HBO',
       tautulliWatched: 'false',
+      movieSort: 'year_desc',
+      seriesSort: 'status_asc',
     });
   });
 
@@ -503,11 +514,13 @@ describe('parseQuery — complete round-trip for all 15 fields', () => {
       seriesType: undefined,
       network: undefined,
       tautulliWatched: undefined,
+      movieSort: 'title_asc',
+      seriesSort: 'title_asc',
     });
   });
 });
 
-describe('buildQuery — serializes all 15 non-default fields', () => {
+describe('buildQuery — serializes all non-default fields', () => {
   it('includes every set filter key in the URL query', async () => {
     const { result } = renderHook(() => useMediaFilters());
 
@@ -527,6 +540,8 @@ describe('buildQuery — serializes all 15 non-default fields', () => {
       result.current.setSeriesType('standard');
       result.current.setNetwork('HBO');
       result.current.setTautulliWatched('false');
+      result.current.setMovieSort('year_desc');
+      result.current.setSeriesSort('status_asc');
     });
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalled());
@@ -537,10 +552,12 @@ describe('buildQuery — serializes all 15 non-default fields', () => {
       'monitored',
       'movieGenres',
       'movieQualityProfileIds',
+      'movieSort',
       'movieTagIds',
       'network',
       'seriesGenres',
       'seriesQualityProfileIds',
+      'seriesSort',
       'seriesStatus',
       'seriesTagIds',
       'seriesType',
@@ -549,6 +566,68 @@ describe('buildQuery — serializes all 15 non-default fields', () => {
       'yearMax',
       'yearMin',
     ]);
+  });
+});
+
+// ─── Sort setters ─────────────────────────────────────────────────────────────
+
+describe('useMediaFilters — sort setters', () => {
+  it('setMovieSort updates filterState.movieSort', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setMovieSort('year_desc');
+    });
+
+    expect(result.current.filterState.movieSort).toBe('year_desc');
+  });
+
+  it('setSeriesSort updates filterState.seriesSort', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setSeriesSort('status_asc');
+    });
+
+    expect(result.current.filterState.seriesSort).toBe('status_asc');
+  });
+
+  it('isActive remains false when only sort is non-default', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setMovieSort('year_desc');
+      result.current.setSeriesSort('status_asc');
+    });
+
+    expect(result.current.isActive).toBe(false);
+  });
+
+  it('sort keys are excluded from debouncedFilters', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setMovieSort('year_desc');
+      result.current.setSeriesSort('status_asc');
+    });
+
+    expect(result.current.debouncedFilters).not.toHaveProperty('movieSort');
+    expect(result.current.debouncedFilters).not.toHaveProperty('seriesSort');
+  });
+
+  it('sort state persists through clearAll', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setMovieSort('year_desc');
+      result.current.setHasFile('true');
+    });
+    act(() => {
+      result.current.clearAll();
+    });
+
+    expect(result.current.filterState.movieSort).toBe('title_asc');
+    expect(result.current.filterState.hasFile).toBeUndefined();
   });
 });
 
