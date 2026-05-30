@@ -59,11 +59,89 @@ const sidebarItems: SidebarItem[] = [
 
 type SortField = 'title' | 'year' | 'status';
 
+const SORT_FIELDS: { value: SortField; label: string }[] = [
+  { value: 'title', label: 'Title' },
+  { value: 'year', label: 'Year' },
+  { value: 'status', label: 'Status' },
+];
+
 function parseSortValue(sort: string | undefined): { field: SortField; dir: 'asc' | 'desc' } {
   const s = sort ?? 'title_asc';
   const dir = s.endsWith('_desc') ? 'desc' : 'asc';
   const field = s.replace(/_(?:asc|desc)$/, '') as SortField;
   return { field, dir };
+}
+
+function SortFieldPicker({
+  field,
+  onChange,
+  isNonDefault,
+}: {
+  field: SortField;
+  onChange: (f: SortField) => void;
+  isNonDefault: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const currentLabel = SORT_FIELDS.find((f) => f.value === field)?.label ?? 'Title';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Sort by"
+        className={cn(
+          'flex items-center gap-1 text-xs font-medium px-1.5 py-1 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-primary',
+          isNonDefault ? 'text-primary hover:text-primary-hover' : 'text-text-secondary hover:text-text-primary'
+        )}
+      >
+        {currentLabel}
+        <svg className="w-3 h-3 opacity-50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Sort by"
+          className="absolute top-full left-0 mt-1 bg-surface-elevated border border-border rounded-md shadow-lg py-1 z-20 min-w-[80px]"
+        >
+          {SORT_FIELDS.map((opt) => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={field === opt.value}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={cn(
+                  'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                  field === opt.value
+                    ? 'text-primary font-medium'
+                    : 'text-text-secondary hover:bg-surface-panel'
+                )}
+              >
+                {opt.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function SortBar({
@@ -91,21 +169,9 @@ function SortBar({
       aria-label="Sort and result count"
       className="flex items-center justify-between px-4 sm:px-6 py-2 bg-surface-panel border-b border-border"
     >
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-text-muted select-none">Sort:</span>
-        <select
-          value={field}
-          onChange={(e) => handleFieldChange(e.target.value as SortField)}
-          aria-label="Sort by"
-          className={cn(
-            'bg-transparent text-xs font-medium border-0 outline-none cursor-pointer py-1 px-1 rounded focus:ring-1 focus:ring-primary',
-            isNonDefault ? 'text-primary' : 'text-text-secondary'
-          )}
-        >
-          <option value="title">Title</option>
-          <option value="year">Year</option>
-          <option value="status">Status</option>
-        </select>
+      <div className="flex items-center gap-0.5">
+        <span className="text-xs text-text-muted select-none mr-0.5">Sort:</span>
+        <SortFieldPicker field={field} onChange={handleFieldChange} isNonDefault={isNonDefault} />
         <button
           type="button"
           onClick={handleDirToggle}
