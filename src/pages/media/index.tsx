@@ -400,7 +400,12 @@ export function MediaContent({
 
       <div className="p-3 sm:p-6 space-y-6">
         {/* Movies section — always in DOM for tests, hidden when tab is series */}
-        <section className={cn(activeTab !== 'movies' && 'hidden')}>
+        <section
+          role="tabpanel"
+          id="tabpanel-movies"
+          aria-labelledby="tab-movies"
+          className={cn(activeTab !== 'movies' && 'hidden')}
+        >
           <VirtualMediaGrid
             items={movies.items}
             isLoading={movies.isLoading}
@@ -470,7 +475,12 @@ export function MediaContent({
         </section>
 
         {/* Series section — always in DOM for tests, hidden when tab is movies */}
-        <section className={cn(activeTab !== 'series' && 'hidden')}>
+        <section
+          role="tabpanel"
+          id="tabpanel-series"
+          aria-labelledby="tab-series"
+          className={cn(activeTab !== 'series' && 'hidden')}
+        >
           <VirtualMediaGrid
             items={series.items}
             isLoading={series.isLoading}
