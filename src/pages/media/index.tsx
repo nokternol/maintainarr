@@ -1,8 +1,9 @@
 import AppLayout from '@app/components/AppLayout';
-import { MediaFilterBar } from '@app/components/MediaFilterBar';
 import MediaCard from '@app/components/MediaCard';
+import { MediaFilterBar } from '@app/components/MediaFilterBar';
 import RatingsPanel from '@app/components/RatingsPanel';
 import Sidebar from '@app/components/Sidebar';
+import { Tabs } from '@app/components/Tabs';
 import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
@@ -11,18 +12,36 @@ import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
+import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
-import { useProviderSettings } from '@app/hooks/useProviderSettings';
-import type { SidebarItem } from '@app/types/navigation';
-import { Tabs } from '@app/components/Tabs';
 import { cn } from '@app/lib/utils/cn';
-import { ArrowDown, ArrowUp, ChevronDown, Clapperboard, Filter, LayoutDashboard, Search } from 'lucide-react';
+import type { SidebarItem } from '@app/types/navigation';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  Clapperboard,
+  Filter,
+  LayoutDashboard,
+  Search,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} strokeWidth={1.75} />, href: '/dashboard' },
-  { id: 'media', label: 'Media', icon: <Clapperboard size={20} strokeWidth={1.75} />, href: '/media', active: true },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: <LayoutDashboard size={20} strokeWidth={1.75} />,
+    href: '/dashboard',
+  },
+  {
+    id: 'media',
+    label: 'Media',
+    icon: <Clapperboard size={20} strokeWidth={1.75} />,
+    href: '/media',
+    active: true,
+  },
   { id: 'search', label: 'Search', icon: <Search size={20} strokeWidth={1.75} />, href: '/search' },
 ];
 
@@ -76,38 +95,47 @@ function SortFieldPicker({
         aria-label="Sort by"
         className={cn(
           'flex items-center gap-1 text-xs font-medium px-1.5 py-1 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-primary',
-          isNonDefault ? 'text-primary hover:text-primary-hover' : 'text-text-secondary hover:text-text-primary'
+          isNonDefault
+            ? 'text-primary hover:text-primary-hover'
+            : 'text-text-secondary hover:text-text-primary'
         )}
       >
         {currentLabel}
-        <ChevronDown size={12} strokeWidth={2.5} className="opacity-50 flex-shrink-0" aria-hidden="true" />
+        <ChevronDown
+          size={12}
+          strokeWidth={2.5}
+          className="opacity-50 flex-shrink-0"
+          aria-hidden="true"
+        />
       </button>
 
       {open && (
-        <ul
+        <div
           role="listbox"
+          tabIndex={-1}
           aria-label="Sort by"
           className="absolute top-full left-0 mt-1 bg-surface-elevated border border-border rounded-md shadow-lg py-1 z-20 min-w-[80px]"
         >
           {SORT_FIELDS.map((opt) => (
-            <li key={opt.value}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={field === opt.value}
-                onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={cn(
-                  'w-full text-left px-3 py-1.5 text-xs transition-colors',
-                  field === opt.value
-                    ? 'text-primary font-medium'
-                    : 'text-text-secondary hover:bg-surface-panel'
-                )}
-              >
-                {opt.label}
-              </button>
-            </li>
+            <button
+              key={opt.value}
+              type="button"
+              aria-selected={field === opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className={cn(
+                'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                field === opt.value
+                  ? 'text-primary font-medium'
+                  : 'text-text-secondary hover:bg-surface-panel'
+              )}
+            >
+              {opt.label}
+            </button>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -147,7 +175,9 @@ function SortBar({
           aria-label={dir === 'asc' ? 'Sort ascending' : 'Sort descending'}
           className={cn(
             'flex items-center justify-center w-6 h-6 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-primary',
-            isNonDefault ? 'text-primary hover:text-primary-hover' : 'text-text-muted hover:text-text-secondary'
+            isNonDefault
+              ? 'text-primary hover:text-primary-hover'
+              : 'text-text-muted hover:text-text-secondary'
           )}
         >
           {dir === 'asc' ? (
@@ -163,8 +193,8 @@ function SortBar({
           <span className="inline-block h-3 w-16 rounded bg-surface-elevated animate-pulse" />
         ) : (
           <span className="text-xs text-text-muted tabular-nums">
-            <span className="text-text-secondary font-medium">{count.toLocaleString()}</span>
-            {' '}{tab === 'movies' ? 'movies' : 'series'}
+            <span className="text-text-secondary font-medium">{count.toLocaleString()}</span>{' '}
+            {tab === 'movies' ? 'movies' : 'series'}
           </span>
         )}
       </div>
@@ -207,14 +237,18 @@ function countActiveFilters(filterState: FilterState, tab: ActiveTab): number {
 
 function useSentinel(onIntersect: () => void) {
   const onIntersectRef = useRef(onIntersect);
-  useEffect(() => { onIntersectRef.current = onIntersect; }, [onIntersect]);
+  useEffect(() => {
+    onIntersectRef.current = onIntersect;
+  }, [onIntersect]);
   const observerRef = useRef<IntersectionObserver | null>(null);
   return useCallback((el: HTMLDivElement | null) => {
     observerRef.current?.disconnect();
     observerRef.current = null;
     if (!el) return;
     observerRef.current = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) onIntersectRef.current(); },
+      ([entry]) => {
+        if (entry.isIntersecting) onIntersectRef.current();
+      },
       { rootMargin: '200px' }
     );
     observerRef.current.observe(el);
@@ -290,14 +324,36 @@ export interface MediaContentProps {
 
 export function MediaContent({
   filterState,
-  setTitle, setHasFile, setMonitored, setSeriesStatus,
-  setYearMin, setYearMax, setMovieTagIds, setSeriesTagIds,
-  setMovieQualityProfileIds, setSeriesQualityProfileIds,
-  setMovieGenres, setSeriesGenres, setSeriesType, setNetwork,
-  setTautulliWatched, clearAll, isActive, activeFilterCount,
-  movieSort, seriesSort, setMovieSort, setSeriesSort,
-  activeTab, filtersOpen, onFiltersClose,
-  movies, series, lookups, configuredTypes, providersLoaded,
+  setTitle,
+  setHasFile,
+  setMonitored,
+  setSeriesStatus,
+  setYearMin,
+  setYearMax,
+  setMovieTagIds,
+  setSeriesTagIds,
+  setMovieQualityProfileIds,
+  setSeriesQualityProfileIds,
+  setMovieGenres,
+  setSeriesGenres,
+  setSeriesType,
+  setNetwork,
+  setTautulliWatched,
+  clearAll,
+  isActive,
+  activeFilterCount,
+  movieSort,
+  seriesSort,
+  setMovieSort,
+  setSeriesSort,
+  activeTab,
+  filtersOpen,
+  onFiltersClose,
+  movies,
+  series,
+  lookups,
+  configuredTypes,
+  providersLoaded,
 }: MediaContentProps) {
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -354,7 +410,9 @@ export function MediaContent({
                 key={`movie-${movie.id}`}
                 id={`movie-${movie.id}`}
                 data-testid={`media-card-movie-${movie.id}`}
-                className={selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
+                className={
+                  selectedId === `movie-${movie.id}` ? 'ring-2 ring-primary rounded-lg' : undefined
+                }
                 onClick={(id) => {
                   setSelected({ title: movie.title, year: movie.year });
                   setSelectedId(id);
@@ -369,28 +427,46 @@ export function MediaContent({
               </MediaCard>
             )}
           />
-          {movies.hasMore && !movies.isFetchingMore && <div ref={movieSentinelRef} style={{ height: 1 }} />}
-          {!movies.isLoading && movies.items.length === 0 && providersLoaded && (
-            !configuredTypes.has('RADARR') ? (
+          {movies.hasMore && !movies.isFetchingMore && (
+            <div ref={movieSentinelRef} style={{ height: 1 }} />
+          )}
+          {!movies.isLoading &&
+            movies.items.length === 0 &&
+            providersLoaded &&
+            (!configuredTypes.has('RADARR') ? (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
-                <p className="text-sm font-medium text-text-secondary">No Radarr connection configured.</p>
-                <p className="text-xs text-text-muted">Add a Radarr provider in Settings to manage your movie library.</p>
-                <a href="/settings" className="mt-2 text-xs text-primary hover:underline underline-offset-2">Go to Settings</a>
+                <p className="text-sm font-medium text-text-secondary">
+                  No Radarr connection configured.
+                </p>
+                <p className="text-xs text-text-muted">
+                  Add a Radarr provider in Settings to manage your movie library.
+                </p>
+                <a
+                  href="/settings"
+                  className="mt-2 text-xs text-primary hover:underline underline-offset-2"
+                >
+                  Go to Settings
+                </a>
               </div>
             ) : activeFilterCount > 0 ? (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
                 <p className="text-sm text-text-secondary">No movies match your current filters.</p>
-                <button type="button" onClick={clearAll} className="text-xs text-primary hover:underline underline-offset-2">
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-xs text-primary hover:underline underline-offset-2"
+                >
                   Clear filters
                 </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
                 <p className="text-sm text-text-secondary">Your movie library is empty.</p>
-                <p className="text-xs text-text-muted">Movies synced from Radarr will appear here.</p>
+                <p className="text-xs text-text-muted">
+                  Movies synced from Radarr will appear here.
+                </p>
               </div>
-            )
-          )}
+            ))}
         </section>
 
         {/* Series section — always in DOM for tests, hidden when tab is movies */}
@@ -404,7 +480,9 @@ export function MediaContent({
                 key={`series-${show.id}`}
                 id={`series-${show.id}`}
                 data-testid={`media-card-series-${show.id}`}
-                className={selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined}
+                className={
+                  selectedId === `series-${show.id}` ? 'ring-2 ring-primary rounded-lg' : undefined
+                }
                 onClick={(id) => {
                   setSelected({ title: show.title, year: show.year });
                   setSelectedId(id);
@@ -419,34 +497,55 @@ export function MediaContent({
               </MediaCard>
             )}
           />
-          {series.hasMore && !series.isFetchingMore && <div ref={seriesSentinelRef} style={{ height: 1 }} />}
-          {!series.isLoading && series.items.length === 0 && providersLoaded && (
-            !configuredTypes.has('SONARR') ? (
+          {series.hasMore && !series.isFetchingMore && (
+            <div ref={seriesSentinelRef} style={{ height: 1 }} />
+          )}
+          {!series.isLoading &&
+            series.items.length === 0 &&
+            providersLoaded &&
+            (!configuredTypes.has('SONARR') ? (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
-                <p className="text-sm font-medium text-text-secondary">No Sonarr connection configured.</p>
-                <p className="text-xs text-text-muted">Add a Sonarr provider in Settings to manage your series library.</p>
-                <a href="/settings" className="mt-2 text-xs text-primary hover:underline underline-offset-2">Go to Settings</a>
+                <p className="text-sm font-medium text-text-secondary">
+                  No Sonarr connection configured.
+                </p>
+                <p className="text-xs text-text-muted">
+                  Add a Sonarr provider in Settings to manage your series library.
+                </p>
+                <a
+                  href="/settings"
+                  className="mt-2 text-xs text-primary hover:underline underline-offset-2"
+                >
+                  Go to Settings
+                </a>
               </div>
             ) : activeFilterCount > 0 ? (
               <div className="flex flex-col items-center justify-center py-24 gap-2 text-center">
                 <p className="text-sm text-text-secondary">No series match your current filters.</p>
-                <button type="button" onClick={clearAll} className="text-xs text-primary hover:underline underline-offset-2">
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="text-xs text-primary hover:underline underline-offset-2"
+                >
                   Clear filters
                 </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-24 gap-1 text-center">
                 <p className="text-sm text-text-secondary">Your series library is empty.</p>
-                <p className="text-xs text-text-muted">Series synced from Sonarr will appear here.</p>
+                <p className="text-xs text-text-muted">
+                  Series synced from Sonarr will appear here.
+                </p>
               </div>
-            )
-          )}
+            ))}
         </section>
       </div>
 
       <RatingsPanel
         isOpen={selected !== null}
-        onClose={() => { setSelected(null); setSelectedId(null); }}
+        onClose={() => {
+          setSelected(null);
+          setSelectedId(null);
+        }}
         title={selected?.title ?? ''}
         year={selected?.year}
       />
@@ -523,7 +622,9 @@ export default function MediaPage() {
           items={sidebarItems}
           logo={
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">W</div>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
+                W
+              </div>
               <span className="text-xl font-bold text-text-primary">Warden</span>
             </div>
           }
@@ -535,71 +636,83 @@ export default function MediaPage() {
           title="Managed Media"
           breadcrumbs={[{ label: 'Home', href: '/' }]}
           actions={
-            <>
-              <Tabs
-                tabs={[
-                  { value: 'movies', label: 'Movies', count: movies.totalCount, loading: movies.isLoading },
-                  { value: 'series', label: 'Series', count: series.totalCount, loading: series.isLoading },
-                ]}
-                active={activeTab}
-                onChange={setActiveTab}
-              />
-              <button
-                type="button"
-                className={cn(
-                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
-                  isActive
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
-                )}
-                onClick={() => setFiltersOpen(true)}
-              >
-                <Filter size={16} strokeWidth={2} aria-hidden="true" />
-                Filters
-                {isActive && (
-                  <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              className={cn(
+                'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
+                isActive
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
+              )}
+              onClick={() => setFiltersOpen(true)}
+            >
+              <Filter size={16} strokeWidth={2} aria-hidden="true" />
+              Filters
+              {isActive && (
+                <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           }
         />
       }
     >
-      <MediaContent
-        filterState={filterState}
-        setTitle={setTitle}
-        setHasFile={setHasFile}
-        setMonitored={setMonitored}
-        setSeriesStatus={setSeriesStatus}
-        setYearMin={setYearMin}
-        setYearMax={setYearMax}
-        setMovieTagIds={setMovieTagIds}
-        setSeriesTagIds={setSeriesTagIds}
-        setMovieQualityProfileIds={setMovieQualityProfileIds}
-        setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-        setMovieGenres={setMovieGenres}
-        setSeriesGenres={setSeriesGenres}
-        setSeriesType={setSeriesType}
-        setNetwork={setNetwork}
-        setTautulliWatched={setTautulliWatched}
-        clearAll={clearAll}
-        isActive={isActive}
-        activeFilterCount={activeFilterCount}
-        movieSort={filterState.movieSort}
-        seriesSort={filterState.seriesSort}
-        setMovieSort={setMovieSort}
-        setSeriesSort={setSeriesSort}
-        activeTab={activeTab}
-        filtersOpen={filtersOpen}
-        onFiltersClose={() => setFiltersOpen(false)}
-        movies={movies}
-        series={series}
-        lookups={lookups}
-        configuredTypes={configuredTypes}
-        providersLoaded={providersLoaded}
-      />
+      <>
+        <div className="bg-surface-panel border-b border-border px-4 sm:px-6 py-2 flex items-center">
+          <Tabs
+            tabs={[
+              {
+                value: 'movies',
+                label: 'Movies',
+                count: movies.totalCount,
+                loading: movies.isLoading,
+              },
+              {
+                value: 'series',
+                label: 'Series',
+                count: series.totalCount,
+                loading: series.isLoading,
+              },
+            ]}
+            active={activeTab}
+            onChange={setActiveTab}
+          />
+        </div>
+        <MediaContent
+          filterState={filterState}
+          setTitle={setTitle}
+          setHasFile={setHasFile}
+          setMonitored={setMonitored}
+          setSeriesStatus={setSeriesStatus}
+          setYearMin={setYearMin}
+          setYearMax={setYearMax}
+          setMovieTagIds={setMovieTagIds}
+          setSeriesTagIds={setSeriesTagIds}
+          setMovieQualityProfileIds={setMovieQualityProfileIds}
+          setSeriesQualityProfileIds={setSeriesQualityProfileIds}
+          setMovieGenres={setMovieGenres}
+          setSeriesGenres={setSeriesGenres}
+          setSeriesType={setSeriesType}
+          setNetwork={setNetwork}
+          setTautulliWatched={setTautulliWatched}
+          clearAll={clearAll}
+          isActive={isActive}
+          activeFilterCount={activeFilterCount}
+          movieSort={filterState.movieSort}
+          seriesSort={filterState.seriesSort}
+          setMovieSort={setMovieSort}
+          setSeriesSort={setSeriesSort}
+          activeTab={activeTab}
+          filtersOpen={filtersOpen}
+          onFiltersClose={() => setFiltersOpen(false)}
+          movies={movies}
+          series={series}
+          lookups={lookups}
+          configuredTypes={configuredTypes}
+          providersLoaded={providersLoaded}
+        />
+      </>
     </AppLayout>
   );
 }

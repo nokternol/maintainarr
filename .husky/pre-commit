@@ -1,2 +1,17 @@
 yarn lint-staged
 yarn vitest run --changed
+
+# Reject commits that introduce biome-ignore suppressions in source files.
+# Fix the root cause instead: adjust biome.json or refactor the code.
+staged_src=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -n "$staged_src" ]; then
+  if echo "$staged_src" | xargs grep -l "biome-ignore" 2>/dev/null | grep -q .; then
+    echo ""
+    echo "❌  biome-ignore suppression detected in staged files."
+    echo "    Fix the root cause (refactor the code or adjust biome.json) instead of suppressing."
+    echo "    Files:"
+    echo "$staged_src" | xargs grep -l "biome-ignore" 2>/dev/null | sed 's/^/      /' || true
+    echo ""
+    exit 1
+  fi
+fi

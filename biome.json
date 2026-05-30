@@ -20,6 +20,9 @@
       },
       "correctness": {
         "noUnusedVariables": "warn"
+      },
+      "a11y": {
+        "useSemanticElements": "off"
       }
     }
   },

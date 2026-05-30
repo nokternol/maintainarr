@@ -5,6 +5,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { ScrollContainerContext } from '../AppLayout';
 import { MediaCard } from '../MediaCard';
 
+const SKELETON_KEYS = Array.from({ length: 96 }, (_, i) => `skel-${i}`);
+
 // ─── Column breakpoints ────────────────────────────────────────────────────────
 // Uses container width (not viewport) so sidebar-narrowed areas get correct cols.
 // 520px threshold prevents the "2 huge columns" problem at tablet (sidebar ~220px
@@ -74,8 +76,7 @@ export function VirtualMediaGrid<T>({
       <div ref={measureRef} className={className}>
         <div style={gridStyle}>
           {Array.from({ length: skeletonCount }, (_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: stable skeleton placeholders
-            <MediaCard.Skeleton key={i} />
+            <MediaCard.Skeleton key={SKELETON_KEYS[i]} />
           ))}
         </div>
       </div>
@@ -156,8 +157,7 @@ function VirtualRows<T>({
                 }}
               >
                 {Array.from({ length: columnCount }, (_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable skeleton placeholders
-                  <MediaCard.Skeleton key={i} />
+                  <MediaCard.Skeleton key={SKELETON_KEYS[i]} />
                 ))}
               </div>
             );

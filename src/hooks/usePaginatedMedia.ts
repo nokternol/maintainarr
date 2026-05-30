@@ -1,5 +1,5 @@
 import type { MediaFilters } from '@app/types/media';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useSWRInfinite from 'swr/infinite';
 
 interface YearRange {
@@ -44,9 +44,12 @@ export function usePaginatedMedia<T>(endpoint: string, filters?: MediaFilters) {
     }
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: filtersKey is a deliberate trigger dep, not consumed inside the effect
+  const prevFiltersKeyRef = useRef(filtersKey);
   useEffect(() => {
-    void setSize(1);
+    if (prevFiltersKeyRef.current !== filtersKey) {
+      prevFiltersKeyRef.current = filtersKey;
+      void setSize(1);
+    }
   }, [filtersKey, setSize]);
 
   const items = data ? data.flatMap((page) => page.items) : [];

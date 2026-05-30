@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Hook to sync state with localStorage
@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
  */
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Get from localStorage or use initial value
-  const readValue = (): T => {
+  const readValue = useCallback((): T => {
     if (typeof window === 'undefined') {
       return initialValue;
     }
@@ -20,7 +20,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  };
+  }, [key, initialValue]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
@@ -38,10 +38,9 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
     }
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: readValue is stable and should not trigger re-renders
   useEffect(() => {
     setStoredValue(readValue());
-  }, []);
+  }, [readValue]);
 
   return [storedValue, setValue];
 }

@@ -1,6 +1,6 @@
 import { cn } from '@app/lib/utils/cn';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './MediaPoster.module.css';
 
 type LoadState = 'idle' | 'loading' | 'loaded';
@@ -60,7 +60,7 @@ export const MediaPoster = ({
   // Starting in 'loading' when the thumbnail is already cached skips the dwell
   // delay on re-mounts (browser serves the image instantly from HTTP cache).
   const [loadState, setLoadState] = useState<LoadState>(() =>
-    thumbSrc && _thumbCache.has(thumbSrc) ? 'loading' : 'idle',
+    thumbSrc && _thumbCache.has(thumbSrc) ? 'loading' : 'idle'
   );
 
   // Mirror ref so the IntersectionObserver callback can read current state
@@ -74,10 +74,10 @@ export const MediaPoster = ({
   // Keeps useState and the ref mirror in sync atomically. Any path that
   // calls one must call both — this helper makes omission impossible.
   // Defined at component scope so the JSX onLoad handler can also use it.
-  function transition(next: LoadState) {
+  const transition = useCallback((next: LoadState) => {
     setLoadState(next);
     loadStateRef.current = next;
-  }
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -126,7 +126,7 @@ export const MediaPoster = ({
           if (loadStateRef.current === 'loading') transition('idle');
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
 
     observerRef.current = observer;
@@ -137,7 +137,7 @@ export const MediaPoster = ({
       observer.disconnect();
       observerRef.current = null;
     };
-  }, [src]);
+  }, [src, transition]);
 
   const aspectClasses = {
     poster: styles.aspectPoster,
@@ -157,7 +157,6 @@ export const MediaPoster = ({
           Only rendered once the dwell period elapses (or immediately on cache
           hit). Unmounts if the IO aborts the request ('idle' state). */}
       {loadState !== 'idle' && thumbSrc && (
-        // biome-ignore lint/performance/noImgElement: thumbnail intentionally uses <img> — it is a decorative placeholder, not content
         <img
           src={thumbSrc}
           aria-hidden="true"
