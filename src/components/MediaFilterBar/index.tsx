@@ -711,18 +711,7 @@ export function MediaFilterBar({
         role="search"
         aria-label="Filter media library"
       >
-        <div className="relative">
-          {/* Clear all — anchored top-right of the bar */}
-          {isActive && (
-            <button
-              type="button"
-              onClick={clearAll}
-              className="absolute top-0 right-0 text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
-            >
-              Clear all
-            </button>
-          )}
-
+        <div>
           {/* Row 1: Search + Movie filters */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
             {/* Search input */}
@@ -803,7 +792,7 @@ export function MediaFilterBar({
               <>
                 <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
                 <ChipGroup
-                  label="Watched"
+                  label="Play history"
                   options={[
                     { value: undefined, label: 'All' },
                     { value: 'true' as const, label: 'Watched' },
@@ -813,6 +802,15 @@ export function MediaFilterBar({
                   onChange={setTautulliWatched}
                 />
               </>
+            )}
+            {isActive && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="ml-auto text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
+              >
+                Clear all
+              </button>
             )}
           </div>
 
@@ -1079,7 +1077,7 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
                 <ChipGroup
-                  label="Watched"
+                  label="Play history"
                   options={[
                     { value: undefined, label: 'All' },
                     { value: 'true' as const, label: 'Watched' },
