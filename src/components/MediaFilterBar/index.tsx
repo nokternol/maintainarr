@@ -868,7 +868,7 @@ export function MediaFilterBar({
             <button
               type="button"
               onClick={onMobileClose}
-              className="w-full py-3 rounded-xl bg-primary text-white font-semibold text-sm"
+              className="w-full py-3 rounded-sm bg-primary text-white font-semibold text-sm"
             >
               Done
             </button>

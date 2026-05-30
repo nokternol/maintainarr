@@ -108,8 +108,7 @@ function FilterBarWrapper({
 
   return (
     <div className="bg-surface-bg min-h-screen">
-      {/* Story chrome: shows current state + mobile trigger */}
-      <div className="flex items-center justify-between px-6 py-2 bg-surface-elevated border-b border-border">
+      <div className="px-6 py-2 bg-surface-elevated border-b border-border">
         <span className="text-xs text-text-muted font-mono">
           filter state:{' '}
           <span className={isActive ? 'text-primary' : 'text-text-muted'}>
@@ -119,13 +118,6 @@ function FilterBarWrapper({
             <span className="ml-2 text-text-secondary">title="{filterState.title}"</span>
           )}
         </span>
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="text-xs px-2.5 py-1 rounded-sm border border-border text-text-secondary hover:bg-surface-hover transition-colors"
-        >
-          Open mobile sheet
-        </button>
       </div>
 
       <MediaFilterBar
@@ -207,28 +199,19 @@ export const WithActiveFilters: Story = () => {
     tautulliWatched: 'false',
     yearMin: 2010,
   });
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   const isActive = true;
   const patch = (partial: Partial<FilterState>) =>
     setFilterState((s) => ({ ...s, ...partial }));
 
   return (
     <div className="bg-surface-bg min-h-screen">
-      <div className="flex items-center justify-between px-6 py-2 bg-surface-elevated border-b border-border">
+      <div className="px-6 py-2 bg-surface-elevated border-b border-border">
         <span className="text-xs text-text-muted font-mono">
           filter state: <span className="text-primary">active</span>
           <span className="ml-2 text-text-secondary">
             hasFile=true · seriesStatus=continuing · anime · unwatched · year≥2010
           </span>
         </span>
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="text-xs px-2.5 py-1 rounded-sm border border-border text-text-secondary hover:bg-surface-hover transition-colors"
-        >
-          Open mobile sheet
-        </button>
       </div>
       <MediaFilterBar
         filterState={filterState}
@@ -253,8 +236,8 @@ export const WithActiveFilters: Story = () => {
         seriesYearRange={YEAR_RANGE}
         lookups={RICH_LOOKUPS}
         configuredTypes={new Set(['RADARR', 'SONARR', 'TAUTULLI'])}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        mobileOpen={false}
+        onMobileClose={() => {}}
       />
     </div>
   );

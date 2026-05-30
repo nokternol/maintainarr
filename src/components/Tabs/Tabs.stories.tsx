@@ -1,5 +1,5 @@
 import type { Story } from '@ladle/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Tabs } from './index';
 import type { Tab } from './index';
 
@@ -79,3 +79,29 @@ export const OnSurface: Story = () => (
     </div>
   </div>
 );
+
+export const FocusRing: Story = () => {
+  const [active, setActive] = useState('series');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Focus the first (inactive) tab — programmatic focus triggers :focus-visible.
+    const btn = containerRef.current?.querySelector<HTMLElement>('[role="tab"]');
+    btn?.focus();
+  }, []);
+
+  return (
+    <div className="bg-surface-bg p-8" ref={containerRef}>
+      <div className="bg-surface-panel rounded-md p-4 border border-border inline-block">
+        <Tabs
+          tabs={[
+            { value: 'movies', label: 'Movies', count: 1482 },
+            { value: 'series', label: 'Series', count: 243 },
+          ]}
+          active={active}
+          onChange={setActive}
+        />
+      </div>
+    </div>
+  );
+};

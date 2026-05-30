@@ -6,6 +6,12 @@
   @apply cursor-pointer hover:scale-[1.02] active:scale-[0.97];
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .interactive {
+    @apply hover:scale-100 active:scale-100;
+  }
+}
+
 .posterWrapper {
   @apply relative;
 }

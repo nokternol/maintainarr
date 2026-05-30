@@ -25,7 +25,7 @@ export function Tabs<T extends string>({ tabs, active, onChange, className }: Ta
           aria-selected={active === tab.value}
           onClick={() => onChange(tab.value)}
           className={cn(
-            'px-3 py-1.5 rounded-sm text-sm font-medium transition-colors',
+            'px-3 py-1.5 rounded-sm text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-panel',
             active === tab.value
               ? 'bg-primary text-white'
               : 'text-text-primary hover:bg-surface-hover',
