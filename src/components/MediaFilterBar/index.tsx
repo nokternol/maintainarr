@@ -3,6 +3,7 @@ import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { cn } from '@app/lib/utils/cn';
 import Slider from 'rc-slider';
 import { useEffect, useId, useRef, useState } from 'react';
+import { OptionFilter } from '../filters/OptionFilter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,43 +51,7 @@ export interface MediaFilterBarProps {
   onMobileClose?: () => void;
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-
-function ChipGroup<T extends string | undefined>({
-  label,
-  options,
-  value,
-  onChange,
-  hideLabel,
-}: {
-  label: string;
-  options: Array<{ value: T; label: string }>;
-  value: T;
-  onChange: (v: T) => void;
-  hideLabel?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      {!hideLabel && <span className="text-xs text-text-muted whitespace-nowrap">{label}:</span>}
-      {options.map((opt) => (
-        <button
-          key={String(opt.value ?? 'all')}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            'px-3 py-2 rounded-sm text-xs font-medium transition-colors min-h-[44px] flex items-center',
-            value === opt.value
-              ? 'bg-primary text-white'
-              : 'bg-surface-panel text-text-primary hover:bg-surface-hover border border-border'
-          )}
-          aria-pressed={value === opt.value}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+// ─── MultiSelectDropdown ──────────────────────────────────────────────────────
 
 function MultiSelectDropdown({
   label,
@@ -158,7 +123,7 @@ function MultiSelectDropdown({
           }
         }}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
+          'flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium border transition-colors h-7',
           activeCount > 0
             ? 'bg-primary text-white border-primary'
             : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
@@ -329,7 +294,7 @@ function StringMultiSelectDropdown({
           }
         }}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors min-h-[44px]',
+          'flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium border transition-colors h-7',
           activeCount > 0
             ? 'bg-primary text-white border-primary'
             : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
@@ -590,6 +555,34 @@ function toStringCsvOrUndefined(values: string[]): string | undefined {
   return values.length > 0 ? values.join(',') : undefined;
 }
 
+// ─── Option sets (shared between desktop and mobile) ─────────────────────────
+
+const HAS_FILE_OPTIONS = [
+  { value: 'true' as const, label: 'Downloaded' },
+  { value: 'false' as const, label: 'Missing' },
+];
+
+const MONITORED_OPTIONS = [
+  { value: 'true' as const, label: 'Monitored' },
+  { value: 'false' as const, label: 'Unmonitored' },
+];
+
+const SERIES_STATUS_OPTIONS = [
+  { value: 'continuing', label: 'Continuing' },
+  { value: 'ended', label: 'Ended' },
+];
+
+const SERIES_TYPE_OPTIONS = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'anime', label: 'Anime' },
+  { value: 'daily', label: 'Daily' },
+];
+
+const TAUTULLI_WATCHED_OPTIONS = [
+  { value: 'true' as const, label: 'Watched' },
+  { value: 'false' as const, label: 'Unwatched' },
+];
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MediaFilterBar({
@@ -705,15 +698,15 @@ export function MediaFilterBar({
 
   return (
     <>
-      {/* ── Desktop filter bar (md+): two-row structured layout ─────────────── */}
+      {/* ── Desktop filter bar (md+) ─────────────────────────────────────────── */}
       <div
-        className="hidden md:block bg-surface-panel border-b border-border px-6 py-3"
+        className="hidden md:block bg-surface-panel border-b border-border px-6 py-2"
         role="search"
         aria-label="Filter media library"
       >
         <div>
-          {/* Row 1: Search + Movie filters */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
+          {/* Row 1: Search + Movie filters + Tautulli */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
             {/* Search input */}
             <div className="relative flex-shrink-0">
               <svg
@@ -745,14 +738,10 @@ export function MediaFilterBar({
                 <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
 
                 {/* Movie filter group */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
-                  <ChipGroup
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
+                  <OptionFilter
                     label="Movies"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Downloaded' },
-                      { value: 'false' as const, label: 'Missing' },
-                    ]}
+                    options={HAS_FILE_OPTIONS}
                     value={filterState.hasFile}
                     onChange={setHasFile}
                   />
@@ -791,18 +780,14 @@ export function MediaFilterBar({
             {hasTautulliSection && (
               <>
                 <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
-                <ChipGroup
-                  label="Play history"
-                  options={[
-                    { value: undefined, label: 'All' },
-                    { value: 'true' as const, label: 'Watched' },
-                    { value: 'false' as const, label: 'Unwatched' },
-                  ]}
+                <OptionFilter
+                  options={TAUTULLI_WATCHED_OPTIONS}
                   value={filterState.tautulliWatched}
                   onChange={setTautulliWatched}
                 />
               </>
             )}
+
             {isActive && (
               <button
                 type="button"
@@ -815,38 +800,25 @@ export function MediaFilterBar({
           </div>
 
           {/* Row 2: Series filters + Year slider */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {hasSeriesSection && (
               /* Series filter group */
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-surface-bg/40 rounded-lg px-3 py-1.5">
-                <ChipGroup
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
+                <OptionFilter
                   label="Series"
-                  options={[
-                    { value: undefined, label: 'All' },
-                    { value: 'true' as const, label: 'Monitored' },
-                    { value: 'false' as const, label: 'Unmonitored' },
-                  ]}
+                  options={MONITORED_OPTIONS}
                   value={filterState.monitored}
                   onChange={setMonitored}
                 />
-                <ChipGroup
+                <OptionFilter
                   label="Status"
-                  options={[
-                    { value: undefined, label: 'All' },
-                    { value: 'continuing', label: 'Continuing' },
-                    { value: 'ended', label: 'Ended' },
-                  ]}
+                  options={SERIES_STATUS_OPTIONS}
                   value={filterState.seriesStatus}
                   onChange={setSeriesStatus}
                 />
-                <ChipGroup
+                <OptionFilter
                   label="Type"
-                  options={[
-                    { value: undefined, label: 'All' },
-                    { value: 'standard', label: 'Standard' },
-                    { value: 'anime', label: 'Anime' },
-                    { value: 'daily', label: 'Daily' },
-                  ]}
+                  options={SERIES_TYPE_OPTIONS}
                   value={filterState.seriesType}
                   onChange={setSeriesType}
                 />
@@ -960,14 +932,9 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Movies</h3>
                 <div className="space-y-3">
-                  <ChipGroup
-                    label="Movies"
-                    hideLabel
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Downloaded' },
-                      { value: 'false' as const, label: 'Missing' },
-                    ]}
+                  <OptionFilter
+                    variant="chips"
+                    options={HAS_FILE_OPTIONS}
                     value={filterState.hasFile}
                     onChange={setHasFile}
                   />
@@ -1005,38 +972,30 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Series</h3>
                 <div className="space-y-3">
-                  <ChipGroup
-                    label="Series"
-                    hideLabel
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'true' as const, label: 'Monitored' },
-                      { value: 'false' as const, label: 'Unmonitored' },
-                    ]}
+                  <OptionFilter
+                    variant="chips"
+                    options={MONITORED_OPTIONS}
                     value={filterState.monitored}
                     onChange={setMonitored}
                   />
-                  <ChipGroup
-                    label="Status"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'continuing', label: 'Continuing' },
-                      { value: 'ended', label: 'Ended' },
-                    ]}
-                    value={filterState.seriesStatus}
-                    onChange={setSeriesStatus}
-                  />
-                  <ChipGroup
-                    label="Type"
-                    options={[
-                      { value: undefined, label: 'All' },
-                      { value: 'standard', label: 'Standard' },
-                      { value: 'anime', label: 'Anime' },
-                      { value: 'daily', label: 'Daily' },
-                    ]}
-                    value={filterState.seriesType}
-                    onChange={setSeriesType}
-                  />
+                  <div>
+                    <span className="text-xs text-text-muted mb-2 block">Status</span>
+                    <OptionFilter
+                      variant="chips"
+                      options={SERIES_STATUS_OPTIONS}
+                      value={filterState.seriesStatus}
+                      onChange={setSeriesStatus}
+                    />
+                  </div>
+                  <div>
+                    <span className="text-xs text-text-muted mb-2 block">Type</span>
+                    <OptionFilter
+                      variant="chips"
+                      options={SERIES_TYPE_OPTIONS}
+                      value={filterState.seriesType}
+                      onChange={setSeriesType}
+                    />
+                  </div>
                   {lookups.tags.sonarr.length > 0 && (
                     <MultiSelectDropdown
                       label="Series Tags"
@@ -1076,13 +1035,9 @@ export function MediaFilterBar({
             {hasTautulliSection && (
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
-                <ChipGroup
-                  label="Play history"
-                  options={[
-                    { value: undefined, label: 'All' },
-                    { value: 'true' as const, label: 'Watched' },
-                    { value: 'false' as const, label: 'Unwatched' },
-                  ]}
+                <OptionFilter
+                  variant="chips"
+                  options={TAUTULLI_WATCHED_OPTIONS}
                   value={filterState.tautulliWatched}
                   onChange={setTautulliWatched}
                 />
