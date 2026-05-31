@@ -84,6 +84,23 @@ export const mediaHandlers = [
     });
   }),
 
+  http.get('/api/media/genres', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: {
+        movies: ['Action', 'Comedy', 'Crime', 'Drama', 'Horror', 'Sci-Fi', 'Thriller'],
+        series: ['Animation', 'Comedy', 'Crime', 'Drama', 'Reality', 'Sci-Fi'],
+      },
+    });
+  }),
+
+  http.get('/api/media/networks', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: ['HBO', 'Netflix', 'Apple TV+', 'Disney+', 'AMC'],
+    });
+  }),
+
   http.get('/api/media', () => {
     return HttpResponse.json({
       status: 'ok',
