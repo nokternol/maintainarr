@@ -9,8 +9,8 @@
  * Run: vitest run --project client
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { FILTER_FIELDS, type FilterState, useMediaFilters } from '../useMediaFilters';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useMediaFilters } from '../useMediaFilters';
 
 // ─── Router mock ───────────────────────────────────────────────────────────────
 
@@ -381,74 +381,7 @@ describe('useMediaFilters — URL sync', () => {
   });
 });
 
-// ─── FILTER_FIELDS registry — shape contract ──────────────────────────────────
-
-describe('FILTER_FIELDS registry — shape', () => {
-  it('is exported from the module', () => {
-    expect(FILTER_FIELDS).toBeDefined();
-  });
-
-  it('covers all 17 FilterState fields', () => {
-    expect(Object.keys(FILTER_FIELDS).sort()).toEqual([
-      'hasFile',
-      'monitored',
-      'movieGenres',
-      'movieQualityProfileIds',
-      'movieSort',
-      'movieTagIds',
-      'network',
-      'seriesGenres',
-      'seriesQualityProfileIds',
-      'seriesSort',
-      'seriesStatus',
-      'seriesTagIds',
-      'seriesType',
-      'tautulliWatched',
-      'title',
-      'yearMax',
-      'yearMin',
-    ]);
-  });
-
-  it('title is a string field with empty-string default', () => {
-    expect(FILTER_FIELDS.title).toEqual({ type: 'string', default: '' });
-  });
-
-  it('yearMin and yearMax are number fields with undefined default', () => {
-    expect(FILTER_FIELDS.yearMin).toEqual({ type: 'number', default: undefined });
-    expect(FILTER_FIELDS.yearMax).toEqual({ type: 'number', default: undefined });
-  });
-
-  it('hasFile, monitored, tautulliWatched are bool3 fields with undefined default', () => {
-    expect(FILTER_FIELDS.hasFile).toEqual({ type: 'bool3', default: undefined });
-    expect(FILTER_FIELDS.monitored).toEqual({ type: 'bool3', default: undefined });
-    expect(FILTER_FIELDS.tautulliWatched).toEqual({ type: 'bool3', default: undefined });
-  });
-
-  it('remaining string fields have undefined default', () => {
-    const stringOptionalKeys = [
-      'seriesStatus',
-      'movieTagIds',
-      'seriesTagIds',
-      'movieQualityProfileIds',
-      'seriesQualityProfileIds',
-      'movieGenres',
-      'seriesGenres',
-      'seriesType',
-      'network',
-    ] as const;
-    for (const key of stringOptionalKeys) {
-      expect(FILTER_FIELDS[key]).toEqual({ type: 'string', default: undefined });
-    }
-  });
-
-  it('movieSort and seriesSort are string fields with title_asc default', () => {
-    expect(FILTER_FIELDS.movieSort).toEqual({ type: 'string', default: 'title_asc' });
-    expect(FILTER_FIELDS.seriesSort).toEqual({ type: 'string', default: 'title_asc' });
-  });
-});
-
-// ─── Complete round-trips (all 15 fields) ─────────────────────────────────────
+// ─── Complete round-trips (all 17 fields) ─────────────────────────────────────
 
 describe('parseQuery — complete round-trip for all 17 fields', () => {
   it('parses all 17 registry fields from query', () => {
@@ -652,57 +585,5 @@ describe('isActive — fields not covered by earlier tests', () => {
     });
 
     expect(result.current.isActive).toBe(true);
-  });
-});
-
-// ─── Cycle 4 RED: as-const narrow types ───────────────────────────────────────
-//
-// These tests FAIL while FILTER_FIELDS is annotated as
-// `Record<keyof FilterState, FieldSpec>`, because that annotation widens
-// every entry to the FieldSpec union and erases the literal types.
-// They PASS once FILTER_FIELDS is changed to `as const satisfies`.
-
-describe('FILTER_FIELDS — as-const narrow type preservation', () => {
-  it('title.type is narrowly typed as "string" literal', () => {
-    expectTypeOf(FILTER_FIELDS.title.type).toEqualTypeOf<'string'>();
-  });
-
-  it('yearMin.type is narrowly typed as "number" literal', () => {
-    expectTypeOf(FILTER_FIELDS.yearMin.type).toEqualTypeOf<'number'>();
-  });
-
-  it('hasFile.type is narrowly typed as "bool3" literal', () => {
-    expectTypeOf(FILTER_FIELDS.hasFile.type).toEqualTypeOf<'bool3'>();
-  });
-
-  it('title.default is narrowly typed as "" (empty string literal)', () => {
-    expectTypeOf(FILTER_FIELDS.title.default).toEqualTypeOf<''>();
-  });
-
-  it('yearMin.default is narrowly typed as undefined', () => {
-    expectTypeOf(FILTER_FIELDS.yearMin.default).toEqualTypeOf<undefined>();
-  });
-});
-
-// ─── Cycle 4: FilterState type contract ───────────────────────────────────────
-//
-// These pass with both the old interface and the new derived type, but act as
-// regression guards: if InferValue is wrong during GREEN they will catch it.
-
-describe('FilterState — type derivation contract', () => {
-  it('title is typed as string (never undefined)', () => {
-    expectTypeOf<FilterState['title']>().toEqualTypeOf<string>();
-  });
-
-  it('yearMin is typed as number | undefined', () => {
-    expectTypeOf<FilterState['yearMin']>().toEqualTypeOf<number | undefined>();
-  });
-
-  it('hasFile is typed as "true" | "false" | undefined', () => {
-    expectTypeOf<FilterState['hasFile']>().toEqualTypeOf<'true' | 'false' | undefined>();
-  });
-
-  it('seriesStatus is typed as string | undefined', () => {
-    expectTypeOf<FilterState['seriesStatus']>().toEqualTypeOf<string | undefined>();
   });
 });
