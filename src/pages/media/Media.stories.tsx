@@ -124,6 +124,8 @@ function Controlled({
       lookups={LOOKUPS}
       configuredTypes={ALL_PROVIDERS}
       providersLoaded={true}
+      density="normal"
+      onDensityChange={() => {}}
     />
   );
 }

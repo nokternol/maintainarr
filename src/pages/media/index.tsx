@@ -6,6 +6,8 @@ import Sidebar from '@app/components/Sidebar';
 import { Tabs } from '@app/components/Tabs';
 import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
+import type { CardDensity } from '@app/hooks/useCardDensity';
+import { useCardDensity } from '@app/hooks/useCardDensity';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
 import type { FilterState } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
@@ -24,6 +26,8 @@ import {
   Clapperboard,
   Film,
   Filter,
+  Grid2x2,
+  Grid3x3,
   LayoutDashboard,
   Search,
   SearchX,
@@ -185,12 +189,16 @@ function SortBar({
   count,
   tab,
   isLoading,
+  density,
+  onDensityChange,
 }: {
   sortValue: string;
   onSortChange: (v: string) => void;
   count: number;
   tab: ActiveTab;
   isLoading: boolean;
+  density: CardDensity;
+  onDensityChange: (d: CardDensity) => void;
 }) {
   const { field, dir } = parseSortValue(sortValue);
   const isNonDefault = sortValue !== 'title_asc';
@@ -226,15 +234,53 @@ function SortBar({
         </button>
       </div>
 
-      <div aria-live="polite" aria-atomic="true" className="flex items-center">
-        {isLoading ? (
-          <span className="inline-block h-3 w-16 rounded bg-surface-elevated animate-pulse" />
-        ) : (
-          <span className="text-xs text-text-muted tabular-nums">
-            <span className="text-text-secondary font-medium">{count.toLocaleString()}</span>{' '}
-            {tab === 'movies' ? 'movies' : 'series'}
-          </span>
-        )}
+      <div className="flex items-center gap-3">
+        {/* Card density toggle */}
+        <div
+          className="hidden md:flex items-center border border-border rounded-md overflow-hidden"
+          role="group"
+          aria-label="Card size"
+        >
+          <button
+            type="button"
+            aria-label="Normal card size"
+            aria-pressed={density === 'normal'}
+            onClick={() => onDensityChange('normal')}
+            className={cn(
+              'flex items-center justify-center w-7 h-7 transition-colors',
+              density === 'normal'
+                ? 'bg-primary text-white'
+                : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
+            )}
+          >
+            <Grid3x3 size={13} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="Large card size"
+            aria-pressed={density === 'large'}
+            onClick={() => onDensityChange('large')}
+            className={cn(
+              'flex items-center justify-center w-7 h-7 border-l border-border transition-colors',
+              density === 'large'
+                ? 'bg-primary text-white'
+                : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
+            )}
+          >
+            <Grid2x2 size={13} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div aria-live="polite" aria-atomic="true" className="flex items-center">
+          {isLoading ? (
+            <span className="inline-block h-3 w-16 rounded bg-surface-elevated animate-pulse" />
+          ) : (
+            <span className="text-xs text-text-muted tabular-nums">
+              <span className="text-text-secondary font-medium">{count.toLocaleString()}</span>{' '}
+              {tab === 'movies' ? 'movies' : 'series'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -356,6 +402,9 @@ export interface MediaContentProps {
   lookups: Lookups;
   configuredTypes: Set<string>;
   providersLoaded: boolean;
+  // card density
+  density: CardDensity;
+  onDensityChange: (d: CardDensity) => void;
 }
 
 // ─── MediaContent ─────────────────────────────────────────────────────────────
@@ -392,6 +441,8 @@ export function MediaContent({
   lookups,
   configuredTypes,
   providersLoaded,
+  density,
+  onDensityChange,
 }: MediaContentProps) {
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -434,6 +485,8 @@ export function MediaContent({
         count={activeTab === 'movies' ? movies.totalCount : series.totalCount}
         tab={activeTab}
         isLoading={activeTab === 'movies' ? movies.isLoading : series.isLoading}
+        density={density}
+        onDensityChange={onDensityChange}
       />
 
       <div className="p-3 sm:p-6 space-y-6">
@@ -449,6 +502,7 @@ export function MediaContent({
             items={movies.items}
             isLoading={movies.isLoading}
             isFetchingMore={movies.isFetchingMore}
+            density={density}
             renderItem={(movie: ManagedMovie) => (
               <MediaCard
                 key={`movie-${movie.id}`}
@@ -528,6 +582,7 @@ export function MediaContent({
             items={series.items}
             isLoading={series.isLoading}
             isFetchingMore={series.isFetchingMore}
+            density={density}
             renderItem={(show: ManagedSeries) => (
               <MediaCard
                 key={`series-${show.id}`}
@@ -646,6 +701,7 @@ export default function MediaPage() {
     [providers]
   );
 
+  const [density, setDensity] = useCardDensity();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('movies');
 
@@ -766,6 +822,8 @@ export default function MediaPage() {
         lookups={lookups}
         configuredTypes={configuredTypes}
         providersLoaded={providersLoaded}
+        density={density}
+        onDensityChange={setDensity}
       />
     </AppLayout>
   );

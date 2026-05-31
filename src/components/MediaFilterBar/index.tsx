@@ -51,6 +51,12 @@ export interface MediaFilterBarProps {
   onMobileClose?: () => void;
 }
 
+// ─── Separator ────────────────────────────────────────────────────────────────
+
+function Sep() {
+  return <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />;
+}
+
 // ─── MultiSelectDropdown ──────────────────────────────────────────────────────
 
 function MultiSelectDropdown({
@@ -395,17 +401,18 @@ function StringMultiSelectDropdown({
   );
 }
 
+// ─── Slider styles ─────────────────────────────────────────────────────────────
+// Uses default 14px handle size — no marginTop override needed, no overflow risk.
+
 const SLIDER_STYLES = {
-  rail: { backgroundColor: 'var(--color-border)', height: 4 },
-  track: { backgroundColor: 'var(--color-primary)', height: 4 },
+  rail: { backgroundColor: 'var(--color-border)', height: 4, borderRadius: 4 },
+  track: { backgroundColor: 'var(--color-primary)', height: 4, borderRadius: 4 },
   handle: {
-    backgroundColor: 'var(--color-surface-panel)',
+    backgroundColor: 'var(--color-surface-elevated)',
     borderColor: 'var(--color-primary)',
+    borderStyle: 'solid' as const,
     borderWidth: 2,
     opacity: 1,
-    width: 24,
-    height: 24,
-    marginTop: -10,
     boxShadow: 'none',
   },
 };
@@ -448,7 +455,7 @@ function YearRangeSlider({
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-text-muted whitespace-nowrap">Year:</span>
-      <div className="w-36 py-1" aria-label="Year range">
+      <div className="w-36 py-2" aria-label="Year range">
         <Slider
           range
           min={bounds.min}
@@ -696,6 +703,161 @@ export function MediaFilterBar({
   const hasSeriesDropdowns =
     lookups.tags.sonarr.length > 0 || lookups.qualityProfiles.sonarr.length > 0;
 
+  // When only one type is visible (typical case: activeTab is always set in MediaContent),
+  // collapse to a single row so the year slider isn't orphaned on its own row.
+  const bothTypes = hasMovieSection && hasSeriesSection;
+
+  // ─── Shared sub-elements ─────────────────────────────────────────────────
+
+  const searchInput = (
+    <div className="relative flex-shrink-0">
+      <svg
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
+      </svg>
+      <input
+        type="search"
+        placeholder="Filter by title…"
+        aria-label="Filter by title"
+        value={filterState.title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="pl-8 pr-3 py-1.5 rounded-md text-xs bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary w-44"
+      />
+    </div>
+  );
+
+  const movieGroup = hasMovieSection ? (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
+      <OptionFilter
+        label="Movies"
+        options={HAS_FILE_OPTIONS}
+        value={filterState.hasFile}
+        onChange={setHasFile}
+      />
+      {hasMovieDropdowns && (
+        <>
+          <MultiSelectDropdown
+            label="Movie Tags"
+            options={lookups.tags.radarr.map((t) => ({
+              id: t.id,
+              displayName: t.label,
+            }))}
+            selectedIds={movieTagIds}
+            onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+          />
+          <MultiSelectDropdown
+            label="Movie Quality"
+            options={lookups.qualityProfiles.radarr.map((p) => ({
+              id: p.id,
+              displayName: p.name,
+            }))}
+            selectedIds={movieQualityProfileIds}
+            onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
+          />
+        </>
+      )}
+      <StringMultiSelectDropdown
+        label="Movie Genres"
+        options={lookups.genres.movies}
+        selectedValues={selectedMovieGenres}
+        onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
+      />
+    </div>
+  ) : null;
+
+  const seriesGroup = hasSeriesSection ? (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
+      <OptionFilter
+        label="Series"
+        options={MONITORED_OPTIONS}
+        value={filterState.monitored}
+        onChange={setMonitored}
+      />
+      <OptionFilter
+        label="Status"
+        options={SERIES_STATUS_OPTIONS}
+        value={filterState.seriesStatus}
+        onChange={setSeriesStatus}
+      />
+      <OptionFilter
+        label="Type"
+        options={SERIES_TYPE_OPTIONS}
+        value={filterState.seriesType}
+        onChange={setSeriesType}
+      />
+      {hasSeriesDropdowns && (
+        <>
+          <MultiSelectDropdown
+            label="Series Tags"
+            options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
+            selectedIds={seriesTagIds}
+            onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
+          />
+          <MultiSelectDropdown
+            label="Series Quality"
+            options={lookups.qualityProfiles.sonarr.map((p) => ({
+              id: p.id,
+              displayName: p.name,
+            }))}
+            selectedIds={seriesQualityProfileIds}
+            onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
+          />
+        </>
+      )}
+      <StringMultiSelectDropdown
+        label="Series Genres"
+        options={lookups.genres.series}
+        selectedValues={selectedSeriesGenres}
+        onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
+      />
+      <StringMultiSelectDropdown
+        label="Network"
+        options={lookups.networks}
+        selectedValues={selectedNetworks}
+        onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
+      />
+    </div>
+  ) : null;
+
+  const yearSlider = (
+    <YearRangeSlider
+      yearMin={filterState.yearMin}
+      yearMax={filterState.yearMax}
+      sliderMin={globalMin}
+      sliderMax={globalMax}
+      onChangeMin={setYearMin}
+      onChangeMax={setYearMax}
+    />
+  );
+
+  const tautulliFilter = hasTautulliSection ? (
+    <OptionFilter
+      options={TAUTULLI_WATCHED_OPTIONS}
+      value={filterState.tautulliWatched}
+      onChange={setTautulliWatched}
+    />
+  ) : null;
+
+  const clearAllButton = isActive ? (
+    <button
+      type="button"
+      onClick={clearAll}
+      className="ml-auto text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
+    >
+      Clear all
+    </button>
+  ) : null;
+
   return (
     <>
       {/* ── Desktop filter bar (md+) ─────────────────────────────────────────── */}
@@ -704,172 +866,61 @@ export function MediaFilterBar({
         role="search"
         aria-label="Filter media library"
       >
-        <div>
-          {/* Row 1: Search + Movie filters + Tautulli */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
-            {/* Search input */}
-            <div className="relative flex-shrink-0">
-              <svg
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="search"
-                placeholder="Filter by title…"
-                aria-label="Filter by title"
-                value={filterState.title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-md text-xs bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary w-44"
-              />
+        {bothTypes ? (
+          // Two-row layout: both movies and series sections visible simultaneously.
+          // Row 1: search + movies + tautulli + clear-all
+          // Row 2: series + year slider
+          <div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
+              {searchInput}
+              {movieGroup && (
+                <>
+                  <Sep />
+                  {movieGroup}
+                </>
+              )}
+              {tautulliFilter && (
+                <>
+                  <Sep />
+                  {tautulliFilter}
+                </>
+              )}
+              {clearAllButton}
             </div>
-
-            {hasMovieSection && (
-              <>
-                <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
-
-                {/* Movie filter group */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
-                  <OptionFilter
-                    label="Movies"
-                    options={HAS_FILE_OPTIONS}
-                    value={filterState.hasFile}
-                    onChange={setHasFile}
-                  />
-                  {hasMovieDropdowns && (
-                    <>
-                      <MultiSelectDropdown
-                        label="Movie Tags"
-                        options={lookups.tags.radarr.map((t) => ({
-                          id: t.id,
-                          displayName: t.label,
-                        }))}
-                        selectedIds={movieTagIds}
-                        onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
-                      />
-                      <MultiSelectDropdown
-                        label="Movie Quality"
-                        options={lookups.qualityProfiles.radarr.map((p) => ({
-                          id: p.id,
-                          displayName: p.name,
-                        }))}
-                        selectedIds={movieQualityProfileIds}
-                        onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
-                      />
-                    </>
-                  )}
-                  <StringMultiSelectDropdown
-                    label="Movie Genres"
-                    options={lookups.genres.movies}
-                    selectedValues={selectedMovieGenres}
-                    onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
-                  />
-                </div>
-              </>
-            )}
-
-            {hasTautulliSection && (
-              <>
-                <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
-                <OptionFilter
-                  options={TAUTULLI_WATCHED_OPTIONS}
-                  value={filterState.tautulliWatched}
-                  onChange={setTautulliWatched}
-                />
-              </>
-            )}
-
-            {isActive && (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="ml-auto text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
-              >
-                Clear all
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {seriesGroup}
+              <Sep />
+              {yearSlider}
+            </div>
           </div>
-
-          {/* Row 2: Series filters + Year slider */}
+        ) : (
+          // Single-row layout: only one type section visible (or neither).
+          // Search | type-group | year-slider | tautulli | clear-all
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            {hasSeriesSection && (
-              /* Series filter group */
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
-                <OptionFilter
-                  label="Series"
-                  options={MONITORED_OPTIONS}
-                  value={filterState.monitored}
-                  onChange={setMonitored}
-                />
-                <OptionFilter
-                  label="Status"
-                  options={SERIES_STATUS_OPTIONS}
-                  value={filterState.seriesStatus}
-                  onChange={setSeriesStatus}
-                />
-                <OptionFilter
-                  label="Type"
-                  options={SERIES_TYPE_OPTIONS}
-                  value={filterState.seriesType}
-                  onChange={setSeriesType}
-                />
-                {hasSeriesDropdowns && (
-                  <>
-                    <MultiSelectDropdown
-                      label="Series Tags"
-                      options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                      selectedIds={seriesTagIds}
-                      onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
-                    />
-                    <MultiSelectDropdown
-                      label="Series Quality"
-                      options={lookups.qualityProfiles.sonarr.map((p) => ({
-                        id: p.id,
-                        displayName: p.name,
-                      }))}
-                      selectedIds={seriesQualityProfileIds}
-                      onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
-                    />
-                  </>
-                )}
-                <StringMultiSelectDropdown
-                  label="Series Genres"
-                  options={lookups.genres.series}
-                  selectedValues={selectedSeriesGenres}
-                  onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
-                />
-                <StringMultiSelectDropdown
-                  label="Network"
-                  options={lookups.networks}
-                  selectedValues={selectedNetworks}
-                  onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
-                />
-              </div>
+            {searchInput}
+            {movieGroup && (
+              <>
+                <Sep />
+                {movieGroup}
+              </>
             )}
-
-            {(hasMovieSection || hasSeriesSection) && (
-              <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+            {seriesGroup && (
+              <>
+                <Sep />
+                {seriesGroup}
+              </>
             )}
-
-            <YearRangeSlider
-              yearMin={filterState.yearMin}
-              yearMax={filterState.yearMax}
-              sliderMin={globalMin}
-              sliderMax={globalMax}
-              onChangeMin={setYearMin}
-              onChangeMax={setYearMax}
-            />
+            {(hasMovieSection || hasSeriesSection) && <Sep />}
+            {yearSlider}
+            {tautulliFilter && (
+              <>
+                <Sep />
+                {tautulliFilter}
+              </>
+            )}
+            {clearAllButton}
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Mobile full-screen filter modal (< md) ──────────────────────────── */}

@@ -1,3 +1,4 @@
+import type { CardDensity } from '@app/hooks/useCardDensity';
 import { cn } from '@app/lib/utils/cn';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type React from 'react';
@@ -12,7 +13,15 @@ const SKELETON_KEYS = Array.from({ length: 96 }, (_, i) => `skel-${i}`);
 // 520px threshold prevents the "2 huge columns" problem at tablet (sidebar ~220px
 // narrows a 768px viewport to ~548px, which was previously trapped at 2 cols).
 
-function getColumnCount(width: number): number {
+function getColumnCount(width: number, density: CardDensity = 'normal'): number {
+  if (density === 'large') {
+    if (width >= 1536) return 5;
+    if (width >= 1280) return 4;
+    if (width >= 1024) return 3;
+    if (width >= 768) return 3;
+    if (width >= 480) return 2;
+    return 2;
+  }
   if (width >= 1536) return 8;
   if (width >= 1280) return 6;
   if (width >= 1024) return 5;
@@ -21,7 +30,13 @@ function getColumnCount(width: number): number {
   return 2;
 }
 
-function getEstimatedRowHeight(cols: number): number {
+function getEstimatedRowHeight(cols: number, density: CardDensity = 'normal'): number {
+  if (density === 'large') {
+    if (cols <= 2) return 480;
+    if (cols <= 3) return 460;
+    if (cols === 4) return 380;
+    return 340;
+  }
   if (cols <= 2) return 480;
   if (cols === 3) return 380;
   return 320;
@@ -36,6 +51,7 @@ export interface VirtualMediaGridProps<T> {
   isLoading?: boolean;
   skeletonCount?: number;
   className?: string;
+  density?: CardDensity;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -47,16 +63,21 @@ export function VirtualMediaGrid<T>({
   isLoading = false,
   skeletonCount = 48,
   className,
+  density = 'normal',
 }: VirtualMediaGridProps<T>) {
   // measureRef stays mounted across loading transitions — ResizeObserver always
   // observes this stable div so column count never resets to 0.
   const measureRef = useRef<HTMLDivElement>(null);
-  const [columnCount, setColumnCount] = useState(4);
+
+  // Track raw container width separately so density changes immediately update
+  // columnCount without needing a new resize observation.
+  const [containerWidth, setContainerWidth] = useState(768);
+  const columnCount = getColumnCount(containerWidth, density);
 
   useEffect(() => {
     if (!measureRef.current) return;
     const observer = new ResizeObserver((entries) => {
-      setColumnCount(getColumnCount(entries[0].contentRect.width));
+      setContainerWidth(entries[0].contentRect.width);
     });
     observer.observe(measureRef.current);
     return () => observer.disconnect();
@@ -98,6 +119,7 @@ export function VirtualMediaGrid<T>({
         totalRows={totalRows}
         isFetchingMore={isFetchingMore}
         gridStyle={gridStyle}
+        density={density}
       />
     </div>
   );
@@ -113,6 +135,7 @@ interface VirtualRowsProps<T> {
   totalRows: number;
   isFetchingMore: boolean;
   gridStyle: React.CSSProperties;
+  density: CardDensity;
 }
 
 function VirtualRows<T>({
@@ -123,13 +146,14 @@ function VirtualRows<T>({
   totalRows,
   isFetchingMore,
   gridStyle,
+  density,
 }: VirtualRowsProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollElement = useContext(ScrollContainerContext);
 
   const rowVirtualizer = useVirtualizer({
     count: totalRows,
-    estimateSize: () => getEstimatedRowHeight(columnCount),
+    estimateSize: () => getEstimatedRowHeight(columnCount, density),
     overscan: 5,
     getScrollElement: () =>
       scrollElement.current ?? (typeof document !== 'undefined' ? document.documentElement : null),
