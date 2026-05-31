@@ -27,6 +27,7 @@ export function ImageFader({ images, rotationSpeed = 6000, className = '' }: Ima
       {images.map((imageUrl, index) => (
         <div
           key={imageUrl}
+          aria-hidden={index !== activeIndex}
           className={`absolute inset-0 transition-opacity duration-300 ${
             index === activeIndex ? 'opacity-100' : 'opacity-0'
           }`}

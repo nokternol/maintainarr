@@ -8,7 +8,7 @@ export const WardenLogo = ({ className = 'w-24 h-24', id = 'warden-logo', isLoad
   return (
     <div className={cn(styles.container, className)}>
       {/* 1. Conditional Mounting Glow: Only shows if not in loader mode */}
-      {!isLoader && <div className={styles.glow} />}
+      {!isLoader && <div className={styles.glow} data-glow />}
 
       <svg
         viewBox="0 0 24 24"
