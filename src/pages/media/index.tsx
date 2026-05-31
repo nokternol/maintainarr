@@ -26,8 +26,6 @@ import {
   Clapperboard,
   Film,
   Filter,
-  Grid2x2,
-  Grid3x3,
   LayoutDashboard,
   Search,
   SearchX,
@@ -52,6 +50,84 @@ const sidebarItems: SidebarItem[] = [
   },
   { id: 'search', label: 'Search', icon: <Search size={20} strokeWidth={1.75} />, href: '/search' },
 ];
+
+// ─── Density icons ────────────────────────────────────────────────────────────
+
+function GridIcon2x2() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <path d="M3 12h18M12 3v18" />
+    </svg>
+  );
+}
+
+function GridIcon3x3() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+    </svg>
+  );
+}
+
+function GridIcon4x3() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <path d="M3 9h18M3 15h18M7.5 3v18M12 3v18M16.5 3v18" />
+    </svg>
+  );
+}
+
+function GridIcon5x3() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <path d="M3 9h18M3 15h18M6.6 3v18M10.2 3v18M13.8 3v18M17.4 3v18" />
+    </svg>
+  );
+}
 
 // ─── Sort bar ─────────────────────────────────────────────────────────────────
 
@@ -239,36 +315,33 @@ function SortBar({
         <div
           className="hidden md:flex items-center border border-border rounded-md overflow-hidden"
           role="group"
-          aria-label="Card size"
+          aria-label="Card density"
         >
-          <button
-            type="button"
-            aria-label="Normal card size"
-            aria-pressed={density === 'normal'}
-            onClick={() => onDensityChange('normal')}
-            className={cn(
-              'flex items-center justify-center w-7 h-7 transition-colors',
-              density === 'normal'
-                ? 'bg-primary text-white'
-                : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
-            )}
-          >
-            <Grid3x3 size={13} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            aria-label="Large card size"
-            aria-pressed={density === 'large'}
-            onClick={() => onDensityChange('large')}
-            className={cn(
-              'flex items-center justify-center w-7 h-7 border-l border-border transition-colors',
-              density === 'large'
-                ? 'bg-primary text-white'
-                : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
-            )}
-          >
-            <Grid2x2 size={13} strokeWidth={1.75} aria-hidden="true" />
-          </button>
+          {(
+            [
+              { value: 'large', label: 'Large card size', Icon: GridIcon2x2 },
+              { value: 'normal', label: 'Normal card size', Icon: GridIcon3x3 },
+              { value: 'compact', label: 'Compact card size', Icon: GridIcon4x3 },
+              { value: 'mini', label: 'Mini card size', Icon: GridIcon5x3 },
+            ] as const
+          ).map(({ value, label, Icon }, i) => (
+            <button
+              key={value}
+              type="button"
+              aria-label={label}
+              aria-pressed={density === value}
+              onClick={() => onDensityChange(value)}
+              className={cn(
+                'flex items-center justify-center w-7 h-7 transition-colors',
+                i > 0 && 'border-l border-border',
+                density === value
+                  ? 'bg-primary text-white'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
+              )}
+            >
+              <Icon />
+            </button>
+          ))}
         </div>
 
         <div aria-live="polite" aria-atomic="true" className="flex items-center">

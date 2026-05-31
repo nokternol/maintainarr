@@ -22,6 +22,23 @@ function getColumnCount(width: number, density: CardDensity = 'normal'): number 
     if (width >= 480) return 2;
     return 2;
   }
+  if (density === 'compact') {
+    if (width >= 1536) return 9;
+    if (width >= 1280) return 7;
+    if (width >= 1024) return 6;
+    if (width >= 768) return 5;
+    if (width >= 480) return 3;
+    return 2;
+  }
+  if (density === 'mini') {
+    if (width >= 1536) return 10;
+    if (width >= 1280) return 8;
+    if (width >= 1024) return 7;
+    if (width >= 768) return 6;
+    if (width >= 480) return 3;
+    return 2;
+  }
+  // normal
   if (width >= 1536) return 8;
   if (width >= 1280) return 6;
   if (width >= 1024) return 5;
@@ -37,6 +54,20 @@ function getEstimatedRowHeight(cols: number, density: CardDensity = 'normal'): n
     if (cols === 4) return 380;
     return 340;
   }
+  if (density === 'compact') {
+    if (cols <= 2) return 480;
+    if (cols <= 3) return 380;
+    if (cols <= 5) return 290;
+    return 250;
+  }
+  if (density === 'mini') {
+    if (cols <= 2) return 480;
+    if (cols <= 3) return 380;
+    if (cols <= 5) return 290;
+    if (cols <= 7) return 240;
+    return 210;
+  }
+  // normal
   if (cols <= 2) return 480;
   if (cols === 3) return 380;
   return 320;

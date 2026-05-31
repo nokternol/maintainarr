@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
 
-export type CardDensity = 'normal' | 'large';
+export type CardDensity = 'large' | 'normal' | 'compact' | 'mini';
 
 const STORAGE_KEY = 'warden:cardDensity';
+const VALID: CardDensity[] = ['large', 'normal', 'compact', 'mini'];
 
 function readDensity(): CardDensity {
   if (typeof window === 'undefined') return 'normal';
-  return localStorage.getItem(STORAGE_KEY) === 'large' ? 'large' : 'normal';
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return VALID.includes(stored as CardDensity) ? (stored as CardDensity) : 'normal';
 }
 
 export function useCardDensity(): [CardDensity, (d: CardDensity) => void] {
