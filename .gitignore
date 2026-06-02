@@ -69,3 +69,5 @@ build
 .claude
 # Agent Context Files
 .agent/plans/
+# Browser automation files
+.playwright-cli

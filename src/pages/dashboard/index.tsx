@@ -126,8 +126,6 @@ const EmptyRunsIcon = () => (
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const COL_TEMPLATE = '1fr 160px 168px 88px';
-
 function StatusDot({ status }: { status: AutomationStatus }) {
   return (
     <span
@@ -147,14 +145,11 @@ function AutomationRow({ automation }: { automation: Automation }) {
 
   return (
     <div
-      className="grid items-start px-4 py-3 border-b border-border last:border-0 transition-colors duration-150 hover:bg-surface-bg cursor-pointer"
-      style={{
-        gridTemplateColumns: COL_TEMPLATE,
-        ...(isError && { backgroundColor: 'rgba(220, 38, 38, 0.04)' }),
-      }}
+      className="block sm:grid sm:grid-cols-[1fr_160px_168px] lg:grid-cols-[1fr_160px_168px_88px] sm:items-start px-4 py-3 border-b border-border last:border-0 transition-colors duration-150 hover:bg-surface-bg cursor-pointer"
+      style={isError ? { backgroundColor: 'rgba(220, 38, 38, 0.04)' } : undefined}
     >
       {/* Name + query + task */}
-      <div className="min-w-0 pr-6">
+      <div className="min-w-0 sm:pr-6">
         <div className="flex items-start gap-2">
           <StatusDot status={automation.status} />
           <span className="text-sm font-medium text-text-primary leading-5">{automation.name}</span>
@@ -167,13 +162,42 @@ function AutomationRow({ automation }: { automation: Automation }) {
         {isError && automation.errorMessage && (
           <p className="mt-1 pl-[18px] text-xs text-danger">{automation.errorMessage}</p>
         )}
+        {/* Mobile-only condensed meta: schedule + last run + next run */}
+        <div className="sm:hidden mt-1.5 pl-[18px] flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-text-muted">
+          <span className="font-mono">{automation.schedule}</span>
+          {automation.lastRun && (
+            <>
+              <span className="opacity-40">·</span>
+              <span>
+                {automation.lastRun.relativeTime}
+                {automation.lastRun.itemCount > 0 &&
+                  ` · ${automation.lastRun.itemCount} ${automation.lastRun.action}`}
+              </span>
+            </>
+          )}
+          {automation.status === 'error' ? (
+            <>
+              <span className="opacity-40">·</span>
+              <span className="text-danger">Suspended</span>
+            </>
+          ) : (
+            automation.nextRun && (
+              <>
+                <span className="opacity-40">·</span>
+                <span>next {automation.nextRun}</span>
+              </>
+            )
+          )}
+        </div>
       </div>
 
-      {/* Schedule */}
-      <div className="text-xs font-mono text-text-secondary leading-5">{automation.schedule}</div>
+      {/* Schedule — sm+ only */}
+      <div className="hidden sm:block text-xs font-mono text-text-secondary leading-5">
+        {automation.schedule}
+      </div>
 
-      {/* Last run */}
-      <div>
+      {/* Last run — sm+ only */}
+      <div className="hidden sm:block">
         {automation.lastRun ? (
           <>
             <p className="text-sm text-text-secondary leading-5">
@@ -190,8 +214,8 @@ function AutomationRow({ automation }: { automation: Automation }) {
         )}
       </div>
 
-      {/* Next run */}
-      <div className="text-right">
+      {/* Next run — lg+ only */}
+      <div className="hidden lg:block text-right">
         {automation.status === 'error' ? (
           <span className="text-xs text-danger">Suspended</span>
         ) : automation.nextRun ? (
@@ -257,14 +281,13 @@ export function DashboardContent({ automations, runs }: DashboardContentProps) {
           </Card.Content>
         ) : (
           <>
-            <div
-              className="grid items-center px-4 py-2 border-b border-border"
-              style={{ gridTemplateColumns: COL_TEMPLATE }}
-            >
+            <div className="hidden sm:grid sm:grid-cols-[1fr_160px_168px] lg:grid-cols-[1fr_160px_168px_88px] items-center px-4 py-2 border-b border-border">
               <span className="text-xs font-medium text-text-muted">Automation</span>
               <span className="text-xs font-medium text-text-muted">Schedule</span>
               <span className="text-xs font-medium text-text-muted">Last run</span>
-              <span className="text-xs font-medium text-text-muted text-right">Next run</span>
+              <span className="hidden lg:block text-xs font-medium text-text-muted text-right">
+                Next run
+              </span>
             </div>
             {automations.map((automation) => (
               <AutomationRow key={automation.id} automation={automation} />
