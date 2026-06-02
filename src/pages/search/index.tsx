@@ -3,6 +3,8 @@ import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { useMetadataSearch } from '@app/hooks/useMetadataSearch';
 import type { SearchResult } from '@app/hooks/useMetadataSearch';
+import { requireAuth } from '@app/lib/utils/requireAuth';
+import type { GetServerSideProps } from 'next';
 import { useState } from 'react';
 
 // ─── Result Section ───────────────────────────────────────────────────────────
@@ -57,6 +59,14 @@ function ResultSection({ result }: { result: SearchResult }) {
     </div>
   );
 }
+
+// ─── Auth guard ───────────────────────────────────────────────────────────────
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const authRedirect = await requireAuth(ctx);
+  if (authRedirect) return authRedirect;
+  return { props: {} };
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

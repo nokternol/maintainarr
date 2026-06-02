@@ -7,6 +7,8 @@ import type {
   ProviderSummary,
   UpdateProviderParams,
 } from '@app/hooks/useProviderSettings';
+import { requireAuth } from '@app/lib/utils/requireAuth';
+import type { GetServerSideProps } from 'next';
 import { useRef, useState } from 'react';
 
 // ─── API suffix map ────────────────────────────────────────────────────────────
@@ -521,6 +523,14 @@ function ProviderRow({
     </form>
   );
 }
+
+// ─── Auth guard ───────────────────────────────────────────────────────────────
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const authRedirect = await requireAuth(ctx);
+  if (authRedirect) return authRedirect;
+  return { props: {} };
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

@@ -135,7 +135,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       topBar={
         <TopBar
           title="Dashboard"
-          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Dashboard' }]}
+          breadcrumbs={[{ label: 'Dashboard' }]}
           actions={
             <button
               type="button"

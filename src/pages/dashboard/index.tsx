@@ -4,6 +4,8 @@ import EmptyState from '@app/components/EmptyState';
 import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { cn } from '@app/lib/utils/cn';
+import { requireAuth } from '@app/lib/utils/requireAuth';
+import type { GetServerSideProps } from 'next';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -291,6 +293,14 @@ export function DashboardContent({ automations, runs }: DashboardContentProps) {
     </div>
   );
 }
+
+// ── Auth guard ─────────────────────────────────────────────────────────────────
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const authRedirect = await requireAuth(ctx);
+  if (authRedirect) return authRedirect;
+  return { props: {} };
+};
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 

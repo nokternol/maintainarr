@@ -19,6 +19,7 @@ import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import { NAV_ITEMS } from '@app/lib/navigation';
 import { cn } from '@app/lib/utils/cn';
+import { requireAuth } from '@app/lib/utils/requireAuth';
 import {
   ArrowDown,
   ArrowUp,
@@ -29,6 +30,7 @@ import {
   ServerOff,
   Tv2,
 } from 'lucide-react';
+import type { GetServerSideProps } from 'next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Density icons ────────────────────────────────────────────────────────────
@@ -716,6 +718,14 @@ export function MediaContent({
     </>
   );
 }
+
+// ─── Auth guard ───────────────────────────────────────────────────────────────
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const authRedirect = await requireAuth(ctx);
+  if (authRedirect) return authRedirect;
+  return { props: {} };
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
