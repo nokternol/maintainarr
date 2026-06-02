@@ -2,7 +2,7 @@ import AppLayout from '@app/components/AppLayout';
 import MediaCard from '@app/components/MediaCard';
 import { MediaFilterBar } from '@app/components/MediaFilterBar';
 import RatingsPanel from '@app/components/RatingsPanel';
-import Sidebar from '@app/components/Sidebar';
+import SidebarNav from '@app/components/SidebarNav';
 import { Tabs } from '@app/components/Tabs';
 import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
@@ -17,39 +17,19 @@ import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
+import { NAV_ITEMS } from '@app/lib/navigation';
 import { cn } from '@app/lib/utils/cn';
-import type { SidebarItem } from '@app/types/navigation';
 import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
-  Clapperboard,
   Film,
   Filter,
-  LayoutDashboard,
-  Search,
   SearchX,
   ServerOff,
   Tv2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-const sidebarItems: SidebarItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: <LayoutDashboard size={20} strokeWidth={1.75} />,
-    href: '/dashboard',
-  },
-  {
-    id: 'media',
-    label: 'Media',
-    icon: <Clapperboard size={20} strokeWidth={1.75} />,
-    href: '/media',
-    active: true,
-  },
-  { id: 'search', label: 'Search', icon: <Search size={20} strokeWidth={1.75} />, href: '/search' },
-];
 
 // ─── Density icons ────────────────────────────────────────────────────────────
 
@@ -783,13 +763,13 @@ export default function MediaPage() {
 
   const mobileNav = (
     <nav className="flex items-center justify-around h-16 px-2">
-      {sidebarItems.map((item) => (
+      {NAV_ITEMS.map((item) => (
         <a
           key={item.id}
           href={item.href}
           className={cn(
             'flex flex-col items-center gap-0.5 px-4 py-2 text-xs transition-colors min-h-[44px] justify-center',
-            item.active ? 'text-primary' : 'text-text-muted hover:text-text-primary'
+            item.href === '/media' ? 'text-primary' : 'text-text-muted hover:text-text-primary'
           )}
         >
           {item.icon}
@@ -802,24 +782,12 @@ export default function MediaPage() {
   return (
     <AppLayout
       mobileNav={mobileNav}
-      sidebar={
-        <Sidebar
-          items={sidebarItems}
-          logo={
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                W
-              </div>
-              <span className="text-xl font-bold text-text-primary">Warden</span>
-            </div>
-          }
-        />
-      }
+      sidebar={<SidebarNav />}
       topBar={
         <TopBar
           sticky
           title="Managed Media"
-          breadcrumbs={[{ label: 'Home', href: '/' }]}
+          breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }]}
           actions={
             <>
               <Tabs

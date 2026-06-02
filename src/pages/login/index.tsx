@@ -67,17 +67,15 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md text-center">
         {/* SVG Logo Container */}
         <div className="mb-6 flex justify-center">
-          <div className="p-4 rounded-3xl bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+          <div className="p-4 rounded-lg bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
             {/* SVG Logo here */}
             <WardenLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
-        <div className="inline-block p-6 rounded-3xl mb-6">
-          <h1 className="text-4xl font-black text-slate-50 tracking-tighter mb-2 uppercase">
-            Warden
-          </h1>
-          <p className="text-slate-400 text-sm font-medium tracking-wide px-4 leading-relaxed max-w-sm mx-auto">
+        <div className="mb-6">
+          <h1 className="text-4xl font-black text-slate-50 tracking-tighter mb-2">Warden</h1>
+          <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm mx-auto">
             Rule-based automation for your self-hosted media library
           </p>
         </div>
@@ -90,18 +88,16 @@ export default function LoginPage() {
         )}
 
         {/* Login Card */}
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-2xl">
           <div className="bg-teal-600/10 py-2 border-b border-slate-800">
-            <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-teal-500">
-              Authorized Access Only
-            </span>
+            <span className="text-xs font-medium text-teal-500">Sign in to continue</span>
           </div>
 
           <div className="p-8">
             <button
               type="button"
               onClick={handlePlexLogin}
-              className="w-full bg-[#e5a00d] hover:bg-[#ffb40d] text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-900/20"
+              className="w-full bg-[#e5a00d] hover:bg-[#ffb40d] text-slate-950 font-bold py-4 rounded-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-900/20"
             >
               <PlexIcon className="w-6 h-6" />
               <span>Sign in with Plex</span>

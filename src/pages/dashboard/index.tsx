@@ -1,10 +1,9 @@
 import AppLayout from '@app/components/AppLayout';
 import Card from '@app/components/Card';
 import EmptyState from '@app/components/EmptyState';
-import Sidebar from '@app/components/Sidebar';
+import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { cn } from '@app/lib/utils/cn';
-import type { SidebarItem } from '@app/types/navigation';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -89,91 +88,6 @@ const RECENT_RUNS: RunRecord[] = [
   },
 ];
 
-// ── Icons ──────────────────────────────────────────────────────────────────────
-
-const DashboardIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-    />
-  </svg>
-);
-
-const AutomationIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-    />
-  </svg>
-);
-
-const MediaIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
-    />
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-    />
-  </svg>
-);
-
-const ActivityIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M13 10V3L4 14h7v7l9-11h-7z"
-    />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-    />
-  </svg>
-);
-
-const SystemIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-    />
-  </svg>
-);
-
 const EmptyAutomationIcon = () => (
   <svg
     className="w-12 h-12"
@@ -207,33 +121,6 @@ const EmptyRunsIcon = () => (
     />
   </svg>
 );
-
-// ── Navigation ─────────────────────────────────────────────────────────────────
-
-const sidebarItems: SidebarItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: <DashboardIcon />,
-    href: '/dashboard',
-    active: true,
-  },
-  { id: 'media', label: 'Media', icon: <MediaIcon />, href: '/media' },
-  { id: 'search', label: 'Search', icon: <SearchIcon />, href: '/search' },
-  {
-    id: 'automations',
-    label: 'Automations',
-    icon: <AutomationIcon />,
-    href: '/automations',
-    badge: 1,
-  },
-  { id: 'activity', label: 'Activity', icon: <ActivityIcon />, href: '/activity' },
-];
-
-const bottomItems: SidebarItem[] = [
-  { id: 'settings', label: 'Settings', icon: <SettingsIcon />, href: '/settings' },
-  { id: 'system', label: 'System', icon: <SystemIcon />, href: '/system' },
-];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -372,18 +259,10 @@ export function DashboardContent({ automations, runs }: DashboardContentProps) {
               className="grid items-center px-4 py-2 border-b border-border"
               style={{ gridTemplateColumns: COL_TEMPLATE }}
             >
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Automation
-              </span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Schedule
-              </span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Last run
-              </span>
-              <span className="text-xs font-medium text-text-muted uppercase tracking-wide text-right">
-                Next run
-              </span>
+              <span className="text-xs font-medium text-text-muted">Automation</span>
+              <span className="text-xs font-medium text-text-muted">Schedule</span>
+              <span className="text-xs font-medium text-text-muted">Last run</span>
+              <span className="text-xs font-medium text-text-muted text-right">Next run</span>
             </div>
             {automations.map((automation) => (
               <AutomationRow key={automation.id} automation={automation} />
@@ -423,25 +302,11 @@ export default function DashboardPage() {
 
   return (
     <AppLayout
-      sidebar={
-        <Sidebar
-          items={sidebarItems}
-          bottomItems={bottomItems}
-          onLogout={handleLogout}
-          logo={
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                W
-              </div>
-              <span className="text-xl font-bold text-text-primary">Warden</span>
-            </div>
-          }
-        />
-      }
+      sidebar={<SidebarNav onLogout={handleLogout} />}
       topBar={
         <TopBar
           title="Dashboard"
-          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Dashboard' }]}
+          breadcrumbs={[{ label: 'Dashboard' }]}
           actions={
             <button
               type="button"
