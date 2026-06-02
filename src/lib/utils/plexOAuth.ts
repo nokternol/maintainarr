@@ -149,4 +149,12 @@ export class PlexOAuth {
     this.openPopup();
     return this.pollForToken();
   }
+
+  close(): void {
+    try {
+      this.popup?.close();
+    } catch {
+      /* cross-origin close may throw; ignore */
+    }
+  }
 }

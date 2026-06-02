@@ -4,7 +4,6 @@ import { ImageFader } from '@app/components/ImageFader';
 import { PlexIcon, WardenLogo } from '@app/components/Logo';
 import { useBackdrops } from '@app/hooks/useBackdrops';
 import { PlexOAuth } from '@app/lib/utils/plexOAuth';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
@@ -51,60 +50,61 @@ export default function LoginPage() {
       if (err instanceof Error && err.message === 'Authentication cancelled') return;
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
+      oauth.close();
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-6">
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-surface-bg px-6">
       {/* Background with Cinematic Tint */}
       <div className="absolute inset-0 z-0">
         <ImageFader images={backdrops || []} className="opacity-50" />
         {/* Base cinematic wash */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-600/30 via-slate-950/50 to-slate-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-surface-bg/50 to-surface-bg/90" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
-        {/* SVG Logo Container */}
+        {/* Logo container */}
         <div className="mb-6 flex justify-center">
-          <div className="p-4 rounded-lg bg-slate-900/80 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
-            {/* SVG Logo here */}
+          <div className="p-4 rounded-lg bg-surface-panel/80 border border-primary/30 shadow-[0_0_30px_rgba(var(--color-primary-glow),0.2)]">
             <WardenLogo isLoader={isLoading} className="w-20 h-20" />
           </div>
         </div>
 
         <div className="mb-6">
-          <h1 className="text-4xl font-black text-slate-50 tracking-tighter mb-2">Warden</h1>
-          <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm mx-auto">
+          <h1 className="text-4xl font-black text-text-primary tracking-tighter mb-2">Warden</h1>
+          <p className="text-text-muted text-sm font-medium leading-relaxed max-w-sm mx-auto">
             Rule-based automation for your self-hosted media library
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-white p-4 rounded-lg mb-6 text-center">
-            <p className="font-bold">Authentication Failed</p>
-            <p className="text-sm text-red-300">{error}</p>
+          <div role="alert" className="bg-danger/10 border border-danger/50 p-4 rounded-lg mb-6">
+            <p className="font-medium text-danger text-sm">Authentication failed</p>
+            <p className="text-xs text-text-secondary mt-1">{error}</p>
           </div>
         )}
 
         {/* Login Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-2xl">
-          <div className="bg-teal-600/10 py-2 border-b border-slate-800">
-            <span className="text-xs font-medium text-teal-500">Sign in to continue</span>
+        <div className="bg-surface-panel border border-border rounded-lg overflow-hidden shadow-card-elevated">
+          <div className="bg-primary/10 py-2 border-b border-border">
+            <span className="text-xs font-medium text-primary">Sign in to continue</span>
           </div>
 
           <div className="p-8">
             <button
               type="button"
               onClick={handlePlexLogin}
-              className="w-full bg-[#e5a00d] hover:bg-[#ffb40d] text-slate-950 font-bold py-4 rounded-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-900/20"
+              disabled={isLoading}
+              className="w-full bg-plex hover:bg-plex-hover active:bg-plex-active text-slate-950 font-bold py-4 rounded-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-[0.4] disabled:cursor-not-allowed disabled:transform-none"
             >
               <PlexIcon className="w-6 h-6" />
-              <span>Sign in with Plex</span>
+              <span>{isLoading ? 'Signing in...' : 'Sign in with Plex'}</span>
             </button>
 
-            <p className="mt-6 text-xs text-slate-400 font-medium">
-              By signing in, you agree to your server's automation policies.
+            <p className="mt-6 text-xs text-text-muted font-medium">
+              By signing in, you agree to your server&apos;s automation policies.
             </p>
           </div>
         </div>

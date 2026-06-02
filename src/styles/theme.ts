@@ -359,6 +359,13 @@ export const themeColors = {
   success: 'var(--color-success)',
   warning: 'var(--color-warning)',
   info: 'var(--color-info)',
+
+  // Integration partner colors (third-party brand constants, not design tokens)
+  plex: {
+    DEFAULT: '#e5a00d',
+    hover: '#ffb40d',
+    active: '#cc8f0b',
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
