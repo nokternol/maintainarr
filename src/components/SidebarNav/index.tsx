@@ -3,10 +3,6 @@ import Sidebar from '@app/components/Sidebar';
 import { resolveNavItems } from '@app/lib/navigation';
 import { useRouter } from 'next/router';
 
-interface SidebarNavProps {
-  onLogout?: () => void;
-}
-
 const logo = (
   <div className="flex items-center gap-2.5">
     <WardenLogo className="w-7 h-7" />
@@ -14,9 +10,14 @@ const logo = (
   </div>
 );
 
-export default function SidebarNav({ onLogout }: SidebarNavProps) {
+export default function SidebarNav() {
   const { pathname } = useRouter();
   const { items, bottomItems } = resolveNavItems(pathname);
 
-  return <Sidebar items={items} bottomItems={bottomItems} logo={logo} onLogout={onLogout} />;
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  };
+
+  return <Sidebar items={items} bottomItems={bottomItems} logo={logo} onLogout={handleLogout} />;
 }

@@ -1,6 +1,7 @@
 import Badge from '@app/components/Badge';
 import { cn } from '@app/lib/utils/cn';
 import type { SidebarItem as SidebarItemType } from '@app/types/navigation';
+import Link from 'next/link';
 import styles from './Sidebar.module.css';
 
 interface SidebarItemProps {
@@ -19,7 +20,7 @@ export default function SidebarItem({ item, onClick }: SidebarItemProps) {
   const activeStyles = item.active ? styles.itemActive : styles.itemInactive;
 
   return (
-    <a href={item.href} onClick={handleClick} className={cn(styles.itemBase, activeStyles)}>
+    <Link href={item.href} onClick={handleClick} className={cn(styles.itemBase, activeStyles)}>
       <div className={styles.itemIcon}>{item.icon}</div>
       <span className={styles.itemLabel}>{item.label}</span>
       {item.badge !== undefined && (
@@ -27,6 +28,6 @@ export default function SidebarItem({ item, onClick }: SidebarItemProps) {
           {item.badge}
         </Badge>
       )}
-    </a>
+    </Link>
   );
 }

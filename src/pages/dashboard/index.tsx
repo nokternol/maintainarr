@@ -305,14 +305,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-  };
-
   return (
     <AppLayout
-      sidebar={<SidebarNav onLogout={handleLogout} />}
+      sidebar={<SidebarNav />}
       topBar={
         <TopBar
           title="Dashboard"
