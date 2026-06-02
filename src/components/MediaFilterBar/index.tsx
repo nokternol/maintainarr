@@ -1,7 +1,6 @@
 import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { cn } from '@app/lib/utils/cn';
-import Slider from 'rc-slider';
 import { useEffect, useId, useRef, useState } from 'react';
 import { OptionFilter } from '../filters/OptionFilter';
 
@@ -401,78 +400,208 @@ function StringMultiSelectDropdown({
   );
 }
 
-// ─── Slider styles ─────────────────────────────────────────────────────────────
-// Uses default 14px handle size — no marginTop override needed, no overflow risk.
+// ─── YearRangeFilter ──────────────────────────────────────────────────────────
 
-const SLIDER_STYLES = {
-  rail: { backgroundColor: 'var(--color-border)', height: 4, borderRadius: 4 },
-  track: { backgroundColor: 'var(--color-primary)', height: 4, borderRadius: 4 },
-  handle: {
-    backgroundColor: 'var(--color-surface-elevated)',
-    borderColor: 'var(--color-primary)',
-    borderStyle: 'solid' as const,
-    borderWidth: 2,
-    opacity: 1,
-    boxShadow: 'none',
-  },
-};
+function parseYear(s: string): number | undefined {
+  const n = Number.parseInt(s, 10);
+  return s.trim() === '' || Number.isNaN(n) ? undefined : n;
+}
 
-function YearRangeSlider({
+function YearRangeFilter({
   yearMin,
   yearMax,
-  sliderMin,
-  sliderMax,
+  dataMin,
+  dataMax,
   onChangeMin,
   onChangeMax,
 }: {
   yearMin: number | undefined;
   yearMax: number | undefined;
-  sliderMin: number;
-  sliderMax: number;
+  dataMin: number | null;
+  dataMax: number | null;
   onChangeMin: (v: number | undefined) => void;
   onChangeMax: (v: number | undefined) => void;
 }) {
-  const [draft, setDraft] = useState<[number, number]>([
-    yearMin ?? sliderMin,
-    yearMax ?? sliderMax,
-  ]);
-  const [bounds, setBounds] = useState({ min: sliderMin, max: sliderMax });
-  const isDragging = useRef(false);
+  const id = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const fromInputRef = useRef<HTMLInputElement>(null);
+  const draftMinRef = useRef('');
+  const draftMaxRef = useRef('');
+  const [draftMin, setDraftMinRaw] = useState('');
+  const [draftMax, setDraftMaxRaw] = useState('');
 
-  useEffect(() => {
-    if (isDragging.current) return;
-    setBounds({ min: sliderMin, max: sliderMax });
-    setDraft([yearMin ?? sliderMin, yearMax ?? sliderMax]);
-  }, [yearMin, yearMax, sliderMin, sliderMax]);
+  const isActive = yearMin !== undefined || yearMax !== undefined;
 
-  const commit = (v: number | number[]) => {
-    isDragging.current = false;
-    const [min, max] = v as [number, number];
-    onChangeMin(min === bounds.min ? undefined : min);
-    onChangeMax(max === bounds.max ? undefined : max);
+  const setDraftMin = (v: string) => {
+    draftMinRef.current = v;
+    setDraftMinRaw(v);
+  };
+  const setDraftMax = (v: string) => {
+    draftMaxRef.current = v;
+    setDraftMaxRaw(v);
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const minStr = yearMin != null ? String(yearMin) : '';
+    const maxStr = yearMax != null ? String(yearMax) : '';
+    draftMinRef.current = minStr;
+    draftMaxRef.current = maxStr;
+    setDraftMinRaw(minStr);
+    setDraftMaxRaw(maxStr);
+    requestAnimationFrame(() => fromInputRef.current?.focus());
+  }, [isOpen, yearMin, yearMax]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onChangeMin(parseYear(draftMinRef.current));
+        onChangeMax(parseYear(draftMaxRef.current));
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen, onChangeMin, onChangeMax]);
+
+  const commitAndClose = () => {
+    onChangeMin(parseYear(draftMinRef.current));
+    onChangeMax(parseYear(draftMaxRef.current));
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const clearAndClose = () => {
+    draftMinRef.current = '';
+    draftMaxRef.current = '';
+    onChangeMin(undefined);
+    onChangeMax(undefined);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      commitAndClose();
+    }
+  };
+
+  const buttonLabel = isActive ? `${yearMin ?? '…'}–${yearMax ?? '…'}` : 'Year';
+  const fromPlaceholder = dataMin != null ? String(dataMin) : 'Min';
+  const toPlaceholder = dataMax != null ? String(dataMax) : 'Max';
+
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-text-muted whitespace-nowrap">Year:</span>
-      <div className="w-36 py-2" aria-label="Year range">
-        <Slider
-          range
-          min={bounds.min}
-          max={bounds.max}
-          value={draft}
-          onChange={(v) => {
-            isDragging.current = true;
-            setDraft(v as [number, number]);
+    <div ref={containerRef} className="relative flex-shrink-0">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={
+          isActive
+            ? `Year filter: ${yearMin ?? 'any'} to ${yearMax ?? 'any'}, click to change`
+            : 'Year filter'
+        }
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        onClick={() => setIsOpen((o) => !o)}
+        className={cn(
+          'flex items-center gap-1 px-2.5 rounded-md text-xs font-medium border transition-colors h-7',
+          isActive
+            ? 'bg-primary text-white border-primary'
+            : 'bg-surface-panel text-text-secondary border-border hover:bg-surface-hover'
+        )}
+      >
+        <span className={isActive ? 'font-mono tabular-nums' : ''}>{buttonLabel}</span>
+        <svg
+          className="w-3 h-3 opacity-50 flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-label="Year range filter"
+          className="absolute top-full left-0 mt-1 z-20 bg-surface-elevated border border-border rounded-lg p-3 w-48"
+          style={{
+            boxShadow:
+              'inset 0 0 0 1px rgba(13,148,136,0.18), 0 4px 24px rgba(13,148,136,0.08), 0 1px 6px rgba(0,0,0,0.50)',
           }}
-          onChangeComplete={commit}
-          styles={SLIDER_STYLES}
-          allowCross={false}
-        />
-      </div>
-      <span className="text-xs text-text-secondary tabular-nums w-20">
-        {draft[0]}–{draft[1]}
-      </span>
+        >
+          <div className="flex items-end gap-2">
+            <div className="flex-1 min-w-0">
+              <label
+                htmlFor={`${id}-from`}
+                className="block text-[10px] text-text-muted mb-1 select-none"
+              >
+                From
+              </label>
+              <input
+                ref={fromInputRef}
+                id={`${id}-from`}
+                type="number"
+                value={draftMin}
+                placeholder={fromPlaceholder}
+                onChange={(e) => setDraftMin(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full px-2 py-1.5 rounded text-xs bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+              />
+            </div>
+            <span className="text-text-muted text-xs pb-[9px] flex-shrink-0">–</span>
+            <div className="flex-1 min-w-0">
+              <label
+                htmlFor={`${id}-to`}
+                className="block text-[10px] text-text-muted mb-1 select-none"
+              >
+                To
+              </label>
+              <input
+                id={`${id}-to`}
+                type="number"
+                value={draftMax}
+                placeholder={toPlaceholder}
+                onChange={(e) => setDraftMax(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full px-2 py-1.5 rounded text-xs bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-2.5">
+            <button
+              type="button"
+              onClick={clearAndClose}
+              disabled={!isActive && !draftMin && !draftMax}
+              className={cn(
+                'text-[10px] transition-colors underline underline-offset-2',
+                isActive || draftMin || draftMax
+                  ? 'text-text-muted hover:text-text-primary'
+                  : 'text-text-muted/30 pointer-events-none'
+              )}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={commitAndClose}
+              className="text-xs font-medium px-3 py-1 rounded bg-primary text-white hover:bg-primary-hover transition-colors focus:outline-none focus:ring-1 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface-elevated"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -504,14 +633,13 @@ function MobileYearInputs({
         <input
           id={`${id}-from`}
           type="number"
-          min={globalMin}
-          max={globalMax}
-          value={yearMin ?? globalMin}
+          placeholder={String(globalMin)}
+          value={yearMin !== undefined ? yearMin : ''}
           onChange={(e) => {
             const v = e.target.valueAsNumber;
-            setYearMin(Number.isNaN(v) || v <= globalMin ? undefined : v);
+            setYearMin(Number.isNaN(v) ? undefined : v);
           }}
-          className="w-full px-3 py-2.5 rounded-md text-sm bg-surface-bg border border-border text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full px-3 py-2.5 rounded-md text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
       <span className="text-text-muted pb-3">–</span>
@@ -522,14 +650,13 @@ function MobileYearInputs({
         <input
           id={`${id}-to`}
           type="number"
-          min={globalMin}
-          max={globalMax}
-          value={yearMax ?? globalMax}
+          placeholder={String(globalMax)}
+          value={yearMax !== undefined ? yearMax : ''}
           onChange={(e) => {
             const v = e.target.valueAsNumber;
-            setYearMax(Number.isNaN(v) || v >= globalMax ? undefined : v);
+            setYearMax(Number.isNaN(v) ? undefined : v);
           }}
-          className="w-full px-3 py-2.5 rounded-md text-sm bg-surface-bg border border-border text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full px-3 py-2.5 rounded-md text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
     </div>
@@ -625,9 +752,10 @@ export function MediaFilterBar({
   const availableMaxs = [movieYearRange?.max, seriesYearRange?.max].filter(
     (v): v is number => v != null
   );
-  const globalMin = availableMins.length > 0 ? Math.min(...availableMins) : 1888;
-  const globalMax =
-    availableMaxs.length > 0 ? Math.max(...availableMaxs) : new Date().getFullYear();
+  const dataMin: number | null = availableMins.length > 0 ? Math.min(...availableMins) : null;
+  const dataMax: number | null = availableMaxs.length > 0 ? Math.max(...availableMaxs) : null;
+  const globalMin = dataMin ?? 1888;
+  const globalMax = dataMax ?? new Date().getFullYear();
 
   const movieTagIds = parseCsvIds(filterState.movieTagIds);
   const seriesTagIds = parseCsvIds(filterState.seriesTagIds);
@@ -829,12 +957,12 @@ export function MediaFilterBar({
     </div>
   ) : null;
 
-  const yearSlider = (
-    <YearRangeSlider
+  const yearFilter = (
+    <YearRangeFilter
       yearMin={filterState.yearMin}
       yearMax={filterState.yearMax}
-      sliderMin={globalMin}
-      sliderMax={globalMax}
+      dataMin={dataMin}
+      dataMax={dataMax}
       onChangeMin={setYearMin}
       onChangeMax={setYearMax}
     />
@@ -890,7 +1018,7 @@ export function MediaFilterBar({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               {seriesGroup}
               <Sep />
-              {yearSlider}
+              {yearFilter}
             </div>
           </div>
         ) : (
@@ -911,7 +1039,7 @@ export function MediaFilterBar({
               </>
             )}
             {(hasMovieSection || hasSeriesSection) && <Sep />}
-            {yearSlider}
+            {yearFilter}
             {tautulliFilter && (
               <>
                 <Sep />
