@@ -39,7 +39,7 @@ type TestStatus = 'idle' | 'loading' | 'pass' | 'fail';
 
 function ConnectionIcon({ status }: { status: TestStatus }) {
   if (status === 'idle') {
-    return <span className="inline-block w-3 h-3 rounded-full bg-gray-400" title="Not tested" />;
+    return <span className="inline-block w-3 h-3 rounded-full bg-text-muted" title="Not tested" />;
   }
   if (status === 'loading') {
     return (

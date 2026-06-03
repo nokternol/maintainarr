@@ -1,17 +1,17 @@
 .base {
-  @apply inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed;
 }
 
 .primary {
-  @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white focus:ring-primary;
+  @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white focus-visible:ring-primary;
 }
 
 .secondary {
-  @apply bg-surface-panel border border-border text-text-primary hover:bg-surface-bg focus:ring-border;
+  @apply bg-surface-panel border border-border text-text-primary hover:bg-surface-hover active:bg-surface-bg focus-visible:ring-primary;
 }
 
 .danger {
-  @apply bg-danger hover:bg-danger-hover active:bg-danger-active text-white focus:ring-danger;
+  @apply bg-danger hover:bg-danger-hover active:bg-danger-active text-white focus-visible:ring-danger;
 }
 
 .sm {
