@@ -5,6 +5,7 @@ import { AutomationScheduler } from './cron/automationScheduler';
 import type { DrizzleDb } from './database';
 import { getChildLogger } from './logger';
 import { AuthService } from './services/authService';
+import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationService } from './services/automationService';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
@@ -26,6 +27,7 @@ export interface Cradle {
   providerSettingsService: ProviderSettingsService;
   savedQueryService: SavedQueryService;
   automationService: AutomationService;
+  automationExecutor: AutomationExecutor;
   automationScheduler: AutomationScheduler;
 }
 
@@ -52,9 +54,10 @@ export function buildContainer(deps: {
     tmdbService: asClass(TmdbService).singleton(),
     plexService: asClass(PlexService).scoped(),
     authService: asClass(AuthService).scoped(),
-    providerSettingsService: asClass(ProviderSettingsService).scoped(),
-    savedQueryService: asClass(SavedQueryService).scoped(),
-    automationService: asClass(AutomationService).scoped(),
+    providerSettingsService: asClass(ProviderSettingsService).singleton(),
+    savedQueryService: asClass(SavedQueryService).singleton(),
+    automationService: asClass(AutomationService).singleton(),
+    automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
 

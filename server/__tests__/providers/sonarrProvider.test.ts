@@ -1,16 +1,22 @@
 import { getChildLogger } from '@server/logger';
 import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
-import { describe, expect, it } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { afterEach, describe, expect, it } from 'vitest';
+import { server } from '../../../tests/mocks/server';
 
 const logger = getChildLogger('TestSonarrProvider');
 
+const SONARR_BASE = 'http://localhost:8989/api/v3';
+
 const mockConfig: ProviderConfig = {
   name: 'Test Sonarr',
-  url: 'http://localhost:8989/api/v3',
+  url: SONARR_BASE,
   apiKey: 'fake-api-key',
   settings: {},
 };
+
+afterEach(() => server.resetHandlers());
 
 describe('SonarrProvider', () => {
   const provider = new SonarrProvider(mockConfig, logger);
@@ -38,5 +44,52 @@ describe('SonarrProvider', () => {
     const tags = await provider.getTags();
     expect(tags).toHaveLength(1);
     expect(tags[0].label).toBe('drama');
+  });
+});
+
+describe('SonarrProvider — task methods', () => {
+  const provider = new SonarrProvider(mockConfig, logger);
+
+  it('triggerSeriesSearch posts one SeriesSearch command per series ID', async () => {
+    const commandBodies: unknown[] = [];
+    server.use(
+      http.post(`${SONARR_BASE}/command`, async ({ request }) => {
+        commandBodies.push(await request.json());
+        return HttpResponse.json({ id: 99 });
+      })
+    );
+
+    await provider.triggerSeriesSearch([1, 2]);
+
+    expect(commandBodies).toHaveLength(2);
+    expect(commandBodies).toEqual(
+      expect.arrayContaining([
+        { name: 'SeriesSearch', seriesId: 1 },
+        { name: 'SeriesSearch', seriesId: 2 },
+      ])
+    );
+  });
+
+  it('unmonitorSeries sends PUT /series/{id} with monitored:false for each ID', async () => {
+    const putBodies: Array<{ id: number; monitored: boolean }> = [];
+    server.use(
+      http.get(`${SONARR_BASE}/series`, () =>
+        HttpResponse.json([
+          { id: 1, title: 'Show A', monitored: true, status: 'ended', tvdbId: 1, profileId: 1, qualityProfileId: 1, languageProfileId: 1, tags: [], path: '/tv/A', seasons: [] },
+          { id: 2, title: 'Show B', monitored: true, status: 'ended', tvdbId: 2, profileId: 1, qualityProfileId: 1, languageProfileId: 1, tags: [], path: '/tv/B', seasons: [] },
+        ])
+      ),
+      http.put(`${SONARR_BASE}/series/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as { monitored: boolean };
+        putBodies.push({ id: Number(params.id), monitored: body.monitored });
+        return HttpResponse.json({ id: Number(params.id) });
+      })
+    );
+
+    await provider.unmonitorSeries([1, 2]);
+
+    expect(putBodies).toHaveLength(2);
+    expect(putBodies.every((b) => b.monitored === false)).toBe(true);
+    expect(putBodies.map((b) => b.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 });

@@ -68,4 +68,29 @@ export class RadarrProvider extends BaseMetadataProvider {
       .get('movie/lookup', { searchParams: { ...this.apiParams, term } })
       .json<RadarrMovie[]>();
   }
+
+  public async unmonitorMovies(movieIds: number[]): Promise<void> {
+    const all = await this.getMovies();
+    const targets = all.filter((m) => movieIds.includes(m.id));
+    await Promise.all(
+      targets.map((movie) =>
+        this.client
+          .put(`movie/${movie.id}`, {
+            searchParams: this.apiParams,
+            json: { ...movie, monitored: false },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async triggerMoviesSearch(movieIds: number[]): Promise<void> {
+    if (movieIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'MoviesSearch', movieIds },
+      })
+      .json();
+  }
 }
