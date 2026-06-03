@@ -3,6 +3,15 @@
 }
 
 .interactive {
+  /* button element reset — .interactive only applies when onClick is set, so always a <button> */
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+
   @apply cursor-pointer hover:scale-[1.02] active:scale-[0.97];
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-bg;
 }

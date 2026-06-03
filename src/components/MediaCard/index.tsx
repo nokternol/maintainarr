@@ -35,24 +35,21 @@ const Root = ({
   'aria-label': ariaLabel,
   'data-testid': testId,
 }: MediaCardRootProps) => {
+  const commonProps = {
+    className: cn(styles.card, onClick && styles.interactive, className),
+    'aria-label': ariaLabel,
+    'data-testid': testId ?? 'media-card',
+  };
+
   return (
     <MediaCardContext.Provider value={{ id }}>
-      <div
-        className={cn(styles.card, onClick && styles.interactive, className)}
-        onClick={() => onClick?.(id)}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
-        aria-label={ariaLabel}
-        onKeyDown={(e) => {
-          if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            onClick(id);
-          }
-        }}
-        data-testid={testId ?? 'media-card'}
-      >
-        {children}
-      </div>
+      {onClick ? (
+        <button type="button" {...commonProps} onClick={() => onClick(id)}>
+          {children}
+        </button>
+      ) : (
+        <div {...commonProps}>{children}</div>
+      )}
     </MediaCardContext.Provider>
   );
 };

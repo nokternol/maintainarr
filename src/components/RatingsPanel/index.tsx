@@ -1,7 +1,7 @@
 import LoadingSpinner from '@app/components/LoadingSpinner';
 import RatingsDisplay from '@app/components/RatingsDisplay';
 import { useRatings } from '@app/hooks/useRatings';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface RatingsPanelProps {
   isOpen: boolean;
@@ -12,12 +12,26 @@ interface RatingsPanelProps {
 
 export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPanelProps) {
   const { trigger, data, error, isLoading } = useRatings();
+  const triggerRef = useRef<Element | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isOpen && title) {
       trigger({ title, year });
     }
   }, [isOpen, title, year, trigger]);
+
+  useEffect(() => {
+    if (isOpen) {
+      triggerRef.current = document.activeElement;
+      closeButtonRef.current?.focus();
+    } else {
+      if (triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus();
+      }
+      triggerRef.current = null;
+    }
+  }, [isOpen]);
 
   return (
     <>
@@ -47,6 +61,7 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
                 {year && <p className="text-sm text-text-secondary">{year}</p>}
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 className="p-2 rounded hover:bg-surface-panel text-text-secondary hover:text-text-primary transition-colors"

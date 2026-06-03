@@ -69,9 +69,9 @@
 /* ── Error ── */
 .error {
   padding: 0.875rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgb(from var(--color-danger) r g b / 0.1);
+  border: 1px solid rgb(from var(--color-danger) r g b / 0.3);
   border-radius: 0.5rem;
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.875rem;
 }
