@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { createdAt, updatedAt } from './columns/datetime';
+export { createdAt, updatedAt };
 
 // ---------------------------------------------------------------------------
 // Enums (plain TypeScript — SQLite has no native enum type)
@@ -171,3 +172,46 @@ export type NewGroup = typeof groups.$inferInsert;
 
 export type Rule = typeof rules.$inferSelect;
 export type NewRule = typeof rules.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// savedQueries
+// ---------------------------------------------------------------------------
+export const savedQueries = sqliteTable('saved_queries', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  filters: text('filters').notNull(), // JSON: QueryFilters
+  createdAt: createdAt('createdAt'),
+});
+
+// ---------------------------------------------------------------------------
+// automations
+// ---------------------------------------------------------------------------
+export const automations = sqliteTable(
+  'automations',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    queryId: integer('queryId')
+      .notNull()
+      .references(() => savedQueries.id, { onDelete: 'cascade' }),
+    providerId: integer('providerId')
+      .notNull()
+      .references(() => metadataProviders.id, { onDelete: 'cascade' }),
+    taskId: text('taskId').notNull(),
+    schedule: text('schedule').notNull(), // cron expression
+    status: text('status').notNull().default('active'), // 'active' | 'paused'
+    lastRunAt: text('lastRunAt'),
+    lastRunItemCount: integer('lastRunItemCount'),
+    lastRunStatus: text('lastRunStatus'), // 'success' | 'error'
+    lastRunError: text('lastRunError'),
+    createdAt: createdAt('createdAt'),
+    updatedAt: updatedAt('updatedAt'),
+  },
+  (table) => [index('IDX_automations_status').on(table.status)]
+);
+
+export type SavedQuery = typeof savedQueries.$inferSelect;
+export type NewSavedQuery = typeof savedQueries.$inferInsert;
+
+export type Automation = typeof automations.$inferSelect;
+export type NewAutomation = typeof automations.$inferInsert;

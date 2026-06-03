@@ -1,14 +1,19 @@
 import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import type { AppConfig } from './config';
+import { AutomationScheduler } from './cron/automationScheduler';
 import type { DrizzleDb } from './database';
 import { getChildLogger } from './logger';
 import { AuthService } from './services/authService';
 import type { AuthService as AuthServiceType } from './services/authService';
+import { AutomationService } from './services/automationService';
+import type { AutomationService as AutomationServiceType } from './services/automationService';
 import { PlexService } from './services/plexService';
 import type { PlexService as PlexServiceType } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
 import type { ProviderSettingsService as ProviderSettingsServiceType } from './services/providerSettingsService';
+import { SavedQueryService } from './services/savedQueryService';
+import type { SavedQueryService as SavedQueryServiceType } from './services/savedQueryService';
 import { TmdbService } from './services/tmdbService';
 import type { TmdbService as TmdbServiceType } from './services/tmdbService';
 
@@ -25,6 +30,9 @@ export interface Cradle {
   plexService: PlexServiceType;
   authService: AuthServiceType;
   providerSettingsService: ProviderSettingsServiceType;
+  savedQueryService: SavedQueryServiceType;
+  automationService: AutomationServiceType;
+  automationScheduler: AutomationScheduler;
 }
 
 let container: AwilixContainer<Cradle> | null = null;
@@ -47,10 +55,13 @@ export function buildContainer(deps: {
     db: asValue(deps.db),
 
     // Services
-    tmdbService: asClass(TmdbService).singleton(), // Singleton for caching
-    plexService: asClass(PlexService).scoped(), // Per-request
-    authService: asClass(AuthService).scoped(), // Per-request
-    providerSettingsService: asClass(ProviderSettingsService).scoped(), // Per-request
+    tmdbService: asClass(TmdbService).singleton(),
+    plexService: asClass(PlexService).scoped(),
+    authService: asClass(AuthService).scoped(),
+    providerSettingsService: asClass(ProviderSettingsService).scoped(),
+    savedQueryService: asClass(SavedQueryService).scoped(),
+    automationService: asClass(AutomationService).scoped(),
+    automationScheduler: asClass(AutomationScheduler).singleton(),
   });
 
   log.info('Container built', {

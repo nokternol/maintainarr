@@ -38,6 +38,14 @@ async function startServer() {
       db,
     });
 
+    // Seed the cron scheduler with active automations from DB
+    const { automationService, automationScheduler } = container.cradle;
+    const activeAutomations = await automationService.listActive();
+    for (const a of activeAutomations) {
+      automationScheduler.schedule(a);
+    }
+    log.info('Automation scheduler seeded', { count: automationScheduler.count });
+
     const server = express();
 
     // Trust proxy (for correct IP behind reverse proxy)
@@ -106,6 +114,7 @@ async function startServer() {
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       log.info(`${signal} received, closing server gracefully`);
+      automationScheduler.stopAll();
       httpServer.close(async () => {
         log.info('HTTP server closed');
         await closeDatabase();

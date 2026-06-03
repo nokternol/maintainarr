@@ -1,19 +1,44 @@
-import { useCallback } from 'react';
-import { useLocalStorage } from './useLocalStorage';
+import useSWR from 'swr';
+import useSWRMutation from 'swr/mutation';
 import { FILTER_FIELDS } from './useMediaFilters';
 import type { FilterState } from './useMediaFilters';
 
 export type QueryFilters = Omit<FilterState, 'movieSort' | 'seriesSort'>;
 
 export interface SavedQuery {
-  id: string;
+  id: number;
   name: string;
   filters: QueryFilters;
-  createdAt: number;
+  createdAt: string;
 }
 
-const STORAGE_KEY = 'warden:saved-queries';
-const EMPTY: SavedQuery[] = [];
+const KEY = '/api/saved-queries';
+
+async function fetchQueries(url: string): Promise<SavedQuery[]> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch saved queries');
+  const json = await res.json();
+  return json.data as SavedQuery[];
+}
+
+async function createQuery(
+  _key: string,
+  { arg }: { arg: { name: string; filters: QueryFilters } }
+): Promise<SavedQuery> {
+  const res = await fetch(KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(arg),
+  });
+  if (!res.ok) throw new Error('Failed to save query');
+  const json = await res.json();
+  return json.data as SavedQuery;
+}
+
+async function deleteQuery(_key: string, { arg }: { arg: number }): Promise<void> {
+  const res = await fetch(`${KEY}/${arg}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete query');
+}
 
 function stripSortFields(state: FilterState): QueryFilters {
   const { movieSort: _m, seriesSort: _s, ...rest } = state;
@@ -32,28 +57,21 @@ export function buildQueryParams(filters: QueryFilters): string {
 }
 
 export function useSavedQueries() {
-  const [queries, setQueries] = useLocalStorage<SavedQuery[]>(STORAGE_KEY, EMPTY);
+  const { data: queries = [], isLoading, mutate } = useSWR(KEY, fetchQueries);
 
-  const save = useCallback(
-    (name: string, filterState: FilterState): SavedQuery => {
-      const next: SavedQuery = {
-        id: crypto.randomUUID(),
-        name: name.trim(),
-        filters: stripSortFields(filterState),
-        createdAt: Date.now(),
-      };
-      setQueries([...queries, next]);
-      return next;
-    },
-    [queries, setQueries]
-  );
+  const { trigger: triggerCreate } = useSWRMutation(KEY, createQuery);
+  const { trigger: triggerDelete } = useSWRMutation(KEY, deleteQuery);
 
-  const remove = useCallback(
-    (id: string) => {
-      setQueries(queries.filter((q) => q.id !== id));
-    },
-    [queries, setQueries]
-  );
+  const save = async (name: string, filterState: FilterState): Promise<SavedQuery> => {
+    const q = await triggerCreate({ name, filters: stripSortFields(filterState) });
+    await mutate();
+    return q!;
+  };
 
-  return { queries, save, remove };
+  const remove = async (id: number): Promise<void> => {
+    await triggerDelete(id);
+    await mutate();
+  };
+
+  return { queries, isLoading, save, remove };
 }

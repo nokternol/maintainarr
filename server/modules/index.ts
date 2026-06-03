@@ -2,10 +2,12 @@ import { Router } from 'express';
 import type { Cradle } from '../container';
 import { checkUser } from '../middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
+import { createAutomationRoutes } from './automations/automations.routes';
 import { createBackdropsRoutes } from './backdrops/backdrops.routes';
 import { createHealthRoutes } from './health/health.routes';
 import { createMediaRoutes } from './media/media.routes';
 import { createProvidersRoutes } from './providers/providers.routes';
+import { createSavedQueryRoutes } from './savedQueries/savedQueries.routes';
 import { createSearchRoutes } from './search/search.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
 
@@ -27,6 +29,8 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/settings', createSettingsRoutes(cradle));
   router.use('/media', createMediaRoutes(cradle));
   router.use('/search', createSearchRoutes(cradle));
+  router.use('/saved-queries', createSavedQueryRoutes(cradle));
+  router.use('/automations', createAutomationRoutes(cradle));
 
   return router;
 }
