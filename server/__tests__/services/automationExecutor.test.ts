@@ -164,6 +164,36 @@ describe('AutomationExecutor', () => {
       expect(unmonitored).toEqual([1]);
     });
 
+    it('applies boolean hasFile:true filter (native boolean, not string)', async () => {
+      const movies = [
+        createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999, hasFile: true }),
+        createRadarrMovie({ id: 2, title: 'Inception', year: 2010, hasFile: false }),
+      ];
+
+      const unmonitored: number[] = [];
+      server.use(
+        http.get(`${RADARR_URL}/api/v3/movie`, () => HttpResponse.json(movies)),
+        http.put(`${RADARR_URL}/api/v3/movie/:id`, async ({ params }) => {
+          unmonitored.push(Number(params.id));
+          return HttpResponse.json({ id: Number(params.id), monitored: false });
+        })
+      );
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      // Filter using native boolean — what JSON.parse produces from stored JSON
+      const query = await seedSavedQuery(savedQueryService, { hasFile: true });
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      await executor.execute(automation.id);
+
+      // Only movie id=1 has hasFile:true
+      expect(unmonitored).toEqual([1]);
+    });
+
     it('records a successful run with the item count', async () => {
       const movies = [createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999 })];
 
@@ -327,6 +357,36 @@ describe('AutomationExecutor', () => {
 
       await executor.execute(automation.id);
 
+      expect(unmonitored).toEqual([1]);
+    });
+
+    it('applies boolean monitored:false filter (native boolean, not string)', async () => {
+      const seriesList = [
+        createSonarrSeries({ id: 1, title: 'Breaking Bad', year: 2008, monitored: false }),
+        createSonarrSeries({ id: 2, title: 'Ongoing Show', year: 2020, monitored: true }),
+      ];
+
+      const unmonitored: number[] = [];
+      server.use(
+        http.get(`${SONARR_URL}/api/v3/series`, () => HttpResponse.json(seriesList)),
+        http.put(`${SONARR_URL}/api/v3/series/:id`, async ({ params }) => {
+          unmonitored.push(Number(params.id));
+          return HttpResponse.json({ id: Number(params.id), monitored: false });
+        })
+      );
+
+      const provider = await seedSonarrProvider(providerSettingsService);
+      // Filter using native boolean — what JSON.parse produces from stored JSON
+      const query = await seedSavedQuery(savedQueryService, { monitored: false });
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorSeries',
+      });
+
+      await executor.execute(automation.id);
+
+      // Only series id=1 has monitored:false
       expect(unmonitored).toEqual([1]);
     });
 
