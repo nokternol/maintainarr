@@ -36,6 +36,7 @@ export interface MediaFilterBarProps {
   setNetwork: (v: string | undefined) => void;
   setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
   clearAll: () => void;
+  onSaveQuery?: () => void;
   isActive: boolean;
   movieYearRange: YearRange | null;
   seriesYearRange: YearRange | null;
@@ -737,6 +738,7 @@ export function MediaFilterBar({
   setNetwork,
   setTautulliWatched,
   clearAll,
+  onSaveQuery,
   isActive,
   movieYearRange,
   seriesYearRange,
@@ -976,14 +978,40 @@ export function MediaFilterBar({
     />
   ) : null;
 
-  const clearAllButton = isActive ? (
-    <button
-      type="button"
-      onClick={clearAll}
-      className="ml-auto text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
-    >
-      Clear all
-    </button>
+  const rightCluster = isActive ? (
+    <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+      {onSaveQuery && (
+        <button
+          type="button"
+          onClick={onSaveQuery}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          Save as query
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={clearAll}
+        className="text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
+      >
+        Clear all
+      </button>
+    </div>
   ) : null;
 
   return (
@@ -1013,7 +1041,7 @@ export function MediaFilterBar({
                   {tautulliFilter}
                 </>
               )}
-              {clearAllButton}
+              {rightCluster}
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               {seriesGroup}
@@ -1046,7 +1074,7 @@ export function MediaFilterBar({
                 {tautulliFilter}
               </>
             )}
-            {clearAllButton}
+            {rightCluster}
           </div>
         )}
       </div>

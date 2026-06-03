@@ -2,6 +2,7 @@ import AppLayout from '@app/components/AppLayout';
 import MediaCard from '@app/components/MediaCard';
 import { MediaFilterBar } from '@app/components/MediaFilterBar';
 import RatingsPanel from '@app/components/RatingsPanel';
+import { SaveQueryDialog } from '@app/components/SaveQueryDialog';
 import SidebarNav from '@app/components/SidebarNav';
 import { Tabs } from '@app/components/Tabs';
 import TopBar from '@app/components/TopBar';
@@ -15,6 +16,7 @@ import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
+import { useSavedQueries } from '@app/hooks/useSavedQueries';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import { NAV_ITEMS } from '@app/lib/navigation';
@@ -448,6 +450,8 @@ export interface MediaContentProps {
   setSeriesSort: (v: string) => void;
   // tab
   activeTab: ActiveTab;
+  // save query
+  onSaveQuery?: () => void;
   // mobile filter overlay
   filtersOpen: boolean;
   onFiltersClose: () => void;
@@ -482,6 +486,7 @@ export function MediaContent({
   setNetwork,
   setTautulliWatched,
   clearAll,
+  onSaveQuery,
   isActive,
   activeFilterCount,
   movieSort,
@@ -524,6 +529,7 @@ export function MediaContent({
         setNetwork={setNetwork}
         setTautulliWatched={setTautulliWatched}
         clearAll={clearAll}
+        onSaveQuery={onSaveQuery}
         isActive={isActive}
         movieYearRange={movies.yearRange}
         seriesYearRange={series.yearRange}
@@ -764,8 +770,10 @@ export default function MediaPage() {
     [providers]
   );
 
+  const { save: saveQuery } = useSavedQueries();
   const [density, setDensity] = useCardDensity();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('movies');
 
   const providersLoaded = providers !== undefined;
@@ -790,92 +798,100 @@ export default function MediaPage() {
   );
 
   return (
-    <AppLayout
-      mobileNav={mobileNav}
-      sidebar={<SidebarNav />}
-      topBar={
-        <TopBar
-          sticky
-          title="Managed Media"
-          breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }]}
-          actions={
-            <>
-              <Tabs
-                tabs={[
-                  {
-                    value: 'movies',
-                    label: 'Movies',
-                    count: movies.totalCount,
-                    loading: movies.isLoading,
-                  },
-                  {
-                    value: 'series',
-                    label: 'Series',
-                    count: series.totalCount,
-                    loading: series.isLoading,
-                  },
-                ]}
-                active={activeTab}
-                onChange={setActiveTab}
-              />
-              <button
-                type="button"
-                className={cn(
-                  'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
-                  isActive
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
-                )}
-                onClick={() => setFiltersOpen(true)}
-              >
-                <Filter size={16} strokeWidth={2} aria-hidden="true" />
-                Filters
-                {isActive && (
-                  <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-            </>
-          }
+    <>
+      <AppLayout
+        mobileNav={mobileNav}
+        sidebar={<SidebarNav />}
+        topBar={
+          <TopBar
+            sticky
+            title="Managed Media"
+            breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }]}
+            actions={
+              <>
+                <Tabs
+                  tabs={[
+                    {
+                      value: 'movies',
+                      label: 'Movies',
+                      count: movies.totalCount,
+                      loading: movies.isLoading,
+                    },
+                    {
+                      value: 'series',
+                      label: 'Series',
+                      count: series.totalCount,
+                      loading: series.isLoading,
+                    },
+                  ]}
+                  active={activeTab}
+                  onChange={setActiveTab}
+                />
+                <button
+                  type="button"
+                  className={cn(
+                    'md:hidden flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium border transition-colors',
+                    isActive
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-transparent text-text-primary border-border hover:bg-surface-hover'
+                  )}
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  <Filter size={16} strokeWidth={2} aria-hidden="true" />
+                  Filters
+                  {isActive && (
+                    <span className="bg-white/30 rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+              </>
+            }
+          />
+        }
+      >
+        <MediaContent
+          filterState={filterState}
+          setTitle={setTitle}
+          setHasFile={setHasFile}
+          setMonitored={setMonitored}
+          setSeriesStatus={setSeriesStatus}
+          setYearMin={setYearMin}
+          setYearMax={setYearMax}
+          setMovieTagIds={setMovieTagIds}
+          setSeriesTagIds={setSeriesTagIds}
+          setMovieQualityProfileIds={setMovieQualityProfileIds}
+          setSeriesQualityProfileIds={setSeriesQualityProfileIds}
+          setMovieGenres={setMovieGenres}
+          setSeriesGenres={setSeriesGenres}
+          setSeriesType={setSeriesType}
+          setNetwork={setNetwork}
+          setTautulliWatched={setTautulliWatched}
+          clearAll={clearAll}
+          onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
+          isActive={isActive}
+          activeFilterCount={activeFilterCount}
+          movieSort={filterState.movieSort}
+          seriesSort={filterState.seriesSort}
+          setMovieSort={setMovieSort}
+          setSeriesSort={setSeriesSort}
+          activeTab={activeTab}
+          filtersOpen={filtersOpen}
+          onFiltersClose={() => setFiltersOpen(false)}
+          movies={movies}
+          series={series}
+          lookups={lookups}
+          configuredTypes={configuredTypes}
+          providersLoaded={providersLoaded}
+          density={density}
+          onDensityChange={setDensity}
         />
-      }
-    >
-      <MediaContent
-        filterState={filterState}
-        setTitle={setTitle}
-        setHasFile={setHasFile}
-        setMonitored={setMonitored}
-        setSeriesStatus={setSeriesStatus}
-        setYearMin={setYearMin}
-        setYearMax={setYearMax}
-        setMovieTagIds={setMovieTagIds}
-        setSeriesTagIds={setSeriesTagIds}
-        setMovieQualityProfileIds={setMovieQualityProfileIds}
-        setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-        setMovieGenres={setMovieGenres}
-        setSeriesGenres={setSeriesGenres}
-        setSeriesType={setSeriesType}
-        setNetwork={setNetwork}
-        setTautulliWatched={setTautulliWatched}
-        clearAll={clearAll}
-        isActive={isActive}
-        activeFilterCount={activeFilterCount}
-        movieSort={filterState.movieSort}
-        seriesSort={filterState.seriesSort}
-        setMovieSort={setMovieSort}
-        setSeriesSort={setSeriesSort}
-        activeTab={activeTab}
-        filtersOpen={filtersOpen}
-        onFiltersClose={() => setFiltersOpen(false)}
-        movies={movies}
-        series={series}
-        lookups={lookups}
-        configuredTypes={configuredTypes}
-        providersLoaded={providersLoaded}
-        density={density}
-        onDensityChange={setDensity}
+      </AppLayout>
+      <SaveQueryDialog
+        open={saveDialogOpen}
+        onClose={() => setSaveDialogOpen(false)}
+        onSave={(name) => saveQuery(name, filterState)}
       />
-    </AppLayout>
+    </>
   );
 }
