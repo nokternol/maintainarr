@@ -1,5 +1,7 @@
 import AppLayout from '@app/components/AppLayout';
+import Button from '@app/components/Button';
 import SidebarNav from '@app/components/SidebarNav';
+import { Skeleton } from '@app/components/Skeleton';
 import TopBar from '@app/components/TopBar';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type {
@@ -62,7 +64,7 @@ function ConnectionIcon({ status }: { status: TestStatus }) {
   if (status === 'pass') {
     return (
       <svg
-        className="inline-block w-4 h-4 text-green-400"
+        className="inline-block w-4 h-4 text-success"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -74,7 +76,7 @@ function ConnectionIcon({ status }: { status: TestStatus }) {
   }
   return (
     <svg
-      className="inline-block w-4 h-4 text-red-400"
+      className="inline-block w-4 h-4 text-danger-hover"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -221,7 +223,7 @@ function AddProviderForm({
             <span className="ml-2">
               <ConnectionIcon status={testStatus} />
             </span>
-            {testError && <span className="ml-2 text-xs text-red-400">{testError}</span>}
+            {testError && <span className="ml-2 text-xs text-danger-hover">{testError}</span>}
           </label>
           {PROVIDER_DEFAULT_URLS[form.type] !== undefined ? (
             <input
@@ -281,16 +283,12 @@ function AddProviderForm({
         )}
       </div>
       <div className="flex gap-2 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-text-secondary hover:text-text-primary"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:opacity-90">
+        </Button>
+        <Button type="submit" variant="primary" size="sm">
           Save
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -395,7 +393,7 @@ function ProviderRow({
               {provider.type}
             </span>
             {!provider.isActive && (
-              <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">
+              <span className="text-xs px-2 py-0.5 bg-danger/20 text-danger-hover rounded">
                 Inactive
               </span>
             )}
@@ -403,22 +401,24 @@ function ProviderRow({
           <div className="text-sm text-text-secondary">{provider.url}</div>
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => setEditing(true)}
-            className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-bg rounded"
             aria-label={`Edit ${provider.name}`}
           >
             Edit
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             onClick={onDelete}
-            className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded"
             aria-label={`Delete ${provider.name}`}
           >
             Delete
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -455,7 +455,7 @@ function ProviderRow({
             <span className="ml-2">
               <ConnectionIcon status={testStatus} />
             </span>
-            {testError && <span className="ml-2 text-xs text-red-400">{testError}</span>}
+            {testError && <span className="ml-2 text-xs text-danger-hover">{testError}</span>}
           </label>
           <input
             id={`edit-${provider.id}-url`}
@@ -509,16 +509,12 @@ function ProviderRow({
         )}
       </div>
       <div className="flex gap-2 justify-end">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="px-4 py-2 text-text-secondary hover:text-text-primary"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={handleCancel}>
           Cancel
-        </button>
-        <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:opacity-90">
+        </Button>
+        <Button type="submit" variant="primary" size="sm">
           Save
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -555,20 +551,22 @@ export default function SettingsPage() {
     >
       <div className="p-6 space-y-4">
         <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => setShowAddForm((v) => !v)}
-            className="px-4 py-2 bg-primary text-white rounded hover:opacity-90"
-          >
+          <Button type="button" variant="primary" onClick={() => setShowAddForm((v) => !v)}>
             Add Provider
-          </button>
+          </Button>
         </div>
 
         {showAddForm && (
           <AddProviderForm onSubmit={handleCreate} onCancel={() => setShowAddForm(false)} />
         )}
 
-        {isLoading && <div className="text-text-secondary">Loading providers…</div>}
+        {isLoading && (
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-[68px]" />
+            ))}
+          </div>
+        )}
 
         <div className="space-y-3">
           {providers?.map((p) => (
