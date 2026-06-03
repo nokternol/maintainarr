@@ -9,9 +9,6 @@ import type { SonarrSeries } from '../providers/sonarrProvider';
 // ─── Query types ─────────────────────────────────────────────────────────────
 
 export interface MovieFilterQuery {
-  page?: number;
-  pageSize?: number;
-  sort?: string;
   title?: string;
   yearMin?: number;
   yearMax?: number;
@@ -19,13 +16,9 @@ export interface MovieFilterQuery {
   movieTagIds?: string;
   movieQualityProfileIds?: string;
   movieGenres?: string;
-  tautulliWatched?: string;
 }
 
 export interface SeriesFilterQuery {
-  page?: number;
-  pageSize?: number;
-  sort?: string;
   title?: string;
   yearMin?: number;
   yearMax?: number;
@@ -36,7 +29,6 @@ export interface SeriesFilterQuery {
   seriesGenres?: string;
   seriesType?: string;
   network?: string;
-  tautulliWatched?: string;
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -59,10 +51,7 @@ function parseCsvStrings(csv: string | undefined): string[] {
 
 // ─── Filter functions ─────────────────────────────────────────────────────────
 
-export function applyMovieFilters(
-  all: RadarrMovie[],
-  query: MovieFilterQuery
-): RadarrMovie[] {
+export function applyMovieFilters(all: RadarrMovie[], query: MovieFilterQuery): RadarrMovie[] {
   let filtered = all;
 
   if (query.title !== undefined) {
@@ -97,10 +86,7 @@ export function applyMovieFilters(
   return filtered;
 }
 
-export function applySeriesFilters(
-  all: SonarrSeries[],
-  query: SeriesFilterQuery
-): SonarrSeries[] {
+export function applySeriesFilters(all: SonarrSeries[], query: SeriesFilterQuery): SonarrSeries[] {
   let filtered = all;
 
   if (query.title !== undefined) {

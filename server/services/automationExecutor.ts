@@ -35,22 +35,53 @@ export class AutomationExecutor {
       if (provider.type === MetadataProviderType.RADARR) {
         const radarr = new RadarrProvider(provider, log);
         const movies = await radarr.getMovies();
-        const matched = applyMovieFilters(movies, buildMovieQuery(filters));
+        const matched = applyMovieFilters(movies, {
+          title: typeof filters.title === 'string' ? filters.title : undefined,
+          yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
+          yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
+          hasFile: coerceBool(filters.hasFile),
+          movieTagIds: typeof filters.movieTagIds === 'string' ? filters.movieTagIds : undefined,
+          movieQualityProfileIds:
+            typeof filters.movieQualityProfileIds === 'string'
+              ? filters.movieQualityProfileIds
+              : undefined,
+          movieGenres: typeof filters.movieGenres === 'string' ? filters.movieGenres : undefined,
+        });
         itemCount = matched.length;
         const handler = RADARR_TASKS[taskId];
         if (handler) {
-          await handler(radarr, matched.map((m) => m.id));
+          await handler(
+            radarr,
+            matched.map((m) => m.id)
+          );
         } else {
           return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
       } else if (provider.type === MetadataProviderType.SONARR) {
         const sonarr = new SonarrProvider(provider, log);
         const series = await sonarr.getSeries();
-        const matched = applySeriesFilters(series, buildSeriesQuery(filters));
+        const matched = applySeriesFilters(series, {
+          title: typeof filters.title === 'string' ? filters.title : undefined,
+          yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
+          yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
+          monitored: coerceBool(filters.monitored),
+          seriesStatus: typeof filters.seriesStatus === 'string' ? filters.seriesStatus : undefined,
+          seriesTagIds: typeof filters.seriesTagIds === 'string' ? filters.seriesTagIds : undefined,
+          seriesQualityProfileIds:
+            typeof filters.seriesQualityProfileIds === 'string'
+              ? filters.seriesQualityProfileIds
+              : undefined,
+          seriesGenres: typeof filters.seriesGenres === 'string' ? filters.seriesGenres : undefined,
+          seriesType: typeof filters.seriesType === 'string' ? filters.seriesType : undefined,
+          network: typeof filters.network === 'string' ? filters.network : undefined,
+        });
         itemCount = matched.length;
         const handler = SONARR_TASKS[taskId];
         if (handler) {
-          await handler(sonarr, matched.map((s) => s.id));
+          await handler(
+            sonarr,
+            matched.map((s) => s.id)
+          );
         } else {
           return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
@@ -111,48 +142,11 @@ const SONARR_TASKS: Record<string, SonarrTaskFn> = {
 };
 
 // ---------------------------------------------------------------------------
-// Filter adapter helpers
+// Coercion helpers
 // ---------------------------------------------------------------------------
 
-function buildMovieQuery(filters: QueryFilters) {
-  return {
-    page: 1,
-    pageSize: 10000,
-    sort: 'title_asc',
-    title: typeof filters.title === 'string' ? filters.title : undefined,
-    yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
-    yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
-    hasFile:
-      filters.hasFile === 'true' ? true : filters.hasFile === 'false' ? false : undefined,
-    movieTagIds: typeof filters.movieTagIds === 'string' ? filters.movieTagIds : undefined,
-    movieQualityProfileIds:
-      typeof filters.movieQualityProfileIds === 'string'
-        ? filters.movieQualityProfileIds
-        : undefined,
-    movieGenres: typeof filters.movieGenres === 'string' ? filters.movieGenres : undefined,
-  };
-}
-
-function buildSeriesQuery(filters: QueryFilters) {
-  return {
-    page: 1,
-    pageSize: 10000,
-    sort: 'title_asc',
-    title: typeof filters.title === 'string' ? filters.title : undefined,
-    yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
-    yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
-    monitored:
-      filters.monitored === 'true' ? true : filters.monitored === 'false' ? false : undefined,
-    seriesStatus: typeof filters.seriesStatus === 'string' ? filters.seriesStatus : undefined,
-    seriesTagIds:
-      typeof filters.seriesTagIds === 'string' ? filters.seriesTagIds : undefined,
-    seriesQualityProfileIds:
-      typeof filters.seriesQualityProfileIds === 'string'
-        ? filters.seriesQualityProfileIds
-        : undefined,
-    seriesGenres:
-      typeof filters.seriesGenres === 'string' ? filters.seriesGenres : undefined,
-    seriesType: typeof filters.seriesType === 'string' ? filters.seriesType : undefined,
-    network: typeof filters.network === 'string' ? filters.network : undefined,
-  };
+function coerceBool(v: string | number | boolean | undefined): boolean | undefined {
+  if (v === true || v === 'true') return true;
+  if (v === false || v === 'false') return false;
+  return undefined;
 }
