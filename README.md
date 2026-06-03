@@ -1,4 +1,4 @@
-# Maintainarr
+# Warden
 
 Task automation and metadata-driven grouping for the \*arr ecosystem.
 

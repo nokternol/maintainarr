@@ -1,6 +1,6 @@
 {
-  "name": "Maintainarr",
-  "short_name": "Maintainarr",
+  "name": "Warden",
+  "short_name": "Warden",
   "description": "Task automation and metadata-driven grouping for the *arr ecosystem",
   "start_url": "./",
   "display": "standalone",

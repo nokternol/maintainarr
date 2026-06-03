@@ -4,7 +4,7 @@ description: Start a Test-Driven Development (TDD) loop for a new feature or bug
 
 # TDD Workflow
 
-This workflow sets up the agent to execute a rigorous Red-Green-Refactor loop specifically tailored for Maintainarr.
+This workflow sets up the agent to execute a rigorous Red-Green-Refactor loop specifically tailored for Warden.
 
 1. **Context Loading**: 
    - Read the global TDD rules: `view_file ~/.agents/skills/tdd/SKILL.md`

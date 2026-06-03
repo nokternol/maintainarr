@@ -4,7 +4,7 @@ Next.js 15 frontend with React 18, TypeScript, and Tailwind CSS.
 
 ## Purpose
 
-Provide a modern, type-safe frontend for Maintainarr with:
+Provide a modern, type-safe frontend for Warden with:
 - Server-side rendering (SSR) via Next.js
 - Component library with Ladle stories
 - Dark theme design system

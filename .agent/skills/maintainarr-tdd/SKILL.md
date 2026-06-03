@@ -1,15 +1,15 @@
 ---
 name: maintainarr-tdd
-description: Maintainarr-specific wrappers for TDD. Combines global Matt Pocock's TDD philosophy with Maintainarr's specific architecture (MSW, Vitest, Awilix). Use this whenever doing feature development in this repository.
+description: Warden-specific wrappers for TDD. Combines global Matt Pocock's TDD philosophy with Warden's specific architecture (MSW, Vitest, Awilix). Use this whenever doing feature development in this repository.
 ---
 
-# Maintainarr Test-Driven Development (TDD)
+# Warden Test-Driven Development (TDD)
 
 ## The Philosophy
 You MUST follow the core philosophy and vertical-slicing rules defined in `~/.agents/skills/tdd/SKILL.md` (Matt Pocock's TDD skill). 
 Specifically, use **Vertical Slices** via tracer bullets (one test, one implementation, repeat).
 
-## The Maintainarr Implementation
+## The Warden Implementation
 When applying TDD to this repository, you must map the general TDD principles to the following concrete project patterns.
 
 ### 1. Test Environments & Helpers

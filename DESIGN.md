@@ -177,7 +177,7 @@ Slate neutrals form the structural backbone; teal marks what is alive and intera
 
 ## 4. Elevation
 
-Maintainarr uses a **three-tier tonal system** as the foundation, augmented by a teal ambient glow in dark mode for card surfaces.
+Warden uses a **three-tier tonal system** as the foundation, augmented by a teal ambient glow in dark mode for card surfaces.
 
 In dark mode, cards do not use generic drop shadows. Each shadow is constructed from teal ambient light diffusing outward from the card surface, plus a depth anchor that restores physical distance. The exact multi-layer values below are calibrated against Console Black (#0f172a) as the floor; changing the floor color requires recalibrating shadow opacities proportionally.
 
@@ -251,7 +251,7 @@ Confident and minimal. Clear affordances, stripped-back surfaces, full state voc
 ### Don't:
 - **Don't** use a cream, sand, or warm-neutral body background. This is the most common AI-generated aesthetic of 2025-2026 and reads immediately as generic. The floor is Console Black in dark mode, Cool White in light mode.
 - **Don't** model the visual identity on Sonarr, Radarr, or any Servarr app. Warden is not a Servarr app; it has no arr suffix, no arr inheritance, and no obligation to inherit arr design patterns.
-- **Don't** build a monitoring dashboard. No metric-hero cards (big number, small label, gradient accent), no chart-heavy grid layouts. Maintainarr is a task automation tool, not Grafana.
+- **Don't** build a monitoring dashboard. No metric-hero cards (big number, small label, gradient accent), no chart-heavy grid layouts. Warden is a task automation tool, not Grafana.
 - **Don't** use gradient text (`background-clip: text` with a gradient). Prohibited. Solid teal or solid white only.
 - **Don't** use side-stripe accents (`border-left` or `border-right` greater than 1px in a brand color). Use full borders, background tints, or status badges instead.
 - **Don't** use display or decorative fonts in UI labels, buttons, nav items, or table cells. Inter only.

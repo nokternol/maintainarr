@@ -5,7 +5,7 @@ description: Guidelines for creating reusable, composable React components (e.g.
 
 # Composable Components
 
-When building React components for Maintainarr, we prefer the Compound Component pattern for complex UI elements to maximize flexibility and reusability, coupled with CSS Modules for strict styling separation.
+When building React components for Warden, we prefer the Compound Component pattern for complex UI elements to maximize flexibility and reusability, coupled with CSS Modules for strict styling separation.
 
 ## Principles
 

@@ -1,6 +1,6 @@
 # Server Architecture
 
-Express + TypeORM backend for Maintainarr. This directory contains all server-side code organized for debugging, logging, and testing first.
+Express + Drizzle backend for Warden. This directory contains all server-side code organized for debugging, logging, and testing first.
 
 ## Purpose
 

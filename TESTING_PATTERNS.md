@@ -1,6 +1,6 @@
 # Testing Patterns & Best Practices
 
-Guide for writing effective tests in Maintainarr. See [TESTING.md](./TESTING.md) for architecture and setup.
+Guide for writing effective tests in Warden. See [TESTING.md](./TESTING.md) for architecture and setup.
 
 ## Test Helpers
 

@@ -1,7 +1,7 @@
 # Agent Styling Context
 
 ## Design System Overview
-Maintainarr uses a strict two-tone design system aimed at a clean, professional SaaS aesthetic. All AI-generated components MUST adhere to this system.
+Warden uses a strict two-tone design system aimed at a clean, professional SaaS aesthetic. All AI-generated components MUST adhere to this system.
 
 ## Color Palette
 
