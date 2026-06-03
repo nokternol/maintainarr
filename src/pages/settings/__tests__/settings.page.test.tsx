@@ -5,7 +5,7 @@ import SettingsPage from '../index';
 describe('SettingsPage', () => {
   it('renders the page title', () => {
     render(<SettingsPage />);
-    expect(screen.getByText(/provider settings/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /providers/i })).toBeInTheDocument();
   });
 
   it('renders an Add Provider button', () => {
