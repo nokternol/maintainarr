@@ -97,7 +97,7 @@ export default function LoginPage() {
               type="button"
               onClick={handlePlexLogin}
               disabled={isLoading}
-              className="w-full bg-plex hover:bg-plex-hover active:bg-plex-active text-slate-950 font-bold py-4 rounded-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-[0.4] disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full bg-plex hover:bg-plex-hover active:bg-plex-active text-slate-950 font-bold py-4 rounded-sm flex items-center justify-center gap-3 transition-[background-color,transform,box-shadow,opacity] duration-150 ease-out motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] shadow-lg disabled:opacity-[0.4] disabled:cursor-not-allowed disabled:transform-none"
             >
               <PlexIcon className="w-6 h-6" />
               <span>{isLoading ? 'Signing in...' : 'Sign in with Plex'}</span>
