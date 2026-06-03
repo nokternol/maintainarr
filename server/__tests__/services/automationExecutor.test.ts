@@ -13,6 +13,7 @@ import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
+import type { QueryFilters } from '@server/services/savedQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
@@ -56,10 +57,7 @@ async function seedSonarrProvider(providerSettingsService: ProviderSettingsServi
   });
 }
 
-async function seedSavedQuery(
-  savedQueryService: SavedQueryService,
-  filters: Record<string, unknown> = {}
-) {
+async function seedSavedQuery(savedQueryService: SavedQueryService, filters: QueryFilters = {}) {
   return savedQueryService.create({ name: 'Test Query', filters });
 }
 
