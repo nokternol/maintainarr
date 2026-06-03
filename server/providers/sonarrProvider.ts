@@ -76,4 +76,32 @@ export class SonarrProvider extends BaseMetadataProvider {
       .get('series/lookup', { searchParams: { ...this.apiParams, term } })
       .json<SonarrSeries[]>();
   }
+
+  public async unmonitorSeries(seriesIds: number[]): Promise<void> {
+    const all = await this.getSeries();
+    const targets = all.filter((s) => seriesIds.includes(s.id));
+    await Promise.all(
+      targets.map((s) =>
+        this.client
+          .put(`series/${s.id}`, {
+            searchParams: this.apiParams,
+            json: { ...s, monitored: false },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async triggerSeriesSearch(seriesIds: number[]): Promise<void> {
+    await Promise.all(
+      seriesIds.map((id) =>
+        this.client
+          .post('command', {
+            searchParams: this.apiParams,
+            json: { name: 'SeriesSearch', seriesId: id },
+          })
+          .json()
+      )
+    );
+  }
 }

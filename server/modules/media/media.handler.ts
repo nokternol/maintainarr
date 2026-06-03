@@ -9,6 +9,7 @@ import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/s
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
+import { applyMovieFilters, applySeriesFilters } from '@server/utils/mediaFilters';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
@@ -57,23 +58,7 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   tautulliWatched: z.enum(['true', 'false']).optional(),
 });
 
-// ─── Filter helpers ────────────────────────────────────────────────────────────
-
-function parseIds(csv: string | undefined): number[] {
-  if (!csv) return [];
-  return csv
-    .split(',')
-    .map((s) => Number(s.trim()))
-    .filter((n) => !Number.isNaN(n) && n > 0);
-}
-
-function parseCsvStrings(csv: string | undefined): string[] {
-  if (!csv) return [];
-  return csv
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+// ─── Handler-local helpers ────────────────────────────────────────────────────
 
 function computeYearRange(items: Array<{ year?: number }>): {
   min: number | null;
@@ -84,94 +69,6 @@ function computeYearRange(items: Array<{ year?: number }>): {
     .filter((y): y is number => y !== undefined && y !== null && y >= 1888);
   if (years.length === 0) return { min: null, max: null };
   return { min: Math.min(...years), max: Math.max(...years) };
-}
-
-export function applyMovieFilters(
-  all: RadarrMovie[],
-  query: z.infer<typeof moviesQuerySchema>
-): RadarrMovie[] {
-  let filtered = all;
-
-  if (query.title !== undefined) {
-    const lower = query.title.toLowerCase();
-    filtered = filtered.filter((m) => m.title.toLowerCase().includes(lower));
-  }
-  if (query.yearMin !== undefined) {
-    filtered = filtered.filter((m) => m.year !== undefined && m.year >= query.yearMin!);
-  }
-  if (query.yearMax !== undefined) {
-    filtered = filtered.filter((m) => m.year !== undefined && m.year <= query.yearMax!);
-  }
-  if (query.hasFile !== undefined) {
-    filtered = filtered.filter((m) => m.hasFile === query.hasFile);
-  }
-
-  const tagIds = parseIds(query.movieTagIds);
-  if (tagIds.length > 0) {
-    filtered = filtered.filter((m) => tagIds.every((id) => m.tags.includes(id)));
-  }
-
-  const profileIds = parseIds(query.movieQualityProfileIds);
-  if (profileIds.length > 0) {
-    filtered = filtered.filter((m) => profileIds.includes(m.qualityProfileId));
-  }
-
-  const genres = parseCsvStrings(query.movieGenres);
-  if (genres.length > 0) {
-    filtered = filtered.filter((m) => m.genres?.some((g) => genres.includes(g)));
-  }
-
-  return filtered;
-}
-
-export function applySeriesFilters(
-  all: SonarrSeries[],
-  query: z.infer<typeof seriesQuerySchema>
-): SonarrSeries[] {
-  let filtered = all;
-
-  if (query.title !== undefined) {
-    const lower = query.title.toLowerCase();
-    filtered = filtered.filter((s) => s.title.toLowerCase().includes(lower));
-  }
-  if (query.yearMin !== undefined) {
-    filtered = filtered.filter((s) => s.year !== undefined && s.year >= query.yearMin!);
-  }
-  if (query.yearMax !== undefined) {
-    filtered = filtered.filter((s) => s.year !== undefined && s.year <= query.yearMax!);
-  }
-  if (query.monitored !== undefined) {
-    filtered = filtered.filter((s) => s.monitored === query.monitored);
-  }
-  if (query.seriesStatus !== undefined) {
-    filtered = filtered.filter((s) => s.status === query.seriesStatus);
-  }
-
-  const tagIds = parseIds(query.seriesTagIds);
-  if (tagIds.length > 0) {
-    filtered = filtered.filter((s) => tagIds.every((id) => s.tags.includes(id)));
-  }
-
-  const profileIds = parseIds(query.seriesQualityProfileIds);
-  if (profileIds.length > 0) {
-    filtered = filtered.filter((s) => profileIds.includes(s.qualityProfileId));
-  }
-
-  const genres = parseCsvStrings(query.seriesGenres);
-  if (genres.length > 0) {
-    filtered = filtered.filter((s) => s.genres?.some((g) => genres.includes(g)));
-  }
-
-  if (query.seriesType !== undefined) {
-    filtered = filtered.filter((s) => s.seriesType === query.seriesType);
-  }
-
-  const networks = parseCsvStrings(query.network);
-  if (networks.length > 0) {
-    filtered = filtered.filter((s) => s.network !== undefined && networks.includes(s.network));
-  }
-
-  return filtered;
 }
 
 // ─── Handler cradle ────────────────────────────────────────────────────────────

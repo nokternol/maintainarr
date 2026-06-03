@@ -15,6 +15,7 @@ import { ProviderSettingsService } from '@server/services/providerSettingsServic
 import { SavedQueryService } from '@server/services/savedQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
 import { server } from '../../../tests/mocks/server';
 
 const testConfig: AppConfig = {
@@ -94,7 +95,6 @@ describe('AutomationExecutor', () => {
     executor = new AutomationExecutor({
       automationService,
       providerSettingsService,
-      savedQueryService,
     });
   });
 
@@ -108,32 +108,8 @@ describe('AutomationExecutor', () => {
   describe('RADARR — unmonitorMovie', () => {
     it('sends PUT /movie/{id} with monitored:false for each matched movie', async () => {
       const monitoredMovies = [
-        {
-          id: 1,
-          title: 'The Matrix',
-          year: 1999,
-          hasFile: true,
-          monitored: true,
-          tmdbId: 603,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/The Matrix',
-          path: '/movies/The Matrix',
-        },
-        {
-          id: 2,
-          title: 'Interstellar',
-          year: 2014,
-          hasFile: true,
-          monitored: true,
-          tmdbId: 157336,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/Interstellar',
-          path: '/movies/Interstellar',
-        },
+        createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999, hasFile: true }),
+        createRadarrMovie({ id: 2, title: 'Interstellar', year: 2014, hasFile: true }),
       ];
 
       const unmonitored: number[] = [];
@@ -162,32 +138,8 @@ describe('AutomationExecutor', () => {
 
     it('applies saved query filters before executing the task', async () => {
       const movies = [
-        {
-          id: 1,
-          title: 'The Matrix',
-          year: 1999,
-          hasFile: true,
-          monitored: true,
-          tmdbId: 603,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/The Matrix',
-          path: '/movies/The Matrix',
-        },
-        {
-          id: 2,
-          title: 'Inception',
-          year: 2010,
-          hasFile: false,
-          monitored: true,
-          tmdbId: 27205,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/Inception',
-          path: '/movies/Inception',
-        },
+        createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999, hasFile: true }),
+        createRadarrMovie({ id: 2, title: 'Inception', year: 2010, hasFile: false }),
       ];
 
       const unmonitored: number[] = [];
@@ -215,21 +167,7 @@ describe('AutomationExecutor', () => {
     });
 
     it('records a successful run with the item count', async () => {
-      const movies = [
-        {
-          id: 1,
-          title: 'The Matrix',
-          year: 1999,
-          hasFile: true,
-          monitored: true,
-          tmdbId: 603,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/The Matrix',
-          path: '/movies/The Matrix',
-        },
-      ];
+      const movies = [createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999 })];
 
       server.use(
         http.get(`${RADARR_URL}/api/v3/movie`, () => HttpResponse.json(movies)),
@@ -282,32 +220,8 @@ describe('AutomationExecutor', () => {
   describe('RADARR — triggerSearch', () => {
     it('posts MoviesSearch command with all matched movie IDs', async () => {
       const movies = [
-        {
-          id: 1,
-          title: 'The Matrix',
-          year: 1999,
-          hasFile: false,
-          monitored: true,
-          tmdbId: 603,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/The Matrix',
-          path: '/movies/The Matrix',
-        },
-        {
-          id: 2,
-          title: 'Interstellar',
-          year: 2014,
-          hasFile: false,
-          monitored: true,
-          tmdbId: 157336,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/Interstellar',
-          path: '/movies/Interstellar',
-        },
+        createRadarrMovie({ id: 1, title: 'The Matrix', year: 1999, hasFile: false }),
+        createRadarrMovie({ id: 2, title: 'Interstellar', year: 2014, hasFile: false }),
       ];
 
       let commandBody: unknown = null;
@@ -333,21 +247,7 @@ describe('AutomationExecutor', () => {
     });
 
     it('records success with the matched item count', async () => {
-      const movies = [
-        {
-          id: 3,
-          title: 'Dune',
-          year: 2021,
-          hasFile: false,
-          monitored: true,
-          tmdbId: 438631,
-          profileId: 1,
-          qualityProfileId: 1,
-          tags: [],
-          folderName: '/movies/Dune',
-          path: '/movies/Dune',
-        },
-      ];
+      const movies = [createRadarrMovie({ id: 3, title: 'Dune', year: 2021, hasFile: false })];
 
       server.use(
         http.get(`${RADARR_URL}/api/v3/movie`, () => HttpResponse.json(movies)),
@@ -375,34 +275,8 @@ describe('AutomationExecutor', () => {
   describe('SONARR — unmonitorSeries', () => {
     it('sends PUT /series/{id} with monitored:false for each matched series', async () => {
       const seriesList = [
-        {
-          id: 1,
-          title: 'Breaking Bad',
-          year: 2008,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 81189,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Breaking Bad',
-          seasons: [],
-        },
-        {
-          id: 2,
-          title: 'The Wire',
-          year: 2002,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 79126,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/The Wire',
-          seasons: [],
-        },
+        createSonarrSeries({ id: 1, title: 'Breaking Bad', year: 2008, status: 'ended' }),
+        createSonarrSeries({ id: 2, title: 'The Wire', year: 2002, status: 'ended' }),
       ];
 
       const unmonitored: number[] = [];
@@ -431,34 +305,8 @@ describe('AutomationExecutor', () => {
 
     it('applies saved query filters before unmonitoring', async () => {
       const seriesList = [
-        {
-          id: 1,
-          title: 'Breaking Bad',
-          year: 2008,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 81189,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Breaking Bad',
-          seasons: [],
-        },
-        {
-          id: 2,
-          title: 'Ongoing Show',
-          year: 2020,
-          status: 'continuing',
-          monitored: true,
-          tvdbId: 99999,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Ongoing Show',
-          seasons: [],
-        },
+        createSonarrSeries({ id: 1, title: 'Breaking Bad', year: 2008, status: 'ended' }),
+        createSonarrSeries({ id: 2, title: 'Ongoing Show', year: 2020, status: 'continuing' }),
       ];
 
       const unmonitored: number[] = [];
@@ -486,20 +334,7 @@ describe('AutomationExecutor', () => {
 
     it('records a successful run with the item count', async () => {
       const seriesList = [
-        {
-          id: 1,
-          title: 'Breaking Bad',
-          year: 2008,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 81189,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Breaking Bad',
-          seasons: [],
-        },
+        createSonarrSeries({ id: 1, title: 'Breaking Bad', year: 2008, status: 'ended' }),
       ];
 
       server.use(
@@ -530,34 +365,8 @@ describe('AutomationExecutor', () => {
   describe('SONARR — triggerSearch', () => {
     it('posts SeriesSearch command for each matched series ID', async () => {
       const seriesList = [
-        {
-          id: 1,
-          title: 'Breaking Bad',
-          year: 2008,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 81189,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Breaking Bad',
-          seasons: [],
-        },
-        {
-          id: 2,
-          title: 'The Wire',
-          year: 2002,
-          status: 'ended',
-          monitored: true,
-          tvdbId: 79126,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/The Wire',
-          seasons: [],
-        },
+        createSonarrSeries({ id: 1, title: 'Breaking Bad', year: 2008, status: 'ended' }),
+        createSonarrSeries({ id: 2, title: 'The Wire', year: 2002, status: 'ended' }),
       ];
 
       const commandBodies: unknown[] = [];
@@ -591,20 +400,7 @@ describe('AutomationExecutor', () => {
 
     it('records success with the matched item count', async () => {
       const seriesList = [
-        {
-          id: 5,
-          title: 'Severance',
-          year: 2022,
-          status: 'continuing',
-          monitored: true,
-          tvdbId: 371980,
-          profileId: 1,
-          qualityProfileId: 1,
-          languageProfileId: 1,
-          tags: [],
-          path: '/tv/Severance',
-          seasons: [],
-        },
+        createSonarrSeries({ id: 5, title: 'Severance', year: 2022, status: 'continuing' }),
       ];
 
       server.use(
@@ -654,9 +450,9 @@ describe('AutomationExecutor', () => {
   describe('AutomationScheduler integration', () => {
     it('calls executor.execute when a scheduled tick fires', async () => {
       // This test verifies the scheduler wiring is correct.
-      // We import AutomationScheduler and pass it a mock executor,
-      // then fire a tick manually via the Cron job (using a past cron expression
-      // that fires immediately). We check the executor was called with the automation ID.
+      // We construct with the single-shape { automationExecutor } API,
+      // schedule a job, then trigger it directly via scheduler.trigger(id)
+      // — no real-time sleep required.
       const { AutomationScheduler } = await import('@server/cron/automationScheduler');
 
       let executedId: number | null = null;
@@ -666,15 +462,11 @@ describe('AutomationExecutor', () => {
         },
       };
 
-      const scheduler = new AutomationScheduler(mockExecutor);
+      const scheduler = new AutomationScheduler({ automationExecutor: mockExecutor });
+      scheduler.schedule({ id: 42, name: 'Test', schedule: '* * * * *' });
 
-      // Schedule with a past trigger date to fire immediately.
-      // We use a very short cron interval and advance past it manually
-      // by invoking the job trigger directly.
-      scheduler.schedule({ id: 42, name: 'Test', schedule: '* * * * * *' });
-
-      // Wait one tick (croner fires synchronously on the second)
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Fire the tick directly — no setTimeout sleep
+      await scheduler.trigger(42);
       scheduler.stopAll();
 
       expect(executedId).toBe(42);

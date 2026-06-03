@@ -15,14 +15,8 @@ export class AutomationScheduler {
   private readonly jobs = new Map<number, Cron>();
   private readonly executor: Executor | null;
 
-  constructor(deps: SchedulerDeps | Executor = {}) {
-    // Support both Awilix cradle injection ({ automationExecutor }) and
-    // direct test construction (executor instance passed directly).
-    if ('execute' in deps && typeof (deps as Executor).execute === 'function') {
-      this.executor = deps as Executor;
-    } else {
-      this.executor = (deps as SchedulerDeps).automationExecutor ?? null;
-    }
+  constructor(deps: SchedulerDeps = {}) {
+    this.executor = deps.automationExecutor ?? null;
   }
 
   schedule(automation: { id: number; name: string; schedule: string }): void {
@@ -50,6 +44,13 @@ export class AutomationScheduler {
       });
     } catch (err) {
       log.error('Failed to schedule automation', { id: automation.id, err });
+    }
+  }
+
+  async trigger(id: number): Promise<void> {
+    const job = this.jobs.get(id);
+    if (job) {
+      await job.trigger();
     }
   }
 

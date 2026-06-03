@@ -2,6 +2,8 @@
  * Test data factories for generating consistent test data.
  * Use these instead of hardcoding test data to ensure consistency.
  */
+import type { RadarrMovie } from '../../server/providers/radarrProvider';
+import type { SonarrSeries } from '../../server/providers/sonarrProvider';
 
 let idCounter = 1;
 
@@ -87,4 +89,49 @@ export function createMockError(message = 'Test error', stack?: string): Error {
     error.stack = stack;
   }
   return error;
+}
+
+/**
+ * Create a RadarrMovie fixture with sensible defaults.
+ * Pass partial overrides to customise individual fields.
+ */
+export function createRadarrMovie(overrides: Partial<RadarrMovie> = {}): RadarrMovie {
+  const id = generateId();
+  return {
+    id,
+    title: `Movie ${id}`,
+    year: 2000,
+    hasFile: true,
+    monitored: true,
+    tmdbId: 1000 + id,
+    profileId: 1,
+    qualityProfileId: 1,
+    tags: [],
+    folderName: `/movies/Movie ${id}`,
+    path: `/movies/Movie ${id}`,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a SonarrSeries fixture with sensible defaults.
+ * Pass partial overrides to customise individual fields.
+ */
+export function createSonarrSeries(overrides: Partial<SonarrSeries> = {}): SonarrSeries {
+  const id = generateId();
+  return {
+    id,
+    title: `Series ${id}`,
+    year: 2000,
+    status: 'continuing',
+    monitored: true,
+    tvdbId: 2000 + id,
+    profileId: 1,
+    qualityProfileId: 1,
+    languageProfileId: 1,
+    tags: [],
+    path: `/tv/Series ${id}`,
+    seasons: [],
+    ...overrides,
+  };
 }

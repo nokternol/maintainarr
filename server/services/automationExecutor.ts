@@ -1,31 +1,26 @@
-import ky, { type KyInstance } from 'ky';
-import { applyMovieFilters, applySeriesFilters } from '../modules/media/media.handler';
-import { MetadataProviderType, type MetadataProvider } from '../database/schema';
+import { MetadataProviderType } from '../database/schema';
 import { getChildLogger } from '../logger';
-import type { RadarrMovie } from '../providers/radarrProvider';
-import type { SonarrSeries } from '../providers/sonarrProvider';
+import { RadarrProvider } from '../providers/radarrProvider';
+import { SonarrProvider } from '../providers/sonarrProvider';
+import { applyMovieFilters, applySeriesFilters } from '../utils/mediaFilters';
 import type { AutomationService } from './automationService';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { QueryFilters } from './savedQueryService';
-import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
 interface ExecutorDeps {
   automationService: AutomationService;
   providerSettingsService: ProviderSettingsService;
-  savedQueryService: SavedQueryService;
 }
 
 export class AutomationExecutor {
   private readonly automationService: AutomationService;
   private readonly providerSettingsService: ProviderSettingsService;
-  private readonly savedQueryService: SavedQueryService;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
     this.providerSettingsService = deps.providerSettingsService;
-    this.savedQueryService = deps.savedQueryService;
   }
 
   async execute(automationId: number): Promise<void> {
@@ -34,71 +29,28 @@ export class AutomationExecutor {
     try {
       const automation = await this.automationService.getById(automationId);
       const provider = await this.providerSettingsService.findById(automation.provider.id);
-      const query = await this.savedQueryService.findById(automation.query.id);
-
-      const filters = query.filters;
+      const filters = automation.query.filters;
       const taskId = automation.taskId;
-      const client = buildProviderClient(provider);
-      const apiKey = provider.apiKey ?? '';
 
       if (provider.type === MetadataProviderType.RADARR) {
-        const movies = await client
-          .get('movie', { searchParams: { apikey: apiKey } })
-          .json<RadarrMovie[]>();
-
+        const radarr = new RadarrProvider(provider, log);
+        const movies = await radarr.getMovies();
         const matched = applyMovieFilters(movies, buildMovieQuery(filters));
         itemCount = matched.length;
-
-        if (taskId === 'unmonitorMovie') {
-          await Promise.all(
-            matched.map((movie) =>
-              client.put(`movie/${movie.id}`, {
-                searchParams: { apikey: apiKey },
-                json: { ...movie, monitored: false },
-              }).json()
-            )
-          );
-        } else if (taskId === 'triggerSearch') {
-          const movieIds = matched.map((m) => m.id);
-          if (movieIds.length > 0) {
-            await client
-              .post('command', {
-                searchParams: { apikey: apiKey },
-                json: { name: 'MoviesSearch', movieIds },
-              })
-              .json();
-          }
+        const handler = RADARR_TASKS[taskId];
+        if (handler) {
+          await handler(radarr, matched.map((m) => m.id));
         } else {
           return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
       } else if (provider.type === MetadataProviderType.SONARR) {
-        const series = await client
-          .get('series', { searchParams: { apikey: apiKey } })
-          .json<SonarrSeries[]>();
-
+        const sonarr = new SonarrProvider(provider, log);
+        const series = await sonarr.getSeries();
         const matched = applySeriesFilters(series, buildSeriesQuery(filters));
         itemCount = matched.length;
-
-        if (taskId === 'unmonitorSeries') {
-          await Promise.all(
-            matched.map((s) =>
-              client.put(`series/${s.id}`, {
-                searchParams: { apikey: apiKey },
-                json: { ...s, monitored: false },
-              }).json()
-            )
-          );
-        } else if (taskId === 'triggerSearch') {
-          await Promise.all(
-            matched.map((s) =>
-              client
-                .post('command', {
-                  searchParams: { apikey: apiKey },
-                  json: { name: 'SeriesSearch', seriesId: s.id },
-                })
-                .json()
-            )
-          );
+        const handler = SONARR_TASKS[taskId];
+        if (handler) {
+          await handler(sonarr, matched.map((s) => s.id));
         } else {
           return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
@@ -142,26 +94,27 @@ export class AutomationExecutor {
 }
 
 // ---------------------------------------------------------------------------
-// Provider client factory
+// Dispatch tables
 // ---------------------------------------------------------------------------
 
-function buildProviderClient(provider: MetadataProvider): KyInstance {
-  const prefixUrl = provider.url.replace(/\/+$/, '') + '/';
-  return ky.create({
-    prefixUrl,
-    timeout: 30000,
-    headers: { Accept: 'application/json' },
-  });
-}
+type RadarrTaskFn = (provider: RadarrProvider, ids: number[]) => Promise<void>;
+type SonarrTaskFn = (provider: SonarrProvider, ids: number[]) => Promise<void>;
+
+const RADARR_TASKS: Record<string, RadarrTaskFn> = {
+  unmonitorMovie: (provider, ids) => provider.unmonitorMovies(ids),
+  triggerSearch: (provider, ids) => provider.triggerMoviesSearch(ids),
+};
+
+const SONARR_TASKS: Record<string, SonarrTaskFn> = {
+  unmonitorSeries: (provider, ids) => provider.unmonitorSeries(ids),
+  triggerSearch: (provider, ids) => provider.triggerSeriesSearch(ids),
+};
 
 // ---------------------------------------------------------------------------
 // Filter adapter helpers
 // ---------------------------------------------------------------------------
 
-type MovieQuery = Parameters<typeof applyMovieFilters>[1];
-type SeriesQuery = Parameters<typeof applySeriesFilters>[1];
-
-function buildMovieQuery(filters: QueryFilters): MovieQuery {
+function buildMovieQuery(filters: QueryFilters) {
   return {
     page: 1,
     pageSize: 10000,
@@ -177,10 +130,10 @@ function buildMovieQuery(filters: QueryFilters): MovieQuery {
         ? filters.movieQualityProfileIds
         : undefined,
     movieGenres: typeof filters.movieGenres === 'string' ? filters.movieGenres : undefined,
-  } as MovieQuery;
+  };
 }
 
-function buildSeriesQuery(filters: QueryFilters): SeriesQuery {
+function buildSeriesQuery(filters: QueryFilters) {
   return {
     page: 1,
     pageSize: 10000,
@@ -201,5 +154,5 @@ function buildSeriesQuery(filters: QueryFilters): SeriesQuery {
       typeof filters.seriesGenres === 'string' ? filters.seriesGenres : undefined,
     seriesType: typeof filters.seriesType === 'string' ? filters.seriesType : undefined,
     network: typeof filters.network === 'string' ? filters.network : undefined,
-  } as SeriesQuery;
+  };
 }
