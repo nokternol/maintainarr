@@ -93,6 +93,31 @@ export class AutomationService {
     this.db = db;
   }
 
+  async getById(id: number): Promise<AutomationDto> {
+    const rows = await this.db
+      .select({
+        automation: automations,
+        queryId: savedQueries.id,
+        queryName: savedQueries.name,
+        queryFilters: savedQueries.filters,
+        providerId: metadataProviders.id,
+        providerName: metadataProviders.name,
+        providerType: metadataProviders.type,
+      })
+      .from(automations)
+      .innerJoin(savedQueries, eq(automations.queryId, savedQueries.id))
+      .innerJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
+      .where(eq(automations.id, id));
+
+    if (rows.length === 0) throw new NotFoundError(`Automation ${id} not found`);
+    const r = rows[0];
+    return rowToDto(
+      r.automation,
+      { id: r.queryId, name: r.queryName, filters: r.queryFilters },
+      { id: r.providerId, name: r.providerName, type: r.providerType }
+    );
+  }
+
   async list(): Promise<AutomationDto[]> {
     const rows = await this.db
       .select({

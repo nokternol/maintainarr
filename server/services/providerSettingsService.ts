@@ -111,6 +111,15 @@ export class ProviderSettingsService {
     log.debug('Provider deleted', { id });
   }
 
+  async findById(id: number): Promise<MetadataProvider> {
+    const [raw] = await this.db
+      .select()
+      .from(metadataProviders)
+      .where(eq(metadataProviders.id, id));
+    if (!raw) throw new NotFoundError(`Provider with id ${id} not found`);
+    return parseRaw(raw);
+  }
+
   async findActiveByTypes(types: MetadataProviderType[]): Promise<MetadataProvider[]> {
     if (types.length === 0) return [];
 
