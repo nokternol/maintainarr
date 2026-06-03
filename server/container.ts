@@ -5,17 +5,11 @@ import { AutomationScheduler } from './cron/automationScheduler';
 import type { DrizzleDb } from './database';
 import { getChildLogger } from './logger';
 import { AuthService } from './services/authService';
-import type { AuthService as AuthServiceType } from './services/authService';
 import { AutomationService } from './services/automationService';
-import type { AutomationService as AutomationServiceType } from './services/automationService';
 import { PlexService } from './services/plexService';
-import type { PlexService as PlexServiceType } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
-import type { ProviderSettingsService as ProviderSettingsServiceType } from './services/providerSettingsService';
 import { SavedQueryService } from './services/savedQueryService';
-import type { SavedQueryService as SavedQueryServiceType } from './services/savedQueryService';
 import { TmdbService } from './services/tmdbService';
-import type { TmdbService as TmdbServiceType } from './services/tmdbService';
 
 const log = getChildLogger('Container');
 
@@ -26,12 +20,12 @@ const log = getChildLogger('Container');
 export interface Cradle {
   config: AppConfig;
   db: DrizzleDb;
-  tmdbService: TmdbServiceType;
-  plexService: PlexServiceType;
-  authService: AuthServiceType;
-  providerSettingsService: ProviderSettingsServiceType;
-  savedQueryService: SavedQueryServiceType;
-  automationService: AutomationServiceType;
+  tmdbService: TmdbService;
+  plexService: PlexService;
+  authService: AuthService;
+  providerSettingsService: ProviderSettingsService;
+  savedQueryService: SavedQueryService;
+  automationService: AutomationService;
   automationScheduler: AutomationScheduler;
 }
 

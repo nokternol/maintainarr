@@ -1,5 +1,67 @@
 import { describe, expect, it } from 'vitest';
-import logger, { getChildLogger } from '../logger';
+import logger, { formatLogLine, getChildLogger } from '../logger';
+
+describe('formatLogLine', () => {
+  it('formats a basic message with timestamp and level', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'info',
+      message: 'hello world',
+    });
+    expect(result).toBe('2024-01-01 12:00:00 info: hello world');
+  });
+
+  it('includes label tag when label is present', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'info',
+      message: 'request',
+      label: 'API',
+    });
+    expect(result).toBe('2024-01-01 12:00:00 info:[API] request');
+  });
+
+  it('includes requestId tag when present', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'warn',
+      message: 'slow query',
+      requestId: 'req-abc',
+    });
+    expect(result).toBe('2024-01-01 12:00:00 warn:[req-abc] slow query');
+  });
+
+  it('includes both label and requestId tags', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'error',
+      message: 'boom',
+      label: 'DB',
+      requestId: 'req-123',
+    });
+    expect(result).toBe('2024-01-01 12:00:00 error:[DB][req-123] boom');
+  });
+
+  it('appends JSON-serialised meta for extra fields', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'info',
+      message: 'started',
+      port: 3000,
+      env: 'production',
+    });
+    expect(result).toBe('2024-01-01 12:00:00 info: started {"port":3000,"env":"production"}');
+  });
+
+  it('omits meta section when no extra fields are present', () => {
+    const result = formatLogLine({
+      timestamp: '2024-01-01 12:00:00',
+      level: 'debug',
+      message: 'tick',
+    });
+    expect(result).not.toContain('{');
+  });
+});
 
 describe('logger', () => {
   it('exports a default logger instance', () => {

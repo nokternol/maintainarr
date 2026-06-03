@@ -14,6 +14,7 @@ import { DrizzleStore } from './database/drizzleStore';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
+import { SESSION_TTL_SECONDS } from './sessionConfig';
 
 const log = getChildLogger('Server');
 
@@ -70,14 +71,14 @@ async function startServer() {
         resave: false,
         saveUninitialized: false,
         cookie: {
-          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+          maxAge: SESSION_TTL_SECONDS * 1000,
           httpOnly: true,
           sameSite: 'lax',
           secure: config.NODE_ENV === 'production',
         },
         store: new DrizzleStore({
           db,
-          ttl: 86400 * 30, // 30 days in seconds
+          ttl: SESSION_TTL_SECONDS,
           cleanupLimit: 2,
         }),
       })
