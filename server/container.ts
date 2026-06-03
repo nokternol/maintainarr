@@ -61,9 +61,9 @@ export function buildContainer(deps: {
     tmdbService: asClass(TmdbService).singleton(),
     plexService: asClass(PlexService).scoped(),
     authService: asClass(AuthService).scoped(),
-    providerSettingsService: asClass(ProviderSettingsService).scoped(),
-    savedQueryService: asClass(SavedQueryService).scoped(),
-    automationService: asClass(AutomationService).scoped(),
+    providerSettingsService: asClass(ProviderSettingsService).singleton(),
+    savedQueryService: asClass(SavedQueryService).singleton(),
+    automationService: asClass(AutomationService).singleton(),
     automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
