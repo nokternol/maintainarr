@@ -7,12 +7,22 @@ interface Executor {
   execute(automationId: number): Promise<void>;
 }
 
+interface SchedulerDeps {
+  automationExecutor?: Executor;
+}
+
 export class AutomationScheduler {
   private readonly jobs = new Map<number, Cron>();
   private readonly executor: Executor | null;
 
-  constructor(executor?: Executor) {
-    this.executor = executor ?? null;
+  constructor(deps: SchedulerDeps | Executor = {}) {
+    // Support both Awilix cradle injection ({ automationExecutor }) and
+    // direct test construction (executor instance passed directly).
+    if ('execute' in deps && typeof (deps as Executor).execute === 'function') {
+      this.executor = deps as Executor;
+    } else {
+      this.executor = (deps as SchedulerDeps).automationExecutor ?? null;
+    }
   }
 
   schedule(automation: { id: number; name: string; schedule: string }): void {

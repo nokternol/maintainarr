@@ -1,9 +1,12 @@
-import ky from 'ky';
+import ky, { type KyInstance } from 'ky';
 import { applyMovieFilters, applySeriesFilters } from '../modules/media/media.handler';
-import { MetadataProviderType } from '../database/schema';
+import { MetadataProviderType, type MetadataProvider } from '../database/schema';
 import { getChildLogger } from '../logger';
+import type { RadarrMovie } from '../providers/radarrProvider';
+import type { SonarrSeries } from '../providers/sonarrProvider';
 import type { AutomationService } from './automationService';
 import type { ProviderSettingsService } from './providerSettingsService';
+import type { QueryFilters } from './savedQueryService';
 import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
@@ -35,24 +38,15 @@ export class AutomationExecutor {
 
       const filters = query.filters;
       const taskId = automation.taskId;
-
-      // Build a ky client for the provider
+      const client = buildProviderClient(provider);
       const apiKey = provider.apiKey ?? '';
-      const prefixUrl = provider.url.replace(/\/+$/, '') + '/';
-      const client = ky.create({
-        prefixUrl,
-        timeout: 30000,
-        headers: { Accept: 'application/json' },
-      });
 
       if (provider.type === MetadataProviderType.RADARR) {
         const movies = await client
           .get('movie', { searchParams: { apikey: apiKey } })
-          .json<Array<{ id: number; title: string; year?: number; hasFile: boolean; monitored: boolean; tmdbId: number; profileId: number; qualityProfileId: number; tags: number[]; folderName: string; path: string; genres?: string[] }>>();
+          .json<RadarrMovie[]>();
 
-        // Build a moviesQuerySchema-compatible object from filters
-        const movieQuery = buildMovieQuery(filters);
-        const matched = applyMovieFilters(movies, movieQuery);
+        const matched = applyMovieFilters(movies, buildMovieQuery(filters));
         itemCount = matched.length;
 
         if (taskId === 'unmonitorMovie') {
@@ -75,21 +69,14 @@ export class AutomationExecutor {
               .json();
           }
         } else {
-          log.warn('Task not yet implemented', { taskId, automationId, providerType: provider.type });
-          await this.automationService.recordRun(automationId, {
-            itemCount: 0,
-            status: 'error',
-            error: `Task "${taskId}" is not yet implemented`,
-          });
-          return;
+          return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
       } else if (provider.type === MetadataProviderType.SONARR) {
         const series = await client
           .get('series', { searchParams: { apikey: apiKey } })
-          .json<Array<{ id: number; title: string; year?: number; status: string; monitored: boolean; tvdbId: number; profileId: number; qualityProfileId: number; languageProfileId: number; tags: number[]; path: string; seasons: Array<{ seasonNumber: number; monitored: boolean }>; genres?: string[]; seriesType?: string; network?: string }>>();
+          .json<SonarrSeries[]>();
 
-        const seriesQuery = buildSeriesQuery(filters);
-        const matched = applySeriesFilters(series, seriesQuery);
+        const matched = applySeriesFilters(series, buildSeriesQuery(filters));
         itemCount = matched.length;
 
         if (taskId === 'unmonitorSeries') {
@@ -113,13 +100,7 @@ export class AutomationExecutor {
             )
           );
         } else {
-          log.warn('Task not yet implemented', { taskId, automationId, providerType: provider.type });
-          await this.automationService.recordRun(automationId, {
-            itemCount: 0,
-            status: 'error',
-            error: `Task "${taskId}" is not yet implemented`,
-          });
-          return;
+          return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
       } else {
         log.warn('Provider type not yet supported for execution', {
@@ -145,6 +126,32 @@ export class AutomationExecutor {
       });
     }
   }
+
+  private async recordUnimplemented(
+    automationId: number,
+    taskId: string,
+    providerType: string
+  ): Promise<void> {
+    log.warn('Task not yet implemented', { taskId, automationId, providerType });
+    await this.automationService.recordRun(automationId, {
+      itemCount: 0,
+      status: 'error',
+      error: `Task "${taskId}" is not yet implemented`,
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Provider client factory
+// ---------------------------------------------------------------------------
+
+function buildProviderClient(provider: MetadataProvider): KyInstance {
+  const prefixUrl = provider.url.replace(/\/+$/, '') + '/';
+  return ky.create({
+    prefixUrl,
+    timeout: 30000,
+    headers: { Accept: 'application/json' },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +161,7 @@ export class AutomationExecutor {
 type MovieQuery = Parameters<typeof applyMovieFilters>[1];
 type SeriesQuery = Parameters<typeof applySeriesFilters>[1];
 
-function buildMovieQuery(filters: Record<string, unknown>): MovieQuery {
+function buildMovieQuery(filters: QueryFilters): MovieQuery {
   return {
     page: 1,
     pageSize: 10000,
@@ -173,7 +180,7 @@ function buildMovieQuery(filters: Record<string, unknown>): MovieQuery {
   } as MovieQuery;
 }
 
-function buildSeriesQuery(filters: Record<string, unknown>): SeriesQuery {
+function buildSeriesQuery(filters: QueryFilters): SeriesQuery {
   return {
     page: 1,
     pageSize: 10000,

@@ -6,6 +6,8 @@ import type { DrizzleDb } from './database';
 import { getChildLogger } from './logger';
 import { AuthService } from './services/authService';
 import type { AuthService as AuthServiceType } from './services/authService';
+import { AutomationExecutor } from './services/automationExecutor';
+import type { AutomationExecutor as AutomationExecutorType } from './services/automationExecutor';
 import { AutomationService } from './services/automationService';
 import type { AutomationService as AutomationServiceType } from './services/automationService';
 import { PlexService } from './services/plexService';
@@ -32,6 +34,7 @@ export interface Cradle {
   providerSettingsService: ProviderSettingsServiceType;
   savedQueryService: SavedQueryServiceType;
   automationService: AutomationServiceType;
+  automationExecutor: AutomationExecutorType;
   automationScheduler: AutomationScheduler;
 }
 
@@ -61,6 +64,7 @@ export function buildContainer(deps: {
     providerSettingsService: asClass(ProviderSettingsService).scoped(),
     savedQueryService: asClass(SavedQueryService).scoped(),
     automationService: asClass(AutomationService).scoped(),
+    automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
 
