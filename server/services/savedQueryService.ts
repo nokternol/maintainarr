@@ -53,12 +53,6 @@ export class SavedQueryService {
     return toDto(row);
   }
 
-  async findById(id: number): Promise<SavedQueryDto> {
-    const [row] = await this.db.select().from(savedQueries).where(eq(savedQueries.id, id));
-    if (!row) throw new NotFoundError(`Saved query ${id} not found`);
-    return toDto(row);
-  }
-
   async delete(id: number): Promise<void> {
     const [row] = await this.db.delete(savedQueries).where(eq(savedQueries.id, id)).returning();
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
