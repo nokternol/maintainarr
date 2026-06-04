@@ -9,6 +9,7 @@ import type {
   ProviderSummary,
   UpdateProviderParams,
 } from '@app/hooks/useProviderSettings';
+import { getProviderEntry, getProviderOrder, getProviderTypes } from '@app/lib/provider-registry';
 import { PROVIDER_TASKS } from '@app/lib/tasks';
 import { cn } from '@app/lib/utils/cn';
 import { requireAuth } from '@app/lib/utils/requireAuth';
@@ -30,49 +31,9 @@ import {
 import type { GetServerSideProps } from 'next';
 import { useRef, useState } from 'react';
 
-// ─── API suffix / URL maps ─────────────────────────────────────────────────────
+// ─── Provider metadata — derived from registry ────────────────────────────────
 
-const API_SUFFIXES: Record<string, string> = {
-  SONARR: '/api/v3',
-  RADARR: '/api/v3',
-  PLEX: '',
-  JELLYFIN: '',
-  TAUTULLI: '',
-  OVERSEERR: '',
-  TMDB: '',
-  OMDB: '',
-};
-
-const PROVIDER_DEFAULT_URLS: Partial<Record<string, string>> = {
-  TMDB: 'https://api.themoviedb.org/3',
-  OMDB: 'http://www.omdbapi.com',
-};
-
-// ─── Provider capability catalog (imported from shared lib) ──────────────────
-
-const PROVIDER_FILTER_DATA: Record<string, string[]> = {
-  PLEX: ['Library contents', 'Item metadata'],
-  JELLYFIN: ['Library contents', 'Item metadata'],
-  RADARR: ['Movie library', 'Quality profiles', 'Tags'],
-  SONARR: ['Series library', 'Quality profiles', 'Tags'],
-  TAUTULLI: ['Watch history', 'Play statistics', 'User activity'],
-  OVERSEERR: ['Request queue'],
-  TMDB: ['Ratings', 'Metadata'],
-  OMDB: ['Ratings', 'Metadata'],
-};
-
-// ─── Provider grouping ────────────────────────────────────────────────────────
-
-const GROUP_ORDER = [
-  'PLEX',
-  'JELLYFIN',
-  'RADARR',
-  'SONARR',
-  'TAUTULLI',
-  'OVERSEERR',
-  'TMDB',
-  'OMDB',
-];
+const GROUP_ORDER = getProviderOrder();
 
 function sortProviders(providers: ProviderSummary[]): ProviderSummary[] {
   return [...providers].sort((a, b) => {
@@ -97,7 +58,7 @@ function getEnabledTasks(provider: ProviderSummary): string[] {
 }
 
 function stripSuffix(url: string, type: string): string {
-  const suffix = API_SUFFIXES[type] ?? '';
+  const suffix = getProviderEntry(type)?.apiSuffix ?? '';
   if (suffix && url.endsWith(suffix)) return url.slice(0, -suffix.length);
   return url;
 }
@@ -232,16 +193,7 @@ function StatusIndicator({ isActive }: { isActive: boolean }) {
 
 // ─── Provider Card ────────────────────────────────────────────────────────────
 
-const PROVIDER_TYPES = [
-  'PLEX',
-  'JELLYFIN',
-  'SONARR',
-  'RADARR',
-  'TAUTULLI',
-  'OVERSEERR',
-  'TMDB',
-  'OMDB',
-] as const;
+const PROVIDER_TYPES = getProviderTypes();
 
 interface EditFormState {
   name: string;
@@ -277,7 +229,7 @@ function ProviderCard({ provider, onUpdate, onDelete }: ProviderCardProps) {
 
   const enabledTasks = localEnabledTasks ?? getEnabledTasks(provider);
   const allTasks = PROVIDER_TASKS[provider.type] ?? [];
-  const filterData = PROVIDER_FILTER_DATA[provider.type] ?? [];
+  const filterData = getProviderEntry(provider.type)?.filterCapabilities ?? [];
   const hasTasks = allTasks.length > 0;
 
   const runTest = async (url: string, apiKey: string) => {
@@ -307,7 +259,7 @@ function ProviderCard({ provider, onUpdate, onDelete }: ProviderCardProps) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const suffix = API_SUFFIXES[provider.type] ?? '';
+    const suffix = getProviderEntry(provider.type)?.apiSuffix ?? '';
     const host = editForm.url.replace(/\/+$/, '');
     const fullUrl = suffix ? `${host}${suffix}` : host;
 
@@ -721,7 +673,7 @@ function AddProviderForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const suffix = API_SUFFIXES[form.type] ?? '';
+    const suffix = getProviderEntry(form.type)?.apiSuffix ?? '';
     const host = form.url.replace(/\/+$/, '');
     const fullUrl = suffix ? `${host}${suffix}` : host;
     const settings = form.type === 'JELLYFIN' && form.userId ? { userId: form.userId } : undefined;
@@ -751,7 +703,7 @@ function AddProviderForm({
             value={form.type}
             onChange={(e) => {
               const newType = e.target.value;
-              const defaultUrl = PROVIDER_DEFAULT_URLS[newType];
+              const defaultUrl = getProviderEntry(newType)?.defaultUrl;
               setForm((f) => ({ ...f, type: newType, url: defaultUrl ?? f.url }));
               setTestStatus('idle');
               setTestError(undefined);
@@ -787,7 +739,7 @@ function AddProviderForm({
             </span>
             {testError && <span className="ml-1.5 text-xs text-danger-hover">{testError}</span>}
           </label>
-          {PROVIDER_DEFAULT_URLS[form.type] !== undefined ? (
+          {getProviderEntry(form.type)?.defaultUrl !== undefined ? (
             <input
               id="add-url"
               type="url"
