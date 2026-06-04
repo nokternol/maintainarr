@@ -1,0 +1,226 @@
+import Button from '@app/components/Button';
+import ConnectionTestIcon from '@app/components/ConnectionTestIcon';
+import type { TestStatus } from '@app/components/ConnectionTestIcon';
+import type { CreateProviderParams } from '@app/hooks/useProviderSettings';
+import { useRef, useState } from 'react';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const API_SUFFIXES: Record<string, string> = {
+  SONARR: '/api/v3',
+  RADARR: '/api/v3',
+  PLEX: '',
+  JELLYFIN: '',
+  TAUTULLI: '',
+  OVERSEERR: '',
+  TMDB: '',
+  OMDB: '',
+};
+
+const PROVIDER_DEFAULT_URLS: Partial<Record<string, string>> = {
+  TMDB: 'https://api.themoviedb.org/3',
+  OMDB: 'http://www.omdbapi.com',
+};
+
+const PROVIDER_TYPES = [
+  'PLEX',
+  'JELLYFIN',
+  'SONARR',
+  'RADARR',
+  'TAUTULLI',
+  'OVERSEERR',
+  'TMDB',
+  'OMDB',
+] as const;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AddFormState {
+  type: string;
+  name: string;
+  url: string;
+  apiKey: string;
+  userId: string;
+}
+
+// ─── AddProviderForm ──────────────────────────────────────────────────────────
+
+export default function AddProviderForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (params: CreateProviderParams) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState<AddFormState>({
+    type: 'RADARR',
+    name: '',
+    url: '',
+    apiKey: '',
+    userId: '',
+  });
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
+  const [testError, setTestError] = useState<string | undefined>();
+  const testAbortRef = useRef<AbortController | null>(null);
+
+  const runTest = async (url: string, apiKey: string, type: string) => {
+    if (!url) return;
+    testAbortRef.current?.abort();
+    const ac = new AbortController();
+    testAbortRef.current = ac;
+    setTestStatus('loading');
+    setTestError(undefined);
+    try {
+      const params = new URLSearchParams({ type, url });
+      if (apiKey) params.set('apiKey', apiKey);
+      const res = await fetch(`/api/settings/providers/test?${params}`, { signal: ac.signal });
+      const json = await res.json();
+      if (json.data?.ok) {
+        setTestStatus('pass');
+      } else {
+        setTestStatus('fail');
+        setTestError(json.data?.error ?? 'Connection failed');
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      setTestStatus('fail');
+      setTestError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const suffix = API_SUFFIXES[form.type] ?? '';
+    const host = form.url.replace(/\/+$/, '');
+    const fullUrl = suffix ? `${host}${suffix}` : host;
+    const settings = form.type === 'JELLYFIN' && form.userId ? { userId: form.userId } : undefined;
+
+    onSubmit({
+      type: form.type,
+      name: form.name,
+      url: fullUrl,
+      apiKey: form.apiKey || undefined,
+      settings,
+    });
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="p-4 border border-primary/30 rounded-lg bg-surface-panel space-y-4"
+    >
+      <div className="text-sm font-medium text-text-primary">Add provider</div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="add-type" className="block text-xs text-text-secondary mb-1">
+            Type
+          </label>
+          <select
+            id="add-type"
+            value={form.type}
+            onChange={(e) => {
+              const newType = e.target.value;
+              const defaultUrl = PROVIDER_DEFAULT_URLS[newType];
+              setForm((f) => ({ ...f, type: newType, url: defaultUrl ?? f.url }));
+              setTestStatus('idle');
+              setTestError(undefined);
+            }}
+            className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+          >
+            {PROVIDER_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="add-name" className="block text-xs text-text-secondary mb-1">
+            Name
+          </label>
+          <input
+            id="add-name"
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="My Radarr"
+            className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+            required
+          />
+        </div>
+        <div className="col-span-2">
+          <label htmlFor="add-url" className="block text-xs text-text-secondary mb-1">
+            Host URL
+            <span className="ml-1.5">
+              <ConnectionTestIcon status={testStatus} />
+            </span>
+            {testError && <span className="ml-1.5 text-xs text-danger-hover">{testError}</span>}
+          </label>
+          {PROVIDER_DEFAULT_URLS[form.type] !== undefined ? (
+            <input
+              id="add-url"
+              type="url"
+              value={form.url}
+              readOnly
+              className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-muted cursor-not-allowed opacity-70"
+            />
+          ) : (
+            <input
+              id="add-url"
+              type="url"
+              value={form.url}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, url: e.target.value }));
+                setTestStatus('idle');
+              }}
+              onBlur={() => runTest(form.url, form.apiKey, form.type)}
+              placeholder="http://localhost:7878"
+              className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+              required
+            />
+          )}
+        </div>
+        <div>
+          <label htmlFor="add-apikey" className="block text-xs text-text-secondary mb-1">
+            API Key
+          </label>
+          <input
+            id="add-apikey"
+            type="password"
+            value={form.apiKey}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, apiKey: e.target.value }));
+              setTestStatus('idle');
+            }}
+            onBlur={() => runTest(form.url, form.apiKey, form.type)}
+            placeholder="Optional"
+            className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+          />
+        </div>
+        {form.type === 'JELLYFIN' && (
+          <div>
+            <label htmlFor="add-userid" className="block text-xs text-text-secondary mb-1">
+              User ID
+            </label>
+            <input
+              id="add-userid"
+              type="text"
+              value={form.userId}
+              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              placeholder="Jellyfin user ID"
+              className="w-full px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" size="sm">
+          Save
+        </Button>
+      </div>
+    </form>
+  );
+}
