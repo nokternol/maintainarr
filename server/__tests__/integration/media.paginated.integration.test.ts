@@ -58,6 +58,7 @@ describe('Paginated Media API', () => {
   let unauthedApp: Express;
   let authedClient: ReturnType<typeof createApiClient>;
   let unauthedClient: ReturnType<typeof createApiClient>;
+  let cradle: ReturnType<typeof buildContainer>['cradle'];
 
   beforeAll(async () => {
     const mockConfig = createMockConfig({
@@ -72,7 +73,8 @@ describe('Paginated Media API', () => {
     const config = loadConfig();
     const db = await initializeDatabase(config);
     const container = buildContainer({ config, db });
-    const { providerSettingsService } = container.cradle;
+    cradle = container.cradle;
+    const { providerSettingsService } = cradle;
 
     await providerSettingsService.create({
       type: MetadataProviderType.RADARR,
@@ -87,7 +89,7 @@ describe('Paginated Media API', () => {
       apiKey: 'fake-key',
     });
 
-    const mediaRoutes = createMediaRoutes(container.cradle);
+    const mediaRoutes = createMediaRoutes(cradle);
 
     authedApp = express();
     authedApp.use(express.json());
@@ -220,6 +222,105 @@ describe('Paginated Media API', () => {
 
       expect(data.page).toBe(1);
       expect(data.pageSize).toBe(48);
+    });
+  });
+
+  // ─── provider error propagation ─────────────────────────────────────────────
+  //
+  // Each test creates a fresh createMediaRoutes(cradle) so the cache is cold
+  // and the per-test MSW override is the sole source of truth for that request.
+  //
+  describe('provider error propagation', () => {
+    function buildErrorClient(
+      routes: ReturnType<typeof createMediaRoutes>
+    ): ReturnType<typeof createApiClient> {
+      const app = express();
+      app.use(express.json());
+      app.use(requestIdMiddleware);
+      app.use((_req: Request, _res: Response, next: NextFunction) => {
+        _req.user = mockUser;
+        next();
+      });
+      app.use('/api/media', routes);
+      app.use(errorHandlerMiddleware);
+      return createApiClient(app);
+    }
+
+    it('GET /api/media/movies includes errors when Radarr returns 500', async () => {
+      server.use(
+        http.get(
+          'http://localhost:7878/api/v3/movie',
+          () => new HttpResponse(null, { status: 500 })
+        )
+      );
+
+      const client = buildErrorClient(createMediaRoutes(cradle));
+      const res = await client.get('/api/media/movies');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toEqual([]);
+      expect(data.totalCount).toBe(0);
+      expect(Array.isArray(data.errors)).toBe(true);
+      expect(data.errors).toHaveLength(1);
+      expect(data.errors[0]).toMatchObject({ provider: 'Radarr' });
+    });
+
+    it('GET /api/media/series includes errors when Sonarr returns 500', async () => {
+      server.use(
+        http.get(
+          'http://localhost:8989/api/v3/series',
+          () => new HttpResponse(null, { status: 500 })
+        )
+      );
+
+      const client = buildErrorClient(createMediaRoutes(cradle));
+      const res = await client.get('/api/media/series');
+      const data = expectSuccessResponse(res);
+
+      expect(data.items).toEqual([]);
+      expect(data.totalCount).toBe(0);
+      expect(Array.isArray(data.errors)).toBe(true);
+      expect(data.errors).toHaveLength(1);
+      expect(data.errors[0]).toMatchObject({ provider: 'Sonarr' });
+    });
+
+    it('GET /api/media/movies has errors: [] when Radarr is healthy', async () => {
+      server.use(
+        http.get('http://localhost:7878/api/v3/movie', () => HttpResponse.json(makeMovies(2)))
+      );
+
+      const client = buildErrorClient(createMediaRoutes(cradle));
+      const res = await client.get('/api/media/movies');
+      const data = expectSuccessResponse(res);
+
+      expect(Array.isArray(data.errors)).toBe(true);
+      expect(data.errors).toEqual([]);
+    });
+
+    it('GET /api/media/series has errors: [] when Sonarr is healthy', async () => {
+      server.use(
+        http.get('http://localhost:8989/api/v3/series', () =>
+          HttpResponse.json([
+            {
+              id: 1,
+              title: 'Breaking Bad',
+              status: 'ended',
+              monitored: true,
+              tvdbId: 81189,
+              qualityProfileId: 1,
+              tags: [],
+              path: '/tv/Breaking Bad',
+            },
+          ])
+        )
+      );
+
+      const client = buildErrorClient(createMediaRoutes(cradle));
+      const res = await client.get('/api/media/series');
+      const data = expectSuccessResponse(res);
+
+      expect(Array.isArray(data.errors)).toBe(true);
+      expect(data.errors).toEqual([]);
     });
   });
 });

@@ -173,7 +173,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {
-        const { movies: all } = await getMovies();
+        const { movies: all, errors } = await getMovies();
 
         const yearRange = computeYearRange(all);
         let filtered = applyMovieFilters(all, query);
@@ -196,6 +196,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,
+          errors,
         };
       },
     }),
@@ -203,7 +204,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listSeries: defineRoute({
       schemas: { query: seriesQuerySchema },
       handler: async ({ query }) => {
-        const { series: all } = await getSeries();
+        const { series: all, errors } = await getSeries();
 
         const yearRange = computeYearRange(all);
         let filtered = applySeriesFilters(all, query);
@@ -226,6 +227,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,
+          errors,
         };
       },
     }),
