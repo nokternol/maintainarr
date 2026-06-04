@@ -196,4 +196,80 @@ describe('ProviderSettingsService', () => {
     const results = await service.findActiveByTypes([MetadataProviderType.RADARR]);
     expect(results).toHaveLength(2);
   });
+
+  // -------------------------------------------------------------------------
+  // Date field integrity — createdAt / updatedAt must be proper Date instances
+  // -------------------------------------------------------------------------
+
+  it('create() returns createdAt and updatedAt as Date instances with recent timestamps', async () => {
+    // The sqliteDateTime column stores seconds precision (truncates ms).
+    // Floor `before` to the second boundary so the comparison is stable.
+    const beforeMs = Math.floor(Date.now() / 1000) * 1000;
+    const result = await service.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Date Test',
+      url: 'http://localhost:7878/api/v3',
+    });
+    const afterMs = Date.now() + 1000; // +1 s to absorb clock skew
+
+    expect(result.createdAt).toBeInstanceOf(Date);
+    expect(result.updatedAt).toBeInstanceOf(Date);
+    expect(result.createdAt.getTime()).toBeGreaterThanOrEqual(beforeMs);
+    expect(result.createdAt.getTime()).toBeLessThanOrEqual(afterMs);
+    expect(result.updatedAt.getTime()).toBeGreaterThanOrEqual(beforeMs);
+    expect(result.updatedAt.getTime()).toBeLessThanOrEqual(afterMs);
+  });
+
+  it('list() returns providers whose createdAt and updatedAt are Date instances', async () => {
+    await service.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Date List Test',
+      url: 'http://localhost:8989/api/v3',
+    });
+
+    const [row] = await service.list();
+
+    expect(row.createdAt).toBeInstanceOf(Date);
+    expect(row.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('findById() returns createdAt and updatedAt as Date instances', async () => {
+    const created = await service.create({
+      type: MetadataProviderType.PLEX,
+      name: 'Plex Date Test',
+      url: 'http://localhost:32400',
+    });
+
+    const found = await service.findById(created.id);
+
+    expect(found.createdAt).toBeInstanceOf(Date);
+    expect(found.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('findActiveByTypes() returns createdAt and updatedAt as Date instances', async () => {
+    await service.create({
+      type: MetadataProviderType.TMDB,
+      name: 'TMDB Date Test',
+      url: 'https://api.themoviedb.org',
+      apiKey: 'tmdb-key',
+    });
+
+    const [result] = await service.findActiveByTypes([MetadataProviderType.TMDB]);
+
+    expect(result.createdAt).toBeInstanceOf(Date);
+    expect(result.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('update() returns updatedAt as a Date that is >= createdAt', async () => {
+    const created = await service.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Before Update',
+      url: 'http://localhost:8989/api/v3',
+    });
+
+    const updated = await service.update(created.id, { name: 'After Update' });
+
+    expect(updated.updatedAt).toBeInstanceOf(Date);
+    expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.createdAt.getTime());
+  });
 });

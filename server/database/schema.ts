@@ -143,7 +143,7 @@ export type NewUser = typeof users.$inferInsert;
 /** User shape returned from standard read queries — plexToken intentionally excluded */
 export type PublicUser = Omit<User, 'plexToken'>;
 
-/** Raw DB-inferred type — settings is a JSON string, dates are strings */
+/** Raw DB-inferred type — settings is a JSON string, dates are Date instances (fromDriver converts them) */
 export type RawMetadataProvider = typeof metadataProviders.$inferSelect;
 export type NewMetadataProvider = typeof metadataProviders.$inferInsert;
 

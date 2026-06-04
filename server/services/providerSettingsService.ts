@@ -43,8 +43,8 @@ function parseRaw(raw: RawMetadataProvider): MetadataProvider {
     apiKey: raw.apiKey ?? null,
     settings: raw.settings ? (JSON.parse(raw.settings) as Record<string, unknown>) : null,
     isActive: raw.isActive,
-    createdAt: new Date(raw.createdAt as unknown as string),
-    updatedAt: new Date(raw.updatedAt as unknown as string),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
   };
 }
 
