@@ -77,18 +77,18 @@ export function useAutomations() {
   const { trigger: triggerDelete } = useSWRMutation(KEY, deleteAutomation);
 
   const create = async (input: CreateAutomationInput): Promise<AutomationDto> => {
-    const a = await triggerCreate(input);
-    await mutate();
-    return a!;
+    const newAutomation = await triggerCreate(input, { revalidate: false });
+    mutate([...automations, newAutomation!], { revalidate: false });
+    return newAutomation!;
   };
 
   const setStatus = async (id: number, status: 'active' | 'paused'): Promise<void> => {
-    await triggerStatus({ id, status });
-    await mutate();
+    const updatedAutomation = await triggerStatus({ id, status }, { revalidate: false });
+    mutate(automations.map(x => x.id === id ? updatedAutomation! : x), { revalidate: false });
   };
 
   const remove = async (id: number): Promise<void> => {
-    await triggerDelete(id);
+    await triggerDelete(id, { revalidate: false });
     await mutate();
   };
 
