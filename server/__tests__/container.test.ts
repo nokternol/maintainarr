@@ -74,6 +74,16 @@ describe('Container wiring', () => {
       expect((executor as unknown as { automationService: unknown }).automationService).toBe(service);
     });
 
+    it('resolves automationRunService as the same instance on every resolution', () => {
+      const db = getDb();
+      const container = buildContainer({ config: testConfig, db });
+
+      const a = container.cradle.automationRunService;
+      const b = container.cradle.automationRunService;
+
+      expect(a).toBe(b);
+    });
+
     it('automationExecutor holds the same providerSettingsService instance the container resolves', () => {
       const db = getDb();
       const container = buildContainer({ config: testConfig, db });

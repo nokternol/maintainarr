@@ -7,6 +7,24 @@ const idParams = z.object({
     .transform((v) => Number.parseInt(v, 10)),
 });
 
+const listRunsQuery = z.object({
+  automationId: z
+    .string()
+    .regex(/^\d+$/)
+    .transform((v) => Number.parseInt(v, 10))
+    .optional(),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .transform((v) => Math.min(Number.parseInt(v, 10), 100))
+    .optional(),
+  offset: z
+    .string()
+    .regex(/^\d+$/)
+    .transform((v) => Number.parseInt(v, 10))
+    .optional(),
+});
+
 export const automationSchemas = {
   create: {
     body: z.object({
@@ -28,8 +46,13 @@ export const automationSchemas = {
   delete: {
     params: idParams,
   },
+
+  listRuns: {
+    query: listRunsQuery,
+  },
 };
 
 export type CreateAutomationBody = z.infer<typeof automationSchemas.create.body>;
 export type UpdateAutomationStatusBody = z.infer<typeof automationSchemas.updateStatus.body>;
 export type AutomationIdParams = z.infer<typeof idParams>;
+export type ListRunsQuery = z.infer<typeof listRunsQuery>;

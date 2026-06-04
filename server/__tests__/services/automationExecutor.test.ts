@@ -10,6 +10,7 @@ import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { AutomationExecutor } from '@server/services/automationExecutor';
+import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
@@ -92,6 +93,7 @@ describe('AutomationExecutor', () => {
     savedQueryService = new SavedQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
+      automationRunService: new AutomationRunService({ db }),
       providerSettingsService,
     });
   });

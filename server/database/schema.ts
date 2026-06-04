@@ -215,3 +215,25 @@ export type NewSavedQuery = typeof savedQueries.$inferInsert;
 
 export type Automation = typeof automations.$inferSelect;
 export type NewAutomation = typeof automations.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// automationRuns
+// ---------------------------------------------------------------------------
+export const automationRuns = sqliteTable(
+  'automation_runs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    automationId: integer('automationId')
+      .notNull()
+      .references(() => automations.id, { onDelete: 'cascade' }),
+    ranAt: createdAt('ranAt'),
+    status: text('status').notNull(), // 'success' | 'error'
+    itemCount: integer('itemCount'),
+    error: text('error'),
+    createdAt: createdAt('createdAt'),
+  },
+  (table) => [index('IDX_automation_runs_automationId').on(table.automationId)]
+);
+
+export type AutomationRun = typeof automationRuns.$inferSelect;
+export type NewAutomationRun = typeof automationRuns.$inferInsert;
