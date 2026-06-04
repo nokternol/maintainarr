@@ -710,7 +710,7 @@ export default function AutomationsPage() {
   };
 
   const activeCount = automations.filter((a) => a.status === 'active').length;
-  const errorCount = 0; // reserved for future error status
+  const errorCount = automations.filter((a) => a.lastRun?.status === 'error').length;
 
   return (
     <AppLayout
