@@ -74,14 +74,16 @@ describe('applyMovieFilters', () => {
     expect(applyMovieFilters(movies, { yearMin: 2005, yearMax: 2011 })).toHaveLength(1);
   });
 
-  it('filters by movieTagIds (all required)', () => {
+  it('filters by movieTagIds (any match — OR semantics)', () => {
     const movies = [
       { ...baseMovie, id: 1, tags: [1, 2] },
       { ...baseMovie, id: 2, title: 'Inception', tags: [1] },
+      { ...baseMovie, id: 3, title: 'Interstellar', tags: [3] },
     ];
+    // Both movies with tag 1 OR tag 2 should be included; movie with only tag 3 is excluded
     const result = applyMovieFilters(movies, { movieTagIds: '1,2' });
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe(1);
+    expect(result).toHaveLength(2);
+    expect(result.map((m) => m.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 
   it('filters by movieGenres (any match)', () => {
@@ -139,5 +141,17 @@ describe('applySeriesFilters', () => {
     const result = applySeriesFilters(seriesList, { network: 'HBO' });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe(1);
+  });
+
+  it('filters by seriesTagIds (any match — OR semantics)', () => {
+    const seriesList = [
+      { ...baseSeries, id: 1, tags: [1, 2] },
+      { ...baseSeries, id: 2, title: 'Better Call Saul', tags: [2] },
+      { ...baseSeries, id: 3, title: 'Succession', tags: [3] },
+    ];
+    // Series with tag 1 OR tag 2 should be included; series with only tag 3 is excluded
+    const result = applySeriesFilters(seriesList, { seriesTagIds: '1,2' });
+    expect(result).toHaveLength(2);
+    expect(result.map((s) => s.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 });

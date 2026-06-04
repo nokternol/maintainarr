@@ -70,7 +70,7 @@ export function applyMovieFilters(all: RadarrMovie[], query: MovieFilterQuery): 
 
   const tagIds = parseIds(query.movieTagIds);
   if (tagIds.length > 0) {
-    filtered = filtered.filter((m) => tagIds.every((id) => m.tags.includes(id)));
+    filtered = filtered.filter((m) => tagIds.some((id) => m.tags.includes(id)));
   }
 
   const profileIds = parseIds(query.movieQualityProfileIds);
@@ -108,7 +108,7 @@ export function applySeriesFilters(all: SonarrSeries[], query: SeriesFilterQuery
 
   const tagIds = parseIds(query.seriesTagIds);
   if (tagIds.length > 0) {
-    filtered = filtered.filter((s) => tagIds.every((id) => s.tags.includes(id)));
+    filtered = filtered.filter((s) => tagIds.some((id) => s.tags.includes(id)));
   }
 
   const profileIds = parseIds(query.seriesQualityProfileIds);

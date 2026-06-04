@@ -346,7 +346,7 @@ describe('Media Filter API', () => {
     });
   });
 
-  // ─── A04 — Tag filter (AND semantics) ─────────────────────────────────────
+  // ─── A04 — Tag filter (OR semantics) ──────────────────────────────────────
 
   describe('GET /api/media/movies — movieTagIds filter (A04)', () => {
     it('returns movies that have the specified tag', async () => {
@@ -357,17 +357,19 @@ describe('Media Filter API', () => {
       expect(data.totalCount).toBe(2);
     });
 
-    it('applies AND semantics — returns only movies having ALL specified tags', async () => {
+    it('applies OR semantics — returns movies having ANY of the specified tags', async () => {
       const res = await client.get('/api/media/movies?movieTagIds=1,2');
       const data = expectSuccessResponse(res);
 
-      // Only Batman Begins has both tag 1 and tag 2
-      expect(data.totalCount).toBe(1);
-      expect(data.items[0]).toMatchObject({ title: 'Batman Begins' });
+      // Batman Begins [1,2], Batman Returns [1], The Matrix [2] — all have tag 1 OR tag 2
+      expect(data.totalCount).toBe(3);
+      expect(data.items.map((m: { title: string }) => m.title)).toEqual(
+        expect.arrayContaining(['Batman Begins', 'Batman Returns', 'The Matrix'])
+      );
     });
 
-    it('returns empty when no movies have all specified tags', async () => {
-      const res = await client.get('/api/media/movies?movieTagIds=1,2,99');
+    it('returns empty when no movies have any of the specified tags', async () => {
+      const res = await client.get('/api/media/movies?movieTagIds=99,100');
       const data = expectSuccessResponse(res);
       expect(data.totalCount).toBe(0);
     });
