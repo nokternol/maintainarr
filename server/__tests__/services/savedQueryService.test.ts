@@ -6,6 +6,10 @@
  *   - create() inserts and returns a DTO with parsed filters
  *   - delete() removes the record; throws NotFoundError for unknown id
  *
+ * Also confirms that `createdAt` in SavedQueryDto is a valid ISO 8601 string
+ * produced directly from the custom datetime column's Date output,
+ * without requiring a double-cast.
+ *
  * findById is NOT part of the public contract (no production caller).
  *
  * Run: vitest run --project server
@@ -14,6 +18,8 @@ import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { SavedQueryService } from '@server/services/savedQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',
@@ -68,6 +74,18 @@ describe('SavedQueryService', () => {
     expect(typeof row.createdAt).toBe('string');
   });
 
+  it('returns each item with createdAt as a valid ISO 8601 string', async () => {
+    await service.create({ name: 'Query A', filters: {} });
+    await service.create({ name: 'Query B', filters: { year: 2020 } });
+
+    const dtos = await service.list();
+
+    expect(dtos).toHaveLength(2);
+    for (const dto of dtos) {
+      expect(dto.createdAt).toMatch(ISO_REGEX);
+    }
+  });
+
   // -------------------------------------------------------------------------
   // create
   // -------------------------------------------------------------------------
@@ -93,6 +111,12 @@ describe('SavedQueryService', () => {
     const result = await service.create({ name: 'Complex', filters });
 
     expect(result.filters).toEqual(filters);
+  });
+
+  it('returns createdAt as a valid ISO 8601 string', async () => {
+    const dto = await service.create({ name: 'Test Query', filters: { genre: 'action' } });
+
+    expect(dto.createdAt).toMatch(ISO_REGEX);
   });
 
   // -------------------------------------------------------------------------

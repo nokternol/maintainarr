@@ -28,7 +28,7 @@ function toDto(row: SavedQueryRow): SavedQueryDto {
     id: row.id,
     name: row.name,
     filters: JSON.parse(row.filters) as QueryFilters,
-    createdAt: (row.createdAt as unknown as Date).toISOString(),
+    createdAt: row.createdAt.toISOString(),
   };
 }
 

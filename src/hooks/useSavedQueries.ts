@@ -17,8 +17,8 @@ const KEY = '/api/saved-queries';
 async function fetchQueries(url: string): Promise<SavedQuery[]> {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch saved queries');
-  const json = await res.json();
-  return json.data as SavedQuery[];
+  const json = (await res.json()) as { data: SavedQuery[] };
+  return json.data;
 }
 
 async function createQuery(
@@ -31,8 +31,8 @@ async function createQuery(
     body: JSON.stringify(arg),
   });
   if (!res.ok) throw new Error('Failed to save query');
-  const json = await res.json();
-  return json.data as SavedQuery;
+  const json = (await res.json()) as { data: SavedQuery };
+  return json.data;
 }
 
 async function deleteQuery(_key: string, { arg }: { arg: number }): Promise<void> {

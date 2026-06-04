@@ -29,8 +29,8 @@ const KEY = '/api/automations';
 async function fetchAutomations(url: string): Promise<AutomationDto[]> {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch automations');
-  const json = await res.json();
-  return json.data as AutomationDto[];
+  const json = (await res.json()) as { data: AutomationDto[] };
+  return json.data;
 }
 
 async function createAutomation(
@@ -46,8 +46,8 @@ async function createAutomation(
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message ?? 'Failed to create automation');
   }
-  const json = await res.json();
-  return json.data as AutomationDto;
+  const json = (await res.json()) as { data: AutomationDto };
+  return json.data;
 }
 
 async function updateStatus(
@@ -60,8 +60,8 @@ async function updateStatus(
     body: JSON.stringify({ status: arg.status }),
   });
   if (!res.ok) throw new Error('Failed to update automation status');
-  const json = await res.json();
-  return json.data as AutomationDto;
+  const json = (await res.json()) as { data: AutomationDto };
+  return json.data;
 }
 
 async function deleteAutomation(_key: string, { arg }: { arg: number }): Promise<void> {
@@ -84,7 +84,10 @@ export function useAutomations() {
 
   const setStatus = async (id: number, status: 'active' | 'paused'): Promise<void> => {
     const updatedAutomation = await triggerStatus({ id, status }, { revalidate: false });
-    mutate(automations.map(x => x.id === id ? updatedAutomation! : x), { revalidate: false });
+    mutate(
+      automations.map((x) => (x.id === id ? updatedAutomation! : x)),
+      { revalidate: false }
+    );
   };
 
   const remove = async (id: number): Promise<void> => {
