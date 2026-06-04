@@ -117,6 +117,6 @@ describe('SavedQueryService', () => {
   // -------------------------------------------------------------------------
 
   it('does not expose a findById method', () => {
-    expect((service as unknown as Record<string, unknown>)['findById']).toBeUndefined();
+    expect((service as unknown as Record<string, unknown>).findById).toBeUndefined();
   });
 });
