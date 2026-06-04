@@ -14,10 +14,8 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import {
   MetadataProviderType,
   UserType,
-  groups,
   mediaEnrichment,
   metadataProviders,
-  rules,
   sessions,
   users,
 } from '@server/database/schema';
@@ -138,37 +136,6 @@ describe('Drizzle schema shape', () => {
     });
   });
 
-  describe('groups table', () => {
-    it('has correct table name', () => {
-      expect(getTableName(groups)).toBe('groups');
-    });
-
-    it('has all required columns', () => {
-      const cols = Object.keys(getTableColumns(groups));
-      expect(cols).toContain('id');
-      expect(cols).toContain('name');
-      expect(cols).toContain('filterCriteria');
-      expect(cols).toContain('createdAt');
-      expect(cols).toContain('updatedAt');
-    });
-  });
-
-  describe('rules table', () => {
-    it('has correct table name', () => {
-      expect(getTableName(rules)).toBe('rules');
-    });
-
-    it('has all required columns', () => {
-      const cols = Object.keys(getTableColumns(rules));
-      expect(cols).toContain('id');
-      expect(cols).toContain('groupId');
-      expect(cols).toContain('actionType');
-      expect(cols).toContain('actionParams');
-      expect(cols).toContain('isActive');
-      expect(cols).toContain('createdAt');
-      expect(cols).toContain('updatedAt');
-    });
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -297,67 +264,6 @@ describe('Schema DB integration', () => {
     expect(colNames).toContain('enriched_at');
     expect(colNames).toContain('createdAt');
     expect(colNames).toContain('updatedAt');
-  });
-
-  it('creates the groups table with correct columns', async () => {
-    const db = getDb();
-    const result = await db.$client.execute("SELECT name FROM pragma_table_info('groups')");
-    const colNames = result.rows.map((r) => r[0] as string);
-
-    expect(colNames).toContain('id');
-    expect(colNames).toContain('name');
-    expect(colNames).toContain('filter_criteria');
-    expect(colNames).toContain('createdAt');
-    expect(colNames).toContain('updatedAt');
-  });
-
-  it('creates the rules table with correct columns', async () => {
-    const db = getDb();
-    const result = await db.$client.execute("SELECT name FROM pragma_table_info('rules')");
-    const colNames = result.rows.map((r) => r[0] as string);
-
-    expect(colNames).toContain('id');
-    expect(colNames).toContain('group_id');
-    expect(colNames).toContain('action_type');
-    expect(colNames).toContain('action_params');
-    expect(colNames).toContain('is_active');
-    expect(colNames).toContain('createdAt');
-    expect(colNames).toContain('updatedAt');
-  });
-
-  it('can insert and retrieve a group row', async () => {
-    const db = getDb();
-
-    await db.insert(groups).values({
-      name: 'Test Group',
-      filterCriteria: JSON.stringify({ title: 'test' }),
-    });
-
-    const found = await db.select({ id: groups.id, name: groups.name }).from(groups);
-
-    expect(found).toHaveLength(1);
-    expect(found[0].name).toBe('Test Group');
-  });
-
-  it('can insert a rule linked to a group', async () => {
-    const db = getDb();
-
-    const [inserted] = await db
-      .insert(groups)
-      .values({ name: 'Rule Group', filterCriteria: '{}' })
-      .returning({ id: groups.id });
-
-    await db.insert(rules).values({
-      groupId: inserted.id,
-      actionType: 'unmonitor',
-      actionParams: '{}',
-      isActive: true,
-    });
-
-    const found = await db.select({ id: rules.id, actionType: rules.actionType }).from(rules);
-
-    expect(found).toHaveLength(1);
-    expect(found[0].actionType).toBe('unmonitor');
   });
 
   it('can insert a media_enrichment row', async () => {
