@@ -78,7 +78,7 @@ describe('GET /api/settings/providers/test — TVMAZE and SEERR', () => {
       // MSW in Node mode also intercepts supertest's loopback connections, so we filter
       // to only care about requests aimed at the TVMaze URL we passed in.
       const tvmazeRequests: string[] = [];
-      const listener = ({ request: req }: { request: Request }) => {
+      const listener = ({ request: req }: { request: globalThis.Request }) => {
         // Only capture actual outbound requests to the TVMaze host,
         // not the supertest loopback request (127.0.0.1) whose query string
         // happens to contain the encoded TVMaze URL.
@@ -110,9 +110,7 @@ describe('GET /api/settings/providers/test — TVMAZE and SEERR', () => {
     const SEERR_URL = 'http://seerr.local';
 
     it('returns { ok: true } when the upstream /api/v1/status responds 200', async () => {
-      server.use(
-        http.get(`${SEERR_URL}/api/v1/status`, () => HttpResponse.json({ status: 'ok' }))
-      );
+      server.use(http.get(`${SEERR_URL}/api/v1/status`, () => HttpResponse.json({ status: 'ok' })));
 
       const res = await request(authedApp)
         .get('/api/settings/providers/test')
