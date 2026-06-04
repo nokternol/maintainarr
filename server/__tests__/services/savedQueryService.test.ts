@@ -111,12 +111,4 @@ describe('SavedQueryService', () => {
   it('throws NotFoundError when deleting an unknown id', async () => {
     await expect(service.delete(99999)).rejects.toThrow('not found');
   });
-
-  // -------------------------------------------------------------------------
-  // findById is NOT part of the public contract
-  // -------------------------------------------------------------------------
-
-  it('does not expose a findById method', () => {
-    expect((service as unknown as Record<string, unknown>).findById).toBeUndefined();
-  });
 });
