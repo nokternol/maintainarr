@@ -49,11 +49,10 @@ const EMPTY_FILTER_STATE = Object.fromEntries(
 
 type FilterKey = keyof typeof FILTER_FIELDS;
 
-// Mapped type that derives one setter per FilterKey.
-// `set${Capitalize<K>}` produces names like setTitle, setHasFile, etc.
-// The parameter type is FilterState[K], enforced by the registry — no hand-maintenance.
+type FilterSetter<K extends FilterKey> = `set${Capitalize<string & K>}`;
+
 type Setters = {
-  [K in FilterKey as `set${Capitalize<string & K>}`]: (v: FilterState[K]) => void;
+  [K in FilterKey as FilterSetter<K>]: (v: FilterState[K]) => void;
 };
 
 const SORT_KEYS: ReadonlySet<FilterKey> = new Set<FilterKey>(['movieSort', 'seriesSort']);
@@ -143,8 +142,7 @@ export function useMediaFilters() {
   // is kept honest by the Setters mapped type above which references FilterState[K].
   const setters = Object.fromEntries(
     (Object.keys(FILTER_FIELDS) as FilterKey[]).map((k) => {
-      const name =
-        `set${k.charAt(0).toUpperCase()}${k.slice(1)}` as `set${Capitalize<string & FilterKey>}`;
+      const name = `set${k.charAt(0).toUpperCase()}${k.slice(1)}` as FilterSetter<FilterKey>;
       return [name, (v: FilterState[typeof k]) => setFilterState((s) => ({ ...s, [k]: v }))];
     })
   ) as Setters;
