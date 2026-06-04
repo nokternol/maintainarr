@@ -71,6 +71,6 @@ export class TautulliProvider extends BaseMetadataProvider {
     const data = await this.command<{ data: TautulliHistoryItem[] }>('get_history', {
       length: 1000,
     });
-    return [...new Set(data.data.map((item) => item.title.toLowerCase()))];
+    return data.data.map((item) => item.title);
   }
 }

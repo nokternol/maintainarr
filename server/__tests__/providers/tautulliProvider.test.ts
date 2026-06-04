@@ -38,7 +38,7 @@ describe('TautulliProvider', () => {
     expect(history[0].watched_status).toBe(1);
   });
 
-  it('getWatchedTitles deduplicates titles that appear multiple times in history', async () => {
+  it('getWatchedTitles returns raw titles without deduplication or lowercasing', async () => {
     server.use(
       http.get('http://localhost:8181/api/v2', ({ request }) => {
         const url = new URL(request.url);
@@ -74,8 +74,10 @@ describe('TautulliProvider', () => {
       })
     );
     const titles = await provider.getWatchedTitles();
-    expect(titles).toHaveLength(1);
-    expect(titles[0]).toBe('the matrix');
+    // Provider returns raw titles; deduplication/normalization is done by buildWatchedTitleSet
+    expect(titles).toHaveLength(2);
+    expect(titles[0]).toBe('The Matrix');
+    expect(titles[1]).toBe('The Matrix');
   });
 
   it('getWatchedTitles sends length=1000 in the request', async () => {

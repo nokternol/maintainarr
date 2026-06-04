@@ -11,6 +11,7 @@ import { TautulliProvider } from '@server/providers/tautulliProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { applyMovieFilters, applySeriesFilters } from '@server/utils/mediaFilters';
+import { buildWatchedTitleSet, isTitleWatched } from '@server/utils/watchedTitleMatching';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
@@ -157,19 +158,19 @@ export function createMediaHandlers(cradle: MediaCradle) {
       const tautulliProviders = await providerSettingsService.findActiveByTypes([
         MetadataProviderType.TAUTULLI,
       ]);
-      const allTitles = new Set<string>();
+      const rawTitles: string[] = [];
       await Promise.all(
         tautulliProviders.map(async (provider) => {
           try {
             const tautulli = new TautulliProvider(provider, log);
             const titles = await tautulli.getWatchedTitles();
-            for (const t of titles) allTitles.add(t);
+            rawTitles.push(...titles);
           } catch (err) {
             log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
           }
         })
       );
-      return allTitles;
+      return buildWatchedTitleSet(rawTitles);
     });
   }
 
@@ -185,7 +186,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         if (query.tautulliWatched !== undefined) {
           const watchedTitles = await fetchWatchedTitles();
           const want = query.tautulliWatched === 'true';
-          filtered = filtered.filter((m) => watchedTitles.has(m.title.toLowerCase()) === want);
+          filtered = filtered.filter((m) => isTitleWatched(m.title, watchedTitles) === want);
         }
 
         const sorted = (() => {
@@ -216,7 +217,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
         if (query.tautulliWatched !== undefined) {
           const watchedTitles = await fetchWatchedTitles();
           const want = query.tautulliWatched === 'true';
-          filtered = filtered.filter((s) => watchedTitles.has(s.title.toLowerCase()) === want);
+          filtered = filtered.filter((s) => isTitleWatched(s.title, watchedTitles) === want);
         }
 
         const sorted = (() => {
