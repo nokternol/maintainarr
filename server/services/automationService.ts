@@ -66,8 +66,8 @@ function rowToDto(
     taskId: row.taskId,
     schedule: row.schedule,
     status: row.status as 'active' | 'paused',
-    createdAt: (row.createdAt as unknown as Date).toISOString(),
-    updatedAt: (row.updatedAt as unknown as Date).toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 
   if (row.lastRunAt) {
