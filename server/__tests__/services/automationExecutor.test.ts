@@ -9,6 +9,9 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
+import type { IProviderFactory } from '@server/providers/providerFactory';
+import type { RadarrProvider } from '@server/providers/radarrProvider';
+import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
@@ -500,6 +503,80 @@ describe('AutomationExecutor', () => {
       expect(dto.lastRun).toBeDefined();
       expect(dto.lastRun!.status).toBe('error');
       expect(dto.lastRun!.error).toMatch(/not yet implemented/i);
+    });
+  });
+
+  // ─── Injected factory ────────────────────────────────────────────────────
+
+  describe('injected ProviderFactory', () => {
+    it('calls factory.create() and executes the task — no HTTP stub needed', async () => {
+      const movies = [createRadarrMovie({ id: 10, title: 'Dune', year: 2021 })];
+      const unmonitored: number[] = [];
+
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async (ids: number[]) => {
+          unmonitored.push(...ids);
+        },
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+
+      const mockFactory: IProviderFactory = {
+        create: () => mockRadarr,
+      };
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, {});
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      const executorWithFactory = new AutomationExecutor({
+        automationService,
+        providerSettingsService,
+        providerFactory: mockFactory,
+      });
+
+      await executorWithFactory.execute(automation.id);
+
+      expect(unmonitored).toEqual([10]);
+    });
+
+    it('routes factory.create() to the correct provider type for Sonarr', async () => {
+      const seriesList = [createSonarrSeries({ id: 5, title: 'The Wire', year: 2002 })];
+      const unmonitored: number[] = [];
+
+      const mockSonarr = {
+        getSeries: async () => seriesList,
+        unmonitorSeries: async (ids: number[]) => {
+          unmonitored.push(...ids);
+        },
+        triggerSeriesSearch: async () => {},
+      } as unknown as SonarrProvider;
+
+      const mockFactory: IProviderFactory = {
+        create: () => mockSonarr,
+      };
+
+      const provider = await seedSonarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, {});
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorSeries',
+      });
+
+      const executorWithFactory = new AutomationExecutor({
+        automationService,
+        providerSettingsService,
+        providerFactory: mockFactory,
+      });
+
+      await executorWithFactory.execute(automation.id);
+
+      expect(unmonitored).toEqual([5]);
     });
   });
 

@@ -1,7 +1,8 @@
 import { MetadataProviderType } from '../database/schema';
 import { getChildLogger } from '../logger';
-import { RadarrProvider } from '../providers/radarrProvider';
-import { SonarrProvider } from '../providers/sonarrProvider';
+import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
+import type { RadarrProvider } from '../providers/radarrProvider';
+import type { SonarrProvider } from '../providers/sonarrProvider';
 import { applyMovieFilters, applySeriesFilters } from '../utils/mediaFilters';
 import type { AutomationService } from './automationService';
 import type { ProviderSettingsService } from './providerSettingsService';
@@ -12,15 +13,18 @@ const log = getChildLogger('AutomationExecutor');
 interface ExecutorDeps {
   automationService: AutomationService;
   providerSettingsService: ProviderSettingsService;
+  providerFactory?: IProviderFactory;
 }
 
 export class AutomationExecutor {
   private readonly automationService: AutomationService;
   private readonly providerSettingsService: ProviderSettingsService;
+  private readonly providerFactory: IProviderFactory;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
     this.providerSettingsService = deps.providerSettingsService;
+    this.providerFactory = deps.providerFactory ?? new ProviderFactory();
   }
 
   async execute(automationId: number): Promise<void> {
@@ -33,7 +37,7 @@ export class AutomationExecutor {
       const taskId = automation.taskId;
 
       if (provider.type === MetadataProviderType.RADARR) {
-        const radarr = new RadarrProvider(provider, log);
+        const radarr = this.providerFactory.create(provider, log) as RadarrProvider;
         const movies = await radarr.getMovies();
         const matched = applyMovieFilters(movies, {
           title: typeof filters.title === 'string' ? filters.title : undefined,
@@ -58,7 +62,7 @@ export class AutomationExecutor {
           return await this.recordUnimplemented(automationId, taskId, provider.type);
         }
       } else if (provider.type === MetadataProviderType.SONARR) {
-        const sonarr = new SonarrProvider(provider, log);
+        const sonarr = this.providerFactory.create(provider, log) as SonarrProvider;
         const series = await sonarr.getSeries();
         const matched = applySeriesFilters(series, {
           title: typeof filters.title === 'string' ? filters.title : undefined,

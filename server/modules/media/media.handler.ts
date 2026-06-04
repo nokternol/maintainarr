@@ -2,9 +2,10 @@ import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
-import { RadarrProvider } from '@server/providers/radarrProvider';
+import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
+import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
-import { SonarrProvider } from '@server/providers/sonarrProvider';
+import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
@@ -75,6 +76,7 @@ function computeYearRange(items: Array<{ year?: number }>): {
 
 interface MediaCradle {
   providerSettingsService: ProviderSettingsService;
+  providerFactory?: IProviderFactory;
 }
 
 export interface MediaError {
@@ -97,6 +99,7 @@ function toMediaError(providerName: string, err: unknown): MediaError {
 
 export function createMediaHandlers(cradle: MediaCradle) {
   const { providerSettingsService } = cradle;
+  const factory = cradle.providerFactory ?? new ProviderFactory();
 
   // Caches are owned by this factory invocation — same inputs produce isolated state.
   const moviesCache = new MediaCache<{ movies: RadarrMovie[]; errors: MediaError[] }>();
@@ -119,7 +122,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
       await Promise.all(
         providers.map(async (provider) => {
           try {
-            const radarr = new RadarrProvider(provider, log);
+            const radarr = factory.create(provider, log) as RadarrProvider;
             movies.push(...(await radarr.getMovies()));
           } catch (err) {
             log.warn('Radarr fetch failed', { provider: provider.name, err });
@@ -141,7 +144,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
       await Promise.all(
         providers.map(async (provider) => {
           try {
-            const sonarr = new SonarrProvider(provider, log);
+            const sonarr = factory.create(provider, log) as SonarrProvider;
             series.push(...(await sonarr.getSeries()));
           } catch (err) {
             log.warn('Sonarr fetch failed', { provider: provider.name, err });
@@ -260,10 +263,10 @@ export function createMediaHandlers(cradle: MediaCradle) {
             providers.map(async (provider) => {
               try {
                 if (provider.type === MetadataProviderType.RADARR) {
-                  const radarr = new RadarrProvider(provider, log);
+                  const radarr = factory.create(provider, log) as RadarrProvider;
                   radarrTags.push(...(await radarr.getTags()));
                 } else if (provider.type === MetadataProviderType.SONARR) {
-                  const sonarr = new SonarrProvider(provider, log);
+                  const sonarr = factory.create(provider, log) as SonarrProvider;
                   sonarrTags.push(...(await sonarr.getTags()));
                 }
               } catch (err) {
@@ -291,10 +294,10 @@ export function createMediaHandlers(cradle: MediaCradle) {
             providers.map(async (provider) => {
               try {
                 if (provider.type === MetadataProviderType.RADARR) {
-                  const radarr = new RadarrProvider(provider, log);
+                  const radarr = factory.create(provider, log) as RadarrProvider;
                   radarrProfiles.push(...(await radarr.getProfiles()));
                 } else if (provider.type === MetadataProviderType.SONARR) {
-                  const sonarr = new SonarrProvider(provider, log);
+                  const sonarr = factory.create(provider, log) as SonarrProvider;
                   sonarrProfiles.push(...(await sonarr.getProfiles()));
                 }
               } catch (err) {
