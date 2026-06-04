@@ -8,32 +8,27 @@ interface Executor {
 }
 
 interface SchedulerDeps {
-  automationExecutor?: Executor;
+  automationExecutor: Executor;
 }
 
 export class AutomationScheduler {
   private readonly jobs = new Map<number, Cron>();
-  private readonly executor: Executor | null;
+  private readonly executor: Executor;
 
-  constructor(deps: SchedulerDeps = {}) {
-    this.executor = deps.automationExecutor ?? null;
+  constructor(deps: SchedulerDeps) {
+    if (!deps?.automationExecutor) {
+      throw new Error('AutomationScheduler requires an executor');
+    }
+    this.executor = deps.automationExecutor;
   }
 
   schedule(automation: { id: number; name: string; schedule: string }): void {
     this.unschedule(automation.id);
     try {
       const job = new Cron(automation.schedule, { protect: true }, () => {
-        if (this.executor) {
-          this.executor.execute(automation.id).catch((err) => {
-            log.error('Automation execution error', { id: automation.id, err });
-          });
-        } else {
-          log.info('Automation tick — execution not yet implemented', {
-            id: automation.id,
-            name: automation.name,
-            schedule: automation.schedule,
-          });
-        }
+        this.executor.execute(automation.id).catch((err) => {
+          log.error('Automation execution error', { id: automation.id, err });
+        });
       });
       this.jobs.set(automation.id, job);
       log.debug('Automation scheduled', {
