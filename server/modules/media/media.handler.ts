@@ -174,7 +174,18 @@ export function createMediaHandlers(cradle: MediaCradle) {
     });
   }
 
+  function invalidateMediaCaches(): void {
+    moviesCache.invalidate('movies');
+    seriesCache.invalidate('series');
+    tagsCache.invalidate('tags');
+    qualityProfilesCache.invalidate('qualityProfiles');
+    genresCache.invalidate('genres');
+    networksCache.invalidate('networks');
+  }
+
   return {
+    invalidateMediaCaches,
+
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {

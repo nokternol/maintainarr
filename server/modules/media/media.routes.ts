@@ -3,10 +3,13 @@ import type { Cradle } from '../../container';
 import { isAuthenticated } from '../../middleware/auth';
 import { createMediaHandlers } from './media.handler';
 
-export function createMediaRoutes(cradle: Cradle) {
+export function createMediaRoutes(
+  cradle: Cradle,
+  handlers?: ReturnType<typeof createMediaHandlers>
+) {
   const router = Router();
   const { listMovies, listSeries, listTags, listQualityProfiles, listGenres, listNetworks } =
-    createMediaHandlers(cradle);
+    handlers ?? createMediaHandlers(cradle);
 
   router.get('/movies', isAuthenticated(), listMovies);
   router.get('/series', isAuthenticated(), listSeries);
