@@ -84,12 +84,6 @@ export interface MediaError {
   error: string;
 }
 
-export interface MediaResult {
-  movies: RadarrMovie[];
-  series: SonarrSeries[];
-  errors: MediaError[];
-}
-
 function toMediaError(providerName: string, err: unknown): MediaError {
   return {
     provider: providerName,
@@ -176,18 +170,6 @@ export function createMediaHandlers(cradle: MediaCradle) {
   }
 
   return {
-    listMedia: defineRoute({
-      handler: async () => {
-        const [{ movies, errors: movieErrors }, { series, errors: seriesErrors }] =
-          await Promise.all([getMovies(), getSeries()]);
-        return {
-          movies,
-          series,
-          errors: [...movieErrors, ...seriesErrors],
-        } satisfies MediaResult;
-      },
-    }),
-
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {

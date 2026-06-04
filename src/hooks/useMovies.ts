@@ -1,5 +1,4 @@
-import type { MediaFilters } from '@app/types/media';
-import type { MediaImage } from './useMedia';
+import type { MediaFilters, MediaImage } from '@app/types/media';
 import { usePaginatedMedia } from './usePaginatedMedia';
 
 export type { MediaFilters };

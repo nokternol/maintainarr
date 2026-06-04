@@ -5,17 +5,9 @@ import { createMediaHandlers } from './media.handler';
 
 export function createMediaRoutes(cradle: Cradle) {
   const router = Router();
-  const {
-    listMedia,
-    listMovies,
-    listSeries,
-    listTags,
-    listQualityProfiles,
-    listGenres,
-    listNetworks,
-  } = createMediaHandlers(cradle);
+  const { listMovies, listSeries, listTags, listQualityProfiles, listGenres, listNetworks } =
+    createMediaHandlers(cradle);
 
-  router.get('/', isAuthenticated(), listMedia);
   router.get('/movies', isAuthenticated(), listMovies);
   router.get('/series', isAuthenticated(), listSeries);
   router.get('/tags', isAuthenticated(), listTags);

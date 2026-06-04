@@ -1,3 +1,4 @@
+import type { MediaImage } from '@app/types/media';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
@@ -68,6 +69,13 @@ describe('useMovies', () => {
 
     expect(result.current.items[48]).toHaveProperty('title', 'Movie 49');
     expect(result.current.items[95]).toHaveProperty('title', 'Movie 96');
+  });
+
+  it('MediaImage is exported from @app/types/media', () => {
+    // Structural check: MediaImage must have the shape { coverType, remoteUrl }
+    const img: MediaImage = { coverType: 'poster', remoteUrl: 'https://example.com/img.jpg' };
+    expect(img.coverType).toBe('poster');
+    expect(img.remoteUrl).toBe('https://example.com/img.jpg');
   });
 
   it('resets to page 1 when filters change', async () => {

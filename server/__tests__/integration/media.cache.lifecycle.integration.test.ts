@@ -1,12 +1,6 @@
 /**
  * Tests for observable cache lifecycle behaviour in MediaHandler.
  *
- * Two structural bugs are addressed together:
- * 1. Six MediaCache instances live at module scope, shared across every
- *    createMediaHandlers() call — the factory is not referentially transparent.
- * 2. listMedia has its own inline fetch path and never populates the caches
- *    that listMovies / listSeries read from ("split-brain" fetching).
- *
  * Run: vitest run --project server
  */
 import { loadConfig } from '@server/config';
@@ -96,32 +90,6 @@ describe('MediaHandler cache lifecycle', () => {
 
   afterAll(async () => {
     await closeDatabase();
-  });
-
-  it('GET /api/media warms the movies cache so GET /api/media/movies does not re-fetch from Radarr', async () => {
-    // Arrange: first Radarr call succeeds; subsequent calls return 503 so any
-    // re-fetch is detectable via an empty items array.
-    let radarrCallCount = 0;
-    server.use(
-      http.get('http://localhost:7878/api/v3/movie', () => {
-        radarrCallCount++;
-        if (radarrCallCount > 1) return new HttpResponse(null, { status: 503 });
-        return HttpResponse.json([makeRadarrMovie('The Matrix')]);
-      })
-    );
-
-    const routes = createMediaRoutes(cradle);
-    const client = createApiClient(buildAuthedApp(routes));
-
-    await client.get('/api/media'); // must warm the cache
-
-    const res = await client.get('/api/media/movies');
-    const data = expectSuccessResponse(res);
-
-    // If cache was warmed, the movies endpoint reads it and Radarr is not called again.
-    expect(radarrCallCount).toBe(1);
-    expect(data.items).toHaveLength(1);
-    expect(data.items[0].title).toBe('The Matrix');
   });
 
   it('two concurrent GET /api/media/movies requests coalesce into one Radarr call', async () => {
