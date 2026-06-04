@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { createdAt, updatedAt } from './columns/datetime';
 export { createdAt, updatedAt };
 
@@ -77,39 +77,6 @@ export const metadataProviders = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
-// mediaEnrichment
-// ---------------------------------------------------------------------------
-export const mediaEnrichment = sqliteTable(
-  'media_enrichment',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    mediaType: text('media_type').notNull(), // 'movie' | 'series'
-    tmdbId: integer('tmdb_id'),
-    tvdbId: integer('tvdb_id'),
-    imdbId: text('imdb_id'),
-    certification: text('certification'),
-    collectionId: integer('collection_id'),
-    collectionName: text('collection_name'),
-    keywords: text('keywords'), // JSON: string[]
-    spokenLanguages: text('spoken_languages'), // JSON: string[]
-    originCountry: text('origin_country'), // JSON: string[]
-    streamingServices: text('streaming_services'), // JSON: TmdbStreamingServices
-    awardWinner: integer('award_winner', { mode: 'boolean' }),
-    oscarWinner: integer('oscar_winner', { mode: 'boolean' }),
-    director: text('director'),
-    actors: text('actors'),
-    boxOffice: integer('box_office'),
-    enrichedAt: text('enriched_at'),
-    createdAt: createdAt('createdAt'),
-    updatedAt: updatedAt('updatedAt'),
-  },
-  (t) => [
-    uniqueIndex('UQ_enrichment_movie').on(t.mediaType, t.tmdbId),
-    uniqueIndex('UQ_enrichment_series').on(t.mediaType, t.tvdbId),
-  ]
-);
-
-// ---------------------------------------------------------------------------
 // Inferred row types (for use in service return types)
 // ---------------------------------------------------------------------------
 export type User = typeof users.$inferSelect;
@@ -137,9 +104,6 @@ export type MetadataProvider = {
   createdAt: Date;
   updatedAt: Date;
 };
-
-export type MediaEnrichment = typeof mediaEnrichment.$inferSelect;
-export type NewMediaEnrichment = typeof mediaEnrichment.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // savedQueries

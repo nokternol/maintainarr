@@ -14,7 +14,6 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import {
   MetadataProviderType,
   UserType,
-  mediaEnrichment,
   metadataProviders,
   sessions,
   users,
@@ -105,37 +104,6 @@ describe('Drizzle schema shape', () => {
       expect(MetadataProviderType.TAUTULLI).toBe('TAUTULLI');
     });
   });
-
-  describe('mediaEnrichment table', () => {
-    it('has correct table name', () => {
-      expect(getTableName(mediaEnrichment)).toBe('media_enrichment');
-    });
-
-    it('has all required columns', () => {
-      const cols = Object.keys(getTableColumns(mediaEnrichment));
-      expect(cols).toContain('id');
-      expect(cols).toContain('mediaType');
-      expect(cols).toContain('tmdbId');
-      expect(cols).toContain('tvdbId');
-      expect(cols).toContain('imdbId');
-      expect(cols).toContain('certification');
-      expect(cols).toContain('collectionId');
-      expect(cols).toContain('collectionName');
-      expect(cols).toContain('keywords');
-      expect(cols).toContain('spokenLanguages');
-      expect(cols).toContain('originCountry');
-      expect(cols).toContain('streamingServices');
-      expect(cols).toContain('awardWinner');
-      expect(cols).toContain('oscarWinner');
-      expect(cols).toContain('director');
-      expect(cols).toContain('actors');
-      expect(cols).toContain('boxOffice');
-      expect(cols).toContain('enrichedAt');
-      expect(cols).toContain('createdAt');
-      expect(cols).toContain('updatedAt');
-    });
-  });
-
 });
 
 // ---------------------------------------------------------------------------
@@ -235,66 +203,5 @@ describe('Schema DB integration', () => {
 
     expect(found).toHaveLength(1);
     expect(found[0].name).toBe('Local Radarr');
-  });
-
-  it('creates the media_enrichment table with correct columns', async () => {
-    const db = getDb();
-    const result = await db.$client.execute(
-      "SELECT name FROM pragma_table_info('media_enrichment')"
-    );
-    const colNames = result.rows.map((r) => r[0] as string);
-
-    expect(colNames).toContain('id');
-    expect(colNames).toContain('media_type');
-    expect(colNames).toContain('tmdb_id');
-    expect(colNames).toContain('tvdb_id');
-    expect(colNames).toContain('imdb_id');
-    expect(colNames).toContain('certification');
-    expect(colNames).toContain('collection_id');
-    expect(colNames).toContain('collection_name');
-    expect(colNames).toContain('keywords');
-    expect(colNames).toContain('spoken_languages');
-    expect(colNames).toContain('origin_country');
-    expect(colNames).toContain('streaming_services');
-    expect(colNames).toContain('award_winner');
-    expect(colNames).toContain('oscar_winner');
-    expect(colNames).toContain('director');
-    expect(colNames).toContain('actors');
-    expect(colNames).toContain('box_office');
-    expect(colNames).toContain('enriched_at');
-    expect(colNames).toContain('createdAt');
-    expect(colNames).toContain('updatedAt');
-  });
-
-  it('can insert a media_enrichment row', async () => {
-    const db = getDb();
-
-    await db.insert(mediaEnrichment).values({
-      mediaType: 'movie',
-      tmdbId: 12345,
-      certification: 'R',
-      awardWinner: true,
-      streamingServices: JSON.stringify({
-        netflix: true,
-        prime: false,
-        disney: false,
-        hulu: false,
-        apple: false,
-        hbo: false,
-        paramount: false,
-        peacock: false,
-      }),
-    });
-
-    const found = await db
-      .select({
-        certification: mediaEnrichment.certification,
-        awardWinner: mediaEnrichment.awardWinner,
-      })
-      .from(mediaEnrichment);
-
-    expect(found).toHaveLength(1);
-    expect(found[0].certification).toBe('R');
-    expect(found[0].awardWinner).toBe(true);
   });
 });
