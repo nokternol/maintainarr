@@ -110,32 +110,6 @@ export const mediaEnrichment = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
-// groups
-// ---------------------------------------------------------------------------
-export const groups = sqliteTable('groups', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  filterCriteria: text('filter_criteria').notNull(), // JSON
-  createdAt: createdAt('createdAt'),
-  updatedAt: updatedAt('updatedAt'),
-});
-
-// ---------------------------------------------------------------------------
-// rules
-// ---------------------------------------------------------------------------
-export const rules = sqliteTable('rules', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  groupId: integer('group_id')
-    .notNull()
-    .references(() => groups.id),
-  actionType: text('action_type').notNull(),
-  actionParams: text('action_params').notNull(), // JSON
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: createdAt('createdAt'),
-  updatedAt: updatedAt('updatedAt'),
-});
-
-// ---------------------------------------------------------------------------
 // Inferred row types (for use in service return types)
 // ---------------------------------------------------------------------------
 export type User = typeof users.$inferSelect;
@@ -166,12 +140,6 @@ export type MetadataProvider = {
 
 export type MediaEnrichment = typeof mediaEnrichment.$inferSelect;
 export type NewMediaEnrichment = typeof mediaEnrichment.$inferInsert;
-
-export type Group = typeof groups.$inferSelect;
-export type NewGroup = typeof groups.$inferInsert;
-
-export type Rule = typeof rules.$inferSelect;
-export type NewRule = typeof rules.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // savedQueries
