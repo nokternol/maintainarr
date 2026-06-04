@@ -1,5 +1,5 @@
 import { Cron } from 'croner';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type Automation as AutomationRow,
@@ -162,53 +162,19 @@ export class AutomationService {
 
     const [row] = await this.db.insert(automations).values(insert).returning();
 
-    const [queryRow] = await this.db
-      .select()
-      .from(savedQueries)
-      .where(eq(savedQueries.id, row.queryId));
-    const [providerRow] = await this.db
-      .select({
-        id: metadataProviders.id,
-        name: metadataProviders.name,
-        type: metadataProviders.type,
-      })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.id, row.providerId));
-
-    return rowToDto(
-      row,
-      { id: queryRow.id, name: queryRow.name, filters: queryRow.filters },
-      { id: providerRow.id, name: providerRow.name, type: providerRow.type }
-    );
+    return this.getById(row.id);
   }
 
   async updateStatus(id: number, status: 'active' | 'paused'): Promise<AutomationDto> {
     const [row] = await this.db
       .update(automations)
       .set({ status, updatedAt: new Date() })
-      .where(and(eq(automations.id, id)))
+      .where(eq(automations.id, id))
       .returning();
 
     if (!row) throw new NotFoundError(`Automation ${id} not found`);
 
-    const [queryRow] = await this.db
-      .select()
-      .from(savedQueries)
-      .where(eq(savedQueries.id, row.queryId));
-    const [providerRow] = await this.db
-      .select({
-        id: metadataProviders.id,
-        name: metadataProviders.name,
-        type: metadataProviders.type,
-      })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.id, row.providerId));
-
-    return rowToDto(
-      row,
-      { id: queryRow.id, name: queryRow.name, filters: queryRow.filters },
-      { id: providerRow.id, name: providerRow.name, type: providerRow.type }
-    );
+    return this.getById(id);
   }
 
   async delete(id: number): Promise<void> {
