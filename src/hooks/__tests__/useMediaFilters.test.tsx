@@ -9,7 +9,8 @@
  * Run: vitest run --project client
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import type { FilterState } from '../useMediaFilters';
 import { useMediaFilters } from '../useMediaFilters';
 
 // ─── Router mock ───────────────────────────────────────────────────────────────
@@ -561,6 +562,72 @@ describe('useMediaFilters — sort setters', () => {
 
     expect(result.current.filterState.movieSort).toBe('title_asc');
     expect(result.current.filterState.hasFile).toBeUndefined();
+  });
+});
+
+// ─── Setter argument type regression guards ───────────────────────────────────
+//
+// These tests assert that each setter's parameter type equals FilterState[K]
+// for its corresponding key. They serve as regression guards: if a FieldSpec
+// type mapping changes and a setter's inline type is NOT updated, these fail.
+//
+// The tests pass today because the inline types happen to match — that is
+// intentional. After the GREEN step they pass because types are derived.
+
+describe('useMediaFilters — setter argument type regression guards', () => {
+  it('setHasFile parameter type equals FilterState["hasFile"] (bool3 shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setHasFile).parameter(0).toEqualTypeOf<FilterState['hasFile']>();
+  });
+
+  it('setMonitored parameter type equals FilterState["monitored"] (bool3 shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setMonitored)
+      .parameter(0)
+      .toEqualTypeOf<FilterState['monitored']>();
+  });
+
+  it('setTautulliWatched parameter type equals FilterState["tautulliWatched"] (bool3 shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setTautulliWatched)
+      .parameter(0)
+      .toEqualTypeOf<FilterState['tautulliWatched']>();
+  });
+
+  it('setYearMin parameter type equals FilterState["yearMin"] (number shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setYearMin).parameter(0).toEqualTypeOf<FilterState['yearMin']>();
+  });
+
+  it('setYearMax parameter type equals FilterState["yearMax"] (number shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setYearMax).parameter(0).toEqualTypeOf<FilterState['yearMax']>();
+  });
+
+  it('setTitle parameter type equals FilterState["title"] (string with non-undefined default → string, not string|undefined)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setTitle).parameter(0).toEqualTypeOf<FilterState['title']>();
+  });
+
+  it('setSeriesStatus parameter type equals FilterState["seriesStatus"] (optional string shape)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setSeriesStatus)
+      .parameter(0)
+      .toEqualTypeOf<FilterState['seriesStatus']>();
+  });
+
+  it('setMovieSort parameter type equals FilterState["movieSort"] (string with non-undefined default)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setMovieSort)
+      .parameter(0)
+      .toEqualTypeOf<FilterState['movieSort']>();
+  });
+
+  it('setSeriesSort parameter type equals FilterState["seriesSort"] (string with non-undefined default)', () => {
+    const { result } = renderHook(() => useMediaFilters());
+    expectTypeOf(result.current.setSeriesSort)
+      .parameter(0)
+      .toEqualTypeOf<FilterState['seriesSort']>();
   });
 });
 

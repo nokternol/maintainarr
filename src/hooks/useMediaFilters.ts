@@ -49,6 +49,13 @@ const EMPTY_FILTER_STATE = Object.fromEntries(
 
 type FilterKey = keyof typeof FILTER_FIELDS;
 
+// Mapped type that derives one setter per FilterKey.
+// `set${Capitalize<K>}` produces names like setTitle, setHasFile, etc.
+// The parameter type is FilterState[K], enforced by the registry — no hand-maintenance.
+type Setters = {
+  [K in FilterKey as `set${Capitalize<string & K>}`]: (v: FilterState[K]) => void;
+};
+
 const SORT_KEYS: ReadonlySet<FilterKey> = new Set<FilterKey>(['movieSort', 'seriesSort']);
 
 function parseQuery(query: Record<string, string | string[] | undefined>): FilterState {
@@ -131,30 +138,21 @@ export function useMediaFilters() {
 
   const isActive = isAnyFilterActive(filterState);
 
+  // Build all setters in one pass from the FILTER_FIELDS registry.
+  // Object.fromEntries loses per-key types, so we cast to Setters — the type
+  // is kept honest by the Setters mapped type above which references FilterState[K].
+  const setters = Object.fromEntries(
+    (Object.keys(FILTER_FIELDS) as FilterKey[]).map((k) => {
+      const name =
+        `set${k.charAt(0).toUpperCase()}${k.slice(1)}` as `set${Capitalize<string & FilterKey>}`;
+      return [name, (v: FilterState[typeof k]) => setFilterState((s) => ({ ...s, [k]: v }))];
+    })
+  ) as Setters;
+
   return {
     filterState,
     debouncedFilters,
-    setTitle: (v: string) => setFilterState((s) => ({ ...s, title: v })),
-    setHasFile: (v: 'true' | 'false' | undefined) => setFilterState((s) => ({ ...s, hasFile: v })),
-    setMonitored: (v: 'true' | 'false' | undefined) =>
-      setFilterState((s) => ({ ...s, monitored: v })),
-    setSeriesStatus: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesStatus: v })),
-    setYearMin: (v: number | undefined) => setFilterState((s) => ({ ...s, yearMin: v })),
-    setYearMax: (v: number | undefined) => setFilterState((s) => ({ ...s, yearMax: v })),
-    setMovieTagIds: (v: string | undefined) => setFilterState((s) => ({ ...s, movieTagIds: v })),
-    setSeriesTagIds: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesTagIds: v })),
-    setMovieQualityProfileIds: (v: string | undefined) =>
-      setFilterState((s) => ({ ...s, movieQualityProfileIds: v })),
-    setSeriesQualityProfileIds: (v: string | undefined) =>
-      setFilterState((s) => ({ ...s, seriesQualityProfileIds: v })),
-    setMovieGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, movieGenres: v })),
-    setSeriesGenres: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesGenres: v })),
-    setSeriesType: (v: string | undefined) => setFilterState((s) => ({ ...s, seriesType: v })),
-    setNetwork: (v: string | undefined) => setFilterState((s) => ({ ...s, network: v })),
-    setTautulliWatched: (v: 'true' | 'false' | undefined) =>
-      setFilterState((s) => ({ ...s, tautulliWatched: v })),
-    setMovieSort: (v: string) => setFilterState((s) => ({ ...s, movieSort: v })),
-    setSeriesSort: (v: string) => setFilterState((s) => ({ ...s, seriesSort: v })),
+    ...setters,
     clearAll: () => setFilterState(EMPTY_FILTER_STATE),
     isActive,
   };
