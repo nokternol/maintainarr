@@ -105,6 +105,8 @@ export function createMediaHandlers(cradle: MediaCradle) {
   }>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
+  // 5-minute TTL: watched-title sets change infrequently and fetching is expensive (1 000-row query)
+  const watchedTitlesCache = new MediaCache<Set<string>>(300_000);
 
   async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
     return moviesCache.getOrFetch('movies', async () => {
@@ -151,22 +153,24 @@ export function createMediaHandlers(cradle: MediaCradle) {
   }
 
   async function fetchWatchedTitles(): Promise<Set<string>> {
-    const tautulliProviders = await providerSettingsService.findActiveByTypes([
-      MetadataProviderType.TAUTULLI,
-    ]);
-    const allTitles = new Set<string>();
-    await Promise.all(
-      tautulliProviders.map(async (provider) => {
-        try {
-          const tautulli = new TautulliProvider(provider, log);
-          const titles = await tautulli.getWatchedTitles();
-          for (const t of titles) allTitles.add(t);
-        } catch (err) {
-          log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
-        }
-      })
-    );
-    return allTitles;
+    return watchedTitlesCache.getOrFetch('watchedTitles', async () => {
+      const tautulliProviders = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.TAUTULLI,
+      ]);
+      const allTitles = new Set<string>();
+      await Promise.all(
+        tautulliProviders.map(async (provider) => {
+          try {
+            const tautulli = new TautulliProvider(provider, log);
+            const titles = await tautulli.getWatchedTitles();
+            for (const t of titles) allTitles.add(t);
+          } catch (err) {
+            log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
+          }
+        })
+      );
+      return allTitles;
+    });
   }
 
   return {
