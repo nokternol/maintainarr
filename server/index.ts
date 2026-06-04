@@ -8,13 +8,13 @@ import session from 'express-session';
 import helmet from 'helmet';
 import next from 'next';
 import { loadConfig } from './config';
+import { SESSION_TTL_SECONDS } from './config';
 import { buildContainer, scopePerRequest } from './container';
 import { closeDatabase, initializeDatabase } from './database';
 import { DrizzleStore } from './database/drizzleStore';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
-import { SESSION_TTL_SECONDS } from './sessionConfig';
 
 const log = getChildLogger('Server');
 
