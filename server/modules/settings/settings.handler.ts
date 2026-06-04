@@ -12,8 +12,10 @@ const API_SUFFIXES: Record<string, string> = {
   JELLYFIN: '',
   TAUTULLI: '',
   OVERSEERR: '',
+  SEERR: '',
   TMDB: '',
   OMDB: '',
+  TVMAZE: '',
 };
 
 async function probeProvider(
@@ -52,17 +54,24 @@ async function probeProvider(
         .get(`${base}/api/v2`, { searchParams: { cmd: 'get_server_info', apikey: key }, timeout })
         .json();
       break;
+    case MetadataProviderType.SEERR:
     case MetadataProviderType.OVERSEERR:
       await ky.get(`${base}/api/v1/status`, { headers: { 'X-Api-Key': key }, timeout }).json();
       break;
+    case MetadataProviderType.TVMAZE:
+      return;
     case MetadataProviderType.TMDB:
       await ky.get(`${base}/configuration`, { searchParams: { api_key: key }, timeout }).json();
       break;
     case MetadataProviderType.OMDB:
       await ky.get(base, { searchParams: { apikey: key, t: 'test' }, timeout }).json();
       break;
-    default:
-      throw new Error(`Unsupported provider type: ${type}`);
+    default: {
+      // TypeScript exhaustiveness guard — if a new MetadataProviderType is added
+      // without a corresponding case above, this line will produce a compile error.
+      const _exhaustive: never = type;
+      throw new Error(`Unsupported provider type: ${_exhaustive}`);
+    }
   }
 }
 
