@@ -172,7 +172,18 @@ export function createMediaHandlers(cradle: MediaCradle) {
     return allTitles;
   }
 
+  function invalidateMediaCaches(): void {
+    moviesCache.invalidate('movies');
+    seriesCache.invalidate('series');
+    tagsCache.invalidate('tags');
+    qualityProfilesCache.invalidate('qualityProfiles');
+    genresCache.invalidate('genres');
+    networksCache.invalidate('networks');
+  }
+
   return {
+    invalidateMediaCaches,
+
     listMedia: defineRoute({
       handler: async () => {
         const [{ movies, errors: movieErrors }, { series, errors: seriesErrors }] =

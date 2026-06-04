@@ -70,7 +70,7 @@ interface SettingsCradle {
   providerSettingsService: ProviderSettingsService;
 }
 
-export function createSettingsHandlers(cradle: SettingsCradle) {
+export function createSettingsHandlers(cradle: SettingsCradle, invalidateMediaCaches?: () => void) {
   const { providerSettingsService } = cradle;
 
   return {
@@ -98,7 +98,9 @@ export function createSettingsHandlers(cradle: SettingsCradle) {
       defineRoute({
         schemas: settingsSchemas.updateProvider,
         handler: async ({ params, body }) => {
-          return providerSettingsService.update(params.id, body);
+          const result = await providerSettingsService.update(params.id, body);
+          invalidateMediaCaches?.();
+          return result;
         },
       }),
     ],
@@ -109,6 +111,7 @@ export function createSettingsHandlers(cradle: SettingsCradle) {
         schemas: settingsSchemas.deleteProvider,
         handler: async ({ params }) => {
           await providerSettingsService.delete(params.id);
+          invalidateMediaCaches?.();
           return null;
         },
       }),
