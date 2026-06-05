@@ -1,4 +1,6 @@
+import StatusDot from '@app/components/StatusDot';
 import type { AutomationDto } from '@app/hooks/useAutomations';
+import type { QueryFilters } from '@app/hooks/useSavedQueries';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,7 +12,7 @@ const mockAutomation: AutomationDto = {
   query: {
     id: 1,
     name: 'Stale Movies',
-    filters: {} as import('@app/hooks/useSavedQueries').QueryFilters,
+    filters: {} as QueryFilters,
   },
   provider: { id: 1, name: 'Radarr', type: 'RADARR' },
   taskId: 'deleteMovieWithFiles',
@@ -19,6 +21,14 @@ const mockAutomation: AutomationDto = {
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
 };
+
+describe('StatusDot', () => {
+  it('renders with bg-danger class for error status', () => {
+    render(<StatusDot status="error" />);
+    const dot = document.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(dot.className).toMatch(/bg-danger/);
+  });
+});
 
 describe('AutomationRow', () => {
   it('renders the automation name', () => {

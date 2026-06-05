@@ -1,50 +1,9 @@
 import StatusDot from '@app/components/StatusDot';
 import type { AutomationDto } from '@app/hooks/useAutomations';
 import { cn } from '@app/lib/utils/cn';
-import { Cron } from 'croner';
-import cronstrue from 'cronstrue';
+import { relativeTime, safeHumanSchedule } from '@app/lib/utils/time';
 import { Pause, Play, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-
-function safeHumanSchedule(cron: string): string {
-  try {
-    return cronstrue.toString(cron, { use24HourTimeFormat: true });
-  } catch {
-    return 'Invalid cron expression';
-  }
-}
-
-function safeNextRun(cron: string): Date | null {
-  try {
-    const job = new Cron(cron, { paused: true });
-    const next = job.nextRun();
-    job.stop();
-    return next;
-  } catch {
-    return null;
-  }
-}
-
-function relativeTime(isoOrDate: string | Date): string {
-  const date = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
-  const diffMs = date.getTime() - Date.now();
-  const abs = Math.abs(diffMs);
-  const past = diffMs < 0;
-
-  if (abs < 60_000) return past ? 'just now' : 'in <1m';
-  if (abs < 3_600_000) {
-    const m = Math.round(abs / 60_000);
-    return past ? `${m}m ago` : `in ${m}m`;
-  }
-  if (abs < 86_400_000) {
-    const h = Math.round(abs / 3_600_000);
-    return past ? `${h}h ago` : `in ${h}h`;
-  }
-  const d = Math.round(abs / 86_400_000);
-  return past ? `${d}d ago` : `in ${d}d`;
-}
-
-export { relativeTime, safeHumanSchedule, safeNextRun };
 
 export default function AutomationRow({
   automation,
@@ -56,12 +15,7 @@ export default function AutomationRow({
   onDelete: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const nextRun = safeNextRun(automation.schedule);
-  const nextRunLabel = automation.nextRun
-    ? relativeTime(automation.nextRun)
-    : nextRun
-      ? relativeTime(nextRun)
-      : null;
+  const nextRunLabel = automation.nextRun ? relativeTime(automation.nextRun) : null;
   const lastRunLabel = automation.lastRun ? relativeTime(automation.lastRun.at) : null;
 
   return (
