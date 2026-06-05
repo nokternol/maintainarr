@@ -4,6 +4,7 @@ import { type IProviderFactory, ProviderFactory } from '../providers/providerFac
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
 import { applyMovieFilters, applySeriesFilters } from '../utils/mediaFilters';
+import type { AutomationRunService } from './automationRunService';
 import type { AutomationService } from './automationService';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { QueryFilters } from './savedQueryService';
@@ -12,17 +13,20 @@ const log = getChildLogger('AutomationExecutor');
 
 interface ExecutorDeps {
   automationService: AutomationService;
+  automationRunService: AutomationRunService;
   providerSettingsService: ProviderSettingsService;
   providerFactory?: IProviderFactory;
 }
 
 export class AutomationExecutor {
   private readonly automationService: AutomationService;
+  private readonly automationRunService: AutomationRunService;
   private readonly providerSettingsService: ProviderSettingsService;
   private readonly providerFactory: IProviderFactory;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
+    this.automationRunService = deps.automationRunService;
     this.providerSettingsService = deps.providerSettingsService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
   }
@@ -94,7 +98,7 @@ export class AutomationExecutor {
           providerType: provider.type,
           automationId,
         });
-        await this.automationService.recordRun(automationId, {
+        await this.recordResult(automationId, {
           itemCount: 0,
           status: 'error',
           error: `Provider type "${provider.type}" is not yet supported`,
@@ -102,16 +106,31 @@ export class AutomationExecutor {
         return;
       }
 
-      await this.automationService.recordRun(automationId, { itemCount, status: 'success' });
+      await this.recordResult(automationId, { itemCount, status: 'success' });
       log.info('Automation executed', { automationId, taskId, itemCount });
     } catch (err) {
       log.error('Automation execution failed', { automationId, err });
-      await this.automationService.recordRun(automationId, {
+      await this.recordResult(automationId, {
         itemCount,
         status: 'error',
         error: err instanceof Error ? err.message : 'Unknown error',
       });
     }
+  }
+
+  private async recordResult(
+    automationId: number,
+    result: { itemCount: number; status: 'success' | 'error'; error?: string }
+  ): Promise<void> {
+    await Promise.all([
+      this.automationService.recordRun(automationId, result),
+      this.automationRunService.createRun({
+        automationId,
+        status: result.status,
+        itemCount: result.itemCount,
+        error: result.error,
+      }),
+    ]);
   }
 
   private async recordUnimplemented(
@@ -120,7 +139,7 @@ export class AutomationExecutor {
     providerType: string
   ): Promise<void> {
     log.warn('Task not yet implemented', { taskId, automationId, providerType });
-    await this.automationService.recordRun(automationId, {
+    await this.recordResult(automationId, {
       itemCount: 0,
       status: 'error',
       error: `Task "${taskId}" is not yet implemented`,

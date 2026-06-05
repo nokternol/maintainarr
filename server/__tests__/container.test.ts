@@ -5,8 +5,8 @@
  * Run: vitest run --project server
  */
 import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { buildContainer } from '@server/container';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -71,7 +71,19 @@ describe('Container wiring', () => {
 
       // The executor was constructed with the singleton service; the container
       // must return that same instance when resolved directly.
-      expect((executor as unknown as { automationService: unknown }).automationService).toBe(service);
+      expect((executor as unknown as { automationService: unknown }).automationService).toBe(
+        service
+      );
+    });
+
+    it('resolves automationRunService as the same instance on every resolution', () => {
+      const db = getDb();
+      const container = buildContainer({ config: testConfig, db });
+
+      const a = container.cradle.automationRunService;
+      const b = container.cradle.automationRunService;
+
+      expect(a).toBe(b);
     });
 
     it('automationExecutor holds the same providerSettingsService instance the container resolves', () => {

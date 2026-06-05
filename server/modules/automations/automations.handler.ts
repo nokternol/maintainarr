@@ -1,4 +1,5 @@
 import { isAuthenticated } from '@server/middleware/auth';
+import type { AutomationRunService } from '@server/services/automationRunService';
 import type { AutomationService } from '@server/services/automationService';
 import { defineRoute } from '@server/utils/defineRoute';
 import type { AutomationScheduler } from '../../cron/automationScheduler';
@@ -6,11 +7,12 @@ import { automationSchemas } from './automations.schemas';
 
 interface Cradle {
   automationService: AutomationService;
+  automationRunService: AutomationRunService;
   automationScheduler: AutomationScheduler;
 }
 
 export function createAutomationHandlers(cradle: Cradle) {
-  const { automationService, automationScheduler } = cradle;
+  const { automationService, automationRunService, automationScheduler } = cradle;
 
   return {
     list: [
@@ -64,6 +66,17 @@ export function createAutomationHandlers(cradle: Cradle) {
           automationScheduler.unschedule(params.id);
           await automationService.delete(params.id);
           return null;
+        },
+      }),
+    ],
+
+    listRuns: [
+      isAuthenticated(),
+      defineRoute({
+        schemas: automationSchemas.listRuns,
+        handler: async ({ query }) => {
+          const data = await automationRunService.listRuns(query);
+          return { data, total: data.length };
         },
       }),
     ],

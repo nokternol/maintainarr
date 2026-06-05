@@ -1,4 +1,5 @@
 import { authHandlers } from './auth';
+import { automationRunHandlers } from './automationRuns';
 import { automationsHandlers, savedQueriesHandlers } from './automations';
 import { backdropsHandlers } from './backdrops';
 import { jellyfinHandlers } from './jellyfin';
@@ -15,6 +16,7 @@ export const handlers = [
   ...authHandlers,
   ...automationsHandlers,
   ...savedQueriesHandlers,
+  ...automationRunHandlers,
   ...backdropsHandlers,
   ...radarrHandlers,
   ...sonarrHandlers,

@@ -13,12 +13,13 @@ import type { IProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import { AutomationExecutor } from '@server/services/automationExecutor';
+import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
 import type { QueryFilters } from '@server/services/savedQueryService';
 import { http, HttpResponse } from 'msw';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
 import { server } from '../../../tests/mocks/server';
 
@@ -95,6 +96,7 @@ describe('AutomationExecutor', () => {
     savedQueryService = new SavedQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
+      automationRunService: new AutomationRunService({ db }),
       providerSettingsService,
     });
   });
@@ -537,6 +539,7 @@ describe('AutomationExecutor', () => {
         automationService,
         providerSettingsService,
         providerFactory: mockFactory,
+        automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
 
       await executorWithFactory.execute(automation.id);
@@ -572,6 +575,7 @@ describe('AutomationExecutor', () => {
         automationService,
         providerSettingsService,
         providerFactory: mockFactory,
+        automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
 
       await executorWithFactory.execute(automation.id);

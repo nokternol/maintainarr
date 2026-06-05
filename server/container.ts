@@ -7,6 +7,7 @@ import { getChildLogger } from './logger';
 import { ProviderFactory } from './providers/providerFactory';
 import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
+import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
@@ -28,6 +29,7 @@ export interface Cradle {
   providerSettingsService: ProviderSettingsService;
   savedQueryService: SavedQueryService;
   automationService: AutomationService;
+  automationRunService: AutomationRunService;
   providerFactory: ProviderFactory;
   automationExecutor: AutomationExecutor;
   automationScheduler: AutomationScheduler;
@@ -59,6 +61,7 @@ export function buildContainer(deps: {
     providerSettingsService: asClass(ProviderSettingsService).singleton(),
     savedQueryService: asClass(SavedQueryService).singleton(),
     automationService: asClass(AutomationService).singleton(),
+    automationRunService: asClass(AutomationRunService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
     automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
