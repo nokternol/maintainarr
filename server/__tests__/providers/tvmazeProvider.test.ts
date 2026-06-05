@@ -65,6 +65,15 @@ describe('TvMazeProvider', () => {
     expect(rating.rating).toBe(9.1);
   });
 
+  it('should include tvMazeId, tvdbId, and imdbId when a show is found', async () => {
+    const provider = new TvMazeProvider(mockProvider, log);
+    const rating = await provider.getRatings('Breaking Bad', 2008);
+
+    expect(rating.tvMazeId).toBe(169);
+    expect(rating.tvdbId).toBe(81189);
+    expect(rating.imdbId).toBe('tt0903747');
+  });
+
   it('should return found:false when not found', async () => {
     const provider = new TvMazeProvider(mockProvider, log);
     const rating = await provider.getRatings('Nonexistent Show');

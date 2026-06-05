@@ -5,6 +5,12 @@ import type { TvMazeRating } from '@server/providers/tvmazeProvider';
 export interface AggregatedRatings {
   title: string;
   year?: number;
+  ids: {
+    tmdbId?: number;
+    imdbId?: string;
+    tvdbId?: number | null;
+    tvMazeId?: number;
+  };
   tmdb?: TmdbRating;
   omdb?: OmdbRating;
   tvmaze?: TvMazeRating;
@@ -22,9 +28,24 @@ export function aggregateRatings(
   omdb?: OmdbRating,
   tvmaze?: TvMazeRating
 ): AggregatedRatings {
+  const tmdbImdbId = tmdb?.found ? tmdb.imdbId : undefined;
+  const omdbImdbId = omdb?.found ? omdb.imdbId : undefined;
+
+  if (tmdbImdbId && omdbImdbId && tmdbImdbId !== omdbImdbId) {
+    console.warn(
+      `[ratings] imdbId mismatch for "${title}": TMDB=${tmdbImdbId} OMDB=${omdbImdbId} — title match may be ambiguous`
+    );
+  }
+
   const result: AggregatedRatings = {
     title,
     year,
+    ids: {
+      tmdbId: tmdb?.found ? tmdb.tmdbId : undefined,
+      imdbId: tmdbImdbId ?? omdbImdbId,
+      tvMazeId: tvmaze?.found ? tvmaze.tvMazeId : undefined,
+      tvdbId: tvmaze?.found ? tvmaze.tvdbId : undefined,
+    },
     tmdb,
     omdb,
     tvmaze,

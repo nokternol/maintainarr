@@ -25,6 +25,7 @@ export interface OmdbResponse {
 
 export interface OmdbRating {
   source: 'omdb';
+  imdbId?: string;
   imdbRating?: number;
   imdbVotes?: number;
   rottenTomatoesRating?: number;
@@ -78,6 +79,10 @@ export class OmdbProvider extends BaseMetadataProvider {
       source: 'omdb',
       found: true,
     };
+
+    if (!this.isNaOrEmpty(data.imdbID)) {
+      result.imdbId = data.imdbID;
+    }
 
     if (data.imdbRating && data.imdbRating !== 'N/A') {
       result.imdbRating = Number.parseFloat(data.imdbRating);

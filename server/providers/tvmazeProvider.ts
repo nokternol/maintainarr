@@ -29,6 +29,9 @@ export interface TvMazeShow {
 
 export interface TvMazeRating {
   source: 'tvmaze';
+  tvMazeId?: number;
+  tvdbId?: number | null;
+  imdbId?: string | null;
   rating?: number;
   found: boolean;
 }
@@ -70,6 +73,9 @@ export class TvMazeProvider extends BaseMetadataProvider {
 
       return {
         source: 'tvmaze',
+        tvMazeId: bestMatch.id,
+        tvdbId: bestMatch.externals.thetvdb,
+        imdbId: bestMatch.externals.imdb,
         rating: bestMatch.rating.average,
         found: true,
       };

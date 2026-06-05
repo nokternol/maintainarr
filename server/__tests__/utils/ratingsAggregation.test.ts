@@ -1,5 +1,64 @@
 import { aggregateRatings, formatRating, getSummaryText } from '@server/utils/ratingsAggregation';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+describe('aggregateRatings — ids block', () => {
+  it('populates ids.tmdbId and ids.imdbId from a found TMDB result', () => {
+    const result = aggregateRatings(
+      'The Shawshank Redemption',
+      1994,
+      { source: 'tmdb', tmdbId: 278, imdbId: 'tt0111161', mediaType: 'movie', found: true },
+      undefined,
+      undefined
+    );
+
+    expect(result.ids.tmdbId).toBe(278);
+    expect(result.ids.imdbId).toBe('tt0111161');
+  });
+
+  it('populates ids.tvMazeId and ids.tvdbId from a found TVMaze result', () => {
+    const result = aggregateRatings('Breaking Bad', 2008, undefined, undefined, {
+      source: 'tvmaze',
+      tvMazeId: 169,
+      tvdbId: 81189,
+      imdbId: 'tt0903747',
+      rating: 9.1,
+      found: true,
+    });
+
+    expect(result.ids.tvMazeId).toBe(169);
+    expect(result.ids.tvdbId).toBe(81189);
+  });
+
+  it('falls back to ids.imdbId from OMDB when TMDB has no imdbId', () => {
+    const result = aggregateRatings(
+      'Breaking Bad',
+      2008,
+      { source: 'tmdb', tmdbId: 1396, mediaType: 'tv', found: true },
+      { source: 'omdb', imdbId: 'tt0903747', imdbRating: 9.5, found: true },
+      undefined
+    );
+
+    expect(result.ids.imdbId).toBe('tt0903747');
+  });
+
+  it('emits console.warn and uses TMDB imdbId when TMDB and OMDB imdbId values disagree', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = aggregateRatings(
+      'Ambiguous Title',
+      2000,
+      { source: 'tmdb', tmdbId: 123, imdbId: 'tt0111161', mediaType: 'movie', found: true },
+      { source: 'omdb', imdbId: 'tt9999999', imdbRating: 7.0, found: true },
+      undefined
+    );
+
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0][0]).toContain('imdbId mismatch');
+    expect(result.ids.imdbId).toBe('tt0111161');
+
+    warnSpy.mockRestore();
+  });
+});
 
 describe('aggregateRatings', () => {
   it('counts all provided sources toward totalSources', () => {

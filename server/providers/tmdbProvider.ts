@@ -54,6 +54,9 @@ export interface TmdbTvEnriched extends TmdbTvDetails {
 
 export interface TmdbRating {
   source: 'tmdb';
+  tmdbId?: number;
+  imdbId?: string;
+  mediaType?: 'movie' | 'tv';
   movieRating?: number;
   movieVotes?: number;
   tvRating?: number;
@@ -320,6 +323,9 @@ export class TmdbProvider extends BaseMetadataProvider {
         const details = await this.getMovieDetails(bestMatch.id);
         return {
           source: 'tmdb',
+          tmdbId: bestMatch.id,
+          imdbId: details.imdb_id || undefined,
+          mediaType: 'movie',
           movieRating: details.vote_average,
           movieVotes: details.vote_count,
           popularity: details.popularity,
@@ -330,6 +336,8 @@ export class TmdbProvider extends BaseMetadataProvider {
       const details = await this.getTvDetails(bestMatch.id);
       return {
         source: 'tmdb',
+        tmdbId: bestMatch.id,
+        mediaType: 'tv',
         tvRating: details.vote_average,
         tvVotes: details.vote_count,
         popularity: details.popularity,

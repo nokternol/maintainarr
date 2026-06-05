@@ -203,6 +203,23 @@ describe('TmdbProvider', () => {
     expect(rating.found).toBe(true);
     expect(rating.tvRating).toBe(8.9);
   });
+
+  it('should include tmdbId, imdbId, and mediaType:movie for movies', async () => {
+    const provider = new TmdbProvider(mockProvider, log);
+    const rating = await provider.getRatings('The Matrix', 1999);
+
+    expect(rating.tmdbId).toBe(603);
+    expect(rating.imdbId).toBe('tt0133093');
+    expect(rating.mediaType).toBe('movie');
+  });
+
+  it('should include tmdbId and mediaType:tv for TV shows', async () => {
+    const provider = new TmdbProvider(mockProvider, log);
+    const rating = await provider.getRatings('Breaking Bad', 2008);
+
+    expect(rating.tmdbId).toBe(1396);
+    expect(rating.mediaType).toBe('tv');
+  });
 });
 
 describe('TmdbProvider.getMovieDetailsEnriched', () => {

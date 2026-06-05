@@ -80,6 +80,13 @@ describe('OmdbProvider', () => {
     expect(rating.metacriticRating).toBe(73);
   });
 
+  it('should include imdbId from the OMDB response', async () => {
+    const provider = new OmdbProvider(mockProvider, log);
+    const rating = await provider.getRatings('The Matrix', 1999);
+
+    expect(rating.imdbId).toBe('tt0133093');
+  });
+
   it('should get TV series ratings', async () => {
     const provider = new OmdbProvider(mockProvider, log);
     const rating = await provider.getRatings('Breaking Bad', 2008);
