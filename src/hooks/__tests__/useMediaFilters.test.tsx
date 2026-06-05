@@ -382,10 +382,10 @@ describe('useMediaFilters — URL sync', () => {
   });
 });
 
-// ─── Complete round-trips (all 17 fields) ─────────────────────────────────────
+// ─── Complete round-trips (all fields) ────────────────────────────────────────
 
-describe('parseQuery — complete round-trip for all 17 fields', () => {
-  it('parses all 17 registry fields from query', () => {
+describe('parseQuery — complete round-trip for all registry fields', () => {
+  it('parses all pre-Phase-1 fields from query', () => {
     mockRouterQuery = {
       title: 'batman',
       hasFile: 'true',
@@ -428,29 +428,56 @@ describe('parseQuery — complete round-trip for all 17 fields', () => {
     });
   });
 
+  it('parses all Phase 1 fields from query', () => {
+    mockRouterQuery = {
+      addedDaysAgoGte: '90',
+      addedDaysAgoLte: '365',
+      sizeOnDiskGbGte: '5',
+      sizeOnDiskGbLte: '50',
+      certification: 'PG-13',
+      radarrImdbRatingGte: '7',
+      radarrImdbRatingLte: '9',
+      sonarrRatingGte: '6',
+      sonarrRatingLte: '9',
+      sonarrEnded: 'true',
+      sonarrLastAiredDaysAgoGte: '30',
+      sonarrLastAiredDaysAgoLte: '365',
+      sonarrPercentEpisodesGte: '80',
+      sonarrPercentEpisodesLte: '100',
+    };
+    const { result } = renderHook(() => useMediaFilters());
+
+    expect(result.current.filterState).toMatchObject({
+      addedDaysAgoGte: 90,
+      addedDaysAgoLte: 365,
+      sizeOnDiskGbGte: 5,
+      sizeOnDiskGbLte: 50,
+      certification: 'PG-13',
+      radarrImdbRatingGte: 7,
+      radarrImdbRatingLte: 9,
+      sonarrRatingGte: 6,
+      sonarrRatingLte: 9,
+      sonarrEnded: 'true',
+      sonarrLastAiredDaysAgoGte: 30,
+      sonarrLastAiredDaysAgoLte: 365,
+      sonarrPercentEpisodesGte: 80,
+      sonarrPercentEpisodesLte: 100,
+    });
+  });
+
   it('applies registry defaults for every absent key', () => {
     mockRouterQuery = {};
     const { result } = renderHook(() => useMediaFilters());
 
-    expect(result.current.filterState).toEqual({
+    expect(result.current.filterState).toMatchObject({
       title: '',
-      hasFile: undefined,
-      monitored: undefined,
-      seriesStatus: undefined,
-      yearMin: undefined,
-      yearMax: undefined,
-      movieTagIds: undefined,
-      seriesTagIds: undefined,
-      movieQualityProfileIds: undefined,
-      seriesQualityProfileIds: undefined,
-      movieGenres: undefined,
-      seriesGenres: undefined,
-      seriesType: undefined,
-      network: undefined,
-      tautulliWatched: undefined,
       movieSort: 'title_asc',
       seriesSort: 'title_asc',
     });
+    // All optional fields default to undefined — spot-check Phase 1 additions
+    expect(result.current.filterState.addedDaysAgoGte).toBeUndefined();
+    expect(result.current.filterState.sonarrEnded).toBeUndefined();
+    expect(result.current.filterState.certification).toBeUndefined();
   });
 });
 
@@ -628,6 +655,69 @@ describe('useMediaFilters — setter argument type regression guards', () => {
     expectTypeOf(result.current.setSeriesSort)
       .parameter(0)
       .toEqualTypeOf<FilterState['seriesSort']>();
+  });
+});
+
+// ─── Phase 1 predicate fields ─────────────────────────────────────────────────
+
+describe('useMediaFilters — Phase 1 new fields have correct defaults', () => {
+  it('all Phase 1 fields default to undefined', () => {
+    mockRouterQuery = {};
+    const { result } = renderHook(() => useMediaFilters());
+    const s = result.current.filterState;
+
+    expect(s.addedDaysAgoGte).toBeUndefined();
+    expect(s.addedDaysAgoLte).toBeUndefined();
+    expect(s.sizeOnDiskGbGte).toBeUndefined();
+    expect(s.sizeOnDiskGbLte).toBeUndefined();
+    expect(s.certification).toBeUndefined();
+    expect(s.radarrImdbRatingGte).toBeUndefined();
+    expect(s.radarrImdbRatingLte).toBeUndefined();
+    expect(s.sonarrRatingGte).toBeUndefined();
+    expect(s.sonarrRatingLte).toBeUndefined();
+    expect(s.sonarrEnded).toBeUndefined();
+    expect(s.sonarrLastAiredDaysAgoGte).toBeUndefined();
+    expect(s.sonarrLastAiredDaysAgoLte).toBeUndefined();
+    expect(s.sonarrPercentEpisodesGte).toBeUndefined();
+    expect(s.sonarrPercentEpisodesLte).toBeUndefined();
+  });
+
+  it('number fields are parsed from query params', () => {
+    mockRouterQuery = { addedDaysAgoGte: '90', sizeOnDiskGbLte: '50', radarrImdbRatingGte: '7' };
+    const { result } = renderHook(() => useMediaFilters());
+
+    expect(result.current.filterState.addedDaysAgoGte).toBe(90);
+    expect(result.current.filterState.sizeOnDiskGbLte).toBe(50);
+    expect(result.current.filterState.radarrImdbRatingGte).toBe(7);
+  });
+
+  it('Phase 1 number setters update filterState and appear in debouncedFilters', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setAddedDaysAgoGte(30);
+    });
+    expect(result.current.filterState.addedDaysAgoGte).toBe(30);
+    expect(result.current.debouncedFilters.addedDaysAgoGte).toBe(30);
+  });
+
+  it('sonarrEnded is a bool3 field and its setter accepts the correct type', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setSonarrEnded('true');
+    });
+    expect(result.current.filterState.sonarrEnded).toBe('true');
+    expect(result.current.debouncedFilters.sonarrEnded).toBe('true');
+  });
+
+  it('isActive is true when any Phase 1 field is set', () => {
+    const { result } = renderHook(() => useMediaFilters());
+
+    act(() => {
+      result.current.setSizeOnDiskGbGte(10);
+    });
+    expect(result.current.isActive).toBe(true);
   });
 });
 

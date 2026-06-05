@@ -35,6 +35,23 @@ export interface MediaFilterBarProps {
   setSeriesType: (v: string | undefined) => void;
   setNetwork: (v: string | undefined) => void;
   setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
+  // ── Shared (movies + series) ─────────────────────────────────────────────
+  setAddedDaysAgoGte: (v: number | undefined) => void;
+  setAddedDaysAgoLte: (v: number | undefined) => void;
+  setSizeOnDiskGbGte: (v: number | undefined) => void;
+  setSizeOnDiskGbLte: (v: number | undefined) => void;
+  setCertification: (v: string | undefined) => void;
+  // ── Movie-specific ───────────────────────────────────────────────────────
+  setRadarrImdbRatingGte: (v: number | undefined) => void;
+  setRadarrImdbRatingLte: (v: number | undefined) => void;
+  // ── Series-specific ──────────────────────────────────────────────────────
+  setSonarrRatingGte: (v: number | undefined) => void;
+  setSonarrRatingLte: (v: number | undefined) => void;
+  setSonarrEnded: (v: 'true' | 'false' | undefined) => void;
+  setSonarrLastAiredDaysAgoGte: (v: number | undefined) => void;
+  setSonarrLastAiredDaysAgoLte: (v: number | undefined) => void;
+  setSonarrPercentEpisodesGte: (v: number | undefined) => void;
+  setSonarrPercentEpisodesLte: (v: number | undefined) => void;
   clearAll: () => void;
   onSaveQuery?: () => void;
   isActive: boolean;
@@ -401,25 +418,27 @@ function StringMultiSelectDropdown({
   );
 }
 
-// ─── YearRangeFilter ──────────────────────────────────────────────────────────
+// ─── NumberRangeFilter ────────────────────────────────────────────────────────
 
-function parseYear(s: string): number | undefined {
-  const n = Number.parseInt(s, 10);
+function parseNumber(s: string): number | undefined {
+  const n = Number.parseFloat(s);
   return s.trim() === '' || Number.isNaN(n) ? undefined : n;
 }
 
-function YearRangeFilter({
-  yearMin,
-  yearMax,
-  dataMin,
-  dataMax,
+function NumberRangeFilter({
+  label,
+  min,
+  max,
+  dataMin = null,
+  dataMax = null,
   onChangeMin,
   onChangeMax,
 }: {
-  yearMin: number | undefined;
-  yearMax: number | undefined;
-  dataMin: number | null;
-  dataMax: number | null;
+  label: string;
+  min: number | undefined;
+  max: number | undefined;
+  dataMin?: number | null;
+  dataMax?: number | null;
   onChangeMin: (v: number | undefined) => void;
   onChangeMax: (v: number | undefined) => void;
 }) {
@@ -433,7 +452,7 @@ function YearRangeFilter({
   const [draftMin, setDraftMinRaw] = useState('');
   const [draftMax, setDraftMaxRaw] = useState('');
 
-  const isActive = yearMin !== undefined || yearMax !== undefined;
+  const isActive = min !== undefined || max !== undefined;
 
   const setDraftMin = (v: string) => {
     draftMinRef.current = v;
@@ -446,21 +465,21 @@ function YearRangeFilter({
 
   useEffect(() => {
     if (!isOpen) return;
-    const minStr = yearMin != null ? String(yearMin) : '';
-    const maxStr = yearMax != null ? String(yearMax) : '';
+    const minStr = min != null ? String(min) : '';
+    const maxStr = max != null ? String(max) : '';
     draftMinRef.current = minStr;
     draftMaxRef.current = maxStr;
     setDraftMinRaw(minStr);
     setDraftMaxRaw(maxStr);
     requestAnimationFrame(() => fromInputRef.current?.focus());
-  }, [isOpen, yearMin, yearMax]);
+  }, [isOpen, min, max]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onChangeMin(parseYear(draftMinRef.current));
-        onChangeMax(parseYear(draftMaxRef.current));
+        onChangeMin(parseNumber(draftMinRef.current));
+        onChangeMax(parseNumber(draftMaxRef.current));
         setIsOpen(false);
       }
     };
@@ -469,8 +488,8 @@ function YearRangeFilter({
   }, [isOpen, onChangeMin, onChangeMax]);
 
   const commitAndClose = () => {
-    onChangeMin(parseYear(draftMinRef.current));
-    onChangeMax(parseYear(draftMaxRef.current));
+    onChangeMin(parseNumber(draftMinRef.current));
+    onChangeMax(parseNumber(draftMaxRef.current));
     setIsOpen(false);
     triggerRef.current?.focus();
   };
@@ -495,7 +514,7 @@ function YearRangeFilter({
     }
   };
 
-  const buttonLabel = isActive ? `${yearMin ?? '…'}–${yearMax ?? '…'}` : 'Year';
+  const buttonLabel = isActive ? `${min ?? '…'}–${max ?? '…'}` : label;
   const fromPlaceholder = dataMin != null ? String(dataMin) : 'Min';
   const toPlaceholder = dataMax != null ? String(dataMax) : 'Max';
 
@@ -506,8 +525,8 @@ function YearRangeFilter({
         type="button"
         aria-label={
           isActive
-            ? `Year filter: ${yearMin ?? 'any'} to ${yearMax ?? 'any'}, click to change`
-            : 'Year filter'
+            ? `${label} filter: ${min ?? 'any'} to ${max ?? 'any'}, click to change`
+            : `${label} filter`
         }
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -534,7 +553,7 @@ function YearRangeFilter({
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Year range filter"
+          aria-label={`${label} range filter`}
           className="absolute top-full left-0 mt-1 z-20 bg-surface-elevated border border-border rounded-lg p-3 w-48"
           style={{
             boxShadow:
@@ -718,6 +737,11 @@ const TAUTULLI_WATCHED_OPTIONS = [
   { value: 'false' as const, label: 'Unwatched' },
 ];
 
+const SONARR_ENDED_OPTIONS = [
+  { value: 'true' as const, label: 'Finished' },
+  { value: 'false' as const, label: 'Running' },
+];
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MediaFilterBar({
@@ -737,6 +761,20 @@ export function MediaFilterBar({
   setSeriesType,
   setNetwork,
   setTautulliWatched,
+  setAddedDaysAgoGte,
+  setAddedDaysAgoLte,
+  setSizeOnDiskGbGte,
+  setSizeOnDiskGbLte,
+  setCertification,
+  setRadarrImdbRatingGte,
+  setRadarrImdbRatingLte,
+  setSonarrRatingGte,
+  setSonarrRatingLte,
+  setSonarrEnded,
+  setSonarrLastAiredDaysAgoGte,
+  setSonarrLastAiredDaysAgoLte,
+  setSonarrPercentEpisodesGte,
+  setSonarrPercentEpisodesLte,
   clearAll,
   onSaveQuery,
   isActive,
@@ -902,6 +940,27 @@ export function MediaFilterBar({
         selectedValues={selectedMovieGenres}
         onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
       />
+      <NumberRangeFilter
+        label="Added"
+        min={filterState.addedDaysAgoGte}
+        max={filterState.addedDaysAgoLte}
+        onChangeMin={setAddedDaysAgoGte}
+        onChangeMax={setAddedDaysAgoLte}
+      />
+      <NumberRangeFilter
+        label="Size (GB)"
+        min={filterState.sizeOnDiskGbGte}
+        max={filterState.sizeOnDiskGbLte}
+        onChangeMin={setSizeOnDiskGbGte}
+        onChangeMax={setSizeOnDiskGbLte}
+      />
+      <NumberRangeFilter
+        label="IMDB Rating"
+        min={filterState.radarrImdbRatingGte}
+        max={filterState.radarrImdbRatingLte}
+        onChangeMin={setRadarrImdbRatingGte}
+        onChangeMax={setRadarrImdbRatingLte}
+      />
     </div>
   ) : null;
 
@@ -956,13 +1015,55 @@ export function MediaFilterBar({
         selectedValues={selectedNetworks}
         onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
       />
+      <NumberRangeFilter
+        label="Added"
+        min={filterState.addedDaysAgoGte}
+        max={filterState.addedDaysAgoLte}
+        onChangeMin={setAddedDaysAgoGte}
+        onChangeMax={setAddedDaysAgoLte}
+      />
+      <NumberRangeFilter
+        label="Size (GB)"
+        min={filterState.sizeOnDiskGbGte}
+        max={filterState.sizeOnDiskGbLte}
+        onChangeMin={setSizeOnDiskGbGte}
+        onChangeMax={setSizeOnDiskGbLte}
+      />
+      <NumberRangeFilter
+        label="Sonarr Rating"
+        min={filterState.sonarrRatingGte}
+        max={filterState.sonarrRatingLte}
+        onChangeMin={setSonarrRatingGte}
+        onChangeMax={setSonarrRatingLte}
+      />
+      <OptionFilter
+        label="Ended"
+        options={SONARR_ENDED_OPTIONS}
+        value={filterState.sonarrEnded}
+        onChange={setSonarrEnded}
+      />
+      <NumberRangeFilter
+        label="Last Aired"
+        min={filterState.sonarrLastAiredDaysAgoGte}
+        max={filterState.sonarrLastAiredDaysAgoLte}
+        onChangeMin={setSonarrLastAiredDaysAgoGte}
+        onChangeMax={setSonarrLastAiredDaysAgoLte}
+      />
+      <NumberRangeFilter
+        label="% Episodes"
+        min={filterState.sonarrPercentEpisodesGte}
+        max={filterState.sonarrPercentEpisodesLte}
+        onChangeMin={setSonarrPercentEpisodesGte}
+        onChangeMax={setSonarrPercentEpisodesLte}
+      />
     </div>
   ) : null;
 
   const yearFilter = (
-    <YearRangeFilter
-      yearMin={filterState.yearMin}
-      yearMax={filterState.yearMax}
+    <NumberRangeFilter
+      label="Year"
+      min={filterState.yearMin}
+      max={filterState.yearMax}
       dataMin={dataMin}
       dataMax={dataMax}
       onChangeMin={setYearMin}

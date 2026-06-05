@@ -24,6 +24,20 @@ const DEFAULT_FILTER_STATE: MediaFilterBarProps['filterState'] = {
   tautulliWatched: undefined,
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
+  addedDaysAgoGte: undefined,
+  addedDaysAgoLte: undefined,
+  sizeOnDiskGbGte: undefined,
+  sizeOnDiskGbLte: undefined,
+  certification: undefined,
+  radarrImdbRatingGte: undefined,
+  radarrImdbRatingLte: undefined,
+  sonarrRatingGte: undefined,
+  sonarrRatingLte: undefined,
+  sonarrEnded: undefined,
+  sonarrLastAiredDaysAgoGte: undefined,
+  sonarrLastAiredDaysAgoLte: undefined,
+  sonarrPercentEpisodesGte: undefined,
+  sonarrPercentEpisodesLte: undefined,
 };
 
 const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
@@ -79,6 +93,20 @@ function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBar
     setSeriesType: vi.fn(),
     setNetwork: vi.fn(),
     setTautulliWatched: vi.fn(),
+    setAddedDaysAgoGte: vi.fn(),
+    setAddedDaysAgoLte: vi.fn(),
+    setSizeOnDiskGbGte: vi.fn(),
+    setSizeOnDiskGbLte: vi.fn(),
+    setCertification: vi.fn(),
+    setRadarrImdbRatingGte: vi.fn(),
+    setRadarrImdbRatingLte: vi.fn(),
+    setSonarrRatingGte: vi.fn(),
+    setSonarrRatingLte: vi.fn(),
+    setSonarrEnded: vi.fn(),
+    setSonarrLastAiredDaysAgoGte: vi.fn(),
+    setSonarrLastAiredDaysAgoLte: vi.fn(),
+    setSonarrPercentEpisodesGte: vi.fn(),
+    setSonarrPercentEpisodesLte: vi.fn(),
     clearAll: vi.fn(),
     isActive: false,
     movieYearRange: { min: 1990, max: 2024 },
@@ -465,5 +493,56 @@ describe('MediaFilterBar — OptionFilter interactions', () => {
     );
     await user.click(screen.getByRole('button', { name: /unwatched/i }));
     expect(setTautulliWatched).toHaveBeenCalledWith('false');
+  });
+});
+
+// ─── Phase 1 predicate controls ───────────────────────────────────────────────
+
+describe('MediaFilterBar — Phase 1 movie predicate controls', () => {
+  it('renders Added filter in movies section when RADARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['RADARR']) })} />);
+    expect(screen.getByRole('button', { name: /added/i })).toBeInTheDocument();
+  });
+
+  it('renders Size filter in movies section when RADARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['RADARR']) })} />);
+    expect(screen.getByRole('button', { name: /size/i })).toBeInTheDocument();
+  });
+
+  it('renders IMDB Rating filter in movies section when RADARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['RADARR']) })} />);
+    expect(screen.getByRole('button', { name: /imdb rating/i })).toBeInTheDocument();
+  });
+
+  it('does not render movie-specific Phase 1 filters when RADARR is not configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
+    expect(screen.queryByRole('button', { name: /imdb rating/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MediaFilterBar — Phase 1 series predicate controls', () => {
+  it('renders Sonarr Rating filter in series section when SONARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
+    expect(screen.getByRole('button', { name: /sonarr rating/i })).toBeInTheDocument();
+  });
+
+  it('renders Ended filter in series section when SONARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
+    expect(screen.getByRole('button', { name: 'Finished' })).toBeInTheDocument();
+  });
+
+  it('renders Last Aired filter in series section when SONARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
+    expect(screen.getByRole('button', { name: /last aired/i })).toBeInTheDocument();
+  });
+
+  it('renders % Episodes filter in series section when SONARR is configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
+    expect(screen.getByRole('button', { name: /% episodes/i })).toBeInTheDocument();
+  });
+
+  it('does not render series-specific Phase 1 filters when SONARR is not configured', () => {
+    render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['RADARR']) })} />);
+    expect(screen.queryByRole('button', { name: /sonarr rating/i })).not.toBeInTheDocument();
   });
 });

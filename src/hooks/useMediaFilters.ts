@@ -18,22 +18,40 @@ type InferValue<S extends FieldSpec> = S extends { type: 'number' }
       : string | undefined;
 
 export const FILTER_FIELDS = {
+  // ── Universal ──────────────────────────────────────────────────────────────
   title: { type: 'string', default: '' },
-  hasFile: { type: 'bool3', default: undefined },
-  monitored: { type: 'bool3', default: undefined },
-  seriesStatus: { type: 'string', default: undefined },
   yearMin: { type: 'number', default: undefined },
   yearMax: { type: 'number', default: undefined },
+  tautulliWatched: { type: 'bool3', default: undefined },
+  // ── Shared (movies + series) ───────────────────────────────────────────────
+  addedDaysAgoGte: { type: 'number', default: undefined },
+  addedDaysAgoLte: { type: 'number', default: undefined },
+  sizeOnDiskGbGte: { type: 'number', default: undefined },
+  sizeOnDiskGbLte: { type: 'number', default: undefined },
+  certification: { type: 'string', default: undefined },
+  // ── Movie-specific ─────────────────────────────────────────────────────────
+  hasFile: { type: 'bool3', default: undefined },
   movieTagIds: { type: 'string', default: undefined },
-  seriesTagIds: { type: 'string', default: undefined },
   movieQualityProfileIds: { type: 'string', default: undefined },
-  seriesQualityProfileIds: { type: 'string', default: undefined },
   movieGenres: { type: 'string', default: undefined },
+  radarrImdbRatingGte: { type: 'number', default: undefined },
+  radarrImdbRatingLte: { type: 'number', default: undefined },
+  movieSort: { type: 'string', default: 'title_asc' },
+  // ── Series-specific ────────────────────────────────────────────────────────
+  monitored: { type: 'bool3', default: undefined },
+  seriesStatus: { type: 'string', default: undefined },
+  seriesTagIds: { type: 'string', default: undefined },
+  seriesQualityProfileIds: { type: 'string', default: undefined },
   seriesGenres: { type: 'string', default: undefined },
   seriesType: { type: 'string', default: undefined },
   network: { type: 'string', default: undefined },
-  tautulliWatched: { type: 'bool3', default: undefined },
-  movieSort: { type: 'string', default: 'title_asc' },
+  sonarrRatingGte: { type: 'number', default: undefined },
+  sonarrRatingLte: { type: 'number', default: undefined },
+  sonarrEnded: { type: 'bool3', default: undefined },
+  sonarrLastAiredDaysAgoGte: { type: 'number', default: undefined },
+  sonarrLastAiredDaysAgoLte: { type: 'number', default: undefined },
+  sonarrPercentEpisodesGte: { type: 'number', default: undefined },
+  sonarrPercentEpisodesLte: { type: 'number', default: undefined },
   seriesSort: { type: 'string', default: 'title_asc' },
 } as const satisfies Record<string, FieldSpec>;
 

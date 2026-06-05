@@ -19,6 +19,20 @@ export interface RadarrMovie {
   path: string;
   images?: RadarrImage[];
   genres?: string[];
+  added?: string;
+  certification?: string;
+  ratings?: {
+    imdb?: { value: number; votes: number; type: string };
+    tmdb?: { value: number; votes: number; type: string };
+    metacritic?: { value: number; votes: number; type: string };
+    rottenTomatoes?: { value: number; votes: number; type: string };
+    trakt?: { value: number; votes: number; type: string };
+  };
+  statistics?: {
+    movieFileCount: number;
+    sizeOnDisk: number;
+    releaseGroups: string[];
+  };
 }
 
 export interface RadarrProfile {

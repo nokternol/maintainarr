@@ -440,6 +440,20 @@ export interface MediaContentProps {
   setSeriesType: (v: string | undefined) => void;
   setNetwork: (v: string | undefined) => void;
   setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
+  setAddedDaysAgoGte: (v: number | undefined) => void;
+  setAddedDaysAgoLte: (v: number | undefined) => void;
+  setSizeOnDiskGbGte: (v: number | undefined) => void;
+  setSizeOnDiskGbLte: (v: number | undefined) => void;
+  setCertification: (v: string | undefined) => void;
+  setRadarrImdbRatingGte: (v: number | undefined) => void;
+  setRadarrImdbRatingLte: (v: number | undefined) => void;
+  setSonarrRatingGte: (v: number | undefined) => void;
+  setSonarrRatingLte: (v: number | undefined) => void;
+  setSonarrEnded: (v: 'true' | 'false' | undefined) => void;
+  setSonarrLastAiredDaysAgoGte: (v: number | undefined) => void;
+  setSonarrLastAiredDaysAgoLte: (v: number | undefined) => void;
+  setSonarrPercentEpisodesGte: (v: number | undefined) => void;
+  setSonarrPercentEpisodesLte: (v: number | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   activeFilterCount: number;
@@ -485,6 +499,20 @@ export function MediaContent({
   setSeriesType,
   setNetwork,
   setTautulliWatched,
+  setAddedDaysAgoGte,
+  setAddedDaysAgoLte,
+  setSizeOnDiskGbGte,
+  setSizeOnDiskGbLte,
+  setCertification,
+  setRadarrImdbRatingGte,
+  setRadarrImdbRatingLte,
+  setSonarrRatingGte,
+  setSonarrRatingLte,
+  setSonarrEnded,
+  setSonarrLastAiredDaysAgoGte,
+  setSonarrLastAiredDaysAgoLte,
+  setSonarrPercentEpisodesGte,
+  setSonarrPercentEpisodesLte,
   clearAll,
   onSaveQuery,
   isActive,
@@ -528,6 +556,20 @@ export function MediaContent({
         setSeriesType={setSeriesType}
         setNetwork={setNetwork}
         setTautulliWatched={setTautulliWatched}
+        setAddedDaysAgoGte={setAddedDaysAgoGte}
+        setAddedDaysAgoLte={setAddedDaysAgoLte}
+        setSizeOnDiskGbGte={setSizeOnDiskGbGte}
+        setSizeOnDiskGbLte={setSizeOnDiskGbLte}
+        setCertification={setCertification}
+        setRadarrImdbRatingGte={setRadarrImdbRatingGte}
+        setRadarrImdbRatingLte={setRadarrImdbRatingLte}
+        setSonarrRatingGte={setSonarrRatingGte}
+        setSonarrRatingLte={setSonarrRatingLte}
+        setSonarrEnded={setSonarrEnded}
+        setSonarrLastAiredDaysAgoGte={setSonarrLastAiredDaysAgoGte}
+        setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
+        setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
+        setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
         clearAll={clearAll}
         onSaveQuery={onSaveQuery}
         isActive={isActive}
@@ -754,6 +796,20 @@ export default function MediaPage() {
     setSeriesType,
     setNetwork,
     setTautulliWatched,
+    setAddedDaysAgoGte,
+    setAddedDaysAgoLte,
+    setSizeOnDiskGbGte,
+    setSizeOnDiskGbLte,
+    setCertification,
+    setRadarrImdbRatingGte,
+    setRadarrImdbRatingLte,
+    setSonarrRatingGte,
+    setSonarrRatingLte,
+    setSonarrEnded,
+    setSonarrLastAiredDaysAgoGte,
+    setSonarrLastAiredDaysAgoLte,
+    setSonarrPercentEpisodesGte,
+    setSonarrPercentEpisodesLte,
     setMovieSort,
     setSeriesSort,
     clearAll,
@@ -867,6 +923,20 @@ export default function MediaPage() {
           setSeriesType={setSeriesType}
           setNetwork={setNetwork}
           setTautulliWatched={setTautulliWatched}
+          setAddedDaysAgoGte={setAddedDaysAgoGte}
+          setAddedDaysAgoLte={setAddedDaysAgoLte}
+          setSizeOnDiskGbGte={setSizeOnDiskGbGte}
+          setSizeOnDiskGbLte={setSizeOnDiskGbLte}
+          setCertification={setCertification}
+          setRadarrImdbRatingGte={setRadarrImdbRatingGte}
+          setRadarrImdbRatingLte={setRadarrImdbRatingLte}
+          setSonarrRatingGte={setSonarrRatingGte}
+          setSonarrRatingLte={setSonarrRatingLte}
+          setSonarrEnded={setSonarrEnded}
+          setSonarrLastAiredDaysAgoGte={setSonarrLastAiredDaysAgoGte}
+          setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
+          setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
+          setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
           clearAll={clearAll}
           onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
           isActive={isActive}

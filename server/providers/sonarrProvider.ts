@@ -27,6 +27,19 @@ export interface SonarrSeries {
   genres?: string[];
   network?: string;
   seriesType?: string;
+  added?: string;
+  ended?: boolean;
+  previousAiring?: string;
+  certification?: string;
+  ratings?: { votes: number; value: number };
+  statistics?: {
+    seasonCount: number;
+    episodeFileCount: number;
+    episodeCount: number;
+    totalEpisodeCount: number;
+    sizeOnDisk: number;
+    percentOfEpisodes: number;
+  };
 }
 
 export interface SonarrProfile {

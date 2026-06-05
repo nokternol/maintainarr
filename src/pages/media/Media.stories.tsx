@@ -26,6 +26,20 @@ const DEFAULT_FILTER: FilterState = {
   tautulliWatched: undefined,
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
+  addedDaysAgoGte: undefined,
+  addedDaysAgoLte: undefined,
+  sizeOnDiskGbGte: undefined,
+  sizeOnDiskGbLte: undefined,
+  certification: undefined,
+  radarrImdbRatingGte: undefined,
+  radarrImdbRatingLte: undefined,
+  sonarrRatingGte: undefined,
+  sonarrRatingLte: undefined,
+  sonarrEnded: undefined,
+  sonarrLastAiredDaysAgoGte: undefined,
+  sonarrLastAiredDaysAgoLte: undefined,
+  sonarrPercentEpisodesGte: undefined,
+  sonarrPercentEpisodesLte: undefined,
 };
 
 function emptySlice<T>(): MediaSlice<T> {
@@ -109,6 +123,20 @@ function Controlled({
       setSeriesType={(v) => patch({ seriesType: v })}
       setNetwork={(v) => patch({ network: v })}
       setTautulliWatched={(v) => patch({ tautulliWatched: v })}
+      setAddedDaysAgoGte={(v) => patch({ addedDaysAgoGte: v })}
+      setAddedDaysAgoLte={(v) => patch({ addedDaysAgoLte: v })}
+      setSizeOnDiskGbGte={(v) => patch({ sizeOnDiskGbGte: v })}
+      setSizeOnDiskGbLte={(v) => patch({ sizeOnDiskGbLte: v })}
+      setCertification={(v) => patch({ certification: v })}
+      setRadarrImdbRatingGte={(v) => patch({ radarrImdbRatingGte: v })}
+      setRadarrImdbRatingLte={(v) => patch({ radarrImdbRatingLte: v })}
+      setSonarrRatingGte={(v) => patch({ sonarrRatingGte: v })}
+      setSonarrRatingLte={(v) => patch({ sonarrRatingLte: v })}
+      setSonarrEnded={(v) => patch({ sonarrEnded: v })}
+      setSonarrLastAiredDaysAgoGte={(v) => patch({ sonarrLastAiredDaysAgoGte: v })}
+      setSonarrLastAiredDaysAgoLte={(v) => patch({ sonarrLastAiredDaysAgoLte: v })}
+      setSonarrPercentEpisodesGte={(v) => patch({ sonarrPercentEpisodesGte: v })}
+      setSonarrPercentEpisodesLte={(v) => patch({ sonarrPercentEpisodesLte: v })}
       clearAll={() => setFilterState(DEFAULT_FILTER)}
       isActive={isActive}
       activeFilterCount={0}
