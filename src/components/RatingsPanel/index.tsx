@@ -120,7 +120,53 @@ export default function RatingsPanel({ isOpen, onClose, title, year }: RatingsPa
                   </button>
                 </div>
               )}
-              {data && !error && <RatingsDisplay ratings={data} />}
+              {data && !error && (
+                <div className="flex flex-col gap-6">
+                  <RatingsDisplay ratings={data} />
+                  {/* Identity Section */}
+                  {(data.ids.tmdbId || data.ids.imdbId || data.ids.tvdbId || data.ids.tvMazeId) && (
+                    <div className="border-t border-border pt-4">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-3">
+                        Identity
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {data.ids.tmdbId && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-text-secondary">TMDB</span>
+                            <code className="text-sm font-mono text-text-primary">
+                              {data.ids.tmdbId}
+                            </code>
+                          </div>
+                        )}
+                        {data.ids.imdbId && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-text-secondary">IMDb</span>
+                            <code className="text-sm font-mono text-text-primary">
+                              {data.ids.imdbId}
+                            </code>
+                          </div>
+                        )}
+                        {data.ids.tvdbId && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-text-secondary">TVDB</span>
+                            <code className="text-sm font-mono text-text-primary">
+                              {data.ids.tvdbId}
+                            </code>
+                          </div>
+                        )}
+                        {data.ids.tvMazeId && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-text-secondary">TVMaze</span>
+                            <code className="text-sm font-mono text-text-primary">
+                              {data.ids.tvMazeId}
+                            </code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </dialog>

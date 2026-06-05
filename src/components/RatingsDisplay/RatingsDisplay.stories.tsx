@@ -5,6 +5,7 @@ import type { AggregatedRatings } from './index';
 const fullRatings: AggregatedRatings = {
   title: 'Breaking Bad',
   year: 2008,
+  ids: {},
   tmdb: {
     source: 'tmdb',
     tvRating: 8.9,
@@ -35,6 +36,7 @@ const fullRatings: AggregatedRatings = {
 const partialRatings: AggregatedRatings = {
   title: 'Some Show',
   year: 2020,
+  ids: {},
   tmdb: {
     source: 'tmdb',
     tvRating: 7.2,

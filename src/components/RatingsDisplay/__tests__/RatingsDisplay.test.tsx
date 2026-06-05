@@ -5,6 +5,7 @@ import RatingsDisplay from '../index';
 const mockRatings = {
   title: 'Breaking Bad',
   year: 2008,
+  ids: {},
   tmdb: {
     source: 'tmdb' as const,
     tvRating: 8.9,

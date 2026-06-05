@@ -74,6 +74,12 @@ const RESPONSE_BY_TYPE: Record<string, unknown> = {
 const RATINGS_RESPONSE = {
   title: 'Breaking Bad',
   year: 2008,
+  ids: {
+    tmdbId: 1396,
+    imdbId: 'tt0903747',
+    tvdbId: 81189,
+    tvMazeId: 169,
+  },
   tmdb: {
     source: 'tmdb',
     tvRating: 8.9,
