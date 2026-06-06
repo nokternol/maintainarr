@@ -11,6 +11,16 @@ Always stop any server or dev process you start before ending your response. Thi
 
 Use `pkill -f "<process pattern>"` or track the PID at start and kill it explicitly. Do not leave background processes running — the user will find stale `yarn dev` or `yarn ladle` instances after every session otherwise.
 
+## Docs convention
+
+| Directory | What it means | How to treat it |
+|---|---|---|
+| `docs/in_progress/` | Active implementation plans | Read as current intent. Deleted when the phase ships. |
+| `docs/intent/` | Unbuilt architectural decisions | Read as future state, not current fact. Moved to `docs/architecture/` when implemented. |
+| `docs/architecture/` | Implemented patterns | Read as current fact. |
+
+**Do not treat `docs/intent/` or `docs/in_progress/` as descriptions of what is built.** When implementing something described in either folder, update the doc status as part of completion — delete `in_progress` files, move `intent` files to `docs/architecture/`.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
