@@ -72,3 +72,4 @@ build
 # Browser automation files
 .playwright-cli
 graphify-out/cost.json
+graphify-out/
