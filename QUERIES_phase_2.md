@@ -1,46 +1,103 @@
 # Phase 2 — Tier 2 Enrichment Pipeline
 
-**Repo:** `/home/nokternol/repos/sandbox`  
-**Prerequisite:** Phase 0b complete (ID graph validated empirically via RatingsPanel); Phase 1 shipped  
-**Blocks:** Phase 3  
-**Status:** BLOCKED on Phase 1
+**Repo:** `/home/nokternol/repos/sandbox`
+**Prerequisite:** Phase 1 shipped
+**Blocks:** Phase 3
+**Status:** READY FOR IMPLEMENTATION
 
 ---
 
 ## What this phase is and why
 
-Tier 1 predicates (Phase 1) filter on data that lives in Radarr/Sonarr responses directly.
+Tier 1 predicates (Phase 1) filter on data that lives directly in Radarr/Sonarr responses.
 Tier 2 predicates require joining data from a second provider — e.g. "is this Radarr movie
-also watched in Plex?" or "does this Sonarr series have an open Overseerr issue?".
+also watched in Plex?" or "does this Sonarr series have an open Overseerr request?".
 
 That join requires:
 1. A **media identity table** mapping each Radarr/Sonarr item to its cross-provider IDs
-2. An **enrichment table** storing fetched data from Plex, Tautulli, Jellyfin, Overseerr, TMDB, OMDB, TVMaze
-3. An **enrichment job** that keeps those tables fresh
-4. Filter branches that join the enrichment table at evaluation time
+2. An **enrichment table** storing fetched Tier 2 data per identity row
+3. **System jobs** that keep both tables fresh on a schedule
+4. Filter branches that join the enrichment table at query evaluation time
 
 **Read `INVENTORY.md` before starting.** The identity graph design, `media_identity` schema,
-enrichment column list, and join chain analysis are all there. Do not re-derive them.
+enrichment column list, and join chain analysis are there. Do not re-derive them.
 
 ---
 
-## Context window strategy
+## Architecture decisions made in this phase
 
-This is the largest phase. Split into at minimum 3 sessions:
+### System vs user automations (`kind` column)
+Identity resolution and enrichment are **system automations** — infrastructure that makes
+user automations possible, not user-defined rules. Both flavours use the same `automations`
+table, `AutomationScheduler`, `AutomationExecutor`, and `automation_runs`. Separated by a
+`kind TEXT NOT NULL DEFAULT 'user'` column: `'system'` | `'user'`.
 
-**Session A — Identity resolution (schema + job):** Steps 2.1–2.3  
-**Session B — Data enrichment (job + Tier 2 filter branches):** Steps 2.4–2.6  
-**Session C — AutomationExecutor join + UI controls:** Steps 2.7–2.8
+- System automations: non-editable, non-deletable via API, visible in a system panel (not
+  the main dashboard). Scheduled with hardcoded defaults. Created by the startup health check.
+- User automations: fully configurable. The main dashboard. The reason the app exists.
 
-Each session ends with a commit. The schema migration is the hardest recovery point — if context
-is lost mid-migration, the DB may be in a partial state. Always run `yarn vitest run` before
-committing a migration to confirm the DB initialises cleanly in tests.
+See `docs/architecture/system-vs-user-automations.md`.
 
-**Use haiku subagents for:**
-- Reading the existing migration files to understand naming conventions (`ls server/database/migrations/`)
-- Reading existing schema columns to avoid duplicating names
-- Writing boilerplate enrichment job scaffolding once the interface is designed
+### Startup health check
+A named discrete step in the startup sequence — `server/health/systemHealthCheck.ts` —
+that asserts system invariants and self-heals recoverable conditions before the scheduler
+and route tree are mounted. Docker-first design: containers restart, the system recovers
+without intervention.
 
+Sequence: `initDatabase() → systemHealthCheck() → AutomationScheduler.seed() → listen()`
+
+Critical failures (DB init failure, missing required config) boot a **failed-state UI** —
+the Express app mounts a no-auth error page with the reason and remediation steps instead
+of the normal route tree. The server always binds. What it serves depends on health state.
+
+See `docs/architecture/system-health-check.md`.
+
+### Enrichment staleness
+Single `enrichedAt` timestamp per `media_enrichment` row. Global staleness window: **24 hours**.
+The enrichment job re-fetches all providers for an item when `enrichedAt` is older than 24h.
+Per-provider staleness tightening is deferred until data volatility patterns are understood.
+
+### Missing enrichment row handling
+When a `media_identity` row exists but no `media_enrichment` row has been populated yet,
+Tier 2 predicates return `false` (conservative — do not include an item in a deletion
+automation when its enrichment state is unknown).
+
+### Filter pre-join strategy
+`applyMovieFilters()` / `applySeriesFilters()` remain synchronous. Before calling them,
+load a `Map<mediaIdentityId, EnrichmentRow>` from the DB once per request and pass it in
+as a parameter. Avoids N+1 queries. The enrichment map is empty-safe — items with no row
+are treated as non-matching for all Tier 2 predicates.
+
+### Tier 2 predicates — phase 2 scope
+Ship predicates for providers with the highest automation value. Defer the rest.
+
+**Ship in phase 2:**
+| Predicate | Source | Column |
+|---|---|---|
+| `tautulliPlayCount` | Tautulli | `tautulliPlayCount` |
+| `tautulliLastPlayedDaysAgo` | Tautulli | `tautulliLastPlayed` (Unix ts) |
+| `plexViewCount` | Plex | `plexViewCount` |
+| `plexLastViewedDaysAgo` | Plex | `plexLastViewedAt` (Unix ts) |
+| `overseerrHasIssue` | Overseerr | `overseerrHasIssue` |
+| `overseerrRequestStatus` | Overseerr | `overseerrRequestStatus` |
+| `tmdbStatus` | TMDB | `tmdbStatus` (`Ended`/`Canceled`/`In Production`) |
+
+**Deferred (phase 3+):**
+- Streaming flags (`onNetflix`, `onPrime`, etc.)
+- Jellyfin watch data
+- OMDB `rated`
+- TVMaze `status`, `type`, `webChannel`
+
+---
+
+## Context window strategy — 4 sessions
+
+**Session A — System foundation (kind column + health check):** Steps 2.0–2.0b
+**Session B — Identity schema + job:** Steps 2.1–2.3
+**Session C — Enrichment job + Tier 2 filter branches:** Steps 2.4–2.6
+**Session D — Executor join + UI controls:** Steps 2.7–2.8
+
+Each session ends with a commit and passing tests.
 Test runner: `yarn vitest run --project server`
 
 ---
@@ -50,41 +107,94 @@ Test runner: `yarn vitest run --project server`
 ### New files
 | File | Purpose |
 |---|---|
-| `server/database/migrations/0004_media_identity.sql` | `media_identity` table |
-| `server/database/migrations/0005_media_enrichment.sql` | `media_enrichment` table |
+| `server/health/systemHealthCheck.ts` | Named startup health check entry point |
+| `server/health/ensureSystemJobs.ts` | Upserts system automations on startup |
+| `server/health/failedStateMiddleware.ts` | No-auth error page for critical failures |
+| `server/database/migrations/0004_kind_column.sql` | Add `kind` to automations + automation_runs |
+| `server/database/migrations/0005_media_identity.sql` | `media_identity` table |
+| `server/database/migrations/0006_media_enrichment.sql` | `media_enrichment` table |
 | `server/jobs/identityResolutionJob.ts` | Populates `media_identity` from Radarr/Sonarr |
 | `server/jobs/enrichmentJob.ts` | Populates `media_enrichment` from secondary providers |
 
 ### Modified files
 | File | Action |
 |---|---|
-| `server/database/schema.ts` | Add `mediaIdentity` and `mediaEnrichment` Drizzle table definitions |
-| `server/providers/radarrProvider.ts` | Ensure `tmdbId`, `imdbId` are in `RadarrMovie` (Phase 1 adds these) |
-| `server/providers/sonarrProvider.ts` | Ensure `tvdbId`, `tmdbId`, `imdbId`, `tvMazeId` in `SonarrSeries` |
-| `server/providers/plexProvider.ts` | Add `guids` array to `PlexMediaItem` type |
-| `server/providers/jellyfinProvider.ts` | Add `ProviderIds` object to `JellyfinItem` type |
+| `server/index.ts` | Call `systemHealthCheck()` before scheduler seed |
+| `server/database/schema.ts` | Add `kind` to automations/runs; add `mediaIdentity`, `mediaEnrichment` |
+| `server/modules/automations/automations.handler.ts` | Reject DELETE/PATCH on `kind = 'system'` |
+| `server/utils/mediaFilters.ts` | Add enrichment map parameter + Tier 2 filter branches |
+| `server/services/automationExecutor.ts` | Load enrichment map before filter evaluation |
+| `server/providers/radarrProvider.ts` | Ensure `tmdbId`, `imdbId` exposed on `RadarrMovie` |
+| `server/providers/sonarrProvider.ts` | Ensure `tvdbId`, `tmdbId`, `imdbId`, `tvMazeId` on `SonarrSeries` |
+| `server/providers/plexProvider.ts` | Add `guids` array to `PlexMediaItem` |
 | `server/providers/overseerrProvider.ts` | Type `mediaInfo` properly (currently `unknown`) |
-| `server/utils/mediaFilters.ts` | Add Tier 2 filter branches with enrichment join |
-| `server/services/automationExecutor.ts` | Add enrichment join step after Tier 1 filters |
+
+---
+
+## Step 2.0 — `kind` column migration
+
+Add to `automations` and `automation_runs`:
+
+```sql
+-- 0004_kind_column.sql
+ALTER TABLE automations ADD COLUMN kind TEXT NOT NULL DEFAULT 'user';
+ALTER TABLE automation_runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'user';
+```
+
+Update Drizzle schema definitions accordingly.
+
+API enforcement (in `automations.handler.ts`):
+- `DELETE /api/automations/:id` — 403 if `kind = 'system'`
+- `PATCH /api/automations/:id/status` — 403 if `kind = 'system'`
+- `GET /api/automations` — accept optional `?kind=user|system` filter
+
+---
+
+## Step 2.0b — Health check infrastructure
+
+`server/health/systemHealthCheck.ts`:
+```ts
+export async function systemHealthCheck(db: DrizzleDb): Promise<void> {
+  await ensureSystemJobs(db);
+  // future checks added here
+}
+```
+
+`server/health/ensureSystemJobs.ts` — upserts system automations by name. If a system job
+row is absent, insert with default schedule. If present, leave untouched (user may have
+adjusted schedule via settings in future).
+
+System jobs to seed:
+| Name | Schedule | Task |
+|---|---|---|
+| `system:identity-resolution` | `0 * * * *` (hourly) | identity resolution |
+| `system:enrichment` | `0 */6 * * *` (every 6h) | enrichment |
+
+Note: enrichment runs every 6h but staleness window is 24h — most items are skipped on
+most runs. The frequent schedule ensures new items are enriched promptly.
+
+`server/health/failedStateMiddleware.ts` — Express middleware mounted when
+`systemHealthCheck()` throws a critical (unrecoverable) error. Intercepts all routes.
+Returns a server-rendered HTML page with the error reason and remediation steps. No auth,
+no session required.
 
 ---
 
 ## Step 2.1 — `media_identity` schema and migration
 
-Create `server/database/migrations/0004_media_identity.sql`:
-
 ```sql
+-- 0005_media_identity.sql
 CREATE TABLE media_identity (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  sourceType    TEXT NOT NULL,
-  sourceId      INTEGER NOT NULL,
-  tmdbId        INTEGER,
-  imdbId        TEXT,
-  tvdbId        INTEGER,
-  tvMazeId      INTEGER,
-  plexRatingKey TEXT,
-  jellyfinItemId TEXT,
-  resolvedAt    INTEGER,
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  sourceType      TEXT NOT NULL,   -- 'RADARR' | 'SONARR'
+  sourceId        INTEGER NOT NULL,
+  tmdbId          INTEGER,
+  imdbId          TEXT,
+  tvdbId          INTEGER,
+  tvMazeId        INTEGER,
+  plexRatingKey   TEXT,
+  jellyfinItemId  TEXT,
+  resolvedAt      INTEGER,
   UNIQUE(sourceType, sourceId)
 );
 CREATE INDEX idx_media_identity_tmdb ON media_identity(tmdbId);
@@ -92,146 +202,126 @@ CREATE INDEX idx_media_identity_tvdb ON media_identity(tvdbId);
 CREATE INDEX idx_media_identity_imdb ON media_identity(imdbId);
 ```
 
-Add the Drizzle table definition to `server/database/schema.ts`. Run `yarn vitest run` to
-confirm the migration applies cleanly.
+Add Drizzle table definition to `server/database/schema.ts`.
 
 ---
 
 ## Step 2.2 — `media_enrichment` schema and migration
 
-Create `server/database/migrations/0005_media_enrichment.sql`. Columns come directly from
-the "Proposed `media_enrichment` table" section in `INVENTORY.md`. Key columns:
-
 ```sql
+-- 0006_media_enrichment.sql
 CREATE TABLE media_enrichment (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
   mediaIdentityId       INTEGER NOT NULL REFERENCES media_identity(id) ON DELETE CASCADE,
   -- Tautulli
   tautulliPlayCount     INTEGER,
-  tautulliLastPlayed    INTEGER,   -- Unix ts
+  tautulliLastPlayed    INTEGER,
   -- Plex
   plexViewCount         INTEGER,
-  plexLastViewedAt      INTEGER,   -- Unix ts
-  plexContentRating     TEXT,
-  -- Jellyfin
-  jellyfinPlayed        INTEGER,   -- boolean
-  jellyfinPlayCount     INTEGER,
-  jellyfinLastPlayedDate TEXT,     -- ISO date
-  jellyfinIsFavorite    INTEGER,   -- boolean
+  plexLastViewedAt      INTEGER,
   -- Overseerr
-  overseerrMediaStatus  INTEGER,   -- 1–6 enum
-  overseerrRequestStatus INTEGER,  -- 1–3 enum
-  overseerrHasIssue     INTEGER,   -- boolean
-  -- OMDB
-  omdbRated             TEXT,
+  overseerrRequestStatus INTEGER,
+  overseerrHasIssue     INTEGER,
   -- TMDB
-  tmdbVoteAverage       REAL,
-  tmdbPopularity        REAL,
   tmdbStatus            TEXT,
-  tmdbOriginalLanguage  TEXT,
-  tmdbInProduction      INTEGER,   -- boolean
-  -- Streaming flags (TMDB watch/providers)
-  onNetflix             INTEGER,   -- boolean
-  onPrime               INTEGER,
-  onDisney              INTEGER,
-  onHulu                INTEGER,
-  onApple               INTEGER,
-  onHbo                 INTEGER,
-  onParamount           INTEGER,
-  onPeacock             INTEGER,
-  -- TVMaze
-  tvmazeStatus          TEXT,
-  tvmazeType            TEXT,
-  tvmazeWebChannel      TEXT,
-  enrichedAt            INTEGER    -- Unix ts
+  enrichedAt            INTEGER
 );
 CREATE UNIQUE INDEX idx_media_enrichment_identity ON media_enrichment(mediaIdentityId);
 ```
+
+Deferred columns (streaming flags, Jellyfin, OMDB, TVMaze) are added in later phases.
+Do not add them now — schema should reflect what is actually enriched.
 
 ---
 
 ## Step 2.3 — Identity resolution job
 
-`server/jobs/identityResolutionJob.ts` — runs after every Radarr/Sonarr sync.
+`server/jobs/identityResolutionJob.ts` — runs on the `system:identity-resolution` schedule.
 
-**Algorithm (from `INVENTORY.md`):**
+Algorithm (from `INVENTORY.md`):
 
-Phase A — Movies (Radarr):
-1. Fetch all Radarr movies (already cached — reuse from media handler)
-2. For each movie: upsert `media_identity(sourceType='RADARR', sourceId=movie.id, tmdbId=movie.tmdbId, imdbId=movie.imdbId)`
-3. No external API calls needed
+**Phase A — Movies (Radarr):**
+1. Fetch all Radarr movies
+2. Upsert `media_identity(sourceType='RADARR', sourceId=movie.id, tmdbId, imdbId)`
 
-Phase B — Series (Sonarr):
+**Phase B — Series (Sonarr):**
 1. Fetch all Sonarr series
-2. Upsert `media_identity(sourceType='SONARR', sourceId=series.id, tvdbId=series.tvdbId, tmdbId=series.tmdbId, imdbId=series.imdbId, tvMazeId=series.tvMazeId)`
-3. For any series where `tmdbId` is null: call `GET api.themoviedb.org/3/find/{tvdbId}?external_source=tvdb_id` — free, counts against TMDB quota
-4. For any series where `tvMazeId` is null: call `GET api.tvmaze.com/lookup/shows?thetvdb={tvdbId}` — free, no key
+2. Upsert `media_identity(sourceType='SONARR', sourceId=series.id, tvdbId, tmdbId, imdbId, tvMazeId)`
+3. For series where `tmdbId` is null: `GET api.themoviedb.org/3/find/{tvdbId}?external_source=tvdb_id`
+4. For series where `tvMazeId` is null: `GET api.tvmaze.com/lookup/shows?thetvdb={tvdbId}`
 
-Phase C — Plex bridge (when Plex is configured):
-1. For each Plex library item: fetch including `guids` field
-2. Parse `tmdb://X` → look up `media_identity` by `tmdbId` → set `plexRatingKey`
-3. Parse `thetvdb://X` → look up `media_identity` by `tvdbId` → set `plexRatingKey`
+**Phase C — Plex bridge (if Plex configured):**
+1. Fetch Plex library items with `guids` field
+2. Match `tmdb://X` or `thetvdb://X` → set `plexRatingKey` on matching `media_identity` row
 
-Phase D — Jellyfin bridge (when Jellyfin is configured):
-1. For each Jellyfin library item: fetch with `ProviderIds`
-2. `ProviderIds.Tmdb` → look up by `tmdbId` → set `jellyfinItemId`
-3. `ProviderIds.Tvdb` → look up by `tvdbId` → set `jellyfinItemId`
+**Phase D — Jellyfin bridge (if Jellyfin configured):**
+1. Fetch Jellyfin items with `ProviderIds`
+2. Match `ProviderIds.Tmdb` / `ProviderIds.Tvdb` → set `jellyfinItemId`
 
 ---
 
 ## Step 2.4 — Enrichment job
 
-`server/jobs/enrichmentJob.ts` — runs on a configurable schedule (default: every 6 hours).
-Iterates all rows in `media_identity` and fetches Tier 2 data for each, upserting into
-`media_enrichment`.
+`server/jobs/enrichmentJob.ts` — runs on the `system:enrichment` schedule.
 
-**Rate limit awareness:**
-- OMDB: 1,000 req/day free. Use `?i=<imdbId>` (exact), never `?t=<title>`. Cache — enrich
-  once and only re-enrich if `enrichedAt` is older than 7 days for OMDB fields.
-- TMDB: no daily cap, ~40 req/sec. Safe to run per-item.
-- TVMaze: 2 req/sec sustained. Add a 500ms delay between series requests.
-- Tautulli, Plex, Jellyfin, Overseerr: self-hosted, no rate limits.
+Staleness: skip rows where `enrichedAt > NOW() - 24h`. Re-enrich the rest in full.
 
-**Priority ordering:** Radarr/Sonarr items with a saved query that references Tier 2 predicates
-should be enriched first. Items not targeted by any automation can be enriched on a lower-
-priority pass.
+Rate limit constraints:
+- TVMaze: 500ms delay between series requests (2 req/sec limit)
+- All others (Tautulli, Plex, Overseerr, TMDB): self-hosted or generous limits — no delay needed
+
+Enriches only the predicates in phase 2 scope (Tautulli, Plex, Overseerr, TMDB status).
+Deferred provider columns remain NULL until later phases add them.
 
 ---
 
-## Steps 2.5–2.8 — Filter branches, executor join, UI controls
+## Steps 2.5–2.6 — Tier 2 filter branches
 
-Design decisions that must be resolved before implementation (document the decision in the
-code when made):
+Modify `applyMovieFilters()` and `applySeriesFilters()` signatures to accept an
+`enrichmentMap: Map<number, EnrichmentRow>` parameter.
 
-**2.5 — Missing enrichment row handling:** When a `media_identity` row exists but no
-`media_enrichment` row has been populated yet, Tier 2 predicates should return `false`
-(conservative — don't include an item in a deletion automation if its enrichment state is
-unknown). Document this in the filter branch.
+Callers (media handler, automation executor) load this map once before calling filter
+functions:
+```ts
+const enrichmentMap = await enrichmentService.getMapForIds(identityIds);
+```
 
-**2.6 — Filter branch join:** `applyMovieFilters` / `applySeriesFilters` are currently pure
-in-memory functions. Tier 2 predicates require a DB lookup. Two options:
-- (a) Pre-join: load enrichment map before calling filter functions, pass as parameter
-- (b) Async filter: make filter functions async, query per-item
+Filter branches for phase 2 predicates:
 
-Recommendation: option (a). Load `Map<number, EnrichmentRow>` keyed on `mediaIdentityId`
-once per request, pass into filter functions. Avoids N+1 queries.
+```ts
+// Conservative default: missing row = false for all Tier 2 predicates
+const enr = enrichmentMap.get(item.mediaIdentityId) ?? null;
 
-**2.7 — AutomationExecutor:** After applying Tier 1 in-memory filters, load enrichment rows
-for the surviving items and apply Tier 2 filters. The executor currently receives only
-`automationId` — no interface change needed, but it must now query the enrichment table.
+if (filters.tautulliPlayCount !== undefined) {
+  if (!enr || enr.tautulliPlayCount === null) return false;
+  // apply comparison
+}
+// etc.
+```
 
-**2.8 — UI:** Add Tier 2 predicate controls to the filter bar. Each predicate requires
-knowing which providers are configured (e.g. show Plex controls only if a Plex provider is
-active). The `configuredTypes` set is already available in `MediaContent` props.
+---
+
+## Steps 2.7–2.8 — Executor join + UI controls
+
+**Executor (2.7):** After Tier 1 in-memory filters, load enrichment map for surviving items
+and apply Tier 2 filters. No interface change to `AutomationExecutor.execute()` — enrichment
+loading is an internal step.
+
+**UI (2.8):** Add Tier 2 predicate controls to `MediaFilterBar`. Each control is shown only
+when the relevant provider is active (`configuredTypes` is already available in scope).
+System automations appear in a read-only system panel (settings or dedicated system page),
+not on the main dashboard.
 
 ---
 
 ## Acceptance criteria
 
-- `media_identity` is populated on startup for all Radarr and Sonarr items
-- `media_enrichment` is populated by the enrichment job and stays fresh
-- Tier 2 predicates (`tautulliPlayCount`, `jellyfinWatched`, `overseerrRequestStatus`, etc.) correctly filter the media list
-- Items with missing enrichment rows are treated as not matching Tier 2 predicates (conservative)
+- `kind` column exists on `automations` and `automation_runs`; API rejects mutation of system records
+- `systemHealthCheck()` runs at startup; system jobs are upserted if absent
+- Critical health failures boot the failed-state UI — server always binds
+- `media_identity` is populated by the identity resolution job for all Radarr/Sonarr items
+- `media_enrichment` is populated by the enrichment job; stale rows (>24h) are refreshed
+- Tier 2 predicates (Tautulli, Plex, Overseerr, TMDB status) correctly filter the media list
+- Items with missing enrichment rows are excluded from Tier 2 predicate matches (conservative)
 - All existing Tier 1 tests continue to pass
-- OMDB enrichment uses `?i=<imdbId>` not title search
-- Enrichment job respects TVMaze rate limit (500ms between series requests)
+- TVMaze calls in identity resolution respect the 500ms rate limit
