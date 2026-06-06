@@ -1,0 +1,2062 @@
+{
+  "/home/nokternol/repos/sandbox/.husky/_/applypatch-msg": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/commit-msg": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/h": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "15239a01c5554e56ff745570fb583a91",
+    "semantic_hash": "15239a01c5554e56ff745570fb583a91"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/husky.sh": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "13871d2ab13e8423790ecb2c01c78c18",
+    "semantic_hash": "13871d2ab13e8423790ecb2c01c78c18"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/post-applypatch": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/post-checkout": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/post-commit": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/post-merge": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/post-rewrite": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-applypatch": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-auto-gc": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-commit": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-merge-commit": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-push": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/pre-rebase": {
+    "mtime": 1780469429.5019457,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/_/prepare-commit-msg": {
+    "mtime": 1780469429.4979458,
+    "ast_hash": "0b71c2e7d39daa010985d529f1320b37",
+    "semantic_hash": "0b71c2e7d39daa010985d529f1320b37"
+  },
+  "/home/nokternol/repos/sandbox/.husky/post-checkout": {
+    "mtime": 1780743546.943323,
+    "ast_hash": "5e090139b84e43a43179b2af71d0f8b1",
+    "semantic_hash": "5e090139b84e43a43179b2af71d0f8b1"
+  },
+  "/home/nokternol/repos/sandbox/.husky/post-commit": {
+    "mtime": 1780743546.943323,
+    "ast_hash": "b6ccc98db019321eba2201e9ca038107",
+    "semantic_hash": "b6ccc98db019321eba2201e9ca038107"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/design.json": {
+    "mtime": 1780437301.2959135,
+    "ast_hash": "9616ac067fb035ab2d6ab25b114085f0",
+    "semantic_hash": "9616ac067fb035ab2d6ab25b114085f0"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/live/config.json": {
+    "mtime": 1780082352.5198205,
+    "ast_hash": "3858a75c5d1645b53cac94d517c43168",
+    "semantic_hash": "3858a75c5d1645b53cac94d517c43168"
+  },
+  "/home/nokternol/repos/sandbox/.ladle/components.tsx": {
+    "mtime": 1771627688.160173,
+    "ast_hash": "1307f26db1638c5b4344154f940a5431",
+    "semantic_hash": "1307f26db1638c5b4344154f940a5431"
+  },
+  "/home/nokternol/repos/sandbox/.ladle/config.mjs": {
+    "mtime": 1771363082.7187912,
+    "ast_hash": "620015a3f8edbeada40177dc74e94223",
+    "semantic_hash": "620015a3f8edbeada40177dc74e94223"
+  },
+  "/home/nokternol/repos/sandbox/.lintstagedrc.mjs": {
+    "mtime": 1780130091.2850835,
+    "ast_hash": "a32d7185a4d773da8ef0cedeaee942c6",
+    "semantic_hash": "a32d7185a4d773da8ef0cedeaee942c6"
+  },
+  "/home/nokternol/repos/sandbox/_verify-abort.mjs": {
+    "mtime": 1775920284.4421136,
+    "ast_hash": "ae47a99fb8f6d5d4cb01f681db16e1d7",
+    "semantic_hash": "ae47a99fb8f6d5d4cb01f681db16e1d7"
+  },
+  "/home/nokternol/repos/sandbox/biome.json": {
+    "mtime": 1780132090.295833,
+    "ast_hash": "924127b31e09d518fc637ca024db0e93",
+    "semantic_hash": "924127b31e09d518fc637ca024db0e93"
+  },
+  "/home/nokternol/repos/sandbox/cypress.config.ts": {
+    "mtime": 1770672447.845104,
+    "ast_hash": "5f9ccbdae5ac9c0376deef99a962a5e4",
+    "semantic_hash": "5f9ccbdae5ac9c0376deef99a962a5e4"
+  },
+  "/home/nokternol/repos/sandbox/cypress/e2e/home.cy.ts": {
+    "mtime": 1772312683.3380277,
+    "ast_hash": "05805b73e34724102127892739c09ddc",
+    "semantic_hash": "05805b73e34724102127892739c09ddc"
+  },
+  "/home/nokternol/repos/sandbox/cypress/e2e/login.cy.ts": {
+    "mtime": 1775169012.875304,
+    "ast_hash": "25486edf34cb530e7d0633d2abdca893",
+    "semantic_hash": "25486edf34cb530e7d0633d2abdca893"
+  },
+  "/home/nokternol/repos/sandbox/cypress/e2e/media-poster-abort.cy.ts": {
+    "mtime": 1775920828.738019,
+    "ast_hash": "fa8ad4e3309d7faceaeea6203b97c3ae",
+    "semantic_hash": "fa8ad4e3309d7faceaeea6203b97c3ae"
+  },
+  "/home/nokternol/repos/sandbox/cypress/support/commands.ts": {
+    "mtime": 1780437351.7118952,
+    "ast_hash": "589d0a80013232f12b1165d12bb9363d",
+    "semantic_hash": "589d0a80013232f12b1165d12bb9363d"
+  },
+  "/home/nokternol/repos/sandbox/cypress/support/e2e.ts": {
+    "mtime": 1770565290.5081792,
+    "ast_hash": "2749d93fffaaf7f77672ef068fee358d",
+    "semantic_hash": "2749d93fffaaf7f77672ef068fee358d"
+  },
+  "/home/nokternol/repos/sandbox/cypress/tsconfig.json": {
+    "mtime": 1770564947.7563536,
+    "ast_hash": "5fdb388d769ea8a64a69887ae735a134",
+    "semantic_hash": "5fdb388d769ea8a64a69887ae735a134"
+  },
+  "/home/nokternol/repos/sandbox/drizzle.config.ts": {
+    "mtime": 1772296733.6288881,
+    "ast_hash": "ab36254897222e97efac34f140a3cee7",
+    "semantic_hash": "ab36254897222e97efac34f140a3cee7"
+  },
+  "/home/nokternol/repos/sandbox/next.config.js": {
+    "mtime": 1780436152.9166214,
+    "ast_hash": "0c4616b080d24a9c1bb6e96e030dab73",
+    "semantic_hash": "0c4616b080d24a9c1bb6e96e030dab73"
+  },
+  "/home/nokternol/repos/sandbox/package.json": {
+    "mtime": 1780470581.0292103,
+    "ast_hash": "6f50165f3f3e05a819e6f7038c185992",
+    "semantic_hash": "6f50165f3f3e05a819e6f7038c185992"
+  },
+  "/home/nokternol/repos/sandbox/postcss.config.js": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "8640f9b2e6475cc3f5b1ff4548925765",
+    "semantic_hash": "8640f9b2e6475cc3f5b1ff4548925765"
+  },
+  "/home/nokternol/repos/sandbox/public/mockServiceWorker.js": {
+    "mtime": 1780237940.4293087,
+    "ast_hash": "452eddf1e9f7b03a9a7f8f209380233f",
+    "semantic_hash": "452eddf1e9f7b03a9a7f8f209380233f"
+  },
+  "/home/nokternol/repos/sandbox/public/sw.js": {
+    "mtime": 1770565290.5121794,
+    "ast_hash": "40fac225e1286deeb1997281dfd236ee",
+    "semantic_hash": "40fac225e1286deeb1997281dfd236ee"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/config.test.ts": {
+    "mtime": 1771710571.3748105,
+    "ast_hash": "82353f0b8bc4460cd42557d1d4177bcc",
+    "semantic_hash": "82353f0b8bc4460cd42557d1d4177bcc"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/container.test.ts": {
+    "mtime": 1780685824.9311953,
+    "ast_hash": "4d5024f7e34f1e1a5e419aa3aed95cca",
+    "semantic_hash": "4d5024f7e34f1e1a5e419aa3aed95cca"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/cron/automationScheduler.test.ts": {
+    "mtime": 1780600331.740458,
+    "ast_hash": "5b35988c776d8b82ae03616dd08a4080",
+    "semantic_hash": "5b35988c776d8b82ae03616dd08a4080"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/database.test.ts": {
+    "mtime": 1772296834.2008557,
+    "ast_hash": "1cf46a7cdcf165369ded594aeead7373",
+    "semantic_hash": "1cf46a7cdcf165369ded594aeead7373"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/drizzleStore.test.ts": {
+    "mtime": 1780034032.1399882,
+    "ast_hash": "0962c3dfd4132f9dce9c70a7342d1b14",
+    "semantic_hash": "0962c3dfd4132f9dce9c70a7342d1b14"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/entities/schema.test.ts": {
+    "mtime": 1780610607.382148,
+    "ast_hash": "e2317084754c263eaf74911fe75d9332",
+    "semantic_hash": "e2317084754c263eaf74911fe75d9332"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/errors.test.ts": {
+    "mtime": 1770672351.7931466,
+    "ast_hash": "912679d1a865e60cbb3f698ec9e581a6",
+    "semantic_hash": "912679d1a865e60cbb3f698ec9e581a6"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/factories.test.ts": {
+    "mtime": 1780511910.7848752,
+    "ast_hash": "44156176f62940c00bad951d12526ae7",
+    "semantic_hash": "44156176f62940c00bad951d12526ae7"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/automationRuns.integration.test.ts": {
+    "mtime": 1780685736.2232587,
+    "ast_hash": "8c3f4d886d0881a2ee76ce9f91e3d582",
+    "semantic_hash": "8c3f4d886d0881a2ee76ce9f91e3d582"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/health.integration.test.ts": {
+    "mtime": 1772298486.7043605,
+    "ast_hash": "bc7cff09f00c43e12597ca36d5ee3722",
+    "semantic_hash": "bc7cff09f00c43e12597ca36d5ee3722"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/media.cache.lifecycle.integration.test.ts": {
+    "mtime": 1780604162.7697415,
+    "ast_hash": "9b85da20a2b3eca1eb69facde01d8d70",
+    "semantic_hash": "9b85da20a2b3eca1eb69facde01d8d70"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/media.filter.integration.test.ts": {
+    "mtime": 1780610886.0229468,
+    "ast_hash": "96f8865444542aef47b1a2e42f2ccfeb",
+    "semantic_hash": "96f8865444542aef47b1a2e42f2ccfeb"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/media.paginated.integration.test.ts": {
+    "mtime": 1780605024.479944,
+    "ast_hash": "6fdcbc74e1894f04dd70bbbb4aa44b78",
+    "semantic_hash": "6fdcbc74e1894f04dd70bbbb4aa44b78"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/media.tautulli-watched.integration.test.ts": {
+    "mtime": 1780605881.9558792,
+    "ast_hash": "e315e6d0b73096b7e9f9a54a3067499a",
+    "semantic_hash": "e315e6d0b73096b7e9f9a54a3067499a"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/provider.cache.invalidation.integration.test.ts": {
+    "mtime": 1780610900.65899,
+    "ast_hash": "5aa2256ba093db4b02273fa40dd13ab6",
+    "semantic_hash": "5aa2256ba093db4b02273fa40dd13ab6"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/providers.integration.test.ts": {
+    "mtime": 1772298486.7043605,
+    "ast_hash": "ce45fa6627c66618c601145e3f8ac76a",
+    "semantic_hash": "ce45fa6627c66618c601145e3f8ac76a"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/providers.ratings.integration.test.ts": {
+    "mtime": 1780008876.5543518,
+    "ast_hash": "0a8485e34357f2cd8d12dbab50b254ef",
+    "semantic_hash": "0a8485e34357f2cd8d12dbab50b254ef"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/settings.integration.test.ts": {
+    "mtime": 1775839372.5819197,
+    "ast_hash": "41917f165975beb2cdba4717e6543d93",
+    "semantic_hash": "41917f165975beb2cdba4717e6543d93"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/integration/settings.testprovider.integration.test.ts": {
+    "mtime": 1780601885.6540039,
+    "ast_hash": "55cefdc239b301dc74fae03638d5bb78",
+    "semantic_hash": "55cefdc239b301dc74fae03638d5bb78"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/logger.test.ts": {
+    "mtime": 1780506839.7876592,
+    "ast_hash": "c6693cc861296879edd315a940ef71a5",
+    "semantic_hash": "c6693cc861296879edd315a940ef71a5"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/media.cache.test.ts": {
+    "mtime": 1780008019.6188824,
+    "ast_hash": "0475bdeeea9c58e11843cf2ef2c616b0",
+    "semantic_hash": "0475bdeeea9c58e11843cf2ef2c616b0"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/media/pagination.test.ts": {
+    "mtime": 1780006346.7039263,
+    "ast_hash": "1feed75893259b93bc7966af2ed5db2c",
+    "semantic_hash": "1feed75893259b93bc7966af2ed5db2c"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/middleware/errorHandler.test.ts": {
+    "mtime": 1770760536.4325461,
+    "ast_hash": "64ccae125b09d89e69cb866a5979e63f",
+    "semantic_hash": "64ccae125b09d89e69cb866a5979e63f"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/middleware/requestId.test.ts": {
+    "mtime": 1770760697.6703167,
+    "ast_hash": "9bce0dab80b2c8700dfdd9ef8b5a87dc",
+    "semantic_hash": "9bce0dab80b2c8700dfdd9ef8b5a87dc"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/baseMetadataProvider.test.ts": {
+    "mtime": 1772311129.2464905,
+    "ast_hash": "958a7dc23f93dfb369180431b94eee18",
+    "semantic_hash": "958a7dc23f93dfb369180431b94eee18"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/jellyfinProvider.test.ts": {
+    "mtime": 1780007177.971411,
+    "ast_hash": "bfc1e9b3f213dccd6db4ef16b05c5b9b",
+    "semantic_hash": "bfc1e9b3f213dccd6db4ef16b05c5b9b"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/omdbProvider.test.ts": {
+    "mtime": 1780689179.1315873,
+    "ast_hash": "8be1d9743dfa0ec58e51c6747758aad4",
+    "semantic_hash": "8be1d9743dfa0ec58e51c6747758aad4"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/overseerrProvider.test.ts": {
+    "mtime": 1780007183.4234056,
+    "ast_hash": "eb2989658e490d35624de97ea10fcd96",
+    "semantic_hash": "eb2989658e490d35624de97ea10fcd96"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/plexProvider.test.ts": {
+    "mtime": 1780007174.5874143,
+    "ast_hash": "ad4ff37c11550ac07d05a08aea6ae875",
+    "semantic_hash": "ad4ff37c11550ac07d05a08aea6ae875"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/providerFactory.test.ts": {
+    "mtime": 1780600670.8042798,
+    "ast_hash": "f038eb47254dd86376cf627fe3aa39a1",
+    "semantic_hash": "f038eb47254dd86376cf627fe3aa39a1"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/radarrProvider.test.ts": {
+    "mtime": 1780511910.7848752,
+    "ast_hash": "54726107004ada889f7844b26ca8fb73",
+    "semantic_hash": "54726107004ada889f7844b26ca8fb73"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/seerrProvider.test.ts": {
+    "mtime": 1772299341.1200893,
+    "ast_hash": "7ed46be0cd23203e1e1fedde3d96b092",
+    "semantic_hash": "7ed46be0cd23203e1e1fedde3d96b092"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/sonarrProvider.test.ts": {
+    "mtime": 1780511910.7848752,
+    "ast_hash": "3a103df8742cd50d4a38773c76c9c4ed",
+    "semantic_hash": "3a103df8742cd50d4a38773c76c9c4ed"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/tautulliProvider.test.ts": {
+    "mtime": 1780610691.5063915,
+    "ast_hash": "d14133228fe91a6741ab98eb9eb7f766",
+    "semantic_hash": "d14133228fe91a6741ab98eb9eb7f766"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/tmdbProvider.test.ts": {
+    "mtime": 1780689154.047116,
+    "ast_hash": "2e5c1ccb1c35b1e2e5b3dd995581a1cb",
+    "semantic_hash": "2e5c1ccb1c35b1e2e5b3dd995581a1cb"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/providers/tvmazeProvider.test.ts": {
+    "mtime": 1780689218.324143,
+    "ast_hash": "1c98d9e125ef81fa2e03d65344077e4c",
+    "semantic_hash": "1c98d9e125ef81fa2e03d65344077e4c"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/authService.test.ts": {
+    "mtime": 1772299341.1360893,
+    "ast_hash": "55d9631a648b1b7bf69c6b98851c3f21",
+    "semantic_hash": "55d9631a648b1b7bf69c6b98851c3f21"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/automationExecutor.test.ts": {
+    "mtime": 1780685818.0352008,
+    "ast_hash": "5e653872d28725dbbdec279044608eac",
+    "semantic_hash": "5e653872d28725dbbdec279044608eac"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/automationExecutorRunService.test.ts": {
+    "mtime": 1780685736.2232587,
+    "ast_hash": "ff87ee17e7770c4fa3165e2ae6ba9363",
+    "semantic_hash": "ff87ee17e7770c4fa3165e2ae6ba9363"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/automationRunService.test.ts": {
+    "mtime": 1780685736.2232587,
+    "ast_hash": "937c8328d07293c0e0bf8313f500b990",
+    "semantic_hash": "937c8328d07293c0e0bf8313f500b990"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/automationService.test.ts": {
+    "mtime": 1780610511.8818727,
+    "ast_hash": "6bcb32921b1fd24c6ff5c2e8565c2ead",
+    "semantic_hash": "6bcb32921b1fd24c6ff5c2e8565c2ead"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/plexService.test.ts": {
+    "mtime": 1780037359.4655669,
+    "ast_hash": "b6ed64b89fd8a7ad76da00f93ae1ce35",
+    "semantic_hash": "b6ed64b89fd8a7ad76da00f93ae1ce35"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/providerSettingsService.test.ts": {
+    "mtime": 1780601273.5623152,
+    "ast_hash": "4b8ba9e4aeb6f4e025d2200918ea014c",
+    "semantic_hash": "4b8ba9e4aeb6f4e025d2200918ea014c"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/savedQueryService.test.ts": {
+    "mtime": 1780610485.4777935,
+    "ast_hash": "32324151895082e8bdead38edf60df53",
+    "semantic_hash": "32324151895082e8bdead38edf60df53"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/services/tmdbService.test.ts": {
+    "mtime": 1780037359.4655669,
+    "ast_hash": "4ca5c19e826e1e9a8f5757acc53dc049",
+    "semantic_hash": "4ca5c19e826e1e9a8f5757acc53dc049"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/sessionConfig.test.ts": {
+    "mtime": 1780605526.6453822,
+    "ast_hash": "c09df07d17d36dd2d43d2333e4407746",
+    "semantic_hash": "c09df07d17d36dd2d43d2333e4407746"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/utils/defineRoute.test.ts": {
+    "mtime": 1770761694.2920303,
+    "ast_hash": "02164e5afb448b072dd263b3ab3a6a2a",
+    "semantic_hash": "02164e5afb448b072dd263b3ab3a6a2a"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/utils/keyResolver.test.ts": {
+    "mtime": 1775244846.8765879,
+    "ast_hash": "31c9f1329468b4ccc27429dc98a0be92",
+    "semantic_hash": "31c9f1329468b4ccc27429dc98a0be92"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/utils/mediaFilters.test.ts": {
+    "mtime": 1780691271.166927,
+    "ast_hash": "9387caa0eceb01788a7b41b7cfe0d002",
+    "semantic_hash": "9387caa0eceb01788a7b41b7cfe0d002"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/utils/ratingsAggregation.test.ts": {
+    "mtime": 1780689410.3946311,
+    "ast_hash": "1bf7a71d55f3b3aa688b40f11664cfea",
+    "semantic_hash": "1bf7a71d55f3b3aa688b40f11664cfea"
+  },
+  "/home/nokternol/repos/sandbox/server/__tests__/utils/watchedTitleMatching.test.ts": {
+    "mtime": 1780610633.3262212,
+    "ast_hash": "f73640c06aea2eb039d41581eecd2264",
+    "semantic_hash": "f73640c06aea2eb039d41581eecd2264"
+  },
+  "/home/nokternol/repos/sandbox/server/config.ts": {
+    "mtime": 1780605604.470805,
+    "ast_hash": "c1f6b462956d791f013a95ad35707324",
+    "semantic_hash": "c1f6b462956d791f013a95ad35707324"
+  },
+  "/home/nokternol/repos/sandbox/server/container.ts": {
+    "mtime": 1780685736.2232587,
+    "ast_hash": "8d5df1b58ba4d9ef2c7b294527b26b64",
+    "semantic_hash": "8d5df1b58ba4d9ef2c7b294527b26b64"
+  },
+  "/home/nokternol/repos/sandbox/server/cron/automationScheduler.ts": {
+    "mtime": 1780600309.344471,
+    "ast_hash": "b4305e8f163de65221809296d856c47c",
+    "semantic_hash": "b4305e8f163de65221809296d856c47c"
+  },
+  "/home/nokternol/repos/sandbox/server/database/columns/datetime.ts": {
+    "mtime": 1772311375.0144188,
+    "ast_hash": "0bab8934dcc81542135ceab431a7e67a",
+    "semantic_hash": "0bab8934dcc81542135ceab431a7e67a"
+  },
+  "/home/nokternol/repos/sandbox/server/database/drizzleStore.ts": {
+    "mtime": 1780034149.1919224,
+    "ast_hash": "a4f422e2bbece35abffa1158531f9131",
+    "semantic_hash": "a4f422e2bbece35abffa1158531f9131"
+  },
+  "/home/nokternol/repos/sandbox/server/database/index.ts": {
+    "mtime": 1772311073.4385066,
+    "ast_hash": "6b05d116f748f69a6db645d75e05b216",
+    "semantic_hash": "6b05d116f748f69a6db645d75e05b216"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0000_initial.sql": {
+    "mtime": 1772296977.2048028,
+    "ast_hash": "a399570bd6fe4d6b69154ca1a64725e5",
+    "semantic_hash": "a399570bd6fe4d6b69154ca1a64725e5"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0001_petite_thor.sql": {
+    "mtime": 1776371521.8661172,
+    "ast_hash": "9067846e653738aaef5f81240213bd32",
+    "semantic_hash": "9067846e653738aaef5f81240213bd32"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0002_automations.sql": {
+    "mtime": 1780469512.4218934,
+    "ast_hash": "c328e53de5be7629dc150259630d5fd4",
+    "semantic_hash": "c328e53de5be7629dc150259630d5fd4"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0003_automation_runs.sql": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "f3ad177d3bf64e0638104113fd6252d3",
+    "semantic_hash": "f3ad177d3bf64e0638104113fd6252d3"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0003_drop_groups_rules.sql": {
+    "mtime": 1780610538.805956,
+    "ast_hash": "61353c1751cb3793c7414bed0b73e548",
+    "semantic_hash": "61353c1751cb3793c7414bed0b73e548"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/0004_drop_media_enrichment.sql": {
+    "mtime": 1780610542.437966,
+    "ast_hash": "b857de352451b9c64074643aa5bf68c3",
+    "semantic_hash": "b857de352451b9c64074643aa5bf68c3"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/meta/0000_snapshot.json": {
+    "mtime": 1772299341.1320894,
+    "ast_hash": "f897328a487c9f001f3d3e35d9d44e6d",
+    "semantic_hash": "f897328a487c9f001f3d3e35d9d44e6d"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/meta/0001_snapshot.json": {
+    "mtime": 1776371532.6741173,
+    "ast_hash": "35b26f922c33616911832a9afaf7b492",
+    "semantic_hash": "35b26f922c33616911832a9afaf7b492"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/meta/0002_snapshot.json": {
+    "mtime": 1780470581.0332103,
+    "ast_hash": "ec7cb49bb7cbbbd9b0128f8773be02bf",
+    "semantic_hash": "ec7cb49bb7cbbbd9b0128f8773be02bf"
+  },
+  "/home/nokternol/repos/sandbox/server/database/migrations/meta/_journal.json": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "e50acb19f2ecf007a28b1d074d891a6a",
+    "semantic_hash": "e50acb19f2ecf007a28b1d074d891a6a"
+  },
+  "/home/nokternol/repos/sandbox/server/database/schema.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "e612f021af6d7849efdf88b2dba7b45a",
+    "semantic_hash": "e612f021af6d7849efdf88b2dba7b45a"
+  },
+  "/home/nokternol/repos/sandbox/server/env.ts": {
+    "mtime": 1771366078.6178916,
+    "ast_hash": "b870cd5b44529f48b435a35b8d0ffd09",
+    "semantic_hash": "b870cd5b44529f48b435a35b8d0ffd09"
+  },
+  "/home/nokternol/repos/sandbox/server/errors.ts": {
+    "mtime": 1770672351.7931466,
+    "ast_hash": "fa9db77fcf7b31eeb2c579e52b174061",
+    "semantic_hash": "fa9db77fcf7b31eeb2c579e52b174061"
+  },
+  "/home/nokternol/repos/sandbox/server/index.ts": {
+    "mtime": 1780605604.470805,
+    "ast_hash": "6981e9ff5cb3b5b5e0b6c77825d26c94",
+    "semantic_hash": "6981e9ff5cb3b5b5e0b6c77825d26c94"
+  },
+  "/home/nokternol/repos/sandbox/server/logger.ts": {
+    "mtime": 1780506974.698032,
+    "ast_hash": "680e07902b67d5f3e67197476a72cc4b",
+    "semantic_hash": "680e07902b67d5f3e67197476a72cc4b"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/auth.ts": {
+    "mtime": 1775904306.8570426,
+    "ast_hash": "322dcf926485e35541776a3c2ff7aa43",
+    "semantic_hash": "322dcf926485e35541776a3c2ff7aa43"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/errorHandler.ts": {
+    "mtime": 1770760697.6783173,
+    "ast_hash": "9aac3f4836c5f75801cb7ecd93403ea1",
+    "semantic_hash": "9aac3f4836c5f75801cb7ecd93403ea1"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/index.ts": {
+    "mtime": 1770760488.0165646,
+    "ast_hash": "7048b41cfa660fde16256286f2706b07",
+    "semantic_hash": "7048b41cfa660fde16256286f2706b07"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/requestId.ts": {
+    "mtime": 1770760465.6285727,
+    "ast_hash": "f99906b8158b7f0f2e0696691fad6c24",
+    "semantic_hash": "f99906b8158b7f0f2e0696691fad6c24"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/requestLogger.ts": {
+    "mtime": 1770928626.0149627,
+    "ast_hash": "34faef3cf2f97517b0042aec12dd216a",
+    "semantic_hash": "34faef3cf2f97517b0042aec12dd216a"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/auth/auth.handler.ts": {
+    "mtime": 1772311320.7944322,
+    "ast_hash": "41adcb24d3da86805611f0577219d0d6",
+    "semantic_hash": "41adcb24d3da86805611f0577219d0d6"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/auth/auth.routes.ts": {
+    "mtime": 1770849231.948841,
+    "ast_hash": "934c8ac38ebf8e02ce35cb47acea9a73",
+    "semantic_hash": "934c8ac38ebf8e02ce35cb47acea9a73"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/auth/auth.schemas.ts": {
+    "mtime": 1770849231.948841,
+    "ast_hash": "b4f7735930f217b5e53d3c4def5a7f4d",
+    "semantic_hash": "b4f7735930f217b5e53d3c4def5a7f4d"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/automations/automations.handler.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "51733d967ef3a08c23c6eee92ef7ce05",
+    "semantic_hash": "51733d967ef3a08c23c6eee92ef7ce05"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/automations/automations.routes.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "68e8db74305cc80d4268024af890ddb7",
+    "semantic_hash": "68e8db74305cc80d4268024af890ddb7"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/automations/automations.schemas.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "15e4515fca8c3da06de9cdfebd2a4307",
+    "semantic_hash": "15e4515fca8c3da06de9cdfebd2a4307"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/backdrops/backdrops.handler.ts": {
+    "mtime": 1770849231.9568412,
+    "ast_hash": "d65c6461d1683a542d3f386f5a14d6d2",
+    "semantic_hash": "d65c6461d1683a542d3f386f5a14d6d2"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/backdrops/backdrops.routes.ts": {
+    "mtime": 1770849231.948841,
+    "ast_hash": "26cac065e7b3a37dc63d173233b9fe5f",
+    "semantic_hash": "26cac065e7b3a37dc63d173233b9fe5f"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/backdrops/backdrops.schemas.ts": {
+    "mtime": 1770849231.9568412,
+    "ast_hash": "6e9d3b3d73ee368cf67df94f01908092",
+    "semantic_hash": "6e9d3b3d73ee368cf67df94f01908092"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/health/health.handler.ts": {
+    "mtime": 1770762800.1876442,
+    "ast_hash": "2595feafa0dd4a079ce22ad81079db11",
+    "semantic_hash": "2595feafa0dd4a079ce22ad81079db11"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/health/health.routes.ts": {
+    "mtime": 1770762804.7798476,
+    "ast_hash": "d9d1c8bbe55da14a09213fc6abfe55e9",
+    "semantic_hash": "d9d1c8bbe55da14a09213fc6abfe55e9"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/health/health.schemas.ts": {
+    "mtime": 1770762794.8954093,
+    "ast_hash": "0e0f0dbf2918a576ebd27ee6152d39f8",
+    "semantic_hash": "0e0f0dbf2918a576ebd27ee6152d39f8"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/index.ts": {
+    "mtime": 1780610900.65899,
+    "ast_hash": "a281edeae19d798a597a941a56102ada",
+    "semantic_hash": "a281edeae19d798a597a941a56102ada"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/media/media.cache.ts": {
+    "mtime": 1780008019.6148825,
+    "ast_hash": "bd58b12c6b86da72fb975fa087ec880b",
+    "semantic_hash": "bd58b12c6b86da72fb975fa087ec880b"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/media/media.handler.ts": {
+    "mtime": 1780610910.8950205,
+    "ast_hash": "24cfd904b1df540088990b68545258b7",
+    "semantic_hash": "24cfd904b1df540088990b68545258b7"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/media/media.pagination.ts": {
+    "mtime": 1780006346.6919262,
+    "ast_hash": "8709404efef185f5144e62f5eb4884ce",
+    "semantic_hash": "8709404efef185f5144e62f5eb4884ce"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/media/media.routes.ts": {
+    "mtime": 1780610918.9670444,
+    "ast_hash": "105d8cc73029c594cde0a52b6269570f",
+    "semantic_hash": "105d8cc73029c594cde0a52b6269570f"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/providers/providers.handler.ts": {
+    "mtime": 1780008614.4865088,
+    "ast_hash": "2185b6fa50bb9c2950b294e48f16d6d0",
+    "semantic_hash": "2185b6fa50bb9c2950b294e48f16d6d0"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/providers/providers.routes.ts": {
+    "mtime": 1771714620.949601,
+    "ast_hash": "0cd0120cf1781f7cea72b41334c5b7fb",
+    "semantic_hash": "0cd0120cf1781f7cea72b41334c5b7fb"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/providers/providers.schemas.ts": {
+    "mtime": 1772297239.72872,
+    "ast_hash": "3d63f7b95ac2ab5423c8e4de4e8d4fe8",
+    "semantic_hash": "3d63f7b95ac2ab5423c8e4de4e8d4fe8"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/savedQueries/savedQueries.handler.ts": {
+    "mtime": 1780469638.6698165,
+    "ast_hash": "1c859bc4f39c07b6ec8e7125ed41af74",
+    "semantic_hash": "1c859bc4f39c07b6ec8e7125ed41af74"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/savedQueries/savedQueries.routes.ts": {
+    "mtime": 1780469563.3178637,
+    "ast_hash": "c68c0c18c6086ab99809736a85382321",
+    "semantic_hash": "c68c0c18c6086ab99809736a85382321"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/savedQueries/savedQueries.schemas.ts": {
+    "mtime": 1780469553.5378695,
+    "ast_hash": "1cd7a71386023f477ec4f3cb1621c9b0",
+    "semantic_hash": "1cd7a71386023f477ec4f3cb1621c9b0"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/search/search.handler.ts": {
+    "mtime": 1776200885.3457189,
+    "ast_hash": "1b6596c206b0dfa91e00acdcf3a65a4e",
+    "semantic_hash": "1b6596c206b0dfa91e00acdcf3a65a4e"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/search/search.routes.ts": {
+    "mtime": 1775679540.06917,
+    "ast_hash": "d9d1582468295ab7a48e549e8816f159",
+    "semantic_hash": "d9d1582468295ab7a48e549e8816f159"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/search/search.schemas.ts": {
+    "mtime": 1775679516.8931737,
+    "ast_hash": "7c59aa88fc473aa209834d0c078eb644",
+    "semantic_hash": "7c59aa88fc473aa209834d0c078eb644"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/settings/settings.handler.ts": {
+    "mtime": 1780610900.6629899,
+    "ast_hash": "8949713b0deea9f7dc207477392394dc",
+    "semantic_hash": "8949713b0deea9f7dc207477392394dc"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/settings/settings.routes.ts": {
+    "mtime": 1780610900.6629899,
+    "ast_hash": "b4825e913ab0126e2f5a855d93a1193a",
+    "semantic_hash": "b4825e913ab0126e2f5a855d93a1193a"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/settings/settings.schemas.ts": {
+    "mtime": 1775839372.5859196,
+    "ast_hash": "d186215186b1dab54aed687dee5ecec9",
+    "semantic_hash": "d186215186b1dab54aed687dee5ecec9"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/baseMetadataProvider.ts": {
+    "mtime": 1780007138.3434334,
+    "ast_hash": "153f546c1949ebf451421f92d36a3736",
+    "semantic_hash": "153f546c1949ebf451421f92d36a3736"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/jellyfinProvider.ts": {
+    "mtime": 1771711196.9426208,
+    "ast_hash": "49526f9d7e96745c5b57198a1df17d7e",
+    "semantic_hash": "49526f9d7e96745c5b57198a1df17d7e"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/omdbProvider.ts": {
+    "mtime": 1780689204.075944,
+    "ast_hash": "bfd4299221ac3742e200eb185c243fcb",
+    "semantic_hash": "bfd4299221ac3742e200eb185c243fcb"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/overseerrProvider.ts": {
+    "mtime": 1780174291.6807215,
+    "ast_hash": "b8ac0c3443c8a9dc26769952167d4e37",
+    "semantic_hash": "b8ac0c3443c8a9dc26769952167d4e37"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/plexProvider.ts": {
+    "mtime": 1771711196.9426208,
+    "ast_hash": "6b841e2a54db8c44e325484b38e968f5",
+    "semantic_hash": "6b841e2a54db8c44e325484b38e968f5"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/providerFactory.ts": {
+    "mtime": 1780600681.404275,
+    "ast_hash": "c9dd5ba6b9f484880a4f0ca15025a3da",
+    "semantic_hash": "c9dd5ba6b9f484880a4f0ca15025a3da"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/radarrProvider.ts": {
+    "mtime": 1780690258.1096509,
+    "ast_hash": "b69274a9ce759e2d18e7eb55476af218",
+    "semantic_hash": "b69274a9ce759e2d18e7eb55476af218"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/seerrProvider.ts": {
+    "mtime": 1771711098.9346523,
+    "ast_hash": "38b8ad8fe719ed4ec4e6b92e16b202d0",
+    "semantic_hash": "38b8ad8fe719ed4ec4e6b92e16b202d0"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/sonarrProvider.ts": {
+    "mtime": 1780690366.6186645,
+    "ast_hash": "19fff06e2016514a3bc65ec630e67f8e",
+    "semantic_hash": "19fff06e2016514a3bc65ec630e67f8e"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/tautulliProvider.ts": {
+    "mtime": 1780610654.3822849,
+    "ast_hash": "bb77575c7971636939e3f9dd50028d3a",
+    "semantic_hash": "bb77575c7971636939e3f9dd50028d3a"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/tmdbProvider.ts": {
+    "mtime": 1780689165.6633344,
+    "ast_hash": "fce8e83d0a7ac047d9ff97f22bc85e36",
+    "semantic_hash": "fce8e83d0a7ac047d9ff97f22bc85e36"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/tvmazeProvider.ts": {
+    "mtime": 1780689234.4803019,
+    "ast_hash": "f3f2dbee5b9b835de7e76b9ddeea06d1",
+    "semantic_hash": "f3f2dbee5b9b835de7e76b9ddeea06d1"
+  },
+  "/home/nokternol/repos/sandbox/server/services/authService.ts": {
+    "mtime": 1772298309.9524138,
+    "ast_hash": "aa07366ea89bac149501a2733e63aae8",
+    "semantic_hash": "aa07366ea89bac149501a2733e63aae8"
+  },
+  "/home/nokternol/repos/sandbox/server/services/automationExecutor.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "fb8013c2f9fd5fd0994210e56a0b4939",
+    "semantic_hash": "fb8013c2f9fd5fd0994210e56a0b4939"
+  },
+  "/home/nokternol/repos/sandbox/server/services/automationRunService.ts": {
+    "mtime": 1780685824.9311953,
+    "ast_hash": "5c68a5ea3e5df79969cb02fa64f24c32",
+    "semantic_hash": "5c68a5ea3e5df79969cb02fa64f24c32"
+  },
+  "/home/nokternol/repos/sandbox/server/services/automationService.ts": {
+    "mtime": 1780610485.4777935,
+    "ast_hash": "64e5dcda6d17c30ec874b2c07a24d252",
+    "semantic_hash": "64e5dcda6d17c30ec874b2c07a24d252"
+  },
+  "/home/nokternol/repos/sandbox/server/services/plexService.ts": {
+    "mtime": 1780037499.3774867,
+    "ast_hash": "5e87f337833f3460685751aefc469aba",
+    "semantic_hash": "5e87f337833f3460685751aefc469aba"
+  },
+  "/home/nokternol/repos/sandbox/server/services/providerSettingsService.ts": {
+    "mtime": 1780601284.8031178,
+    "ast_hash": "90f07c18d7451663c939afda1799e2e4",
+    "semantic_hash": "90f07c18d7451663c939afda1799e2e4"
+  },
+  "/home/nokternol/repos/sandbox/server/services/savedQueryService.ts": {
+    "mtime": 1780610485.4777935,
+    "ast_hash": "bdb1e8f82bb7fce06ffde05f6f0078a7",
+    "semantic_hash": "bdb1e8f82bb7fce06ffde05f6f0078a7"
+  },
+  "/home/nokternol/repos/sandbox/server/services/tmdbService.ts": {
+    "mtime": 1780037499.3774867,
+    "ast_hash": "92a965d179153235a5cd2d8b6786cb0e",
+    "semantic_hash": "92a965d179153235a5cd2d8b6786cb0e"
+  },
+  "/home/nokternol/repos/sandbox/server/tsconfig.json": {
+    "mtime": 1772298604.9483273,
+    "ast_hash": "d2aa7a26df4d92ca36d746e972a1f0aa",
+    "semantic_hash": "d2aa7a26df4d92ca36d746e972a1f0aa"
+  },
+  "/home/nokternol/repos/sandbox/server/types/api.ts": {
+    "mtime": 1770671669.3374984,
+    "ast_hash": "cf3db9a5c2fedb9ac39af5a6ffcf3a1d",
+    "semantic_hash": "cf3db9a5c2fedb9ac39af5a6ffcf3a1d"
+  },
+  "/home/nokternol/repos/sandbox/server/types/express.d.ts": {
+    "mtime": 1772311080.726505,
+    "ast_hash": "68820987b9cd716195c4fbde670d733d",
+    "semantic_hash": "68820987b9cd716195c4fbde670d733d"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/defineRoute.ts": {
+    "mtime": 1770761694.3040311,
+    "ast_hash": "739a236bf2d0b07804ee0a114220cf01",
+    "semantic_hash": "739a236bf2d0b07804ee0a114220cf01"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/keyResolver.ts": {
+    "mtime": 1775244866.476586,
+    "ast_hash": "10dc4caf21916a303ce1278b0bae2b63",
+    "semantic_hash": "10dc4caf21916a303ce1278b0bae2b63"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/mediaFilters.ts": {
+    "mtime": 1780691271.1869273,
+    "ast_hash": "6705f90d26e9c79ab26d2cd49bbee14e",
+    "semantic_hash": "6705f90d26e9c79ab26d2cd49bbee14e"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/ratingsAggregation.ts": {
+    "mtime": 1780689356.4819164,
+    "ast_hash": "172ac53ccb9c8295fa8056924964cf3f",
+    "semantic_hash": "172ac53ccb9c8295fa8056924964cf3f"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/watchedTitleMatching.ts": {
+    "mtime": 1780610633.3262212,
+    "ast_hash": "af0cf0be08f5a54e64c4cdc76ba8ee84",
+    "semantic_hash": "af0cf0be08f5a54e64c4cdc76ba8ee84"
+  },
+  "/home/nokternol/repos/sandbox/src/__tests__/lib/provider-registry.test.ts": {
+    "mtime": 1780610948.2711296,
+    "ast_hash": "dcae429e6e09530edd57bc6f8761c7c6",
+    "semantic_hash": "dcae429e6e09530edd57bc6f8761c7c6"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AddProviderForm/__tests__/AddProviderForm.test.tsx": {
+    "mtime": 1780611093.6115508,
+    "ast_hash": "4f7c9fef4efa483aef79fd9bd94f2f08",
+    "semantic_hash": "4f7c9fef4efa483aef79fd9bd94f2f08"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AddProviderForm/index.tsx": {
+    "mtime": 1780611093.6115508,
+    "ast_hash": "40b97def9654e070dfa1d872eca9eac8",
+    "semantic_hash": "40b97def9654e070dfa1d872eca9eac8"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AppLayout/AppLayout.stories.tsx": {
+    "mtime": 1775162476.4845002,
+    "ast_hash": "48fa062c1fe99653e546973fbd333a6c",
+    "semantic_hash": "48fa062c1fe99653e546973fbd333a6c"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AppLayout/__tests__/AppLayout.test.tsx": {
+    "mtime": 1771702263.9933121,
+    "ast_hash": "c4cd369d162705abf56e12f48052a07c",
+    "semantic_hash": "c4cd369d162705abf56e12f48052a07c"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AppLayout/index.tsx": {
+    "mtime": 1780174291.7007215,
+    "ast_hash": "b661abb5bc18c8eff114a99597714cfe",
+    "semantic_hash": "b661abb5bc18c8eff114a99597714cfe"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AutomationBuilder/__tests__/AutomationBuilder.test.tsx": {
+    "mtime": 1780611136.2276733,
+    "ast_hash": "97da76f4bf1ca8ed804f06812496adde",
+    "semantic_hash": "97da76f4bf1ca8ed804f06812496adde"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AutomationBuilder/index.tsx": {
+    "mtime": 1780611136.2436733,
+    "ast_hash": "9fdc76ec679d8901d51b58a7751d4079",
+    "semantic_hash": "9fdc76ec679d8901d51b58a7751d4079"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AutomationRow/__tests__/AutomationRow.test.tsx": {
+    "mtime": 1780685624.3953302,
+    "ast_hash": "4912e64f2caa107c24beea639a65be8d",
+    "semantic_hash": "4912e64f2caa107c24beea639a65be8d"
+  },
+  "/home/nokternol/repos/sandbox/src/components/AutomationRow/index.tsx": {
+    "mtime": 1780685613.4953368,
+    "ast_hash": "426aee88370a127f8e3c49312766049c",
+    "semantic_hash": "426aee88370a127f8e3c49312766049c"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Badge/Badge.stories.tsx": {
+    "mtime": 1775161240.1407266,
+    "ast_hash": "2b638f22540508036d55be873f7c0b5b",
+    "semantic_hash": "2b638f22540508036d55be873f7c0b5b"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Badge/__tests__/Badge.test.tsx": {
+    "mtime": 1775161252.8767247,
+    "ast_hash": "94af0e5061563560c410ed6b36536061",
+    "semantic_hash": "94af0e5061563560c410ed6b36536061"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Badge/index.tsx": {
+    "mtime": 1775161177.1807396,
+    "ast_hash": "2899e2e93a9e71e08e723e2d11fda09a",
+    "semantic_hash": "2899e2e93a9e71e08e723e2d11fda09a"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Button/Button.stories.tsx": {
+    "mtime": 1771703554.8969176,
+    "ast_hash": "59a33dfadf6cfc98b9c81d7f78ce0a43",
+    "semantic_hash": "59a33dfadf6cfc98b9c81d7f78ce0a43"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Button/__tests__/Button.test.tsx": {
+    "mtime": 1771702614.4692047,
+    "ast_hash": "9a7bf0fe6fa2d500b1b309328bcb6044",
+    "semantic_hash": "9a7bf0fe6fa2d500b1b309328bcb6044"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Button/index.tsx": {
+    "mtime": 1771701990.9373903,
+    "ast_hash": "0c458b8dfe1997644760936c159688b1",
+    "semantic_hash": "0c458b8dfe1997644760936c159688b1"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Card/Card.stories.tsx": {
+    "mtime": 1771769230.5382984,
+    "ast_hash": "31f8f12d6dd7f62ea837e043505df29f",
+    "semantic_hash": "31f8f12d6dd7f62ea837e043505df29f"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Card/__tests__/Card.test.tsx": {
+    "mtime": 1775839372.5859196,
+    "ast_hash": "6e273d2bd0bcda85ff2679f90bcad9c8",
+    "semantic_hash": "6e273d2bd0bcda85ff2679f90bcad9c8"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Card/index.tsx": {
+    "mtime": 1775162436.4685066,
+    "ast_hash": "6fc800854fd7e0c215047fc9eea19d36",
+    "semantic_hash": "6fc800854fd7e0c215047fc9eea19d36"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ConnectionTestIcon/__tests__/ConnectionTestIcon.test.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "369076bd4b3eeb4853daa0487f6c357a",
+    "semantic_hash": "369076bd4b3eeb4853daa0487f6c357a"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ConnectionTestIcon/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "80c82b04be5a1767de4ad4b0a08ec7eb",
+    "semantic_hash": "80c82b04be5a1767de4ad4b0a08ec7eb"
+  },
+  "/home/nokternol/repos/sandbox/src/components/EmptyState/EmptyState.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "a01afa08db7034c0ce0a92cbd71ad431",
+    "semantic_hash": "a01afa08db7034c0ce0a92cbd71ad431"
+  },
+  "/home/nokternol/repos/sandbox/src/components/EmptyState/__tests__/EmptyState.test.tsx": {
+    "mtime": 1771623323.8094828,
+    "ast_hash": "a91531318609b8e7df76a94f4d7dc190",
+    "semantic_hash": "a91531318609b8e7df76a94f4d7dc190"
+  },
+  "/home/nokternol/repos/sandbox/src/components/EmptyState/index.tsx": {
+    "mtime": 1771701990.9413905,
+    "ast_hash": "1f045f617ec8b826b9bdafdcbad67fd7",
+    "semantic_hash": "1f045f617ec8b826b9bdafdcbad67fd7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/ErrorBoundary.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "bb1575affa7c026d03faf92aec6390d6",
+    "semantic_hash": "bb1575affa7c026d03faf92aec6390d6"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/ErrorBoundary.tsx": {
+    "mtime": 1771703101.2730465,
+    "ast_hash": "7c072f973f906ac9407343712fea1f69",
+    "semantic_hash": "7c072f973f906ac9407343712fea1f69"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/ErrorFallback.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "e6b095d8096c0a5211f332c7babdcc92",
+    "semantic_hash": "e6b095d8096c0a5211f332c7babdcc92"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/ErrorFallback.tsx": {
+    "mtime": 1771701990.9413905,
+    "ast_hash": "95d5adbd7f65481709d4e0c5f2c128c7",
+    "semantic_hash": "95d5adbd7f65481709d4e0c5f2c128c7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/__tests__/ErrorBoundary.test.tsx": {
+    "mtime": 1771623323.8134828,
+    "ast_hash": "f2196d9e686e443f45d22a9ad44b9d9a",
+    "semantic_hash": "f2196d9e686e443f45d22a9ad44b9d9a"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/index.tsx": {
+    "mtime": 1771623323.8134828,
+    "ast_hash": "cca1bdb7d18abf512fc5f417cea6eccf",
+    "semantic_hash": "cca1bdb7d18abf512fc5f417cea6eccf"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Icon/Icon.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "e6787449b7cc2d5f157207f147cd1541",
+    "semantic_hash": "e6787449b7cc2d5f157207f147cd1541"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Icon/__tests__/Icon.test.tsx": {
+    "mtime": 1771702614.4772046,
+    "ast_hash": "f177cf651b1a9dcb11a85db85d7ee14e",
+    "semantic_hash": "f177cf651b1a9dcb11a85db85d7ee14e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Icon/index.tsx": {
+    "mtime": 1771701990.9373903,
+    "ast_hash": "8f7d01e158e4804e8c4b1b6a8646c74f",
+    "semantic_hash": "8f7d01e158e4804e8c4b1b6a8646c74f"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ImageFader/ImageFader.stories.tsx": {
+    "mtime": 1780239074.8786647,
+    "ast_hash": "a7ab7c8308d530f6345350d26c5e99b6",
+    "semantic_hash": "a7ab7c8308d530f6345350d26c5e99b6"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ImageFader/__tests__/ImageFader.test.tsx": {
+    "mtime": 1780240600.966947,
+    "ast_hash": "8facaf7e54a7fc754a8a0909d90d935e",
+    "semantic_hash": "8facaf7e54a7fc754a8a0909d90d935e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ImageFader/index.tsx": {
+    "mtime": 1780240581.3010802,
+    "ast_hash": "6d868c73cb1efce37ae11d67c634da1b",
+    "semantic_hash": "6d868c73cb1efce37ae11d67c634da1b"
+  },
+  "/home/nokternol/repos/sandbox/src/components/LoadingSpinner/LoadingSpinner.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "d92771d6c8d462f2baeab11359bd8150",
+    "semantic_hash": "d92771d6c8d462f2baeab11359bd8150"
+  },
+  "/home/nokternol/repos/sandbox/src/components/LoadingSpinner/__tests__/LoadingSpinner.test.tsx": {
+    "mtime": 1771702191.1773338,
+    "ast_hash": "d90b7a1cb8d215d4fbdb2fc15da0418a",
+    "semantic_hash": "d90b7a1cb8d215d4fbdb2fc15da0418a"
+  },
+  "/home/nokternol/repos/sandbox/src/components/LoadingSpinner/index.tsx": {
+    "mtime": 1771701990.9413905,
+    "ast_hash": "f0f99ba2738ce31f9ff1373a01794231",
+    "semantic_hash": "f0f99ba2738ce31f9ff1373a01794231"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Logo/Logo.stories.tsx": {
+    "mtime": 1780239074.8786647,
+    "ast_hash": "32b9190df647ed4f502c42646d95b135",
+    "semantic_hash": "32b9190df647ed4f502c42646d95b135"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Logo/__tests__/Logo.test.tsx": {
+    "mtime": 1780240612.7920685,
+    "ast_hash": "7752a14f6ec6119f3f28a17261c0d104",
+    "semantic_hash": "7752a14f6ec6119f3f28a17261c0d104"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Logo/index.tsx": {
+    "mtime": 1780240605.4953766,
+    "ast_hash": "0cf0f2e7b493bfb9da123f3785410daf",
+    "semantic_hash": "0cf0f2e7b493bfb9da123f3785410daf"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaCard/MediaCard.stories.tsx": {
+    "mtime": 1780174291.7607214,
+    "ast_hash": "b73709ef788f55a86cc82d6213c01efe",
+    "semantic_hash": "b73709ef788f55a86cc82d6213c01efe"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaCard/__tests__/MediaCard.test.tsx": {
+    "mtime": 1780174291.7647214,
+    "ast_hash": "0ea29331f257b55f91efb1ba58198b73",
+    "semantic_hash": "0ea29331f257b55f91efb1ba58198b73"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaCard/index.tsx": {
+    "mtime": 1780464811.2248402,
+    "ast_hash": "eaf65bb3221939ab8ad882fdeace856e",
+    "semantic_hash": "eaf65bb3221939ab8ad882fdeace856e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaFilterBar/MediaFilterBar.stories.tsx": {
+    "mtime": 1780691102.3734772,
+    "ast_hash": "3c60c406e38904a866bd0dbc425d3ded",
+    "semantic_hash": "3c60c406e38904a866bd0dbc425d3ded"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaFilterBar/__tests__/MediaFilterBar.test.tsx": {
+    "mtime": 1780691015.7486777,
+    "ast_hash": "85a9e52b66c7089d3e58539c5fb6752e",
+    "semantic_hash": "85a9e52b66c7089d3e58539c5fb6752e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaFilterBar/index.tsx": {
+    "mtime": 1780691010.9846337,
+    "ast_hash": "3f81e4023721d1db97f1cf2d7873daa6",
+    "semantic_hash": "3f81e4023721d1db97f1cf2d7873daa6"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaGrid/MediaGrid.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "ed17e8fe026340b7489b6c43efba1643",
+    "semantic_hash": "ed17e8fe026340b7489b6c43efba1643"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaGrid/__tests__/MediaGrid.test.tsx": {
+    "mtime": 1771623323.8174827,
+    "ast_hash": "e2e02d44a2aff9358116b0bd9dd762c7",
+    "semantic_hash": "e2e02d44a2aff9358116b0bd9dd762c7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaGrid/index.tsx": {
+    "mtime": 1771626214.0086148,
+    "ast_hash": "f496d9de49329febafc91d02158a7371",
+    "semantic_hash": "f496d9de49329febafc91d02158a7371"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaPoster/MediaPoster.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "77af8d13135a254afaa061aa32893571",
+    "semantic_hash": "77af8d13135a254afaa061aa32893571"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaPoster/__tests__/MediaPoster.test.tsx": {
+    "mtime": 1780174291.8287215,
+    "ast_hash": "f17d55d864ab7ae312e8ba5d3da51e65",
+    "semantic_hash": "f17d55d864ab7ae312e8ba5d3da51e65"
+  },
+  "/home/nokternol/repos/sandbox/src/components/MediaPoster/index.tsx": {
+    "mtime": 1780132356.991652,
+    "ast_hash": "1ee1f0b8e91b6ec162f7787d9a5bfa35",
+    "semantic_hash": "1ee1f0b8e91b6ec162f7787d9a5bfa35"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ProviderCard/__tests__/ProviderCard.test.tsx": {
+    "mtime": 1780611136.2316732,
+    "ast_hash": "7f1141944139f7a27a7367a2ebbabeb7",
+    "semantic_hash": "7f1141944139f7a27a7367a2ebbabeb7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ProviderCard/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "f4b97cf0869aadd9f3755c0b6476fa0c",
+    "semantic_hash": "f4b97cf0869aadd9f3755c0b6476fa0c"
+  },
+  "/home/nokternol/repos/sandbox/src/components/QueryRow/__tests__/QueryRow.test.tsx": {
+    "mtime": 1780611136.2396734,
+    "ast_hash": "63ee439de1c04eac5056bccdc811dda7",
+    "semantic_hash": "63ee439de1c04eac5056bccdc811dda7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/QueryRow/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "b04fdba96e277d536a4159b2024e9ce3",
+    "semantic_hash": "b04fdba96e277d536a4159b2024e9ce3"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsDisplay/RatingsDisplay.stories.tsx": {
+    "mtime": 1780689553.1845236,
+    "ast_hash": "6f2ee8f2a826a003b8112b330f4876f6",
+    "semantic_hash": "6f2ee8f2a826a003b8112b330f4876f6"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsDisplay/__tests__/RatingsDisplay.test.tsx": {
+    "mtime": 1780689546.4644346,
+    "ast_hash": "1f89d0e2887cec077010e4188acb62e9",
+    "semantic_hash": "1f89d0e2887cec077010e4188acb62e9"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsDisplay/index.tsx": {
+    "mtime": 1780166684.6695018,
+    "ast_hash": "a7e1527d56390e997275a0cf1e431bef",
+    "semantic_hash": "a7e1527d56390e997275a0cf1e431bef"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsForm/RatingsForm.stories.tsx": {
+    "mtime": 1771751013.1914294,
+    "ast_hash": "ed499c9cf0a67c683c08741e43491c39",
+    "semantic_hash": "ed499c9cf0a67c683c08741e43491c39"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsForm/__tests__/RatingsForm.test.tsx": {
+    "mtime": 1771750466.0013545,
+    "ast_hash": "8c291b3dcde2ca42543e6031c29d7f8d",
+    "semantic_hash": "8c291b3dcde2ca42543e6031c29d7f8d"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsForm/index.tsx": {
+    "mtime": 1772299341.2160892,
+    "ast_hash": "5f58c3a1946257ca9fcd5e90e3fb5175",
+    "semantic_hash": "5f58c3a1946257ca9fcd5e90e3fb5175"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsPanel/RatingsPanel.stories.tsx": {
+    "mtime": 1780239089.9286652,
+    "ast_hash": "e540de525c71fd8a689b942d1025f0d4",
+    "semantic_hash": "e540de525c71fd8a689b942d1025f0d4"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsPanel/__tests__/RatingsPanel.test.tsx": {
+    "mtime": 1780689695.7984161,
+    "ast_hash": "ca1905cbaabf4bef3ddb4a6ebe5eb2a3",
+    "semantic_hash": "ca1905cbaabf4bef3ddb4a6ebe5eb2a3"
+  },
+  "/home/nokternol/repos/sandbox/src/components/RatingsPanel/index.tsx": {
+    "mtime": 1780689695.8064163,
+    "ast_hash": "3719c309af2232ab5471d925ce2f47ad",
+    "semantic_hash": "3719c309af2232ab5471d925ce2f47ad"
+  },
+  "/home/nokternol/repos/sandbox/src/components/SaveQueryDialog/index.tsx": {
+    "mtime": 1780468666.098421,
+    "ast_hash": "014788f3faeead6d21825118e6ebea8e",
+    "semantic_hash": "014788f3faeead6d21825118e6ebea8e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Sidebar/Sidebar.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "16643cc9333a28ce7b6480385a227bce",
+    "semantic_hash": "16643cc9333a28ce7b6480385a227bce"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Sidebar/SidebarItem.tsx": {
+    "mtime": 1780434798.6774986,
+    "ast_hash": "9d9a0df140a4347c9023b79a70faf385",
+    "semantic_hash": "9d9a0df140a4347c9023b79a70faf385"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Sidebar/__tests__/Sidebar.test.tsx": {
+    "mtime": 1771702189.2613344,
+    "ast_hash": "00db67993873cbe812e3ab8edf7c7ada",
+    "semantic_hash": "00db67993873cbe812e3ab8edf7c7ada"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Sidebar/index.tsx": {
+    "mtime": 1775839372.5859196,
+    "ast_hash": "4842c4db76c5228ddb6341825b3cbe53",
+    "semantic_hash": "4842c4db76c5228ddb6341825b3cbe53"
+  },
+  "/home/nokternol/repos/sandbox/src/components/SidebarNav/index.tsx": {
+    "mtime": 1780434786.6215053,
+    "ast_hash": "f7b843f3e5325503333164073ae0d99b",
+    "semantic_hash": "f7b843f3e5325503333164073ae0d99b"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Skeleton/Skeleton.stories.tsx": {
+    "mtime": 1771703173.5330245,
+    "ast_hash": "f9626a89ec29a85347d41842da82e2bf",
+    "semantic_hash": "f9626a89ec29a85347d41842da82e2bf"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Skeleton/__tests__/Skeleton.test.tsx": {
+    "mtime": 1771702047.0533764,
+    "ast_hash": "6387a89f9d5e278e6c9a0d07e701acd3",
+    "semantic_hash": "6387a89f9d5e278e6c9a0d07e701acd3"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Skeleton/index.tsx": {
+    "mtime": 1771701990.9453905,
+    "ast_hash": "678f156428055ddad10a48b6f554ab52",
+    "semantic_hash": "678f156428055ddad10a48b6f554ab52"
+  },
+  "/home/nokternol/repos/sandbox/src/components/StatCard/StatCard.stories.tsx": {
+    "mtime": 1780174291.8407214,
+    "ast_hash": "118e8a7cbb59e527cdd7a9eba1c1b0ae",
+    "semantic_hash": "118e8a7cbb59e527cdd7a9eba1c1b0ae"
+  },
+  "/home/nokternol/repos/sandbox/src/components/StatCard/__tests__/StatCard.test.tsx": {
+    "mtime": 1771703130.1330376,
+    "ast_hash": "31feaac9a3f337357c0ece09bd9baf47",
+    "semantic_hash": "31feaac9a3f337357c0ece09bd9baf47"
+  },
+  "/home/nokternol/repos/sandbox/src/components/StatCard/index.tsx": {
+    "mtime": 1780089713.2748091,
+    "ast_hash": "ea608fd33076647ffb7ac40644c57fec",
+    "semantic_hash": "ea608fd33076647ffb7ac40644c57fec"
+  },
+  "/home/nokternol/repos/sandbox/src/components/StatusDot/__tests__/StatusDot.test.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "269cf42f61c4b81e5c4ac22b6d188654",
+    "semantic_hash": "269cf42f61c4b81e5c4ac22b6d188654"
+  },
+  "/home/nokternol/repos/sandbox/src/components/StatusDot/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "1da90b41749fcf40804f0f8c9fb485fc",
+    "semantic_hash": "1da90b41749fcf40804f0f8c9fb485fc"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Tabs/Tabs.stories.tsx": {
+    "mtime": 1780124371.8166828,
+    "ast_hash": "0880cf7b4e7e6d29c4b095936b885b13",
+    "semantic_hash": "0880cf7b4e7e6d29c4b095936b885b13"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Tabs/__tests__/Tabs.test.tsx": {
+    "mtime": 1780240937.6208627,
+    "ast_hash": "cf0f27d60ecff81867203aa3e5a5c134",
+    "semantic_hash": "cf0f27d60ecff81867203aa3e5a5c134"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Tabs/index.tsx": {
+    "mtime": 1780134174.534516,
+    "ast_hash": "d0bf66e80f48199ea6810186f310bf34",
+    "semantic_hash": "d0bf66e80f48199ea6810186f310bf34"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Toggle/__tests__/Toggle.test.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "ef6c1e08ca770235d79291cf45b49327",
+    "semantic_hash": "ef6c1e08ca770235d79291cf45b49327"
+  },
+  "/home/nokternol/repos/sandbox/src/components/Toggle/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "d719070a9dc4a4883c3ee100a4d1cac7",
+    "semantic_hash": "d719070a9dc4a4883c3ee100a4d1cac7"
+  },
+  "/home/nokternol/repos/sandbox/src/components/TopBar/TopBar.stories.tsx": {
+    "mtime": 1771703285.8169935,
+    "ast_hash": "1ec066c78c296899c9f51f07e3ae3f69",
+    "semantic_hash": "1ec066c78c296899c9f51f07e3ae3f69"
+  },
+  "/home/nokternol/repos/sandbox/src/components/TopBar/__tests__/TopBar.test.tsx": {
+    "mtime": 1771702535.1892297,
+    "ast_hash": "d09a7dd182f4e5d19f123c1a4467785e",
+    "semantic_hash": "d09a7dd182f4e5d19f123c1a4467785e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/TopBar/index.tsx": {
+    "mtime": 1780174291.8807213,
+    "ast_hash": "9b6c25850bda1de30a31cb1030f0e356",
+    "semantic_hash": "9b6c25850bda1de30a31cb1030f0e356"
+  },
+  "/home/nokternol/repos/sandbox/src/components/VirtualMediaGrid/VirtualMediaGrid.stories.tsx": {
+    "mtime": 1780239086.012145,
+    "ast_hash": "93829f03e1cb003bb28c5523ced7d8c2",
+    "semantic_hash": "93829f03e1cb003bb28c5523ced7d8c2"
+  },
+  "/home/nokternol/repos/sandbox/src/components/VirtualMediaGrid/__tests__/VirtualMediaGrid.test.tsx": {
+    "mtime": 1776109445.5196068,
+    "ast_hash": "f03c8803a196942d71fe3d6131159967",
+    "semantic_hash": "f03c8803a196942d71fe3d6131159967"
+  },
+  "/home/nokternol/repos/sandbox/src/components/VirtualMediaGrid/index.tsx": {
+    "mtime": 1780243378.7777724,
+    "ast_hash": "15371e03ad80d50ead9e064756b6a697",
+    "semantic_hash": "15371e03ad80d50ead9e064756b6a697"
+  },
+  "/home/nokternol/repos/sandbox/src/components/WidgetGrid/WidgetGrid.stories.tsx": {
+    "mtime": 1771703285.8209937,
+    "ast_hash": "b123b08ca77ae118139cfd3114d154f1",
+    "semantic_hash": "b123b08ca77ae118139cfd3114d154f1"
+  },
+  "/home/nokternol/repos/sandbox/src/components/WidgetGrid/__tests__/WidgetGrid.test.tsx": {
+    "mtime": 1771702614.4772046,
+    "ast_hash": "693f1db40df90fd208ad6d20f2a9b5e3",
+    "semantic_hash": "693f1db40df90fd208ad6d20f2a9b5e3"
+  },
+  "/home/nokternol/repos/sandbox/src/components/WidgetGrid/index.tsx": {
+    "mtime": 1771702614.4652047,
+    "ast_hash": "4321b53f5969242fe4e5301298412cad",
+    "semantic_hash": "4321b53f5969242fe4e5301298412cad"
+  },
+  "/home/nokternol/repos/sandbox/src/components/filters/OptionFilter/OptionFilter.stories.tsx": {
+    "mtime": 1780238166.067275,
+    "ast_hash": "806952a6ef68d9a2292a7f5aa7545d97",
+    "semantic_hash": "806952a6ef68d9a2292a7f5aa7545d97"
+  },
+  "/home/nokternol/repos/sandbox/src/components/filters/OptionFilter/__tests__/OptionFilter.test.tsx": {
+    "mtime": 1780240937.6208627,
+    "ast_hash": "cb2c74f808366e8e0f396bf7c18ee58e",
+    "semantic_hash": "cb2c74f808366e8e0f396bf7c18ee58e"
+  },
+  "/home/nokternol/repos/sandbox/src/components/filters/OptionFilter/index.tsx": {
+    "mtime": 1780238166.067275,
+    "ast_hash": "4d8c00f491a215269d339efe60a7d765",
+    "semantic_hash": "4d8c00f491a215269d339efe60a7d765"
+  },
+  "/home/nokternol/repos/sandbox/src/components/index.ts": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "62c9c9384cf70fcd315f556a1f729067",
+    "semantic_hash": "62c9c9384cf70fcd315f556a1f729067"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useAutomationRuns.test.tsx": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "bd1ea88cf2fdf240754592e134eb190e",
+    "semantic_hash": "bd1ea88cf2fdf240754592e134eb190e"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useAutomations.test.ts": {
+    "mtime": 1780610216.5970418,
+    "ast_hash": "22cc30d264db97dad3464e23649cc77e",
+    "semantic_hash": "22cc30d264db97dad3464e23649cc77e"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useMediaFilters.test.tsx": {
+    "mtime": 1780691271.1989274,
+    "ast_hash": "6987bda47ba3cbf11c41f5d4ee992107",
+    "semantic_hash": "6987bda47ba3cbf11c41f5d4ee992107"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useMediaLookups.test.tsx": {
+    "mtime": 1780238708.9821336,
+    "ast_hash": "eb4b975e1f960815548e0a58fd2261d5",
+    "semantic_hash": "eb4b975e1f960815548e0a58fd2261d5"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useMovies.test.tsx": {
+    "mtime": 1780604205.1668358,
+    "ast_hash": "959c50f14d2b1c25a8ed3d33e3d8477d",
+    "semantic_hash": "959c50f14d2b1c25a8ed3d33e3d8477d"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/usePaginatedMedia.test.tsx": {
+    "mtime": 1780006346.7039263,
+    "ast_hash": "8e94c7b3dc71edb70673e1776a9ff3d6",
+    "semantic_hash": "8e94c7b3dc71edb70673e1776a9ff3d6"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useProviderSettings.test.tsx": {
+    "mtime": 1775245275.9885058,
+    "ast_hash": "c005d3b82d146effc413ce51dfb9b1d9",
+    "semantic_hash": "c005d3b82d146effc413ce51dfb9b1d9"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useRatings.test.tsx": {
+    "mtime": 1771750438.4813645,
+    "ast_hash": "b2909901a8f46fc271178898fe4dac5b",
+    "semantic_hash": "b2909901a8f46fc271178898fe4dac5b"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/__tests__/useSeries.test.tsx": {
+    "mtime": 1775839372.5899198,
+    "ast_hash": "c8fce38162d4abe3cfccbb29c7aadc4e",
+    "semantic_hash": "c8fce38162d4abe3cfccbb29c7aadc4e"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useAutomationRuns.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "746377d05454bc1bab38331662900a98",
+    "semantic_hash": "746377d05454bc1bab38331662900a98"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useAutomations.ts": {
+    "mtime": 1780610511.8778727,
+    "ast_hash": "d8224bed2503ef64cd4f91abecee3cba",
+    "semantic_hash": "d8224bed2503ef64cd4f91abecee3cba"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useBackdrops.ts": {
+    "mtime": 1771623323.7974827,
+    "ast_hash": "59034284bed0676c04564687259637d3",
+    "semantic_hash": "59034284bed0676c04564687259637d3"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useCardDensity.ts": {
+    "mtime": 1780245469.2881358,
+    "ast_hash": "8a2148953e8d18e6a78c3a2015a3a983",
+    "semantic_hash": "8a2148953e8d18e6a78c3a2015a3a983"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useLocalStorage.ts": {
+    "mtime": 1780468550.3584962,
+    "ast_hash": "ebae4cf7d199bf58072be7ad05a8c954",
+    "semantic_hash": "ebae4cf7d199bf58072be7ad05a8c954"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useMediaFilters.ts": {
+    "mtime": 1780690631.8651135,
+    "ast_hash": "43399931ca5da5461b23f5e87a293023",
+    "semantic_hash": "43399931ca5da5461b23f5e87a293023"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useMediaLookups.ts": {
+    "mtime": 1776197428.0752459,
+    "ast_hash": "4b31d45a49da160ac5a4feff9a56df75",
+    "semantic_hash": "4b31d45a49da160ac5a4feff9a56df75"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useMediaQuery.ts": {
+    "mtime": 1771623323.7974827,
+    "ast_hash": "0f2d316491380cea0b616967b7fecd21",
+    "semantic_hash": "0f2d316491380cea0b616967b7fecd21"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useMetadataSearch.ts": {
+    "mtime": 1775679610.7131565,
+    "ast_hash": "37c761c1bb2fe1d9b1abf669d28e20f1",
+    "semantic_hash": "37c761c1bb2fe1d9b1abf669d28e20f1"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useMovies.ts": {
+    "mtime": 1780603920.2462885,
+    "ast_hash": "dfac2a1fa609ad28f3fe3ed7f00a3b95",
+    "semantic_hash": "dfac2a1fa609ad28f3fe3ed7f00a3b95"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/usePaginatedMedia.ts": {
+    "mtime": 1780244873.0298452,
+    "ast_hash": "f428feb07bf59339fe8d623ffa0a5041",
+    "semantic_hash": "f428feb07bf59339fe8d623ffa0a5041"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useProviderSettings.ts": {
+    "mtime": 1775680509.6929815,
+    "ast_hash": "64c3e7b5393ecac5e2aa6ca606ee4160",
+    "semantic_hash": "64c3e7b5393ecac5e2aa6ca606ee4160"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useRatings.ts": {
+    "mtime": 1771750438.4813645,
+    "ast_hash": "0b04ce284a73f2a34754114282210fa8",
+    "semantic_hash": "0b04ce284a73f2a34754114282210fa8"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useSavedQueries.ts": {
+    "mtime": 1780610508.0578606,
+    "ast_hash": "de7e63826185eb71b0321ce0b3e2fa97",
+    "semantic_hash": "de7e63826185eb71b0321ce0b3e2fa97"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/useSeries.ts": {
+    "mtime": 1780603926.286508,
+    "ast_hash": "381d210dd8c02018f1e5cab364d90cb9",
+    "semantic_hash": "381d210dd8c02018f1e5cab364d90cb9"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/navigation.tsx": {
+    "mtime": 1780433701.246168,
+    "ast_hash": "494ab1a79b800e5c5d112ea91ca8a227",
+    "semantic_hash": "494ab1a79b800e5c5d112ea91ca8a227"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/provider-registry.ts": {
+    "mtime": 1780610948.2711296,
+    "ast_hash": "4a93bd834332e269c8b1d5ac4c0927ee",
+    "semantic_hash": "4a93bd834332e269c8b1d5ac4c0927ee"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/tasks.ts": {
+    "mtime": 1780610948.2711296,
+    "ast_hash": "8b4f74a934da5cb508b5d87686ac65a6",
+    "semantic_hash": "8b4f74a934da5cb508b5d87686ac65a6"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/__tests__/plexOAuth.test.ts": {
+    "mtime": 1780037922.9892313,
+    "ast_hash": "f5b9265dab7cceea33d2139c3ff1e672",
+    "semantic_hash": "f5b9265dab7cceea33d2139c3ff1e672"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/__tests__/time.test.ts": {
+    "mtime": 1780685613.4953368,
+    "ast_hash": "dde7a205d8baaf789c92ecb46e6a58db",
+    "semantic_hash": "dde7a205d8baaf789c92ecb46e6a58db"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/cn.ts": {
+    "mtime": 1775839372.5899198,
+    "ast_hash": "daff3179c5078250e8e42f3931f48578",
+    "semantic_hash": "daff3179c5078250e8e42f3931f48578"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/filterSummary.ts": {
+    "mtime": 1780468892.2222686,
+    "ast_hash": "1d5fdc6a83872175bbfeb21ab756c792",
+    "semantic_hash": "1d5fdc6a83872175bbfeb21ab756c792"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/plexOAuth.ts": {
+    "mtime": 1780437523.1317854,
+    "ast_hash": "2bc79da8c75038e9cd4ff55ac5e4acf3",
+    "semantic_hash": "2bc79da8c75038e9cd4ff55ac5e4acf3"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/requireAuth.ts": {
+    "mtime": 1780434049.9619648,
+    "ast_hash": "00d6ce12883b94670c1566590fde86f3",
+    "semantic_hash": "00d6ce12883b94670c1566590fde86f3"
+  },
+  "/home/nokternol/repos/sandbox/src/lib/utils/time.ts": {
+    "mtime": 1780685613.4953368,
+    "ast_hash": "259cfcfe06c936b45c9b4f0c0195ac24",
+    "semantic_hash": "259cfcfe06c936b45c9b4f0c0195ac24"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/404.tsx": {
+    "mtime": 1780464472.885056,
+    "ast_hash": "f612ed57cba930514e0bb8c2fff54154",
+    "semantic_hash": "f612ed57cba930514e0bb8c2fff54154"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/_app.tsx": {
+    "mtime": 1780433342.7744193,
+    "ast_hash": "8f650e1e8127ba642110671ebf22acc7",
+    "semantic_hash": "8f650e1e8127ba642110671ebf22acc7"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/_document.tsx": {
+    "mtime": 1775161166.5287418,
+    "ast_hash": "5a89afc7894971572abdc16b1dbf5481",
+    "semantic_hash": "5a89afc7894971572abdc16b1dbf5481"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/_error.tsx": {
+    "mtime": 1780464475.7090545,
+    "ast_hash": "7cab9a7371709be9b4693f1d0315d701",
+    "semantic_hash": "7cab9a7371709be9b4693f1d0315d701"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/activity/__tests__/activity.page.test.tsx": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "416f5910919fe61178d406341c9b96a4",
+    "semantic_hash": "416f5910919fe61178d406341c9b96a4"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/activity/index.tsx": {
+    "mtime": 1780685824.9311953,
+    "ast_hash": "c0eb0853f6f6b278fe2a0e49a855340c",
+    "semantic_hash": "c0eb0853f6f6b278fe2a0e49a855340c"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/automations/__tests__/automations.page.test.tsx": {
+    "mtime": 1780610222.8970618,
+    "ast_hash": "077b4c50cc9c4497e6c37c62d77959e9",
+    "semantic_hash": "077b4c50cc9c4497e6c37c62d77959e9"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/automations/index.tsx": {
+    "mtime": 1780685591.5993502,
+    "ast_hash": "102613a1954dfa2932b551d53d367b9f",
+    "semantic_hash": "102613a1954dfa2932b551d53d367b9f"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/dashboard/Dashboard.stories.tsx": {
+    "mtime": 1780470581.0572104,
+    "ast_hash": "bda7195ccaf39698b8ab9b5aef247513",
+    "semantic_hash": "bda7195ccaf39698b8ab9b5aef247513"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/dashboard/DashboardContent.tsx": {
+    "mtime": 1780685624.3993304,
+    "ast_hash": "9e17413c6b99a1be8186eb1f0a433311",
+    "semantic_hash": "9e17413c6b99a1be8186eb1f0a433311"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/dashboard/index.tsx": {
+    "mtime": 1780470024.3495579,
+    "ast_hash": "bbc509b174ac6133816bfc2dd1049f20",
+    "semantic_hash": "bbc509b174ac6133816bfc2dd1049f20"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/index.tsx": {
+    "mtime": 1780433342.7784193,
+    "ast_hash": "acddc0db1489fb756703622504d6dc9d",
+    "semantic_hash": "acddc0db1489fb756703622504d6dc9d"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/login/Login.stories.tsx": {
+    "mtime": 1771704134.1127431,
+    "ast_hash": "180bdeccbb0e46490d077e7173b8979a",
+    "semantic_hash": "180bdeccbb0e46490d077e7173b8979a"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/login/index.tsx": {
+    "mtime": 1780464997.1287253,
+    "ast_hash": "efea595d71c13e04c80dd92c32e52b2d",
+    "semantic_hash": "efea595d71c13e04c80dd92c32e52b2d"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/login/plex/close.tsx": {
+    "mtime": 1775165667.359913,
+    "ast_hash": "9379fd0ad4d405f602816083528e6f83",
+    "semantic_hash": "9379fd0ad4d405f602816083528e6f83"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/media/Media.stories.tsx": {
+    "mtime": 1780691111.081558,
+    "ast_hash": "4b36f120d38440bf5eb48ffc0becc85a",
+    "semantic_hash": "4b36f120d38440bf5eb48ffc0becc85a"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/media/__tests__/media.page.test.tsx": {
+    "mtime": 1780174291.7927215,
+    "ast_hash": "f2f67352691033245fc0cfa445e9c554",
+    "semantic_hash": "f2f67352691033245fc0cfa445e9c554"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/media/__tests__/media.panel.test.tsx": {
+    "mtime": 1775839372.5939198,
+    "ast_hash": "d98142dd13c9fcfa1027169c3fe120d1",
+    "semantic_hash": "d98142dd13c9fcfa1027169c3fe120d1"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/media/index.tsx": {
+    "mtime": 1780691070.3731816,
+    "ast_hash": "e8aebf3979cafbcdcb8671f7d5c0c324",
+    "semantic_hash": "e8aebf3979cafbcdcb8671f7d5c0c324"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/ratings/__tests__/ratings.page.test.tsx": {
+    "mtime": 1771750438.4853644,
+    "ast_hash": "a197d86cb4ec1ba39175ed0e74e5749a",
+    "semantic_hash": "a197d86cb4ec1ba39175ed0e74e5749a"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/ratings/index.tsx": {
+    "mtime": 1780434377.5977638,
+    "ast_hash": "5b88a22a4787a824604803736f5c8c1b",
+    "semantic_hash": "5b88a22a4787a824604803736f5c8c1b"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/search/index.tsx": {
+    "mtime": 1780434377.6017637,
+    "ast_hash": "304851a0b819fce6ac4a335b7c6dd020",
+    "semantic_hash": "304851a0b819fce6ac4a335b7c6dd020"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/settings/__tests__/settings.page.test.tsx": {
+    "mtime": 1780467548.731124,
+    "ast_hash": "a43baa4964524fb977da5660f53921e3",
+    "semantic_hash": "a43baa4964524fb977da5660f53921e3"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/settings/index.tsx": {
+    "mtime": 1780611093.6155508,
+    "ast_hash": "3fc8dffd58c549f7fe2c9f1a70f28934",
+    "semantic_hash": "3fc8dffd58c549f7fe2c9f1a70f28934"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/system/index.tsx": {
+    "mtime": 1780434377.5977638,
+    "ast_hash": "724cb49dae6532c97b4880573c70db22",
+    "semantic_hash": "724cb49dae6532c97b4880573c70db22"
+  },
+  "/home/nokternol/repos/sandbox/src/styles/theme.ts": {
+    "mtime": 1780437529.9997811,
+    "ast_hash": "367b537ed1cfa41003b9d472b67e3d93",
+    "semantic_hash": "367b537ed1cfa41003b9d472b67e3d93"
+  },
+  "/home/nokternol/repos/sandbox/src/types/media.ts": {
+    "mtime": 1780603914.358075,
+    "ast_hash": "d8166a7083df1ae65f376df4f3d98464",
+    "semantic_hash": "d8166a7083df1ae65f376df4f3d98464"
+  },
+  "/home/nokternol/repos/sandbox/src/types/navigation.ts": {
+    "mtime": 1771623323.785483,
+    "ast_hash": "fa2e4735bc52c629dfde2e775d8172d4",
+    "semantic_hash": "fa2e4735bc52c629dfde2e775d8172d4"
+  },
+  "/home/nokternol/repos/sandbox/tailwind.config.js": {
+    "mtime": 1775162403.260512,
+    "ast_hash": "d67f4f6df6debe320388f65d1713cdc7",
+    "semantic_hash": "d67f4f6df6debe320388f65d1713cdc7"
+  },
+  "/home/nokternol/repos/sandbox/tests/factories/index.ts": {
+    "mtime": 1780511910.788875,
+    "ast_hash": "c75ac806e20368556f1b2d007b78c021",
+    "semantic_hash": "c75ac806e20368556f1b2d007b78c021"
+  },
+  "/home/nokternol/repos/sandbox/tests/fixtures/users.ts": {
+    "mtime": 1770564893.0203795,
+    "ast_hash": "a904313f7096491cf529759765f66029",
+    "semantic_hash": "a904313f7096491cf529759765f66029"
+  },
+  "/home/nokternol/repos/sandbox/tests/helpers/api.ts": {
+    "mtime": 1770849231.9568412,
+    "ast_hash": "cb74f5e7c857c539377894a94f239bc0",
+    "semantic_hash": "cb74f5e7c857c539377894a94f239bc0"
+  },
+  "/home/nokternol/repos/sandbox/tests/helpers/component.tsx": {
+    "mtime": 1770842736.156134,
+    "ast_hash": "d53af422c52385447bbd4eea91b006e1",
+    "semantic_hash": "d53af422c52385447bbd4eea91b006e1"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/browser.ts": {
+    "mtime": 1770564891.9923801,
+    "ast_hash": "fcc10fa7ea5fad9b9a1bd044d00a28ed",
+    "semantic_hash": "fcc10fa7ea5fad9b9a1bd044d00a28ed"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/auth.ts": {
+    "mtime": 1770849231.9408412,
+    "ast_hash": "6a22e44473650010dc8d008e81861fea",
+    "semantic_hash": "6a22e44473650010dc8d008e81861fea"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/automationRuns.ts": {
+    "mtime": 1780685736.227259,
+    "ast_hash": "bae88ea5d249879691425c12b9f505c7",
+    "semantic_hash": "bae88ea5d249879691425c12b9f505c7"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/automations.ts": {
+    "mtime": 1780610222.8970618,
+    "ast_hash": "b7ba7cebea262ac972e6e9ec1fa4b171",
+    "semantic_hash": "b7ba7cebea262ac972e6e9ec1fa4b171"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/backdrops.ts": {
+    "mtime": 1771367762.7653956,
+    "ast_hash": "28c705aceb6aa0fe568e49f88ffff970",
+    "semantic_hash": "28c705aceb6aa0fe568e49f88ffff970"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/index.ts": {
+    "mtime": 1780685824.9311953,
+    "ast_hash": "894c63f573f1b29dc6933cce25c15d48",
+    "semantic_hash": "894c63f573f1b29dc6933cce25c15d48"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/jellyfin.ts": {
+    "mtime": 1771710075.0829568,
+    "ast_hash": "7fec4b62cf32a0b2a7a5c0b17f0937da",
+    "semantic_hash": "7fec4b62cf32a0b2a7a5c0b17f0937da"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/media.ts": {
+    "mtime": 1780604205.1668358,
+    "ast_hash": "2816241657c6caaabefb156affe77670",
+    "semantic_hash": "2816241657c6caaabefb156affe77670"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/overseerr.ts": {
+    "mtime": 1771710075.090957,
+    "ast_hash": "39786dd2148fb38d5bb6e44236eb7d8d",
+    "semantic_hash": "39786dd2148fb38d5bb6e44236eb7d8d"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/plex.ts": {
+    "mtime": 1771711374.5345666,
+    "ast_hash": "7ae63bb19cad3f7356128c6014d21bb9",
+    "semantic_hash": "7ae63bb19cad3f7356128c6014d21bb9"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/providers.ts": {
+    "mtime": 1780689652.149834,
+    "ast_hash": "3503daf3898db33d6ce1c3a23cacfe1b",
+    "semantic_hash": "3503daf3898db33d6ce1c3a23cacfe1b"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/radarr.ts": {
+    "mtime": 1771710104.362948,
+    "ast_hash": "0120d383b098d0a77b0187578ddf082e",
+    "semantic_hash": "0120d383b098d0a77b0187578ddf082e"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/settings.ts": {
+    "mtime": 1775245252.108507,
+    "ast_hash": "4b3c1ffa05d1b5867c76d90d4c60e02c",
+    "semantic_hash": "4b3c1ffa05d1b5867c76d90d4c60e02c"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/sonarr.ts": {
+    "mtime": 1771710104.362948,
+    "ast_hash": "60f166465ed479dfdc76b5ce6697582b",
+    "semantic_hash": "60f166465ed479dfdc76b5ce6697582b"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/handlers/tautulli.ts": {
+    "mtime": 1771710075.0829568,
+    "ast_hash": "7e0fc83ff23e123c7f984e0e4b79d34c",
+    "semantic_hash": "7e0fc83ff23e123c7f984e0e4b79d34c"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/next/image.tsx": {
+    "mtime": 1775839372.5979197,
+    "ast_hash": "8ae796b5ed1936adcfd26d3b20b9f9d0",
+    "semantic_hash": "8ae796b5ed1936adcfd26d3b20b9f9d0"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/next/router.tsx": {
+    "mtime": 1770930552.1020033,
+    "ast_hash": "5af92a7a40365a00d2dca3f153892e79",
+    "semantic_hash": "5af92a7a40365a00d2dca3f153892e79"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/server.ts": {
+    "mtime": 1770564890.9563806,
+    "ast_hash": "4847d8f1f53222aed3e5c07206ea3f60",
+    "semantic_hash": "4847d8f1f53222aed3e5c07206ea3f60"
+  },
+  "/home/nokternol/repos/sandbox/tests/setup/vitest.server.ts": {
+    "mtime": 1771709620.6310809,
+    "ast_hash": "69c5f4a6225218733ab73828aaaa7183",
+    "semantic_hash": "69c5f4a6225218733ab73828aaaa7183"
+  },
+  "/home/nokternol/repos/sandbox/tests/setup/vitest.ts": {
+    "mtime": 1775903622.0651538,
+    "ast_hash": "703a1cbf0fd7037cb49c84933a3bd6ab",
+    "semantic_hash": "703a1cbf0fd7037cb49c84933a3bd6ab"
+  },
+  "/home/nokternol/repos/sandbox/tsconfig.json": {
+    "mtime": 1772298602.976328,
+    "ast_hash": "080e50b647f460e026c44c7caed0b31f",
+    "semantic_hash": "080e50b647f460e026c44c7caed0b31f"
+  },
+  "/home/nokternol/repos/sandbox/vitest.config.ts": {
+    "mtime": 1771711172.1706274,
+    "ast_hash": "136b0bc77ccffee1a050682034cc4075",
+    "semantic_hash": "136b0bc77ccffee1a050682034cc4075"
+  },
+  "/home/nokternol/repos/sandbox/.agent/skills/composable-components/SKILL.md": {
+    "mtime": 1780437301.2959135,
+    "ast_hash": "242c94ad598870cfd91b76284bb5660d",
+    "semantic_hash": "242c94ad598870cfd91b76284bb5660d"
+  },
+  "/home/nokternol/repos/sandbox/.agent/skills/maintainarr-tdd/SKILL.md": {
+    "mtime": 1780437301.2959135,
+    "ast_hash": "2d6adc67be5f4beb0958a632542d4e31",
+    "semantic_hash": "2d6adc67be5f4beb0958a632542d4e31"
+  },
+  "/home/nokternol/repos/sandbox/.agent/workflows/tdd.md": {
+    "mtime": 1780437301.2959135,
+    "ast_hash": "e72d8563679e595a3670c143f8e6ce1d",
+    "semantic_hash": "e72d8563679e595a3670c143f8e6ce1d"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/critique/2026-05-29T19-44-58Z__src-pages-media-index-tsx.md": {
+    "mtime": 1780083898.8190553,
+    "ast_hash": "bb5d1dec31898d030c38252b281a7ec6",
+    "semantic_hash": "bb5d1dec31898d030c38252b281a7ec6"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/critique/2026-05-29T21-39-43Z__src-pages-dashboard-index-tsx.md": {
+    "mtime": 1780090783.7733912,
+    "ast_hash": "ae745587b1ad0ceb75913a67cd6d9209",
+    "semantic_hash": "ae745587b1ad0ceb75913a67cd6d9209"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/critique/2026-05-29T21-55-56Z__src-pages-media-index-tsx.md": {
+    "mtime": 1780091756.5508976,
+    "ast_hash": "8b04b596b4bea2d8e318fecff6b3ee14",
+    "semantic_hash": "8b04b596b4bea2d8e318fecff6b3ee14"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/critique/2026-05-30T07-33-16Z__src-pages-media-index-tsx.md": {
+    "mtime": 1780126396.2914135,
+    "ast_hash": "aac484a67864a3c01b70440c406f0e8a",
+    "semantic_hash": "aac484a67864a3c01b70440c406f0e8a"
+  },
+  "/home/nokternol/repos/sandbox/.impeccable/critique/2026-06-02T20-13-31Z__routing-and-sidebar-consistency.md": {
+    "mtime": 1780431211.4357495,
+    "ast_hash": "efc9cd7955376314b702d29117a38710",
+    "semantic_hash": "efc9cd7955376314b702d29117a38710"
+  },
+  "/home/nokternol/repos/sandbox/CLAUDE.md": {
+    "mtime": 1780743543.7633235,
+    "ast_hash": "a995e4a8d406e82b4ac678425384e0d7",
+    "semantic_hash": "a995e4a8d406e82b4ac678425384e0d7"
+  },
+  "/home/nokternol/repos/sandbox/DESIGN.md": {
+    "mtime": 1780437317.771911,
+    "ast_hash": "5c9cbf00b0a658aadcca96c93d2e8019",
+    "semantic_hash": "5c9cbf00b0a658aadcca96c93d2e8019"
+  },
+  "/home/nokternol/repos/sandbox/INVENTORY.md": {
+    "mtime": 1780688045.2494798,
+    "ast_hash": "800f3d9f3c8523c7dc933d3e5bec22a0",
+    "semantic_hash": "800f3d9f3c8523c7dc933d3e5bec22a0"
+  },
+  "/home/nokternol/repos/sandbox/PRODUCT.md": {
+    "mtime": 1780083462.6122024,
+    "ast_hash": "534bb898e936b4b1e7fb53baca245865",
+    "semantic_hash": "534bb898e936b4b1e7fb53baca245865"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES.md": {
+    "mtime": 1780691341.2753575,
+    "ast_hash": "e70bc3b91434d59678ac767164733cb0",
+    "semantic_hash": "e70bc3b91434d59678ac767164733cb0"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_DEBT.md": {
+    "mtime": 1780689922.109418,
+    "ast_hash": "9b5762d5dd04b5118267756dd3d38856",
+    "semantic_hash": "9b5762d5dd04b5118267756dd3d38856"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_phase_0b.md": {
+    "mtime": 1780688633.8333433,
+    "ast_hash": "a6c4c09ba05dc7b45d417d9da596ef1d",
+    "semantic_hash": "a6c4c09ba05dc7b45d417d9da596ef1d"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_phase_1.md": {
+    "mtime": 1780691344.4513803,
+    "ast_hash": "459a7258be3848a3446700087c2d1938",
+    "semantic_hash": "459a7258be3848a3446700087c2d1938"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_phase_2.md": {
+    "mtime": 1780688741.815374,
+    "ast_hash": "2ca3ce66c6b631ca4b3e47aaace77cf0",
+    "semantic_hash": "2ca3ce66c6b631ca4b3e47aaace77cf0"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_phase_3.md": {
+    "mtime": 1780688781.100112,
+    "ast_hash": "15e0704040d114f21dbbedd0eae8c7d8",
+    "semantic_hash": "15e0704040d114f21dbbedd0eae8c7d8"
+  },
+  "/home/nokternol/repos/sandbox/QUERIES_phase_4.md": {
+    "mtime": 1780688819.5328352,
+    "ast_hash": "193ce9138b41c731ebe9141013a5a866",
+    "semantic_hash": "193ce9138b41c731ebe9141013a5a866"
+  },
+  "/home/nokternol/repos/sandbox/README.md": {
+    "mtime": 1780437325.0119038,
+    "ast_hash": "541a09d5d5b3e3ccaebb764e910809db",
+    "semantic_hash": "541a09d5d5b3e3ccaebb764e910809db"
+  },
+  "/home/nokternol/repos/sandbox/STYLING.md": {
+    "mtime": 1770674576.8200176,
+    "ast_hash": "8949a1286182dacfe119fbfd5ae13b54",
+    "semantic_hash": "8949a1286182dacfe119fbfd5ae13b54"
+  },
+  "/home/nokternol/repos/sandbox/TESTING.md": {
+    "mtime": 1770842882.812052,
+    "ast_hash": "7940f61fa9181b21a2c3b2379aee65c5",
+    "semantic_hash": "7940f61fa9181b21a2c3b2379aee65c5"
+  },
+  "/home/nokternol/repos/sandbox/TESTING_PATTERNS.md": {
+    "mtime": 1780437351.7118952,
+    "ast_hash": "6cfe5ded654b665af451598fdeac2b06",
+    "semantic_hash": "6cfe5ded654b665af451598fdeac2b06"
+  },
+  "/home/nokternol/repos/sandbox/config/README.md": {
+    "mtime": 1770843424.4757884,
+    "ast_hash": "9032bdf8e693a15d9814437e4c8f0837",
+    "semantic_hash": "9032bdf8e693a15d9814437e4c8f0837"
+  },
+  "/home/nokternol/repos/sandbox/docs/agent/architecture.md": {
+    "mtime": 1771710436.5388439,
+    "ast_hash": "b23b257781cbd4ebba22e44b727b7149",
+    "semantic_hash": "b23b257781cbd4ebba22e44b727b7149"
+  },
+  "/home/nokternol/repos/sandbox/docs/agent/styling.md": {
+    "mtime": 1780437413.1078522,
+    "ast_hash": "94385ab8bced6189362e16f2dba8fe3c",
+    "semantic_hash": "94385ab8bced6189362e16f2dba8fe3c"
+  },
+  "/home/nokternol/repos/sandbox/docs/agent/testing.md": {
+    "mtime": 1771620137.41844,
+    "ast_hash": "2ea5993a90ccb09a425c982dfaf3788e",
+    "semantic_hash": "2ea5993a90ccb09a425c982dfaf3788e"
+  },
+  "/home/nokternol/repos/sandbox/public/offline.html": {
+    "mtime": 1780437413.1078522,
+    "ast_hash": "eec3024328b336755f7579c1b13e5e13",
+    "semantic_hash": "eec3024328b336755f7579c1b13e5e13"
+  },
+  "/home/nokternol/repos/sandbox/server/README.md": {
+    "mtime": 1780437413.1118522,
+    "ast_hash": "bc2191434d5f5e30e2cf778ce83b9497",
+    "semantic_hash": "bc2191434d5f5e30e2cf778ce83b9497"
+  },
+  "/home/nokternol/repos/sandbox/server/database/README.md": {
+    "mtime": 1770843560.5597186,
+    "ast_hash": "18db6e7f211f2de4848b25204572993e",
+    "semantic_hash": "18db6e7f211f2de4848b25204572993e"
+  },
+  "/home/nokternol/repos/sandbox/server/middleware/README.md": {
+    "mtime": 1770843560.5597186,
+    "ast_hash": "e8f00c677b4b731f8588381cff3436e5",
+    "semantic_hash": "e8f00c677b4b731f8588381cff3436e5"
+  },
+  "/home/nokternol/repos/sandbox/server/modules/README.md": {
+    "mtime": 1770843560.5597186,
+    "ast_hash": "942a21727bd99275ecfdabac852ea322",
+    "semantic_hash": "942a21727bd99275ecfdabac852ea322"
+  },
+  "/home/nokternol/repos/sandbox/server/providers/README.md": {
+    "mtime": 1771711192.998622,
+    "ast_hash": "f2f824e2c8565700a7d1165724bf7edb",
+    "semantic_hash": "f2f824e2c8565700a7d1165724bf7edb"
+  },
+  "/home/nokternol/repos/sandbox/server/services/README.md": {
+    "mtime": 1771710428.5508428,
+    "ast_hash": "d8484f3f62bdc189bd48545d17fef836",
+    "semantic_hash": "d8484f3f62bdc189bd48545d17fef836"
+  },
+  "/home/nokternol/repos/sandbox/server/types/README.md": {
+    "mtime": 1770843560.5597186,
+    "ast_hash": "462cb4e864aebaddbe55139ed28ae528",
+    "semantic_hash": "462cb4e864aebaddbe55139ed28ae528"
+  },
+  "/home/nokternol/repos/sandbox/server/utils/README.md": {
+    "mtime": 1770843273.7438629,
+    "ast_hash": "c1929ef2c3cb8cf37596d6456e09de0d",
+    "semantic_hash": "c1929ef2c3cb8cf37596d6456e09de0d"
+  },
+  "/home/nokternol/repos/sandbox/src/README.md": {
+    "mtime": 1780437419.923848,
+    "ast_hash": "61f8978fea60d2f4612ed7db92c5fd3d",
+    "semantic_hash": "61f8978fea60d2f4612ed7db92c5fd3d"
+  },
+  "/home/nokternol/repos/sandbox/src/components/ErrorBoundary/ERROR_BOUNDARY.md": {
+    "mtime": 1770840943.329043,
+    "ast_hash": "36160a010774ccdc369e2bdda6446c70",
+    "semantic_hash": "36160a010774ccdc369e2bdda6446c70"
+  },
+  "/home/nokternol/repos/sandbox/src/components/README.md": {
+    "mtime": 1770843324.435837,
+    "ast_hash": "01cc75235039a1d7d77c8df6f80d3d21",
+    "semantic_hash": "01cc75235039a1d7d77c8df6f80d3d21"
+  },
+  "/home/nokternol/repos/sandbox/src/hooks/README.md": {
+    "mtime": 1770843342.1838276,
+    "ast_hash": "4c2a2e26c7e0c4278a60cebe5dbf6dc8",
+    "semantic_hash": "4c2a2e26c7e0c4278a60cebe5dbf6dc8"
+  },
+  "/home/nokternol/repos/sandbox/src/pages/README.md": {
+    "mtime": 1770843352.5278232,
+    "ast_hash": "a0cfc9252d9a8937c2c59d1a7b3c05e3",
+    "semantic_hash": "a0cfc9252d9a8937c2c59d1a7b3c05e3"
+  },
+  "/home/nokternol/repos/sandbox/src/styles/README.md": {
+    "mtime": 1771777718.7355525,
+    "ast_hash": "83dcf9a373301a85efa2b185be034ce4",
+    "semantic_hash": "83dcf9a373301a85efa2b185be034ce4"
+  },
+  "/home/nokternol/repos/sandbox/src/types/README.md": {
+    "mtime": 1770843371.7838144,
+    "ast_hash": "9093d9569238cf9b30bfbfeb17c39e9d",
+    "semantic_hash": "9093d9569238cf9b30bfbfeb17c39e9d"
+  },
+  "/home/nokternol/repos/sandbox/tests/README.md": {
+    "mtime": 1770843386.6478066,
+    "ast_hash": "96aad8000c772d65fcec9444b6250932",
+    "semantic_hash": "96aad8000c772d65fcec9444b6250932"
+  },
+  "/home/nokternol/repos/sandbox/tests/helpers/README.md": {
+    "mtime": 1770843413.4277937,
+    "ast_hash": "df946b41a924c54f78fed5b80e7310b2",
+    "semantic_hash": "df946b41a924c54f78fed5b80e7310b2"
+  },
+  "/home/nokternol/repos/sandbox/tests/mocks/README.md": {
+    "mtime": 1771710434.5548446,
+    "ast_hash": "dacceaa5317d90d24ae737eefee5ce08",
+    "semantic_hash": "dacceaa5317d90d24ae737eefee5ce08"
+  },
+  "/home/nokternol/repos/sandbox/public/android-chrome-192x192.png": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/nokternol/repos/sandbox/public/android-chrome-512x512.png": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/nokternol/repos/sandbox/public/apple-touch-icon.png": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/nokternol/repos/sandbox/public/badge-logo.png": {
+    "mtime": 1770934570.5336432,
+    "ast_hash": "4813940e2bad3685de7efd52d07ca6f9",
+    "semantic_hash": "4813940e2bad3685de7efd52d07ca6f9"
+  },
+  "/home/nokternol/repos/sandbox/public/favicon-16x16.png": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/nokternol/repos/sandbox/public/favicon-32x32.png": {
+    "mtime": 1770564539.1845765,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  }
+}

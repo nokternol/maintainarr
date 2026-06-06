@@ -58,7 +58,8 @@
       "yarn.lock",
       "package-lock.json",
       "*.log",
-      "public"
+      "public",
+      "graphify-out"
     ]
   },
   "overrides": [

@@ -71,3 +71,4 @@ build
 .agent/plans/
 # Browser automation files
 .playwright-cli
+graphify-out/cost.json
