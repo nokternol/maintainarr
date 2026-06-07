@@ -123,12 +123,10 @@ export const automations = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
-    queryId: integer('queryId')
-      .notNull()
-      .references(() => savedQueries.id, { onDelete: 'cascade' }),
-    providerId: integer('providerId')
-      .notNull()
-      .references(() => metadataProviders.id, { onDelete: 'cascade' }),
+    queryId: integer('queryId').references(() => savedQueries.id, { onDelete: 'cascade' }),
+    providerId: integer('providerId').references(() => metadataProviders.id, {
+      onDelete: 'cascade',
+    }),
     taskId: text('taskId').notNull(),
     schedule: text('schedule').notNull(), // cron expression
     status: text('status').notNull().default('active'), // 'active' | 'paused'
@@ -136,6 +134,7 @@ export const automations = sqliteTable(
     lastRunItemCount: integer('lastRunItemCount'),
     lastRunStatus: text('lastRunStatus'), // 'success' | 'error'
     lastRunError: text('lastRunError'),
+    kind: text('kind').notNull().default('user'), // 'user' | 'system'
     createdAt: createdAt('createdAt'),
     updatedAt: updatedAt('updatedAt'),
   },
@@ -162,6 +161,7 @@ export const automationRuns = sqliteTable(
     status: text('status').notNull(), // 'success' | 'error'
     itemCount: integer('itemCount'),
     error: text('error'),
+    kind: text('kind').notNull().default('user'), // 'user' | 'system'
     createdAt: createdAt('createdAt'),
   },
   (table) => [index('IDX_automation_runs_automationId').on(table.automationId)]

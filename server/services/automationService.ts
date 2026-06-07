@@ -1,5 +1,5 @@
 import { Cron } from 'croner';
-import { eq } from 'drizzle-orm';
+import { type SQL, eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type Automation as AutomationRow,
@@ -8,7 +8,7 @@ import {
   metadataProviders,
   savedQueries,
 } from '../database/schema';
-import { NotFoundError } from '../errors';
+import { ForbiddenError, NotFoundError } from '../errors';
 import type { QueryFilters } from './savedQueryService';
 
 export interface AutomationDraft {
@@ -22,8 +22,9 @@ export interface AutomationDraft {
 export interface AutomationDto {
   id: number;
   name: string;
-  query: { id: number; name: string; filters: QueryFilters };
-  provider: { id: number; name: string; type: string };
+  kind: 'user' | 'system';
+  query: { id: number; name: string; filters: QueryFilters } | null;
+  provider: { id: number; name: string; type: string } | null;
   taskId: string;
   schedule: string;
   status: 'active' | 'paused';
@@ -51,18 +52,17 @@ function computeNextRun(schedule: string): string | undefined {
 
 function rowToDto(
   row: AutomationRow,
-  query: { id: number; name: string; filters: string },
-  provider: { id: number; name: string; type: string }
+  query: { id: number; name: string; filters: string } | null,
+  provider: { id: number; name: string; type: string } | null
 ): AutomationDto {
   const dto: AutomationDto = {
     id: row.id,
     name: row.name,
-    query: {
-      id: query.id,
-      name: query.name,
-      filters: JSON.parse(query.filters) as QueryFilters,
-    },
-    provider: { id: provider.id, name: provider.name, type: provider.type },
+    kind: (row.kind ?? 'user') as 'user' | 'system',
+    query: query
+      ? { id: query.id, name: query.name, filters: JSON.parse(query.filters) as QueryFilters }
+      : null,
+    provider: provider ? { id: provider.id, name: provider.name, type: provider.type } : null,
     taskId: row.taskId,
     schedule: row.schedule,
     status: row.status as 'active' | 'paused',
@@ -118,7 +118,8 @@ export class AutomationService {
     );
   }
 
-  async list(): Promise<AutomationDto[]> {
+  async list(options?: { kind?: 'user' | 'system' }): Promise<AutomationDto[]> {
+    const where: SQL | undefined = options?.kind ? eq(automations.kind, options.kind) : undefined;
     const rows = await this.db
       .select({
         automation: automations,
@@ -130,17 +131,22 @@ export class AutomationService {
         providerType: metadataProviders.type,
       })
       .from(automations)
-      .innerJoin(savedQueries, eq(automations.queryId, savedQueries.id))
-      .innerJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
+      .leftJoin(savedQueries, eq(automations.queryId, savedQueries.id))
+      .leftJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
+      .where(where)
       .orderBy(automations.createdAt);
 
-    return rows.map((r) =>
-      rowToDto(
-        r.automation,
-        { id: r.queryId, name: r.queryName, filters: r.queryFilters },
-        { id: r.providerId, name: r.providerName, type: r.providerType }
-      )
-    );
+    return rows.map((r) => {
+      const query =
+        r.queryId !== null && r.queryName !== null && r.queryFilters !== null
+          ? { id: r.queryId, name: r.queryName, filters: r.queryFilters }
+          : null;
+      const provider =
+        r.providerId !== null && r.providerName !== null && r.providerType !== null
+          ? { id: r.providerId, name: r.providerName, type: r.providerType }
+          : null;
+      return rowToDto(r.automation, query, provider);
+    });
   }
 
   async create(draft: AutomationDraft): Promise<AutomationDto> {
@@ -165,21 +171,28 @@ export class AutomationService {
     return this.getById(row.id);
   }
 
+  private async assertMutable(id: number): Promise<void> {
+    const [existing] = await this.db
+      .select({ id: automations.id, kind: automations.kind })
+      .from(automations)
+      .where(eq(automations.id, id));
+    if (!existing) throw new NotFoundError(`Automation ${id} not found`);
+    if (existing.kind === 'system')
+      throw new ForbiddenError('System automations cannot be modified');
+  }
+
   async updateStatus(id: number, status: 'active' | 'paused'): Promise<AutomationDto> {
-    const [row] = await this.db
+    await this.assertMutable(id);
+    await this.db
       .update(automations)
       .set({ status, updatedAt: new Date() })
-      .where(eq(automations.id, id))
-      .returning();
-
-    if (!row) throw new NotFoundError(`Automation ${id} not found`);
-
+      .where(eq(automations.id, id));
     return this.getById(id);
   }
 
   async delete(id: number): Promise<void> {
-    const [row] = await this.db.delete(automations).where(eq(automations.id, id)).returning();
-    if (!row) throw new NotFoundError(`Automation ${id} not found`);
+    await this.assertMutable(id);
+    await this.db.delete(automations).where(eq(automations.id, id));
   }
 
   async listActive(): Promise<{ id: number; name: string; schedule: string }[]> {

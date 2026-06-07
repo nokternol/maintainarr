@@ -36,6 +36,9 @@ export class AutomationExecutor {
 
     try {
       const automation = await this.automationService.getById(automationId);
+      if (!automation.provider || !automation.query) {
+        throw new Error(`Automation ${automationId} has no provider or query — cannot execute`);
+      }
       const provider = await this.providerSettingsService.findById(automation.provider.id);
       const filters = automation.query.filters;
       const taskId = automation.taskId;

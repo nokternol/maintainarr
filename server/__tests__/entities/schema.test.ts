@@ -204,4 +204,26 @@ describe('Schema DB integration', () => {
     expect(found).toHaveLength(1);
     expect(found[0].name).toBe('Local Radarr');
   });
+
+  it('automations table has a kind column defaulting to user', async () => {
+    const db = getDb();
+    const result = await db.$client.execute(
+      "SELECT name, dflt_value FROM pragma_table_info('automations')"
+    );
+    const cols = result.rows.map((r) => ({ name: r[0] as string, default: r[1] as string }));
+    const kindCol = cols.find((c) => c.name === 'kind');
+    expect(kindCol).toBeDefined();
+    expect(kindCol?.default).toContain('user');
+  });
+
+  it('automation_runs table has a kind column defaulting to user', async () => {
+    const db = getDb();
+    const result = await db.$client.execute(
+      "SELECT name, dflt_value FROM pragma_table_info('automation_runs')"
+    );
+    const cols = result.rows.map((r) => ({ name: r[0] as string, default: r[1] as string }));
+    const kindCol = cols.find((c) => c.name === 'kind');
+    expect(kindCol).toBeDefined();
+    expect(kindCol?.default).toContain('user');
+  });
 });

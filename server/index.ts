@@ -12,6 +12,8 @@ import { SESSION_TTL_SECONDS } from './config';
 import { buildContainer, scopePerRequest } from './container';
 import { closeDatabase, initializeDatabase } from './database';
 import { DrizzleStore } from './database/drizzleStore';
+import { failedStateMiddleware } from './health/failedStateMiddleware';
+import { systemHealthCheck } from './health/systemHealthCheck';
 import { getChildLogger } from './logger';
 import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
 import { createApiRouter } from './modules';
@@ -32,6 +34,9 @@ async function startServer() {
 
     // Initialize database connection and run migrations
     const db = await initializeDatabase(config);
+
+    // Assert system invariants and self-heal before mounting routes
+    await systemHealthCheck(db);
 
     // Build DI container with initialized dependencies
     const container = buildContainer({
@@ -127,8 +132,16 @@ async function startServer() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
-    log.error('Failed to start server', { error });
-    process.exit(1);
+    const reason = error instanceof Error ? error.message : String(error);
+    log.error('Critical startup failure — serving failed-state UI', { error });
+
+    // Always bind so Docker health checks can reach the port.
+    // Serve an error page instead of the normal route tree.
+    const failedApp = express();
+    failedApp.use(failedStateMiddleware(reason));
+    failedApp.listen(config.PORT, '0.0.0.0', () => {
+      log.info('Failed-state server bound', { port: config.PORT });
+    });
   }
 }
 

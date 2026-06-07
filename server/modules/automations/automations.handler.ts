@@ -18,7 +18,8 @@ export function createAutomationHandlers(cradle: Cradle) {
     list: [
       isAuthenticated(),
       defineRoute({
-        handler: async () => automationService.list(),
+        schemas: automationSchemas.list,
+        handler: async ({ query }) => automationService.list({ kind: query.kind }),
       }),
     ],
 

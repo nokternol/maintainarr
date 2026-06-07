@@ -26,6 +26,12 @@ const listRunsQuery = z.object({
 });
 
 export const automationSchemas = {
+  list: {
+    query: z.object({
+      kind: z.enum(['user', 'system']).optional(),
+    }),
+  },
+
   create: {
     body: z.object({
       name: z.string().min(1).max(200),

@@ -9,7 +9,8 @@
  */
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType } from '@server/database/schema';
+import { MetadataProviderType, automations } from '@server/database/schema';
+import { ForbiddenError } from '@server/errors';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
@@ -81,10 +82,10 @@ describe('AutomationService', () => {
         schedule: '0 * * * *',
       });
 
-      expect(dto.query.name).toBe('My Query');
-      expect(dto.query.filters).toEqual({ hasFile: true });
-      expect(dto.provider.name).toBe('Test Radarr');
-      expect(dto.provider.type).toBe(MetadataProviderType.RADARR);
+      expect(dto.query!.name).toBe('My Query');
+      expect(dto.query!.filters).toEqual({ hasFile: true });
+      expect(dto.provider!.name).toBe('Test Radarr');
+      expect(dto.provider!.type).toBe(MetadataProviderType.RADARR);
     });
 
     it('returns createdAt and updatedAt as valid ISO 8601 strings', async () => {
@@ -105,6 +106,32 @@ describe('AutomationService', () => {
   });
 
   describe('list()', () => {
+    it('returns only user automations when kind=user is specified', async () => {
+      const provider = await seedProvider(providerSettingsService);
+      const query = await seedQuery(savedQueryService);
+      const db = getDb();
+
+      await automationService.create({
+        name: 'User Automation',
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+        schedule: '0 * * * *',
+      });
+      await db.insert(automations).values({
+        name: 'system:identity-resolution',
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'identityResolution',
+        schedule: '0 * * * *',
+        kind: 'system',
+      });
+
+      const userOnly = await automationService.list({ kind: 'user' });
+      expect(userOnly).toHaveLength(1);
+      expect(userOnly[0].name).toBe('User Automation');
+    });
+
     it('returns each automation with createdAt and updatedAt as valid ISO 8601 strings', async () => {
       const provider = await seedProvider(providerSettingsService);
       const query = await seedQuery(savedQueryService);
@@ -154,7 +181,49 @@ describe('AutomationService', () => {
     });
   });
 
+  describe('delete()', () => {
+    it('throws ForbiddenError when the automation has kind=system', async () => {
+      const provider = await seedProvider(providerSettingsService);
+      const query = await seedQuery(savedQueryService);
+      const db = getDb();
+      const [row] = await db
+        .insert(automations)
+        .values({
+          name: 'system:identity-resolution',
+          queryId: query.id,
+          providerId: provider.id,
+          taskId: 'identityResolution',
+          schedule: '0 * * * *',
+          kind: 'system',
+        })
+        .returning();
+
+      await expect(automationService.delete(row.id)).rejects.toThrow(ForbiddenError);
+    });
+  });
+
   describe('updateStatus()', () => {
+    it('throws ForbiddenError when the automation has kind=system', async () => {
+      const provider = await seedProvider(providerSettingsService);
+      const query = await seedQuery(savedQueryService);
+      const db = getDb();
+      const [row] = await db
+        .insert(automations)
+        .values({
+          name: 'system:enrichment',
+          queryId: query.id,
+          providerId: provider.id,
+          taskId: 'enrichment',
+          schedule: '0 */6 * * *',
+          kind: 'system',
+        })
+        .returning();
+
+      await expect(automationService.updateStatus(row.id, 'paused')).rejects.toThrow(
+        ForbiddenError
+      );
+    });
+
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
       const query = await savedQueryService.create({ name: 'Status Query', filters: {} });
       const provider = await providerSettingsService.create({
@@ -175,9 +244,9 @@ describe('AutomationService', () => {
       const dto = await automationService.updateStatus(created.id, 'paused');
 
       expect(dto.status).toBe('paused');
-      expect(dto.query.name).toBe('Status Query');
-      expect(dto.provider.name).toBe('Test Sonarr');
-      expect(dto.provider.type).toBe(MetadataProviderType.SONARR);
+      expect(dto.query!.name).toBe('Status Query');
+      expect(dto.provider!.name).toBe('Test Sonarr');
+      expect(dto.provider!.type).toBe(MetadataProviderType.SONARR);
     });
 
     it('returns updatedAt as a valid ISO 8601 string', async () => {

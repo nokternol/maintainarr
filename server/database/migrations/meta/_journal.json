@@ -29,6 +29,20 @@
       "when": 1780900000000,
       "tag": "0003_automation_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780920000000,
+      "tag": "0004_kind_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780921000000,
+      "tag": "0005_nullable_automation_fks",
+      "breakpoints": true
     }
   ]
 }
