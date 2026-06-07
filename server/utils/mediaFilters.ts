@@ -3,8 +3,11 @@
  * These contain no handler or controller dependencies and may be imported
  * freely from any layer (services, utilities, etc.).
  */
+import type { MediaEnrichment } from '../database/schema';
 import type { RadarrMovie } from '../providers/radarrProvider';
 import type { SonarrSeries } from '../providers/sonarrProvider';
+
+export type EnrichmentMap = Map<number, MediaEnrichment>;
 
 // ─── Query types ─────────────────────────────────────────────────────────────
 
@@ -23,6 +26,8 @@ export interface MovieFilterQuery {
   certification?: string;
   radarrImdbRatingGte?: number;
   radarrImdbRatingLte?: number;
+  // Tier 2 — requires enrichmentMap
+  tautulliPlayCountGte?: number;
 }
 
 export interface SeriesFilterQuery {
@@ -74,7 +79,11 @@ function parseCsvStrings(csv: string | undefined): string[] {
 
 // ─── Filter functions ─────────────────────────────────────────────────────────
 
-export function applyMovieFilters(all: RadarrMovie[], query: MovieFilterQuery): RadarrMovie[] {
+export function applyMovieFilters(
+  all: RadarrMovie[],
+  query: MovieFilterQuery,
+  enrichmentMap: EnrichmentMap = new Map()
+): RadarrMovie[] {
   let filtered = all;
 
   if (query.title !== undefined) {
@@ -142,6 +151,15 @@ export function applyMovieFilters(all: RadarrMovie[], query: MovieFilterQuery): 
       if (query.radarrImdbRatingLte !== undefined && rating > query.radarrImdbRatingLte)
         return false;
       return true;
+    });
+  }
+
+  // ─── Tier 2 predicates (require enrichment row) ───────────────────────────
+  if (query.tautulliPlayCountGte !== undefined) {
+    filtered = filtered.filter((m) => {
+      const enr = enrichmentMap.get(m.id) ?? null;
+      if (!enr || enr.tautulliPlayCount === null) return false;
+      return enr.tautulliPlayCount >= query.tautulliPlayCountGte!;
     });
   }
 

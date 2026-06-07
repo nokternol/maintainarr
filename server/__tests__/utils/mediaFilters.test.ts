@@ -457,3 +457,30 @@ describe('applySeriesFilters', () => {
     expect(result.map((s) => s.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 });
+
+describe('applyMovieFilters — Tier 2 enrichment predicates', () => {
+  it('excludes movie when tautulliPlayCountGte is set but enrichment row is absent', () => {
+    const result = applyMovieFilters(
+      [baseMovie],
+      { tautulliPlayCountGte: 1 },
+      new Map()
+    );
+    expect(result).toHaveLength(0);
+  });
+
+  it('includes movie when tautulliPlayCount satisfies >= threshold', () => {
+    const enrichmentMap = new Map([
+      [baseMovie.id, { id: 1, mediaIdentityId: 99, tautulliPlayCount: 5, tautulliLastPlayed: null, plexViewCount: null, plexLastViewedAt: null, overseerrRequestStatus: null, overseerrHasIssue: null, tmdbStatus: null, enrichedAt: 1000 }],
+    ]);
+    const result = applyMovieFilters([baseMovie], { tautulliPlayCountGte: 3 }, enrichmentMap);
+    expect(result).toHaveLength(1);
+  });
+
+  it('excludes movie when tautulliPlayCount is below threshold', () => {
+    const enrichmentMap = new Map([
+      [baseMovie.id, { id: 1, mediaIdentityId: 99, tautulliPlayCount: 2, tautulliLastPlayed: null, plexViewCount: null, plexLastViewedAt: null, overseerrRequestStatus: null, overseerrHasIssue: null, tmdbStatus: null, enrichedAt: 1000 }],
+    ]);
+    const result = applyMovieFilters([baseMovie], { tautulliPlayCountGte: 3 }, enrichmentMap);
+    expect(result).toHaveLength(0);
+  });
+});
