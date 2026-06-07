@@ -1,6 +1,6 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType } from '@server/database/schema';
+import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import type { IProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
@@ -644,6 +644,59 @@ describe('AutomationExecutor', () => {
       await executorWithMocks.execute(99);
 
       expect(unmonitored).toEqual([7]);
+    });
+  });
+
+  // ─── Tier 2 enrichment filtering ─────────────────────────────────────────
+
+  describe('Tier 2 enrichment — watched filter uses tautulliPlayCount from DB', () => {
+    it('only executes task on movies whose enrichment row shows playCount > 0', async () => {
+      const db = getDb();
+
+      const movies = [
+        createRadarrMovie({ id: 1, title: 'Watched Movie', hasFile: true }),
+        createRadarrMovie({ id: 2, title: 'Unwatched Movie', hasFile: true }),
+      ];
+
+      // Seed media_identity + enrichment for movie 1 only (tautulliPlayCount=3)
+      const [identity] = await db
+        .insert(mediaIdentity)
+        .values({ sourceType: 'RADARR', sourceId: 1 })
+        .returning();
+      await db.insert(mediaEnrichment).values({
+        mediaIdentityId: identity.id,
+        tautulliPlayCount: 3,
+        enrichedAt: Math.floor(Date.now() / 1000),
+      });
+
+      const unmonitored: number[] = [];
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async (ids: number[]) => { unmonitored.push(...ids); },
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+      const mockFactory: IProviderFactory = { create: () => mockRadarr };
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, [{ key: 'watched', value: true }]);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      const enrichedExecutor = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        providerFactory: mockFactory,
+        db,
+      });
+
+      await enrichedExecutor.execute(automation.id);
+
+      expect(unmonitored).toEqual([1]);
     });
   });
 
