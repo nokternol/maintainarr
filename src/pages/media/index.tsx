@@ -960,7 +960,7 @@ export default function MediaPage() {
       <SaveQueryDialog
         open={saveDialogOpen}
         onClose={() => setSaveDialogOpen(false)}
-        onSave={(name) => saveQuery(name, filterState)}
+        onSave={(name) => saveQuery(name, activeTab === 'movies' ? 'movie' : 'show', filterState)}
       />
     </>
   );

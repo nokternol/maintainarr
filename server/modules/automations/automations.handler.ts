@@ -1,7 +1,9 @@
+import { AutomationSchema } from '@app/lib/api/schemas';
 import { isAuthenticated } from '@server/middleware/auth';
 import type { AutomationRunService } from '@server/services/automationRunService';
 import type { AutomationService } from '@server/services/automationService';
 import { defineRoute } from '@server/utils/defineRoute';
+import { z } from 'zod';
 import type { AutomationScheduler } from '../../cron/automationScheduler';
 import { automationSchemas } from './automations.schemas';
 
@@ -18,7 +20,7 @@ export function createAutomationHandlers(cradle: Cradle) {
     list: [
       isAuthenticated(),
       defineRoute({
-        schemas: automationSchemas.list,
+        schemas: { ...automationSchemas.list, response: z.array(AutomationSchema) },
         handler: async ({ query }) => automationService.list({ kind: query.kind }),
       }),
     ],
@@ -26,7 +28,7 @@ export function createAutomationHandlers(cradle: Cradle) {
     create: [
       isAuthenticated(),
       defineRoute({
-        schemas: automationSchemas.create,
+        schemas: { ...automationSchemas.create, response: AutomationSchema },
         handler: async ({ body }) => {
           const automation = await automationService.create(body);
           automationScheduler.schedule({
@@ -42,7 +44,7 @@ export function createAutomationHandlers(cradle: Cradle) {
     updateStatus: [
       isAuthenticated(),
       defineRoute({
-        schemas: automationSchemas.updateStatus,
+        schemas: { ...automationSchemas.updateStatus, response: AutomationSchema },
         handler: async ({ params, body }) => {
           const automation = await automationService.updateStatus(params.id, body.status);
           if (body.status === 'active') {

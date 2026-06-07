@@ -4,12 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import QueryRow from '../index';
 
-import type { QueryFilters } from '@app/hooks/useSavedQueries';
-
 const mockQuery: SavedQuery = {
   id: 1,
   name: 'Stale Movies',
-  filters: { yearMax: 2020 } as QueryFilters,
+  contentType: 'movie',
+  filterValues: [{ key: 'yearMax', value: 2020 }],
+  health: { status: 'healthy', providerStatus: [] },
   createdAt: '2024-01-15T00:00:00Z',
 };
 

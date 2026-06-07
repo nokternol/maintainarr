@@ -21,8 +21,9 @@ composed as `A AND NOT B` rather than one monolithic query with negation.
 | 0b — Surface IDs in ratings response | `QUERIES_phase_0b.md` | **COMPLETE** | Phase 0 |
 | 1 — Tier 1 predicate expansion | `QUERIES_phase_1.md` | **COMPLETE** | Phase 0b |
 | 2 — Tier 2 enrichment pipeline | `QUERIES_phase_2.md` | **IN PROGRESS** (Session A done) | Phase 1 |
-| 2b — `saved_query.mediaType` refactor | `docs/intent/QUERIES_phase2b.md` | **READY** | Phase 2 Session A |
-| 3 — Combination model backend | `QUERIES_phase_3.md` | blocked on 2b | Phase 2b |
+| 2b — `saved_query.contentType` refactor | `docs/architecture/QUERIES_phase2b.md` | **IMPLEMENTED** | Phase 2 Session A |
+| 2c — Query model rewrite (filterValues, registry, health) | `docs/architecture/QUERIES_phase2c.md` | **IMPLEMENTED** | Phase 2b |
+| 3 — Combination model backend | `QUERIES_phase_3.md` | blocked on 2c | Phase 2c |
 | 4 — Combination builder UI | `QUERIES_phase_4.md` | blocked on 3 | Phase 3 |
 
 ---

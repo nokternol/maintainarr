@@ -220,7 +220,7 @@ export default function AutomationBuilder({
             <div className="rounded border border-border overflow-hidden divide-y divide-border/60">
               {queries.map((q) => {
                 const selected = selectedQueryId === q.id;
-                const parts = summarizeFilters(q.filters);
+                const parts = summarizeFilters(q.filterValues);
                 return (
                   <label
                     key={q.id}

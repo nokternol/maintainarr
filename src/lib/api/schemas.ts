@@ -1,0 +1,140 @@
+import { z } from 'zod';
+
+// Accepts a Date object (from services) or an ISO string (from JSON.parse).
+// Always outputs a string — matches the JSON wire format.
+// Handlers can return Date values directly; no manual .toISOString() needed.
+export const IsoDateSchema = z.union([z.date().transform((d) => d.toISOString()), z.string()]);
+
+// Strips empty query-string values (e.g. ?kind=) before optional parsing,
+// so absent params and empty params are both treated as undefined.
+export const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === '' ? undefined : v), schema.optional());
+
+export const ContentTypeSchema = z.enum(['movie', 'show']);
+
+export const FilterValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+export const FilterValueEntrySchema = z.object({
+  key: z.string(),
+  value: FilterValueSchema,
+});
+
+export const ProviderStatusSchema = z.object({
+  providerType: z.string(),
+  required: z.boolean(),
+  configured: z.boolean(),
+  affectedFilterKeys: z.array(z.string()),
+});
+
+export const QueryHealthSchema = z.object({
+  status: z.enum(['healthy', 'degraded', 'unavailable']),
+  providerStatus: z.array(ProviderStatusSchema),
+});
+
+export const SavedQuerySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  contentType: ContentTypeSchema,
+  filterValues: z.array(FilterValueEntrySchema),
+  health: QueryHealthSchema,
+  createdAt: z.string(),
+});
+
+export const AutomationQueryRefSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    contentType: ContentTypeSchema,
+  })
+  .nullable();
+
+export const ProviderRefSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    type: z.string(),
+  })
+  .nullable();
+
+export const AutomationLastRunSchema = z.object({
+  at: z.string(),
+  itemCount: z.number(),
+  status: z.enum(['success', 'error']),
+  error: z.string().optional(),
+});
+
+export const AutomationSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  query: AutomationQueryRefSchema,
+  provider: ProviderRefSchema,
+  taskId: z.string(),
+  schedule: z.string(),
+  status: z.enum(['active', 'paused']),
+  lastRun: AutomationLastRunSchema.optional(),
+  nextRun: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+// ─── Input schemas (request bodies) ─────────────────────────────────────────
+
+export const CreateSavedQueryInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  contentType: ContentTypeSchema,
+  filterValues: z.array(FilterValueEntrySchema),
+});
+
+export const CreateAutomationInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  queryId: z.number().int().positive(),
+  providerId: z.number().int().positive(),
+  taskId: z.string().min(1),
+  schedule: z.string().min(1),
+});
+
+export const UpdateAutomationStatusInputSchema = z.object({
+  status: z.enum(['active', 'paused']),
+});
+
+export const CreateProviderInputSchema = z.object({
+  type: z.string(),
+  name: z.string().min(1),
+  url: z.string().url(),
+  apiKey: z.string().optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const UpdateProviderInputSchema = z.object({
+  name: z.string().min(1).optional(),
+  url: z.string().url().optional(),
+  apiKey: z.string().optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+  isActive: z.boolean().optional(),
+});
+
+// ─── Additional response schemas ─────────────────────────────────────────────
+
+export const ProviderSchema = z.object({
+  id: z.number(),
+  type: z.string(),
+  name: z.string(),
+  url: z.string(),
+  apiKey: z.union([z.literal('***'), z.null()]),
+  settings: z.record(z.string(), z.unknown()).nullable(),
+  isActive: z.boolean(),
+  createdAt: IsoDateSchema,
+  updatedAt: IsoDateSchema,
+});
+
+export const AutomationRunSchema = z.object({
+  id: z.number(),
+  automationId: z.number(),
+  automationName: z.string(),
+  ranAt: IsoDateSchema,
+  status: z.enum(['success', 'error']),
+  itemCount: z.number().nullable(),
+  error: z.string().nullable(),
+  createdAt: IsoDateSchema,
+});

@@ -46,8 +46,8 @@ async function seedFixtures() {
   });
   const query = await savedQueryService.create({
     name: 'All Movies',
-    filters: {},
-    mediaType: 'movie',
+    contentType: 'movie',
+    filterValues: [],
   });
   const automation = await automationService.create({
     name: 'Nightly Cleanup',
@@ -157,7 +157,11 @@ describe('AutomationRunService', () => {
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
       });
-      const query = await savedQueryService.create({ name: 'Q', filters: {}, mediaType: 'movie' });
+      const query = await savedQueryService.create({
+        name: 'Q',
+        contentType: 'movie',
+        filterValues: [],
+      });
 
       const auto1 = await automationService.create({
         name: 'Auto 1',

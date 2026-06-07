@@ -1,11 +1,11 @@
-import { http, HttpResponse } from 'msw';
 import type { AutomationDto } from '@app/hooks/useAutomations';
+import { http, HttpResponse } from 'msw';
 
 export const MOCK_AUTOMATIONS: AutomationDto[] = [
   {
     id: 1,
     name: 'Nightly cleanup',
-    query: { id: 1, name: 'Unwatched movies', filters: {} as never },
+    query: { id: 1, name: 'Unwatched movies', contentType: 'movie' },
     provider: { id: 1, name: 'Radarr Main', type: 'RADARR' },
     taskId: 'radarr.deleteUnmonitored',
     schedule: '0 2 * * *',
@@ -18,7 +18,7 @@ export const MOCK_AUTOMATIONS: AutomationDto[] = [
   {
     id: 2,
     name: 'Weekly report',
-    query: { id: 2, name: 'All series', filters: {} as never },
+    query: { id: 2, name: 'All series', contentType: 'show' },
     provider: { id: 1, name: 'Radarr Main', type: 'RADARR' },
     taskId: 'radarr.deleteUnmonitored',
     schedule: '0 2 * * 0',
@@ -40,7 +40,7 @@ export const automationsHandlers = [
     const created: AutomationDto = {
       id: 99,
       name: String(body.name),
-      query: { id: Number(body.queryId), name: 'Query', filters: {} as never },
+      query: { id: Number(body.queryId), name: 'Query', contentType: 'movie' as const },
       provider: { id: Number(body.providerId), name: 'Radarr Main', type: 'RADARR' },
       taskId: String(body.taskId),
       schedule: String(body.schedule),
@@ -62,22 +62,44 @@ export const automationsHandlers = [
   }),
 ];
 
+const MOCK_HEALTH = { status: 'healthy' as const, providerStatus: [] };
+
+export const MOCK_SAVED_QUERIES = [
+  {
+    id: 1,
+    name: 'Unwatched movies',
+    contentType: 'movie' as const,
+    filterValues: [],
+    health: MOCK_HEALTH,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    name: 'All series',
+    contentType: 'show' as const,
+    filterValues: [],
+    health: MOCK_HEALTH,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+];
+
 export const savedQueriesHandlers = [
   http.get('/api/saved-queries', () => {
-    return HttpResponse.json({
-      status: 'ok',
-      data: [
-        { id: 1, name: 'Unwatched movies', filters: {}, createdAt: '2026-01-01T00:00:00Z' },
-        { id: 2, name: 'All series', filters: {}, createdAt: '2026-01-01T00:00:00Z' },
-      ],
-    });
+    return HttpResponse.json({ status: 'ok', data: MOCK_SAVED_QUERIES });
   }),
 
   http.post('/api/saved-queries', async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       status: 'ok',
-      data: { id: 99, name: body.name, filters: body.filters, createdAt: new Date().toISOString() },
+      data: {
+        id: 99,
+        name: body.name,
+        contentType: body.contentType,
+        filterValues: body.filterValues ?? [],
+        health: MOCK_HEALTH,
+        createdAt: new Date().toISOString(),
+      },
     });
   }),
 

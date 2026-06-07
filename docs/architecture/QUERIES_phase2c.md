@@ -3,7 +3,7 @@
 **Repo:** `/home/nokternol/repos/sandbox`
 **Prerequisite:** Phase 2b shipped (`saved_query.mediaType`)
 **Blocks:** Phase 3 (combination model requires a coherent query identity)
-**Status:** SUPERSEDED — see `docs/in_progress/QUERIES_model_rewrite.md` for the full design
+**Status:** IMPLEMENTED — 2026-06-07
 
 ---
 

@@ -10,7 +10,7 @@ import {
   savedQueries,
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
-import type { QueryFilters } from './savedQueryService';
+import type { ContentType } from './savedQueryService';
 
 export interface AutomationDraft {
   name: string;
@@ -24,7 +24,7 @@ export interface AutomationDto {
   id: number;
   name: string;
   kind: 'user' | 'system';
-  query: { id: number; name: string; filters: QueryFilters; mediaType: 'movie' | 'series' } | null;
+  query: { id: number; name: string; contentType: ContentType } | null;
   provider: { id: number; name: string; type: string } | null;
   taskId: string;
   schedule: string;
@@ -51,9 +51,14 @@ function computeNextRun(schedule: string): string | undefined {
   }
 }
 
+const CONTENT_TYPE_PROVIDERS: Record<ContentType, MetadataProviderType[]> = {
+  movie: [MetadataProviderType.RADARR, MetadataProviderType.PLEX, MetadataProviderType.JELLYFIN],
+  show: [MetadataProviderType.SONARR, MetadataProviderType.PLEX, MetadataProviderType.JELLYFIN],
+};
+
 function rowToDto(
   row: AutomationRow,
-  query: { id: number; name: string; filters: string; mediaType: string } | null,
+  query: { id: number; name: string; contentType: string } | null,
   provider: { id: number; name: string; type: string } | null
 ): AutomationDto {
   const dto: AutomationDto = {
@@ -61,12 +66,7 @@ function rowToDto(
     name: row.name,
     kind: (row.kind ?? 'user') as 'user' | 'system',
     query: query
-      ? {
-          id: query.id,
-          name: query.name,
-          filters: JSON.parse(query.filters) as QueryFilters,
-          mediaType: (query.mediaType ?? 'movie') as 'movie' | 'series',
-        }
+      ? { id: query.id, name: query.name, contentType: query.contentType as ContentType }
       : null,
     provider: provider ? { id: provider.id, name: provider.name, type: provider.type } : null,
     taskId: row.taskId,
@@ -105,8 +105,7 @@ export class AutomationService {
         automation: automations,
         queryId: savedQueries.id,
         queryName: savedQueries.name,
-        queryFilters: savedQueries.filters,
-        queryMediaType: savedQueries.mediaType,
+        queryContentType: savedQueries.contentType,
         providerId: metadataProviders.id,
         providerName: metadataProviders.name,
         providerType: metadataProviders.type,
@@ -120,7 +119,7 @@ export class AutomationService {
     const r = rows[0];
     return rowToDto(
       r.automation,
-      { id: r.queryId, name: r.queryName, filters: r.queryFilters, mediaType: r.queryMediaType },
+      { id: r.queryId, name: r.queryName, contentType: r.queryContentType },
       { id: r.providerId, name: r.providerName, type: r.providerType }
     );
   }
@@ -132,8 +131,7 @@ export class AutomationService {
         automation: automations,
         queryId: savedQueries.id,
         queryName: savedQueries.name,
-        queryFilters: savedQueries.filters,
-        queryMediaType: savedQueries.mediaType,
+        queryContentType: savedQueries.contentType,
         providerId: metadataProviders.id,
         providerName: metadataProviders.name,
         providerType: metadataProviders.type,
@@ -146,13 +144,8 @@ export class AutomationService {
 
     return rows.map((r) => {
       const query =
-        r.queryId !== null && r.queryName !== null && r.queryFilters !== null
-          ? {
-              id: r.queryId,
-              name: r.queryName,
-              filters: r.queryFilters,
-              mediaType: r.queryMediaType ?? 'movie',
-            }
+        r.queryId !== null && r.queryName !== null && r.queryContentType !== null
+          ? { id: r.queryId, name: r.queryName, contentType: r.queryContentType }
           : null;
       const provider =
         r.providerId !== null && r.providerName !== null && r.providerType !== null
@@ -170,9 +163,9 @@ export class AutomationService {
       throw new Error(`Invalid cron expression: ${draft.schedule}`);
     }
 
-    // Validate query/provider mediaType compatibility
+    // Validate query/provider contentType compatibility
     const [queryRow] = await this.db
-      .select({ mediaType: savedQueries.mediaType })
+      .select({ contentType: savedQueries.contentType })
       .from(savedQueries)
       .where(eq(savedQueries.id, draft.queryId));
     const [providerRow] = await this.db
@@ -181,14 +174,12 @@ export class AutomationService {
       .where(eq(metadataProviders.id, draft.providerId));
 
     if (queryRow && providerRow) {
-      const mediaType = queryRow.mediaType;
-      const providerType = providerRow.type;
-      const compatible =
-        (providerType === MetadataProviderType.RADARR && mediaType === 'movie') ||
-        (providerType === MetadataProviderType.SONARR && mediaType === 'series');
-      if (!compatible) {
+      const contentType = queryRow.contentType as ContentType;
+      const providerType = providerRow.type as MetadataProviderType;
+      const allowed = CONTENT_TYPE_PROVIDERS[contentType] ?? [];
+      if (!allowed.includes(providerType)) {
         throw new ValidationError(
-          `Query mediaType "${mediaType}" is incompatible with provider type "${providerType}"`
+          `Provider type "${providerType}" is not compatible with contentType "${contentType}"`
         );
       }
     }

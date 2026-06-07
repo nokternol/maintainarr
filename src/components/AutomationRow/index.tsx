@@ -27,9 +27,9 @@ export default function AutomationRow({
           <span className="text-sm font-medium text-text-primary leading-5">{automation.name}</span>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 pl-[18px] text-xs text-text-muted min-w-0">
-          <span className="truncate">{automation.query.name}</span>
+          <span className="truncate">{automation.query?.name ?? '—'}</span>
           <span className="opacity-40 flex-shrink-0">·</span>
-          <span className="truncate">{automation.provider.name}</span>
+          <span className="truncate">{automation.provider?.name ?? '—'}</span>
           <span className="opacity-40 flex-shrink-0">·</span>
           <span className="truncate">{automation.taskId}</span>
         </div>

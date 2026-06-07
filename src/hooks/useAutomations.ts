@@ -1,20 +1,9 @@
+import type { AutomationSchema } from '@app/lib/api/schemas';
 import useSWR from 'swr';
 import useSWRMutation from 'swr/mutation';
-import type { QueryFilters } from './useSavedQueries';
+import type { z } from 'zod';
 
-export interface AutomationDto {
-  id: number;
-  name: string;
-  query: { id: number; name: string; filters: QueryFilters };
-  provider: { id: number; name: string; type: string };
-  taskId: string;
-  schedule: string;
-  status: 'active' | 'paused';
-  lastRun?: { at: string; itemCount: number; status: 'success' | 'error'; error?: string };
-  nextRun?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type AutomationDto = z.infer<typeof AutomationSchema>;
 
 export interface CreateAutomationInput {
   name: string;

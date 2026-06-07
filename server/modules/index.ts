@@ -4,6 +4,7 @@ import { checkUser } from '../middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
 import { createAutomationRoutes } from './automations/automations.routes';
 import { createBackdropsRoutes } from './backdrops/backdrops.routes';
+import { createFilterFieldsRoutes } from './filterFields/filterFields.routes';
 import { createHealthRoutes } from './health/health.routes';
 import { createMediaHandlers } from './media/media.handler';
 import { createMediaRoutes } from './media/media.routes';
@@ -38,6 +39,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/settings', createSettingsRoutes(cradle, invalidateMediaCaches));
   router.use('/media', createMediaRoutes(cradle, mediaHandlers));
   router.use('/search', createSearchRoutes(cradle));
+  router.use('/filter-fields', createFilterFieldsRoutes());
   router.use('/saved-queries', createSavedQueryRoutes(cradle));
   router.use('/automations', createAutomationRoutes(cradle));
 

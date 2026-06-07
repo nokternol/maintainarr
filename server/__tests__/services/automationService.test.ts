@@ -1,12 +1,3 @@
-/**
- * AutomationService tests — mutation methods return fully-joined data and
- * date fields are valid ISO 8601 strings (no double-cast required).
- *
- * Uses a real in-memory SQLite DB so queries run against actual SQL.
- * No HTTP mocks needed — this service does not make outbound calls.
- *
- * Run: yarn vitest run --project server
- */
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, automations } from '@server/database/schema';
@@ -41,7 +32,7 @@ async function seedProvider(providerService: ProviderSettingsService) {
 }
 
 async function seedQuery(queryService: SavedQueryService) {
-  return queryService.create({ name: 'Test Query', filters: {}, mediaType: 'movie' });
+  return queryService.create({ name: 'Test Query', contentType: 'movie', filterValues: [] });
 }
 
 describe('AutomationService', () => {
@@ -62,11 +53,11 @@ describe('AutomationService', () => {
   });
 
   describe('create()', () => {
-    it('returns a dto with query.mediaType populated from the joined row', async () => {
+    it('returns a dto with query.contentType populated from the joined row', async () => {
       const query = await savedQueryService.create({
         name: 'Movie Query',
-        filters: {},
-        mediaType: 'movie',
+        contentType: 'movie',
+        filterValues: [],
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.RADARR,
@@ -83,14 +74,14 @@ describe('AutomationService', () => {
         schedule: '0 * * * *',
       });
 
-      expect(dto.query!.mediaType).toBe('movie');
+      expect(dto.query!.contentType).toBe('movie');
     });
 
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
       const query = await savedQueryService.create({
         name: 'My Query',
-        filters: { hasFile: true },
-        mediaType: 'movie',
+        contentType: 'movie',
+        filterValues: [{ key: 'hasFile', value: true }],
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.RADARR,
@@ -108,7 +99,7 @@ describe('AutomationService', () => {
       });
 
       expect(dto.query!.name).toBe('My Query');
-      expect(dto.query!.filters).toEqual({ hasFile: true });
+      expect(dto.query!.contentType).toBe('movie');
       expect(dto.provider!.name).toBe('Test Radarr');
       expect(dto.provider!.type).toBe(MetadataProviderType.RADARR);
     });
@@ -130,12 +121,12 @@ describe('AutomationService', () => {
     });
   });
 
-  describe('mediaType compatibility validation', () => {
+  describe('contentType compatibility validation', () => {
     it('throws ValidationError when a SONARR provider is paired with a movie query', async () => {
       const query = await savedQueryService.create({
         name: 'Movie Query',
-        filters: {},
-        mediaType: 'movie',
+        contentType: 'movie',
+        filterValues: [],
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.SONARR,
@@ -155,11 +146,11 @@ describe('AutomationService', () => {
       ).rejects.toThrow(ValidationError);
     });
 
-    it('throws ValidationError when a RADARR provider is paired with a series query', async () => {
+    it('throws ValidationError when a RADARR provider is paired with a show query', async () => {
       const query = await savedQueryService.create({
-        name: 'Series Query',
-        filters: {},
-        mediaType: 'series',
+        name: 'Show Query',
+        contentType: 'show',
+        filterValues: [],
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.RADARR,
@@ -227,7 +218,6 @@ describe('AutomationService', () => {
       });
 
       const dtos = await automationService.list();
-
       expect(dtos).toHaveLength(2);
       for (const dto of dtos) {
         expect(dto.createdAt).toMatch(ISO_REGEX);
@@ -250,7 +240,6 @@ describe('AutomationService', () => {
       });
 
       const found = await automationService.getById(created.id);
-
       expect(found.createdAt).toMatch(ISO_REGEX);
       expect(found.updatedAt).toMatch(ISO_REGEX);
     });
@@ -302,8 +291,8 @@ describe('AutomationService', () => {
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
       const query = await savedQueryService.create({
         name: 'Status Query',
-        filters: {},
-        mediaType: 'series',
+        contentType: 'show',
+        filterValues: [],
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.SONARR,
@@ -321,7 +310,6 @@ describe('AutomationService', () => {
       });
 
       const dto = await automationService.updateStatus(created.id, 'paused');
-
       expect(dto.status).toBe('paused');
       expect(dto.query!.name).toBe('Status Query');
       expect(dto.provider!.name).toBe('Test Sonarr');
@@ -341,7 +329,6 @@ describe('AutomationService', () => {
       });
 
       const updated = await automationService.updateStatus(created.id, 'paused');
-
       expect(updated.createdAt).toMatch(ISO_REGEX);
       expect(updated.updatedAt).toMatch(ISO_REGEX);
     });

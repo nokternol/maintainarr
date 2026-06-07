@@ -2,7 +2,7 @@ import AppLayout from '@app/components/AppLayout';
 import Sidebar from '@app/components/Sidebar';
 import TopBar from '@app/components/TopBar';
 import type { AutomationDto } from '@app/hooks/useAutomations';
-import type { QueryFilters } from '@app/hooks/useSavedQueries';
+
 import type { SidebarItem } from '@app/types/navigation';
 import type { Story } from '@ladle/react';
 import { DashboardContent } from './DashboardContent';
@@ -55,8 +55,6 @@ const now = new Date();
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
 const hoursFromNow = (h: number) => new Date(now.getTime() + h * 3_600_000).toISOString();
 
-const emptyFilters = {} as QueryFilters;
-
 function mockAutomation(
   overrides: Partial<AutomationDto> & { id: number; name: string }
 ): AutomationDto {
@@ -64,7 +62,7 @@ function mockAutomation(
   return {
     id,
     name,
-    query: { id: 1, name: 'Movies > 2yr, unwatched', filters: emptyFilters },
+    query: { id: 1, name: 'Movies > 2yr, unwatched', contentType: 'movie' as const },
     provider: { id: 1, name: 'My Plex', type: 'PLEX' },
     taskId: 'deleteFromLibrary',
     schedule: '0 2 * * 0',
@@ -81,7 +79,7 @@ const activeAutomations: AutomationDto[] = [
   mockAutomation({
     id: 1,
     name: 'Archive stale movies',
-    query: { id: 1, name: 'Movies > 2yr, unwatched', filters: emptyFilters },
+    query: { id: 1, name: 'Movies > 2yr, unwatched', contentType: 'movie' as const },
     taskId: 'moveToTrash',
     lastRun: { at: hoursAgo(2), itemCount: 12, status: 'success' },
     nextRun: hoursFromNow(120),
@@ -89,7 +87,7 @@ const activeAutomations: AutomationDto[] = [
   mockAutomation({
     id: 2,
     name: 'Refresh missing metadata',
-    query: { id: 2, name: 'All movies, rating absent', filters: emptyFilters },
+    query: { id: 2, name: 'All movies, rating absent', contentType: 'movie' as const },
     taskId: 'refreshMetadata',
     lastRun: { at: hoursAgo(22), itemCount: 847, status: 'success' },
     nextRun: hoursFromNow(2),
@@ -97,7 +95,7 @@ const activeAutomations: AutomationDto[] = [
   mockAutomation({
     id: 3,
     name: 'Tag recent additions',
-    query: { id: 3, name: 'Added in last 30 days', filters: emptyFilters },
+    query: { id: 3, name: 'Added in last 30 days', contentType: 'movie' as const },
     taskId: 'addTag',
     provider: { id: 2, name: 'My Radarr', type: 'RADARR' },
     lastRun: { at: hoursAgo(14), itemCount: 3, status: 'success' },

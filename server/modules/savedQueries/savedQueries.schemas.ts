@@ -7,12 +7,17 @@ const idParams = z.object({
     .transform((v) => Number.parseInt(v, 10)),
 });
 
+const filterValueEntry = z.object({
+  key: z.string().min(1),
+  value: z.union([z.string(), z.number(), z.boolean()]),
+});
+
 export const savedQuerySchemas = {
   create: {
     body: z.object({
       name: z.string().min(1).max(200),
-      filters: z.record(z.string(), z.unknown()),
-      mediaType: z.enum(['movie', 'series']),
+      contentType: z.enum(['movie', 'show']),
+      filterValues: z.array(filterValueEntry),
     }),
   },
   delete: {

@@ -2,20 +2,6 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
 import { ValidationError } from '../errors';
 
-/**
- * Schema definition for a route's input and output.
- * All schemas are optional — omit what you don't need.
- */
-interface RouteSchemas<TBody = unknown, TQuery = unknown, TParams = unknown, TResponse = unknown> {
-  body?: z.ZodType<TBody>;
-  query?: z.ZodType<TQuery>;
-  params?: z.ZodType<TParams>;
-  response?: z.ZodType<TResponse>;
-}
-
-/**
- * The validated and typed request context passed to the handler.
- */
 interface RouteContext<TBody, TQuery, TParams> {
   body: TBody;
   query: TQuery;
@@ -26,25 +12,12 @@ interface RouteContext<TBody, TQuery, TParams> {
 }
 
 /**
- * Options for defineRoute.
- */
-interface RouteDefinition<
-  TBody = unknown,
-  TQuery = unknown,
-  TParams = unknown,
-  TResponse = unknown,
-> {
-  schemas?: RouteSchemas<TBody, TQuery, TParams, TResponse>;
-  handler: (ctx: RouteContext<TBody, TQuery, TParams>) => Promise<TResponse>;
-}
-
-/**
  * Creates a typed, validated Express route handler.
  *
- * - Validates request body/query/params against Zod schemas
- * - Throws ValidationError on invalid input (caught by errorHandlerMiddleware)
- * - Catches async errors and forwards them to Express error handling
- * - Returns the handler result wrapped in the ApiSuccessResponse envelope
+ * The `response` schema constrains the handler's return type to the schema's
+ * *input* type (`z.input<>`), not its output. This means handlers can return
+ * native values (e.g. `Date`) and the schema's transform/preprocess handles
+ * any wire-format conversion — no manual `.toISOString()` required.
  *
  * Usage:
  *   router.get('/health', defineRoute({
@@ -56,8 +29,16 @@ export function defineRoute<
   TBody = unknown,
   TQuery = unknown,
   TParams = unknown,
-  TResponse = unknown,
->(definition: RouteDefinition<TBody, TQuery, TParams, TResponse>): RequestHandler {
+  TResponseSchema extends z.ZodTypeAny = z.ZodTypeAny,
+>(definition: {
+  schemas?: {
+    body?: z.ZodType<TBody>;
+    query?: z.ZodType<TQuery>;
+    params?: z.ZodType<TParams>;
+    response?: TResponseSchema;
+  };
+  handler: (ctx: RouteContext<TBody, TQuery, TParams>) => Promise<z.input<TResponseSchema>>;
+}): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve()
       .then(async () => {

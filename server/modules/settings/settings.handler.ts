@@ -1,8 +1,10 @@
+import { ProviderSchema } from '@app/lib/api/schemas';
 import { MetadataProviderType } from '@server/database/schema';
 import { isAuthenticated } from '@server/middleware/auth';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
 import ky from 'ky';
+import { z } from 'zod';
 import { settingsSchemas, testProviderQuery } from './settings.schemas';
 
 const API_SUFFIXES: Record<string, string> = {
@@ -86,6 +88,7 @@ export function createSettingsHandlers(cradle: SettingsCradle, invalidateMediaCa
     listProviders: [
       isAuthenticated(),
       defineRoute({
+        schemas: { response: z.array(ProviderSchema) },
         handler: async () => {
           return providerSettingsService.list();
         },
@@ -95,7 +98,7 @@ export function createSettingsHandlers(cradle: SettingsCradle, invalidateMediaCa
     createProvider: [
       isAuthenticated(),
       defineRoute({
-        schemas: settingsSchemas.createProvider,
+        schemas: { ...settingsSchemas.createProvider, response: ProviderSchema },
         handler: async ({ body }) => {
           return providerSettingsService.create(body);
         },
@@ -105,7 +108,7 @@ export function createSettingsHandlers(cradle: SettingsCradle, invalidateMediaCa
     updateProvider: [
       isAuthenticated(),
       defineRoute({
-        schemas: settingsSchemas.updateProvider,
+        schemas: { ...settingsSchemas.updateProvider, response: ProviderSchema },
         handler: async ({ params, body }) => {
           const result = await providerSettingsService.update(params.id, body);
           invalidateMediaCaches?.();

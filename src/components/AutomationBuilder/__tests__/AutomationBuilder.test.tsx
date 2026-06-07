@@ -22,12 +22,12 @@ vi.mock('@app/hooks/useProviderSettings', () => ({
   }),
 }));
 
-import type { QueryFilters } from '@app/hooks/useSavedQueries';
-
 const mockQuery: SavedQuery = {
   id: 1,
   name: 'Old Movies',
-  filters: { yearMax: 2015 } as QueryFilters,
+  contentType: 'movie',
+  filterValues: [{ key: 'yearMax', value: 2015 }],
+  health: { status: 'healthy', providerStatus: [] },
   createdAt: '2024-01-01T00:00:00Z',
 };
 

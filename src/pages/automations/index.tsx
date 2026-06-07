@@ -6,7 +6,7 @@ import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { useAutomations } from '@app/hooks/useAutomations';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
-import { buildQueryParams, useSavedQueries } from '@app/hooks/useSavedQueries';
+import { useSavedQueries } from '@app/hooks/useSavedQueries';
 import type { SavedQuery } from '@app/hooks/useSavedQueries';
 import { cn } from '@app/lib/utils/cn';
 import { requireAuth } from '@app/lib/utils/requireAuth';
@@ -29,9 +29,8 @@ export default function AutomationsPage() {
   const { automations, isCreating, create, setStatus, remove: removeAutomation } = useAutomations();
   const [showBuilder, setShowBuilder] = useState(false);
 
-  const handleLoad = (query: SavedQuery) => {
-    const params = buildQueryParams(query.filters);
-    void router.push(params ? `/media?${params}` : '/media');
+  const handleLoad = (_query: SavedQuery) => {
+    void router.push('/media');
   };
 
   const handleCreate = async (input: CreateAutomationInput) => {

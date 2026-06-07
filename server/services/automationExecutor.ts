@@ -1,12 +1,17 @@
+import type { NormalizedMovie } from '../domain/movie';
+import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
+import type { RadarrMovie } from '../providers/radarrProvider';
 import type { RadarrProvider } from '../providers/radarrProvider';
+import type { SonarrSeries } from '../providers/sonarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
-import { applyMovieFilters, applySeriesFilters } from '../utils/mediaFilters';
+import { getFilterDef } from '../utils/filterRegistry';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationService } from './automationService';
 import type { ProviderSettingsService } from './providerSettingsService';
-import type { QueryFilters } from './savedQueryService';
+import type { FilterValueEntry } from './savedQueryService';
+import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
@@ -14,19 +19,82 @@ interface ExecutorDeps {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerSettingsService: ProviderSettingsService;
+  savedQueryService: SavedQueryService;
   providerFactory?: IProviderFactory;
 }
+
+// ─── Normalizers ──────────────────────────────────────────────────────────────
+
+function normalizeRadarrMovie(m: RadarrMovie): NormalizedMovie {
+  return {
+    _sourceIds: { radarr: m.id },
+    title: m.title,
+    year: m.year,
+    hasFile: m.hasFile,
+    monitored: m.monitored,
+    qualityProfileId: m.qualityProfileId,
+    tags: m.tags,
+    genres: m.genres,
+    addedDate: m.added,
+    sizeOnDiskBytes: m.statistics?.sizeOnDisk,
+    certification: m.certification,
+    imdbRating: m.ratings?.imdb?.value,
+  };
+}
+
+function normalizeSonarrSeries(s: SonarrSeries): NormalizedShow {
+  return {
+    _sourceIds: { sonarr: s.id },
+    title: s.title,
+    year: s.year,
+    monitored: s.monitored,
+    qualityProfileId: s.qualityProfileId,
+    tags: s.tags,
+    genres: s.genres,
+    addedDate: s.added,
+    sizeOnDiskBytes: s.statistics?.sizeOnDisk,
+    certification: s.certification,
+    seriesType: s.seriesType as NormalizedShow['seriesType'],
+    network: s.network,
+    status: s.status as NormalizedShow['status'],
+    ended: s.ended,
+    episodePercentage: s.statistics?.percentOfEpisodes,
+    lastAiredAt: s.previousAiring,
+    communityRating: s.ratings?.value,
+  };
+}
+
+// ─── Filter application ───────────────────────────────────────────────────────
+
+function applyFilters<T extends NormalizedMovie | NormalizedShow>(
+  items: T[],
+  filterValues: FilterValueEntry[],
+  contentType: 'movie' | 'show'
+): T[] {
+  if (filterValues.length === 0) return items;
+  return items.filter((item) =>
+    filterValues.every(({ key, value }) => {
+      const def = getFilterDef(key, contentType);
+      if (!def) return true;
+      return def.apply(item, value);
+    })
+  );
+}
+
+// ─── Executor ─────────────────────────────────────────────────────────────────
 
 export class AutomationExecutor {
   private readonly automationService: AutomationService;
   private readonly automationRunService: AutomationRunService;
   private readonly providerSettingsService: ProviderSettingsService;
+  private readonly savedQueryService: SavedQueryService;
   private readonly providerFactory: IProviderFactory;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
     this.automationRunService = deps.automationRunService;
     this.providerSettingsService = deps.providerSettingsService;
+    this.savedQueryService = deps.savedQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
   }
 
@@ -38,74 +106,53 @@ export class AutomationExecutor {
       if (!automation.provider || !automation.query) {
         throw new Error(`Automation ${automationId} has no provider or query — cannot execute`);
       }
-      const provider = await this.providerSettingsService.findById(automation.provider.id);
-      const filters = automation.query.filters;
+
+      const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
+      const queryDto = await this.savedQueryService.getById(automation.query.id);
+      const { contentType, filterValues } = queryDto;
       const taskId = automation.taskId;
 
-      const mediaType = automation.query.mediaType;
-
-      if (mediaType === 'movie') {
-        const radarr = this.providerFactory.create(provider, log) as RadarrProvider;
+      if (contentType === 'movie') {
+        const radarr = this.providerFactory.create(providerSettings, log) as RadarrProvider;
         const movies = await radarr.getMovies();
-        const matched = applyMovieFilters(movies, {
-          title: typeof filters.title === 'string' ? filters.title : undefined,
-          yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
-          yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
-          hasFile: coerceBool(filters.hasFile),
-          movieTagIds: typeof filters.movieTagIds === 'string' ? filters.movieTagIds : undefined,
-          movieQualityProfileIds:
-            typeof filters.movieQualityProfileIds === 'string'
-              ? filters.movieQualityProfileIds
-              : undefined,
-          movieGenres: typeof filters.movieGenres === 'string' ? filters.movieGenres : undefined,
-        });
+        const normalized = movies.map(normalizeRadarrMovie);
+        const matched = applyFilters(normalized, filterValues, 'movie');
         itemCount = matched.length;
+
         const handler = RADARR_TASKS[taskId];
         if (handler) {
           await handler(
             radarr,
-            matched.map((m) => m.id)
+            matched.map((m) => m._sourceIds.radarr!)
           );
         } else {
-          return await this.recordUnimplemented(automationId, taskId, mediaType);
+          return await this.recordUnimplemented(automationId, taskId, contentType);
         }
-      } else if (mediaType === 'series') {
-        const sonarr = this.providerFactory.create(provider, log) as SonarrProvider;
+      } else if (contentType === 'show') {
+        const sonarr = this.providerFactory.create(providerSettings, log) as SonarrProvider;
         const series = await sonarr.getSeries();
-        const matched = applySeriesFilters(series, {
-          title: typeof filters.title === 'string' ? filters.title : undefined,
-          yearMin: typeof filters.yearMin === 'number' ? filters.yearMin : undefined,
-          yearMax: typeof filters.yearMax === 'number' ? filters.yearMax : undefined,
-          monitored: coerceBool(filters.monitored),
-          seriesStatus: typeof filters.seriesStatus === 'string' ? filters.seriesStatus : undefined,
-          seriesTagIds: typeof filters.seriesTagIds === 'string' ? filters.seriesTagIds : undefined,
-          seriesQualityProfileIds:
-            typeof filters.seriesQualityProfileIds === 'string'
-              ? filters.seriesQualityProfileIds
-              : undefined,
-          seriesGenres: typeof filters.seriesGenres === 'string' ? filters.seriesGenres : undefined,
-          seriesType: typeof filters.seriesType === 'string' ? filters.seriesType : undefined,
-          network: typeof filters.network === 'string' ? filters.network : undefined,
-        });
+        const normalized = series.map(normalizeSonarrSeries);
+        const matched = applyFilters(normalized, filterValues, 'show');
         itemCount = matched.length;
+
         const handler = SONARR_TASKS[taskId];
         if (handler) {
           await handler(
             sonarr,
-            matched.map((s) => s.id)
+            matched.map((s) => s._sourceIds.sonarr!)
           );
         } else {
-          return await this.recordUnimplemented(automationId, taskId, mediaType);
+          return await this.recordUnimplemented(automationId, taskId, contentType);
         }
       } else {
-        log.warn('Query mediaType not yet supported for execution', {
-          mediaType,
+        log.warn('Query contentType not yet supported for execution', {
+          contentType,
           automationId,
         });
         await this.recordResult(automationId, {
           itemCount: 0,
           status: 'error',
-          error: `Query mediaType "${mediaType}" is not yet supported`,
+          error: `Query contentType "${contentType}" is not yet supported`,
         });
         return;
       }
@@ -140,9 +187,9 @@ export class AutomationExecutor {
   private async recordUnimplemented(
     automationId: number,
     taskId: string,
-    mediaType: string
+    contentType: string
   ): Promise<void> {
-    log.warn('Task not yet implemented', { taskId, automationId, mediaType });
+    log.warn('Task not yet implemented', { taskId, automationId, contentType });
     await this.recordResult(automationId, {
       itemCount: 0,
       status: 'error',
@@ -151,9 +198,7 @@ export class AutomationExecutor {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Dispatch tables
-// ---------------------------------------------------------------------------
+// ─── Dispatch tables ──────────────────────────────────────────────────────────
 
 type RadarrTaskFn = (provider: RadarrProvider, ids: number[]) => Promise<void>;
 type SonarrTaskFn = (provider: SonarrProvider, ids: number[]) => Promise<void>;
@@ -167,13 +212,3 @@ const SONARR_TASKS: Record<string, SonarrTaskFn> = {
   unmonitorSeries: (provider, ids) => provider.unmonitorSeries(ids),
   triggerSearch: (provider, ids) => provider.triggerSeriesSearch(ids),
 };
-
-// ---------------------------------------------------------------------------
-// Coercion helpers
-// ---------------------------------------------------------------------------
-
-function coerceBool(v: string | number | boolean | undefined): boolean | undefined {
-  if (v === true || v === 'true') return true;
-  if (v === false || v === 'false') return false;
-  return undefined;
-}

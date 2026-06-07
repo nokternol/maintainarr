@@ -57,8 +57,8 @@ describe('GET /api/automations/runs', () => {
     });
     const query = await savedQueryService.create({
       name: 'Test Query',
-      filters: {},
-      mediaType: 'movie',
+      contentType: 'movie',
+      filterValues: [],
     });
     const automation = await automationService.create({
       name: 'Nightly Cleanup',

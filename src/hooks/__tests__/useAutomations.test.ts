@@ -1,10 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { SWRConfig } from 'swr';
 import React from 'react';
+import { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
 import { server } from '../../../tests/mocks/server';
-import { useAutomations, type AutomationDto } from '../useAutomations';
+import { type AutomationDto, useAutomations } from '../useAutomations';
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 const makeAutomation = (overrides: Partial<AutomationDto> = {}): AutomationDto => ({
   id: 1,
   name: 'Test Automation',
-  query: { id: 1, name: 'My Query', filters: {} as never },
+  query: { id: 1, name: 'My Query', contentType: 'movie' as const },
   provider: { id: 1, name: 'Radarr', type: 'RADARR' },
   taskId: 'delete-movie',
   schedule: '0 * * * *',

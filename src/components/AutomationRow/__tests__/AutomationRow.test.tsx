@@ -1,6 +1,5 @@
 import StatusDot from '@app/components/StatusDot';
 import type { AutomationDto } from '@app/hooks/useAutomations';
-import type { QueryFilters } from '@app/hooks/useSavedQueries';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,7 +11,7 @@ const mockAutomation: AutomationDto = {
   query: {
     id: 1,
     name: 'Stale Movies',
-    filters: {} as QueryFilters,
+    contentType: 'movie',
   },
   provider: { id: 1, name: 'Radarr', type: 'RADARR' },
   taskId: 'deleteMovieWithFiles',

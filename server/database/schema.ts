@@ -111,10 +111,25 @@ export type MetadataProvider = {
 export const savedQueries = sqliteTable('saved_queries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
-  filters: text('filters').notNull(), // JSON: QueryFilters
-  mediaType: text('mediaType').notNull().default('movie'), // 'movie' | 'series'
+  contentType: text('contentType').notNull().default('movie'), // 'movie' | 'show'
   createdAt: createdAt('createdAt'),
 });
+
+// ---------------------------------------------------------------------------
+// savedQueryFilterValues
+// ---------------------------------------------------------------------------
+export const savedQueryFilterValues = sqliteTable(
+  'saved_query_filter_values',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    savedQueryId: integer('savedQueryId')
+      .notNull()
+      .references(() => savedQueries.id, { onDelete: 'cascade' }),
+    filterKey: text('filterKey').notNull(),
+    value: text('value').notNull(),
+  },
+  (table) => [index('IDX_sqfv_queryId').on(table.savedQueryId)]
+);
 
 // ---------------------------------------------------------------------------
 // automations
@@ -144,6 +159,8 @@ export const automations = sqliteTable(
 
 export type SavedQuery = typeof savedQueries.$inferSelect;
 export type NewSavedQuery = typeof savedQueries.$inferInsert;
+export type SavedQueryFilterValue = typeof savedQueryFilterValues.$inferSelect;
+export type NewSavedQueryFilterValue = typeof savedQueryFilterValues.$inferInsert;
 
 export type Automation = typeof automations.$inferSelect;
 export type NewAutomation = typeof automations.$inferInsert;

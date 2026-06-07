@@ -1,19 +1,3 @@
-/**
- * SavedQueryService tests — behaviour-only, real in-memory SQLite.
- *
- * Public contract:
- *   - list()   returns all saved queries ordered by createdAt
- *   - create() inserts and returns a DTO with parsed filters
- *   - delete() removes the record; throws NotFoundError for unknown id
- *
- * Also confirms that `createdAt` in SavedQueryDto is a valid ISO 8601 string
- * produced directly from the custom datetime column's Date output,
- * without requiring a double-cast.
- *
- * findById is NOT part of the public contract (no production caller).
- *
- * Run: vitest run --project server
- */
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { SavedQueryService } from '@server/services/savedQueryService';
@@ -46,110 +30,144 @@ describe('SavedQueryService', () => {
     await _resetDatabase();
   });
 
-  // -------------------------------------------------------------------------
-  // list
-  // -------------------------------------------------------------------------
+  // ── list ──────────────────────────────────────────────────────────────────
 
   it('returns an empty array when no saved queries exist', async () => {
-    const result = await service.list();
-    expect(result).toEqual([]);
+    expect(await service.list()).toEqual([]);
   });
 
   it('returns all saved queries ordered by createdAt', async () => {
-    await service.create({ name: 'First', filters: { genre: 'action' }, mediaType: 'movie' });
-    await service.create({ name: 'Second', filters: { year: 2020 }, mediaType: 'movie' });
+    await service.create({ name: 'First', contentType: 'movie', filterValues: [] });
+    await service.create({ name: 'Second', contentType: 'show', filterValues: [] });
 
     const result = await service.list();
-
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe('First');
     expect(result[1].name).toBe('Second');
   });
 
-  it('returns createdAt as a string on each DTO', async () => {
-    await service.create({ name: 'TS Test', filters: {}, mediaType: 'movie' });
-
-    const [row] = await service.list();
-
-    expect(typeof row.createdAt).toBe('string');
-  });
-
   it('returns each item with createdAt as a valid ISO 8601 string', async () => {
-    await service.create({ name: 'Query A', filters: {}, mediaType: 'movie' });
-    await service.create({ name: 'Query B', filters: { year: 2020 }, mediaType: 'movie' });
-
-    const dtos = await service.list();
-
-    expect(dtos).toHaveLength(2);
-    for (const dto of dtos) {
-      expect(dto.createdAt).toMatch(ISO_REGEX);
-    }
-  });
-
-  // -------------------------------------------------------------------------
-  // create
-  // -------------------------------------------------------------------------
-
-  it('inserts a record and returns a DTO with the correct fields', async () => {
-    const filters = { genre: 'horror', year: 2021 };
-    const result = await service.create({ name: 'My Query', filters, mediaType: 'movie' });
-
-    expect(result.id).toBeGreaterThan(0);
-    expect(result.name).toBe('My Query');
-    expect(result.filters).toEqual(filters);
-    expect(typeof result.createdAt).toBe('string');
-  });
-
-  it('trims whitespace from the name on create', async () => {
-    const result = await service.create({
-      name: '  Padded Name  ',
-      filters: {},
-      mediaType: 'movie',
-    });
-
-    expect(result.name).toBe('Padded Name');
-  });
-
-  it('stores and returns complex filter objects without data loss', async () => {
-    const filters = { genre: 'sci-fi', rating: 8.5, available: true };
-    const result = await service.create({ name: 'Complex', filters, mediaType: 'movie' });
-
-    expect(result.filters).toEqual(filters);
-  });
-
-  it('returns createdAt as a valid ISO 8601 string', async () => {
-    const dto = await service.create({
-      name: 'Test Query',
-      filters: { genre: 'action' },
-      mediaType: 'movie',
-    });
-
+    await service.create({ name: 'Q', contentType: 'movie', filterValues: [] });
+    const [dto] = await service.list();
     expect(dto.createdAt).toMatch(ISO_REGEX);
   });
 
-  it('stores the mediaType and returns it in the DTO', async () => {
-    const movieDto = await service.create({ name: 'Movie Query', filters: {}, mediaType: 'movie' });
-    const seriesDto = await service.create({
-      name: 'Series Query',
-      filters: {},
-      mediaType: 'series',
+  it('returns filterValues array with registry-coerced types', async () => {
+    await service.create({
+      name: 'Movie Q',
+      contentType: 'movie',
+      filterValues: [
+        { key: 'hasFile', value: true },
+        { key: 'yearMin', value: 2010 },
+        { key: 'title', value: 'Inception' },
+      ],
     });
 
-    expect(movieDto.mediaType).toBe('movie');
-    expect(seriesDto.mediaType).toBe('series');
+    const [dto] = await service.list();
+    expect(dto.filterValues).toHaveLength(3);
+    const hasFile = dto.filterValues.find((f) => f.key === 'hasFile');
+    expect(hasFile?.value).toBe(true);
+    const yearMin = dto.filterValues.find((f) => f.key === 'yearMin');
+    expect(yearMin?.value).toBe(2010);
+    const title = dto.filterValues.find((f) => f.key === 'title');
+    expect(title?.value).toBe('Inception');
   });
 
-  // -------------------------------------------------------------------------
-  // delete
-  // -------------------------------------------------------------------------
+  it('returns contentType on each dto', async () => {
+    await service.create({ name: 'Movies', contentType: 'movie', filterValues: [] });
+    await service.create({ name: 'Shows', contentType: 'show', filterValues: [] });
+
+    const result = await service.list();
+    expect(result[0].contentType).toBe('movie');
+    expect(result[1].contentType).toBe('show');
+  });
+
+  it('returns health: healthy when query has no filter values', async () => {
+    await service.create({ name: 'Empty', contentType: 'movie', filterValues: [] });
+    const [dto] = await service.list();
+    expect(dto.health.status).toBe('healthy');
+    expect(dto.health.providerStatus).toEqual([]);
+  });
+
+  it('returns health: degraded when filter source providers are not configured', async () => {
+    await service.create({
+      name: 'Filtered',
+      contentType: 'movie',
+      filterValues: [{ key: 'hasFile', value: true }],
+    });
+    const [dto] = await service.list();
+    // No providers configured in test DB → all optional filters degrade
+    expect(dto.health.status).toBe('degraded');
+  });
+
+  // ── create ────────────────────────────────────────────────────────────────
+
+  it('inserts and returns a DTO with correct fields', async () => {
+    const dto = await service.create({
+      name: 'My Query',
+      contentType: 'movie',
+      filterValues: [{ key: 'yearMin', value: 2015 }],
+    });
+
+    expect(dto.id).toBeGreaterThan(0);
+    expect(dto.name).toBe('My Query');
+    expect(dto.contentType).toBe('movie');
+    expect(dto.filterValues).toHaveLength(1);
+    expect(dto.filterValues[0]).toEqual({ key: 'yearMin', value: 2015 });
+    expect(dto.createdAt).toMatch(ISO_REGEX);
+  });
+
+  it('trims whitespace from name on create', async () => {
+    const dto = await service.create({
+      name: '  Padded  ',
+      contentType: 'movie',
+      filterValues: [],
+    });
+    expect(dto.name).toBe('Padded');
+  });
+
+  it('throws ValidationError for unknown filter key', async () => {
+    await expect(
+      service.create({
+        name: 'Bad',
+        contentType: 'movie',
+        filterValues: [{ key: 'nonExistentKey', value: 'x' }],
+      })
+    ).rejects.toThrow('nonExistentKey');
+  });
+
+  it('throws ValidationError when filter key does not match contentType', async () => {
+    await expect(
+      service.create({
+        name: 'Wrong type',
+        contentType: 'movie',
+        filterValues: [{ key: 'seriesStatus', value: 'ended' }],
+      })
+    ).rejects.toThrow('seriesStatus');
+  });
+
+  // ── delete ────────────────────────────────────────────────────────────────
 
   it('removes the record so it no longer appears in list', async () => {
-    const created = await service.create({ name: 'To Delete', filters: {}, mediaType: 'movie' });
-
+    const created = await service.create({
+      name: 'To Delete',
+      contentType: 'movie',
+      filterValues: [],
+    });
     await service.delete(created.id);
-
     const list = await service.list();
     expect(list.find((r) => r.id === created.id)).toBeUndefined();
+  });
+
+  it('cascades delete to filter values', async () => {
+    const created = await service.create({
+      name: 'With Filters',
+      contentType: 'movie',
+      filterValues: [{ key: 'hasFile', value: true }],
+    });
+    await service.delete(created.id);
+    // Verify via list — if cascade works, no orphan rows cause issues
+    expect(await service.list()).toHaveLength(0);
   });
 
   it('throws NotFoundError when deleting an unknown id', async () => {

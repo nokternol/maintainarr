@@ -1,3 +1,4 @@
+import { emptyToUndefined } from '@app/lib/api/schemas';
 import { z } from 'zod';
 
 const idParams = z.object({
@@ -7,28 +8,28 @@ const idParams = z.object({
     .transform((v) => Number.parseInt(v, 10)),
 });
 
+const optionalInt = emptyToUndefined(
+  z
+    .string()
+    .regex(/^\d+$/)
+    .transform((v) => Number.parseInt(v, 10))
+);
+
 const listRunsQuery = z.object({
-  automationId: z
-    .string()
-    .regex(/^\d+$/)
-    .transform((v) => Number.parseInt(v, 10))
-    .optional(),
-  limit: z
-    .string()
-    .regex(/^\d+$/)
-    .transform((v) => Math.min(Number.parseInt(v, 10), 100))
-    .optional(),
-  offset: z
-    .string()
-    .regex(/^\d+$/)
-    .transform((v) => Number.parseInt(v, 10))
-    .optional(),
+  automationId: optionalInt,
+  limit: emptyToUndefined(
+    z
+      .string()
+      .regex(/^\d+$/)
+      .transform((v) => Math.min(Number.parseInt(v, 10), 100))
+  ),
+  offset: optionalInt,
 });
 
 export const automationSchemas = {
   list: {
     query: z.object({
-      kind: z.enum(['user', 'system']).optional(),
+      kind: emptyToUndefined(z.enum(['user', 'system'])),
     }),
   },
 

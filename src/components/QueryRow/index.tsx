@@ -13,7 +13,7 @@ export default function QueryRow({
   onDelete: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const parts = summarizeFilters(query.filters);
+  const parts = summarizeFilters(query.filterValues);
   const date = new Date(query.createdAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
