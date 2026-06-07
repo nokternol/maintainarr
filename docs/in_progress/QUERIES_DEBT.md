@@ -33,6 +33,46 @@ This means the identity graph will have a gap for any show that TVMaze has index
 
 ---
 
+### DEBT-004 — `saved_query` has no `mediaType` discriminator; filter/provider mismatch is silent
+
+**Phase found:** 2 Session A (design review)
+**Priority:** High — silent wrong results, not a crash
+
+`automation.providerId` serves as both a **type discriminator** (RADARR → movie branch, SONARR →
+series branch) and an **instance selector** (which API endpoint to call). The executor branches on
+`provider.type` to decide which media list to fetch and which filter function to apply.
+
+But `saved_query.filters` carries no `mediaType` annotation. A query built with
+`seriesStatus: 'Ended'` predicates can be attached to a Radarr automation without error. The
+executor silently takes the movie branch, `applyMovieFilters` ignores the series-specific keys, and
+the automation runs to completion with results that don't reflect the intended filter. No error is
+raised.
+
+**Extent:** Every `saved_query` is typeless. The only thing that determines whether a query runs as
+movies or series is which automation it is attached to and which provider that automation points at.
+The query UI presumably prevents attaching a series query to a Radarr automation today (by filtering
+available queries by provider type), but that enforcement is entirely client-side and invisible in
+the data layer.
+
+**Phase 3 implication:** The combination model (INTERSECT, UNION, DIFFERENCE) allows composing
+queries that may span Radarr and Sonarr. A single `automation.providerId` cannot represent
+cross-type execution. The QUERIES.md phase flag ("automation.queryId FK — migration must backfill
+before column drop") anticipates restructuring this relationship. Before Phase 3, `saved_query`
+needs a `mediaType: 'movie' | 'series'` column so queries are self-describing, and the automation
+execution model needs to reflect multi-source combinations.
+
+**Phase 2 impact:** None. All Phase 2 Tier 2 predicates (Tautulli, Plex, Overseerr, TMDB status)
+apply against enrichment cache entries that are keyed to `media_identity` rows, which are already
+partitioned by `sourceType: 'RADARR' | 'SONARR'`. The executor reads the enrichment map for the
+items that survive Tier 1 filtering — so the single-provider execution model is correct for Phase 2.
+
+**What to do before Phase 3:** Add `mediaType TEXT NOT NULL` to `saved_queries`. Migrate existing
+rows by joining to their automations' `provider.type`. Add enforcement in `create()` /
+`AutomationDraft` that `providerId.type` is compatible with the query's `mediaType`. Update the
+combination model design to handle cross-type compositions explicitly.
+
+---
+
 ### DEBT-003 — `ids` block has no source-provenance metadata
 
 **Phase found:** 0b (Step 5–6, `aggregateRatings`)  
