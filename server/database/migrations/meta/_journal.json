@@ -43,6 +43,13 @@
       "when": 1780921000000,
       "tag": "0005_nullable_automation_fks",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1780922000000,
+      "tag": "0006_saved_query_media_type",
+      "breakpoints": true
     }
   ]
 }

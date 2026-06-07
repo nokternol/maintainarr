@@ -26,6 +26,7 @@ export function createSavedQueryHandlers(cradle: Cradle) {
           savedQueryService.create({
             name: body.name,
             filters: body.filters as Record<string, string | number | boolean | undefined>,
+            mediaType: body.mediaType,
           }),
       }),
     ],

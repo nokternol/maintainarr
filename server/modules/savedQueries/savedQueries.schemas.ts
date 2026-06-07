@@ -12,6 +12,7 @@ export const savedQuerySchemas = {
     body: z.object({
       name: z.string().min(1).max(200),
       filters: z.record(z.string(), z.unknown()),
+      mediaType: z.enum(['movie', 'series']),
     }),
   },
   delete: {

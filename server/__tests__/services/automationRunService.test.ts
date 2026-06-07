@@ -44,7 +44,11 @@ async function seedFixtures() {
     url: 'http://localhost:7878/api/v3',
     apiKey: 'test-key',
   });
-  const query = await savedQueryService.create({ name: 'All Movies', filters: {} });
+  const query = await savedQueryService.create({
+    name: 'All Movies',
+    filters: {},
+    mediaType: 'movie',
+  });
   const automation = await automationService.create({
     name: 'Nightly Cleanup',
     queryId: query.id,
@@ -153,7 +157,7 @@ describe('AutomationRunService', () => {
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
       });
-      const query = await savedQueryService.create({ name: 'Q', filters: {} });
+      const query = await savedQueryService.create({ name: 'Q', filters: {}, mediaType: 'movie' });
 
       const auto1 = await automationService.create({
         name: 'Auto 1',

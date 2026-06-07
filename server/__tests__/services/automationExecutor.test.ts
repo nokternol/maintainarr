@@ -61,8 +61,12 @@ async function seedSonarrProvider(providerSettingsService: ProviderSettingsServi
   });
 }
 
-async function seedSavedQuery(savedQueryService: SavedQueryService, filters: QueryFilters = {}) {
-  return savedQueryService.create({ name: 'Test Query', filters });
+async function seedSavedQuery(
+  savedQueryService: SavedQueryService,
+  filters: QueryFilters = {},
+  mediaType: 'movie' | 'series' = 'movie'
+) {
+  return savedQueryService.create({ name: 'Test Query', filters, mediaType });
 }
 
 async function seedAutomation(
@@ -323,7 +327,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, {});
+      const query = await seedSavedQuery(savedQueryService, {}, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -353,7 +357,7 @@ describe('AutomationExecutor', () => {
 
       const provider = await seedSonarrProvider(providerSettingsService);
       // Filter: only ended series
-      const query = await seedSavedQuery(savedQueryService, { seriesStatus: 'ended' });
+      const query = await seedSavedQuery(savedQueryService, { seriesStatus: 'ended' }, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -382,7 +386,7 @@ describe('AutomationExecutor', () => {
 
       const provider = await seedSonarrProvider(providerSettingsService);
       // Filter using native boolean — what JSON.parse produces from stored JSON
-      const query = await seedSavedQuery(savedQueryService, { monitored: false });
+      const query = await seedSavedQuery(savedQueryService, { monitored: false }, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -408,7 +412,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, {});
+      const query = await seedSavedQuery(savedQueryService, {}, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -442,7 +446,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, {});
+      const query = await seedSavedQuery(savedQueryService, {}, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -472,7 +476,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, {});
+      const query = await seedSavedQuery(savedQueryService, {}, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -564,7 +568,7 @@ describe('AutomationExecutor', () => {
       };
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, {});
+      const query = await seedSavedQuery(savedQueryService, {}, 'series');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -581,6 +585,70 @@ describe('AutomationExecutor', () => {
       await executorWithFactory.execute(automation.id);
 
       expect(unmonitored).toEqual([5]);
+    });
+  });
+
+  // ─── mediaType discriminator ─────────────────────────────────────────────
+
+  describe('mediaType discriminator', () => {
+    it('routes to the movie path when query.mediaType is "movie" even when provider.type is unrecognised', async () => {
+      // This test is deliberately constructed so provider.type and query.mediaType disagree:
+      // provider.type = 'PLEX' (unrecognised), query.mediaType = 'movie'.
+      // Current code (branches on provider.type) → falls through to the unsupported warning → error.
+      // New code (branches on query.mediaType)  → takes the movie path → unmonitored populated.
+      const movies = [createRadarrMovie({ id: 7, title: 'Dune', year: 2021 })];
+      const unmonitored: number[] = [];
+
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async (ids: number[]) => {
+          unmonitored.push(...ids);
+        },
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+
+      const mockFactory: IProviderFactory = { create: () => mockRadarr };
+
+      const mockAutomationService = {
+        getById: async () => ({
+          id: 99,
+          name: 'Discriminator Test',
+          kind: 'user' as const,
+          query: { id: 1, name: 'Q', filters: {}, mediaType: 'movie' as const },
+          provider: { id: 1, name: 'Plex', type: 'PLEX' },
+          taskId: 'unmonitorMovie',
+          schedule: '0 * * * *',
+          status: 'active' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+        recordRun: vi.fn(),
+      };
+
+      const mockProviderSettingsService = {
+        findById: async () => ({
+          id: 1,
+          type: 'PLEX',
+          name: 'Plex',
+          url: 'http://localhost:32400',
+          apiKey: null,
+          settings: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      };
+
+      const executorWithMocks = new AutomationExecutor({
+        automationService: mockAutomationService as any,
+        providerSettingsService: mockProviderSettingsService as any,
+        providerFactory: mockFactory,
+        automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
+      });
+
+      await executorWithMocks.execute(99);
+
+      expect(unmonitored).toEqual([7]);
     });
   });
 

@@ -14,12 +14,14 @@ export interface QueryFilters {
 export interface SavedQueryDraft {
   name: string;
   filters: QueryFilters;
+  mediaType: 'movie' | 'series';
 }
 
 export interface SavedQueryDto {
   id: number;
   name: string;
   filters: QueryFilters;
+  mediaType: 'movie' | 'series';
   createdAt: string;
 }
 
@@ -28,6 +30,7 @@ function toDto(row: SavedQueryRow): SavedQueryDto {
     id: row.id,
     name: row.name,
     filters: JSON.parse(row.filters) as QueryFilters,
+    mediaType: (row.mediaType ?? 'movie') as 'movie' | 'series',
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -48,6 +51,7 @@ export class SavedQueryService {
     const insert: NewSavedQuery = {
       name: draft.name.trim(),
       filters: JSON.stringify(draft.filters),
+      mediaType: draft.mediaType,
     };
     const [row] = await this.db.insert(savedQueries).values(insert).returning();
     return toDto(row);

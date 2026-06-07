@@ -56,8 +56,8 @@ describe('SavedQueryService', () => {
   });
 
   it('returns all saved queries ordered by createdAt', async () => {
-    await service.create({ name: 'First', filters: { genre: 'action' } });
-    await service.create({ name: 'Second', filters: { year: 2020 } });
+    await service.create({ name: 'First', filters: { genre: 'action' }, mediaType: 'movie' });
+    await service.create({ name: 'Second', filters: { year: 2020 }, mediaType: 'movie' });
 
     const result = await service.list();
 
@@ -67,7 +67,7 @@ describe('SavedQueryService', () => {
   });
 
   it('returns createdAt as a string on each DTO', async () => {
-    await service.create({ name: 'TS Test', filters: {} });
+    await service.create({ name: 'TS Test', filters: {}, mediaType: 'movie' });
 
     const [row] = await service.list();
 
@@ -75,8 +75,8 @@ describe('SavedQueryService', () => {
   });
 
   it('returns each item with createdAt as a valid ISO 8601 string', async () => {
-    await service.create({ name: 'Query A', filters: {} });
-    await service.create({ name: 'Query B', filters: { year: 2020 } });
+    await service.create({ name: 'Query A', filters: {}, mediaType: 'movie' });
+    await service.create({ name: 'Query B', filters: { year: 2020 }, mediaType: 'movie' });
 
     const dtos = await service.list();
 
@@ -92,7 +92,7 @@ describe('SavedQueryService', () => {
 
   it('inserts a record and returns a DTO with the correct fields', async () => {
     const filters = { genre: 'horror', year: 2021 };
-    const result = await service.create({ name: 'My Query', filters });
+    const result = await service.create({ name: 'My Query', filters, mediaType: 'movie' });
 
     expect(result.id).toBeGreaterThan(0);
     expect(result.name).toBe('My Query');
@@ -101,22 +101,42 @@ describe('SavedQueryService', () => {
   });
 
   it('trims whitespace from the name on create', async () => {
-    const result = await service.create({ name: '  Padded Name  ', filters: {} });
+    const result = await service.create({
+      name: '  Padded Name  ',
+      filters: {},
+      mediaType: 'movie',
+    });
 
     expect(result.name).toBe('Padded Name');
   });
 
   it('stores and returns complex filter objects without data loss', async () => {
     const filters = { genre: 'sci-fi', rating: 8.5, available: true };
-    const result = await service.create({ name: 'Complex', filters });
+    const result = await service.create({ name: 'Complex', filters, mediaType: 'movie' });
 
     expect(result.filters).toEqual(filters);
   });
 
   it('returns createdAt as a valid ISO 8601 string', async () => {
-    const dto = await service.create({ name: 'Test Query', filters: { genre: 'action' } });
+    const dto = await service.create({
+      name: 'Test Query',
+      filters: { genre: 'action' },
+      mediaType: 'movie',
+    });
 
     expect(dto.createdAt).toMatch(ISO_REGEX);
+  });
+
+  it('stores the mediaType and returns it in the DTO', async () => {
+    const movieDto = await service.create({ name: 'Movie Query', filters: {}, mediaType: 'movie' });
+    const seriesDto = await service.create({
+      name: 'Series Query',
+      filters: {},
+      mediaType: 'series',
+    });
+
+    expect(movieDto.mediaType).toBe('movie');
+    expect(seriesDto.mediaType).toBe('series');
   });
 
   // -------------------------------------------------------------------------
@@ -124,7 +144,7 @@ describe('SavedQueryService', () => {
   // -------------------------------------------------------------------------
 
   it('removes the record so it no longer appears in list', async () => {
-    const created = await service.create({ name: 'To Delete', filters: {} });
+    const created = await service.create({ name: 'To Delete', filters: {}, mediaType: 'movie' });
 
     await service.delete(created.id);
 

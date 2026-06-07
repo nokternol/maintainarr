@@ -10,7 +10,7 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, automations } from '@server/database/schema';
-import { ForbiddenError } from '@server/errors';
+import { ForbiddenError, ValidationError } from '@server/errors';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
@@ -41,7 +41,7 @@ async function seedProvider(providerService: ProviderSettingsService) {
 }
 
 async function seedQuery(queryService: SavedQueryService) {
-  return queryService.create({ name: 'Test Query', filters: {} });
+  return queryService.create({ name: 'Test Query', filters: {}, mediaType: 'movie' });
 }
 
 describe('AutomationService', () => {
@@ -62,10 +62,35 @@ describe('AutomationService', () => {
   });
 
   describe('create()', () => {
+    it('returns a dto with query.mediaType populated from the joined row', async () => {
+      const query = await savedQueryService.create({
+        name: 'Movie Query',
+        filters: {},
+        mediaType: 'movie',
+      });
+      const provider = await providerSettingsService.create({
+        type: MetadataProviderType.RADARR,
+        name: 'Test Radarr',
+        url: 'http://localhost:7878/api/v3',
+        apiKey: 'key',
+      });
+
+      const dto = await automationService.create({
+        name: 'My Automation',
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+        schedule: '0 * * * *',
+      });
+
+      expect(dto.query!.mediaType).toBe('movie');
+    });
+
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
       const query = await savedQueryService.create({
         name: 'My Query',
         filters: { hasFile: true },
+        mediaType: 'movie',
       });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.RADARR,
@@ -102,6 +127,56 @@ describe('AutomationService', () => {
 
       expect(dto.createdAt).toMatch(ISO_REGEX);
       expect(dto.updatedAt).toMatch(ISO_REGEX);
+    });
+  });
+
+  describe('mediaType compatibility validation', () => {
+    it('throws ValidationError when a SONARR provider is paired with a movie query', async () => {
+      const query = await savedQueryService.create({
+        name: 'Movie Query',
+        filters: {},
+        mediaType: 'movie',
+      });
+      const provider = await providerSettingsService.create({
+        type: MetadataProviderType.SONARR,
+        name: 'Test Sonarr',
+        url: 'http://localhost:8989/api/v3',
+        apiKey: 'key',
+      });
+
+      await expect(
+        automationService.create({
+          name: 'Bad Automation',
+          queryId: query.id,
+          providerId: provider.id,
+          taskId: 'unmonitorSeries',
+          schedule: '0 * * * *',
+        })
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('throws ValidationError when a RADARR provider is paired with a series query', async () => {
+      const query = await savedQueryService.create({
+        name: 'Series Query',
+        filters: {},
+        mediaType: 'series',
+      });
+      const provider = await providerSettingsService.create({
+        type: MetadataProviderType.RADARR,
+        name: 'Test Radarr',
+        url: 'http://localhost:7878/api/v3',
+        apiKey: 'key',
+      });
+
+      await expect(
+        automationService.create({
+          name: 'Bad Automation',
+          queryId: query.id,
+          providerId: provider.id,
+          taskId: 'unmonitorMovie',
+          schedule: '0 * * * *',
+        })
+      ).rejects.toThrow(ValidationError);
     });
   });
 
@@ -225,7 +300,11 @@ describe('AutomationService', () => {
     });
 
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
-      const query = await savedQueryService.create({ name: 'Status Query', filters: {} });
+      const query = await savedQueryService.create({
+        name: 'Status Query',
+        filters: {},
+        mediaType: 'series',
+      });
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.SONARR,
         name: 'Test Sonarr',

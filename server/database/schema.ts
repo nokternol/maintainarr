@@ -112,6 +112,7 @@ export const savedQueries = sqliteTable('saved_queries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   filters: text('filters').notNull(), // JSON: QueryFilters
+  mediaType: text('mediaType').notNull().default('movie'), // 'movie' | 'series'
   createdAt: createdAt('createdAt'),
 });
 

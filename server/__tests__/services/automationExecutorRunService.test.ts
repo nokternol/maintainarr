@@ -75,7 +75,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({ name: 'Q', filters: {} });
+    const query = await savedQueryService.create({ name: 'Q', filters: {}, mediaType: 'movie' });
     const automation = await automationService.create({
       name: 'Nightly',
       queryId: query.id,
@@ -104,7 +104,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({ name: 'Q', filters: {} });
+    const query = await savedQueryService.create({ name: 'Q', filters: {}, mediaType: 'movie' });
     const automation = await automationService.create({
       name: 'Nightly',
       queryId: query.id,

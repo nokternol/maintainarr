@@ -55,7 +55,11 @@ describe('GET /api/automations/runs', () => {
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({ name: 'Test Query', filters: {} });
+    const query = await savedQueryService.create({
+      name: 'Test Query',
+      filters: {},
+      mediaType: 'movie',
+    });
     const automation = await automationService.create({
       name: 'Nightly Cleanup',
       queryId: query.id,

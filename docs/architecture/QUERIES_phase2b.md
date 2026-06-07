@@ -3,7 +3,7 @@
 **Repo:** `/home/nokternol/repos/sandbox`
 **Prerequisite:** Phase 2 Session A shipped
 **Blocks:** Phase 3 (combination model requires typed queries)
-**Status:** INTENT — not yet implemented
+**Status:** IMPLEMENTED — 2026-06-07
 
 ---
 

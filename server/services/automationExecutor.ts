@@ -1,4 +1,3 @@
-import { MetadataProviderType } from '../database/schema';
 import { getChildLogger } from '../logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
@@ -43,7 +42,9 @@ export class AutomationExecutor {
       const filters = automation.query.filters;
       const taskId = automation.taskId;
 
-      if (provider.type === MetadataProviderType.RADARR) {
+      const mediaType = automation.query.mediaType;
+
+      if (mediaType === 'movie') {
         const radarr = this.providerFactory.create(provider, log) as RadarrProvider;
         const movies = await radarr.getMovies();
         const matched = applyMovieFilters(movies, {
@@ -66,9 +67,9 @@ export class AutomationExecutor {
             matched.map((m) => m.id)
           );
         } else {
-          return await this.recordUnimplemented(automationId, taskId, provider.type);
+          return await this.recordUnimplemented(automationId, taskId, mediaType);
         }
-      } else if (provider.type === MetadataProviderType.SONARR) {
+      } else if (mediaType === 'series') {
         const sonarr = this.providerFactory.create(provider, log) as SonarrProvider;
         const series = await sonarr.getSeries();
         const matched = applySeriesFilters(series, {
@@ -94,17 +95,17 @@ export class AutomationExecutor {
             matched.map((s) => s.id)
           );
         } else {
-          return await this.recordUnimplemented(automationId, taskId, provider.type);
+          return await this.recordUnimplemented(automationId, taskId, mediaType);
         }
       } else {
-        log.warn('Provider type not yet supported for execution', {
-          providerType: provider.type,
+        log.warn('Query mediaType not yet supported for execution', {
+          mediaType,
           automationId,
         });
         await this.recordResult(automationId, {
           itemCount: 0,
           status: 'error',
-          error: `Provider type "${provider.type}" is not yet supported`,
+          error: `Query mediaType "${mediaType}" is not yet supported`,
         });
         return;
       }
@@ -139,9 +140,9 @@ export class AutomationExecutor {
   private async recordUnimplemented(
     automationId: number,
     taskId: string,
-    providerType: string
+    mediaType: string
   ): Promise<void> {
-    log.warn('Task not yet implemented', { taskId, automationId, providerType });
+    log.warn('Task not yet implemented', { taskId, automationId, mediaType });
     await this.recordResult(automationId, {
       itemCount: 0,
       status: 'error',
