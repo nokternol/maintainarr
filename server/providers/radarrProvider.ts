@@ -12,6 +12,7 @@ export interface RadarrMovie {
   hasFile: boolean;
   monitored: boolean;
   tmdbId: number;
+  imdbId?: string;
   profileId: number;
   qualityProfileId: number;
   tags: number[];

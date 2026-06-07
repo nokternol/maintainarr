@@ -12,6 +12,7 @@ export interface PlexMediaItem {
   type: string;
   year?: number;
   thumb?: string;
+  guids?: { id: string }[];
 }
 
 /**

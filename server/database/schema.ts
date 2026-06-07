@@ -187,3 +187,55 @@ export const automationRuns = sqliteTable(
 
 export type AutomationRun = typeof automationRuns.$inferSelect;
 export type NewAutomationRun = typeof automationRuns.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// mediaIdentity
+// ---------------------------------------------------------------------------
+export const mediaIdentity = sqliteTable(
+  'media_identity',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    sourceType: text('sourceType').notNull(), // 'RADARR' | 'SONARR'
+    sourceId: integer('sourceId').notNull(),
+    tmdbId: integer('tmdbId'),
+    imdbId: text('imdbId'),
+    tvdbId: integer('tvdbId'),
+    tvMazeId: integer('tvMazeId'),
+    plexRatingKey: text('plexRatingKey'),
+    jellyfinItemId: text('jellyfinItemId'),
+    resolvedAt: integer('resolvedAt'),
+  },
+  (table) => [
+    index('idx_media_identity_tmdb').on(table.tmdbId),
+    index('idx_media_identity_tvdb').on(table.tvdbId),
+    index('idx_media_identity_imdb').on(table.imdbId),
+  ]
+);
+
+export type MediaIdentity = typeof mediaIdentity.$inferSelect;
+export type NewMediaIdentity = typeof mediaIdentity.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// mediaEnrichment
+// ---------------------------------------------------------------------------
+export const mediaEnrichment = sqliteTable(
+  'media_enrichment',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaIdentityId: integer('mediaIdentityId')
+      .notNull()
+      .references(() => mediaIdentity.id, { onDelete: 'cascade' }),
+    tautulliPlayCount: integer('tautulliPlayCount'),
+    tautulliLastPlayed: integer('tautulliLastPlayed'),
+    plexViewCount: integer('plexViewCount'),
+    plexLastViewedAt: integer('plexLastViewedAt'),
+    overseerrRequestStatus: integer('overseerrRequestStatus'),
+    overseerrHasIssue: integer('overseerrHasIssue'),
+    tmdbStatus: text('tmdbStatus'),
+    enrichedAt: integer('enrichedAt'),
+  },
+  (table) => [index('idx_media_enrichment_identity').on(table.mediaIdentityId)]
+);
+
+export type MediaEnrichment = typeof mediaEnrichment.$inferSelect;
+export type NewMediaEnrichment = typeof mediaEnrichment.$inferInsert;

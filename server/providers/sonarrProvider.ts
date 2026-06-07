@@ -17,6 +17,9 @@ export interface SonarrSeries {
   status: string;
   monitored: boolean;
   tvdbId: number;
+  tmdbId?: number;
+  imdbId?: string;
+  tvMazeId?: number;
   profileId: number;
   qualityProfileId: number;
   languageProfileId: number;
