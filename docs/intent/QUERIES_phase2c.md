@@ -1,227 +1,238 @@
-# Phase 2c — `saved_query.providerType` and Filter Field Registry
+# Phase 2c — Filter Provenance and the Saved Query Model
 
 **Repo:** `/home/nokternol/repos/sandbox`
 **Prerequisite:** Phase 2b shipped (`saved_query.mediaType`)
-**Blocks:** Phase 3 (combination model requires a coherent query type identity)
-**Status:** INTENT — not yet implemented
+**Blocks:** Phase 3 (combination model requires a coherent query identity)
+**Status:** INTENT — design decision pending, no implementation yet
 
 ---
 
-## The problem Phase 2b left behind
+## Current model: what actually exists
 
-Phase 2b added `saved_query.mediaType: 'movie' | 'series'` to break the implicit coupling between
-executor routing and provider type. It works, but `mediaType` is a proxy for the wrong concept.
+Three DB tables and two in-memory TypeScript interfaces. No more.
 
-**What `mediaType` actually means:** "this query targets RADARR" (movie) or "this query targets
-SONARR" (series). The media type is a consequence of the provider, not a first-class identity.
-The discriminator in the executor is `if (query.mediaType === 'movie')` — which is a roundabout
-way of saying `if (query targets RADARR)`.
+```
+metadata_provider        saved_queries              automations
+─────────────────        ──────────────────         ────────────────────
+id                       id                         id
+type (RADARR|SONARR|…)   name                       name
+name                     filters  ← JSON blob       queryId
+url                      mediaType ('movie'|'series')providerId ──► metadata_provider
+apiKey                   createdAt                  taskId
+isActive                                            schedule
+                                                    status
 
-This proxy breaks down in two directions:
+                         TypeScript (NOT stored)
+                         ─────────────────────────────────────────
+                         MovieFilterQuery  (interface ~13 fields)
+                         SeriesFilterQuery (interface ~20 fields)
+                         applyMovieFilters(movies, query)
+                         applySeriesFilters(series, query)
+```
 
-1. **PLEX also has movies and series.** A PLEX query targeting its watched-movie library would
-   also be `mediaType: 'movie'`, but the executor and filter functions are RADARR-specific.
-   `mediaType` cannot distinguish them.
+A saved query's `filters` blob is a flat JSON object:
 
-2. **Filter fields have an undeclared provenance.** `hasFile`, `radarrImdbRatingGte`,
-   `movieTagIds` are RADARR fields. `sonarrEnded`, `seriesStatus`, `seriesType` are SONARR fields.
-   These names encode the source by convention, but the data model carries no declared relationship
-   between a filter field and the provider it requires. As enrichment providers (TMDB, Tautulli)
-   add their own filterable fields, the blob becomes uninterpretable without out-of-band knowledge.
+```json
+{ "hasFile": true, "yearMin": 2010, "radarrImdbRatingGte": 7.0, "movieTagIds": "1,4" }
+```
 
-**Root cause:** A `SavedQuery` should declare its execution target (a provider type, not a media
-concept), and each filter field should be traceable to the provider whose data it filters. Neither
-relationship is currently modelled.
+or:
+
+```json
+{ "seriesStatus": "ended", "sonarrPercentEpisodesGte": 90, "monitored": false }
+```
+
+There is **no link** between the stored keys and anything in the database. The blob is
+interpreted entirely by `mediaType` at execution time: if `'movie'`, deserialise into
+`MovieFilterQuery` and call `applyMovieFilters`. If `'series'`, the other pair.
+
+An automation binds: query + provider instance + task + schedule. The provider lives on the
+automation. The query has no direct provider relationship — only the `mediaType` proxy.
 
 ---
 
-## What changes
+## What Phase 2b left behind: the mediaType problem
 
-### 1. Rename `saved_query.mediaType` → `saved_query.providerType`
+Phase 2b added `mediaType` to break an implicit coupling. It works but `mediaType` is a proxy
+for the wrong concept. `'movie'` means "this query targets RADARR." `'series'` means SONARR.
+Those are provider identities expressed through a media-content classification.
 
-Replace the media-concept proxy with the actual relationship.
-
-```sql
--- migration: rename column + remap values
-ALTER TABLE `saved_queries` RENAME COLUMN `mediaType` TO `providerType`;
-UPDATE `saved_queries` SET `providerType` = 'RADARR' WHERE `providerType` = 'movie';
-UPDATE `saved_queries` SET `providerType` = 'SONARR' WHERE `providerType` = 'series';
-```
-
-`providerType` stores a `MetadataProviderType` value (`'RADARR'`, `'SONARR'`, etc.), not a
-media-content classification. This makes the query-provider coupling explicit in the schema.
-
-### 2. Introduce a static Filter Field Registry
-
-`server/utils/filterRegistry.ts` (new file):
-
-```ts
-// Each entry declares: the field name, which provider type owns the data,
-// and the value type. The registry is used for validation at create time
-// and for UI field discovery.
-
-export interface FilterFieldDef {
-  field: string;
-  providerType: MetadataProviderType; // which provider supplies this field's data
-  valueType: 'string' | 'number' | 'boolean' | 'csv-ids';
-  label: string;
-}
-
-export const FILTER_REGISTRY: FilterFieldDef[] = [
-  // RADARR-sourced fields
-  { field: 'hasFile',                    providerType: RADARR, valueType: 'boolean',  label: 'Has file' },
-  { field: 'movieTagIds',                providerType: RADARR, valueType: 'csv-ids',  label: 'Tags' },
-  { field: 'movieQualityProfileIds',     providerType: RADARR, valueType: 'csv-ids',  label: 'Quality profiles' },
-  { field: 'movieGenres',                providerType: RADARR, valueType: 'string',   label: 'Genres' },
-  { field: 'radarrImdbRatingGte',        providerType: RADARR, valueType: 'number',   label: 'IMDB rating ≥' },
-  // ... all current MovieFilterQuery fields
-  // SONARR-sourced fields
-  { field: 'seriesStatus',               providerType: SONARR, valueType: 'string',   label: 'Status' },
-  { field: 'sonarrEnded',                providerType: SONARR, valueType: 'boolean',  label: 'Ended' },
-  { field: 'sonarrPercentEpisodesGte',   providerType: SONARR, valueType: 'number',   label: 'Episodes % ≥' },
-  // ... all current SeriesFilterQuery fields
-];
-
-// Fields valid for a given query's providerType — used for validation
-export function getFieldsForProvider(providerType: MetadataProviderType): FilterFieldDef[] {
-  return FILTER_REGISTRY.filter(f => f.providerType === providerType);
-}
-```
-
-**Why static:** Filter schemas are defined by the provider's API, not by runtime discovery. They
-don't change at runtime. A static registry is the right shape and avoids a provider-API roundtrip
-at query-create time.
-
-**Cross-provider filter fields (future):** When TMDB enrichment lands, a field like
-`tmdbRatingGte` would have `providerType: TMDB` but still be valid on a RADARR query (because the
-RADARR media object is enriched with TMDB data). The registry model supports this: a query's
-`providerType` is the *execution target*; a field's `providerType` is the *data source*. Phase 2c
-doesn't implement cross-provider fields — it establishes the registry shape that makes them
-possible without a breaking change.
-
-### 3. `SavedQueryService.create()` — validate filter keys against the registry
-
-When creating a query with `providerType: 'RADARR'`, reject any filter key that is not in
-`getFieldsForProvider('RADARR')`. This replaces the current unvalidated free-form JSON.
-
-Throw `ValidationError` with the unknown keys listed.
-
-### 4. `SavedQueryDto` — add `providerConfigured: boolean`
-
-At `list()` time, join `saved_queries` against `metadata_provider` on `type = providerType` to
-determine whether at least one active provider of the required type is configured.
-
-```ts
-export interface SavedQueryDto {
-  id: number;
-  name: string;
-  filters: QueryFilters;
-  providerType: MetadataProviderType;
-  providerConfigured: boolean; // false = no active provider of this type exists
-  createdAt: string;
-}
-```
-
-This gives the UI everything it needs for graceful degradation without a second request.
-
-### 5. `AutomationService.create()` — simplified compatibility check
-
-The current check is:
-
-```ts
-const compatible =
-  (providerType === MetadataProviderType.RADARR && mediaType === 'movie') ||
-  (providerType === MetadataProviderType.SONARR && mediaType === 'series');
-```
-
-After the rename it becomes:
-
-```ts
-const compatible = query.providerType === provider.type;
-```
-
-One equality check. No translation layer.
-
-### 6. `AutomationExecutor` — branch on `query.providerType`
-
-Replace:
-
-```ts
-if (mediaType === 'movie') { ... }
-else if (mediaType === 'series') { ... }
-```
-
-with:
-
-```ts
-if (query.providerType === MetadataProviderType.RADARR) { ... }
-else if (query.providerType === MetadataProviderType.SONARR) { ... }
-```
-
-The discriminator is now the actual thing it always meant.
-
-### 7. Graceful degradation — executor early exit
-
-Before fetching media, check that the provider instance is still active. If not:
-
-```ts
-if (!provider.isActive) {
-  return this.recordResult(automationId, {
-    status: 'error',
-    itemCount: 0,
-    error: `Provider "${provider.name}" is inactive — cannot execute`,
-  });
-}
-```
-
-This is the same check point where `providerConfigured: false` on the DTO signals the UI to warn.
+This was identified and Phase 2c was initially drafted as: rename `mediaType` → `providerType`
+on `saved_query`. That direction is now under question.
 
 ---
 
-## Files involved
+## The real problem: filter fields have no declared provenance
 
-| File | Action |
-|---|---|
-| `server/database/schema.ts` | Rename `mediaType` → `providerType`; update type annotation |
-| `server/database/migrations/0007_saved_query_provider_type.sql` | RENAME COLUMN + remap values |
-| `server/utils/filterRegistry.ts` | **New** — static filter field registry |
-| `server/services/savedQueryService.ts` | `providerType` in draft/dto; validate keys; `providerConfigured` in list |
-| `server/services/automationService.ts` | Simplified compatibility check; `providerType` in query DTO projection |
-| `server/services/automationExecutor.ts` | Branch on `query.providerType`; inactive-provider early exit |
-| `server/modules/savedQueries/savedQueries.schemas.ts` | `providerType: z.nativeEnum(MetadataProviderType)` |
+The field names `radarrImdbRatingGte`, `seriesStatus`, `sonarrEnded` encode their data source
+by convention only. The schema carries no expressed relationship between a filter field and the
+provider whose data it reads. Three things are impossible without out-of-band knowledge:
 
----
+1. **UI discovery** — which filters require which providers to be configured?
+2. **Execution routing** — which providers need to be called before filters can be applied?
+3. **Validation at create time** — is this filter key valid for this query?
 
-## What this does NOT address
-
-- **Cross-provider filter fields** (e.g. TMDB rating as a filter on RADARR results) — the registry
-  shape supports it, but the executor, filter functions, and enrichment pipeline are out of scope
-  for 2c. Document as a Phase 4 concern.
-- **Dynamic filter schema from provider API** — filter fields are static. RADARR's tag list is
-  dynamic data (used to populate a filter value UI), but the *schema* (that tags are filterable)
-  is static. Do not conflate.
-- **Multi-instance providers** — multiple RADARR instances. Phase 2c treats `providerType` as a
-  unique execution target. Multi-instance is a Phase 3+ concern.
+All three rely on code having hardcoded knowledge of what field names mean. The code has this
+knowledge (in `MovieFilterQuery`, `SeriesFilterQuery`, `applyMovieFilters`, `applySeriesFilters`)
+but it is scattered and not connected to the stored data.
 
 ---
 
-## Phase 3 handoff
+## Two design directions
 
-After 2c, the Phase 3 combination model operates as follows:
-- A combination joins two or more queries, each with a declared `providerType`
-- Two RADARR queries → valid RADARR combination
-- RADARR + SONARR queries → cross-type; Phase 3 decides allow/reject
-- The `providerConfigured` flag propagates: a combination's providers are all configured iff
-  each constituent query's `providerConfigured` is true
+### Framing A — query owns its execution target (Phase 2c original direction)
+
+```
+saved_query.providerType = 'RADARR' | 'SONARR'
+```
+
+The query declares its execution target. Filters are validated against the target provider's
+schema at create time. The automation's `providerId` must point to a matching instance.
+
+**Works for:** all current use cases.
+
+**Breaks when:** a filter field's data source differs from the execution target. Example:
+"RADARR movies with fewer than 5 Tautulli plays." Tautulli is not the execution target, but one
+of its fields is being filtered on. Framing A cannot model this without another workaround.
+
+Adopting Framing A now means a breaking schema change later when cross-provider filter fields
+land — exactly the situation Phase 2b just cleaned up.
+
+### Framing B — filter definitions carry their own provenance
+
+```
+filter_definition (static registry in code):
+  key: string                    — e.g. 'hasFile', 'tautulliPlayCountLte'
+  sourceProviderType: string     — where the data comes from
+  targetCompatibility: string[]  — which execution targets this filter is valid against
+  dataType: 'boolean'|'number'|'string'|'csv-ids'
+  label: string
+
+saved_query:
+  id, name                       — no providerType here
+  filter values stored as rows, not a JSON blob
+
+saved_query_filter_values:
+  savedQueryId, filterKey, value — (filterKey resolves to filter_definition)
+
+automation (unchanged):
+  queryId, providerId, taskId, schedule
+  — providerId IS the execution target; compatibility validated at create time
+```
+
+A saved query is a named set of filter value assignments. The query is provider-agnostic.
+The execution target is supplied by the automation, not stored on the query.
+
+**Compatibility check at automation creation:**
+
+```
+for each filter key in the query:
+  look up filter_definition by key
+  assert automation.provider.type ∈ filter_definition.targetCompatibility
+```
+
+One check, covers all current and future filter fields regardless of their data source.
+
+**Execution pipeline under Framing B:**
+
+```
+1. Load automation → get provider instance (execution target) and saved query
+2. Group query filter values by filter_definition.sourceProviderType
+3. Fetch target list from execution target provider (e.g. RADARR movie list)
+4. For each non-target source provider: fetch enrichment data and join onto target list
+5. Apply all filters against the enriched list
+6. Execute task against matched items
+```
+
+This pipeline can be built incrementally: today only RADARR and SONARR source providers
+exist, so steps 3-4 collapse to one. The architecture supports enrichment providers without
+structural changes.
 
 ---
 
-## Acceptance criteria
+## What the model has been missing
 
-- `saved_queries.providerType` stores `MetadataProviderType` values; existing rows migrated
-- `SavedQueryService.create()` validates filter keys against the registry for the given providerType
-- `SavedQueryDto` includes `providerType` and `providerConfigured`
-- `AutomationService.create()` compatibility check is `query.providerType === provider.type`
-- `AutomationExecutor` branches on `query.providerType`, not a media-concept string
-- `AutomationExecutor` records a meaningful error when the provider is inactive, not a thrown exception
-- All existing tests pass; new tests cover: registry key validation rejection, `providerConfigured: false` when no provider of that type is active, inactive-provider early exit in executor
+Three implicit assumptions are baked into the code but absent from the schema:
+
+1. **All filter fields in a query come from the same provider as the execution target.**
+   Encoded by `mediaType` and two hardcoded filter branches. Breaks with cross-provider filters.
+
+2. **Filter field names are self-documenting.**
+   `radarrImdbRatingGte` tells you it is RADARR by name only. There is no schema entry that
+   expresses this. If a field is renamed, old saved queries silently drop that filter.
+
+3. **A query is used by exactly one provider type.**
+   Accidentally correct but unenforced. The model prevents reusing a filter set across providers
+   that could legitimately share filters (e.g. both RADARR and SONARR support `addedDaysAgoGte`).
+
+---
+
+## Recommendation
+
+Adopt **Framing B**. The cost of Framing A is a guaranteed breaking change when cross-provider
+filter fields land. Framing B resolves the root cause and makes that future change additive, not
+structural.
+
+**The migration has a natural intermediate step** that avoids a big-bang rewrite:
+
+- Replace `saved_query.filters` (JSON blob) with a `saved_query_filter_values` join table
+- Keep the filter definitions as a **static code registry** (not a DB table) — filter schemas
+  are defined by provider APIs and do not change at runtime; a static registry is appropriate
+- Remove `saved_query.mediaType` — it becomes unnecessary once filter keys carry their own
+  `targetCompatibility`
+- Move the compatibility check from `SavedQueryService.create()` to
+  `AutomationService.create()` — the automation is the binding that introduces the execution
+  target, so that is where compatibility must be validated
+- Execution pipeline: start with the single-source case (today), extend to multi-source when
+  enrichment providers land
+
+---
+
+## What this does NOT require
+
+- A `filter_definitions` DB table — the registry lives in code. Filter schemas are static.
+- Changes to `metadata_provider` or `automations` tables — those are correct as-is.
+- Multi-source execution pipeline immediately — build today's single-source path correctly and
+  the multi-source extension slots in without restructuring.
+
+---
+
+## Design decisions required before implementation
+
+1. **Filter values as rows vs embedded JSON** — `saved_query_filter_values` is a proper join
+   table (one row per assigned filter). The current blob is a denormalised form of this. The
+   join table is strictly more correct and queryable; the blob is simpler to read. Given the
+   current filter count (10-20 per query) the join table is the right call.
+
+2. **Registry key stability** — filter keys (e.g. `'radarrImdbRatingGte'`) are stored in the
+   DB once `saved_query_filter_values` exists. Renaming a key in the registry orphans existing
+   rows. The registry must treat keys as stable identifiers, with explicit migration if a key
+   changes.
+
+3. **`targetCompatibility` granularity** — initially: RADARR fields target RADARR only, SONARR
+   fields target SONARR only, shared fields (title, year, addedDaysAgoGte, sizeOnDiskGbGte)
+   target both. TAUTULLI and TMDB fields target all media-library providers. This list is
+   extended when new provider types are added, not when filters are created.
+
+4. **Phase 3 combination queries under Framing B** — a combination joins two queries whose
+   combined filter sets must all be compatible with the automation's execution target. This is
+   the same compatibility check, just applied to N queries instead of 1. Clean.
+
+---
+
+## Acceptance criteria (when this ships)
+
+- `saved_queries` has no `mediaType` or `providerType` column
+- `saved_query_filter_values` table holds one row per assigned filter, with a `filterKey` that
+  resolves to a static registry entry
+- Static `FILTER_REGISTRY` in code declares `sourceProviderType`, `targetCompatibility`, `dataType`,
+  `label` for every known filter key
+- `SavedQueryService.create()` validates filter keys against the registry (key existence and
+  value type) — not against a provider type
+- `AutomationService.create()` validates that all of the query's filter keys are compatible with
+  the automation's provider type (`targetCompatibility` check)
+- `AutomationExecutor` groups filter values by `sourceProviderType` before applying them;
+  today that group is always size 1 (RADARR or SONARR only) — no multi-source pipeline yet
+- All existing tests pass; new tests cover: unknown filter key rejection, type mismatch
+  rejection, cross-provider compatibility failure at automation creation, single-source
+  execution path using the filter values join table
