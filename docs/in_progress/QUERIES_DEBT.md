@@ -36,6 +36,7 @@ This means the identity graph will have a gap for any show that TVMaze has index
 ### DEBT-004 — `saved_query` has no `mediaType` discriminator; filter/provider mismatch is silent
 
 **Phase found:** 2 Session A (design review)
+**Addressed by:** Phase 2b — `docs/intent/QUERIES_phase2b.md`
 **Priority:** High — silent wrong results, not a crash
 
 `automation.providerId` serves as both a **type discriminator** (RADARR → movie branch, SONARR →

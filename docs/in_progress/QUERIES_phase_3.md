@@ -1,9 +1,9 @@
 # Phase 3 — Combination Model Backend
 
 **Repo:** `/home/nokternol/repos/sandbox`  
-**Prerequisite:** Phase 2 shipped (enrichment pipeline validates the join infrastructure)  
+**Prerequisite:** Phase 2b shipped (`saved_query.mediaType` refactor — queries are typed before combination model runs)  
 **Blocks:** Phase 4  
-**Status:** BLOCKED on Phase 2
+**Status:** BLOCKED on Phase 2b
 
 ---
 
@@ -34,7 +34,9 @@ Three discrete work units, each independently committable:
 **Session C — API update + regression:** Steps 3.5–3.6
 
 The migration (Step 3.1) is the highest-risk step — it must backfill existing `queryId` rows
-before the old column can be dropped. Run the full test suite before and after.
+into `automation_query_sources` before the old column can be dropped. By the time Phase 3 runs,
+`saved_query.mediaType` already exists (added in Phase 2b), so each backfilled source row carries
+an implicit type via the query it references. Run the full test suite before and after.
 
 Use a haiku subagent to read the existing migration files and `automationService.ts` to
 understand current patterns before writing any new code.
@@ -199,10 +201,24 @@ Run the full test suite. Specifically verify:
 
 ---
 
+## Cross-type combinations
+
+Phase 2b adds `mediaType` to `saved_queries`. Each `automation_query_sources` row therefore
+references a query with a known type. Phase 3 must decide the policy for cross-type combinations
+(e.g. an include source that is `movie` and an exclude source that is `series`):
+
+**Recommended policy for v1:** Reject cross-type combinations at creation time — all query sources
+in an automation must share the same `mediaType`. This keeps the executor's branching model intact
+(one provider type, one filter function). Cross-type compositions are deferred to a future phase
+where the executor is redesigned for multi-source fetching.
+
+---
+
 ## Acceptance criteria
 
 - `automation_query_sources` table exists and contains backfilled rows for all existing automations
 - `automations.queryId` column is removed
+- All query sources in an automation must share the same `mediaType` (validated at creation time)
 - `AutomationExecutor` evaluates multiple query sources and combines them correctly
 - Automation with one include + one exclude applies DIFFERENCE semantics
 - Automation with two include sources applies UNION (deduped) semantics
