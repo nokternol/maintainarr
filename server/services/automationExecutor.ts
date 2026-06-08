@@ -217,7 +217,7 @@ export class AutomationExecutor {
       item.playCount = rawPlay !== null ? rawPlay : undefined;
       const rawTs = enr.tautulliLastPlayed ?? enr.plexLastViewedAt ?? null;
       item.lastWatchedAt = rawTs !== null ? new Date(rawTs * 1000).toISOString() : undefined;
-      if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue === 1;
+      if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue;
       if (enr.overseerrRequestStatus !== null)
         item.overseerrRequestStatus = enr.overseerrRequestStatus;
       if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus ?? undefined;

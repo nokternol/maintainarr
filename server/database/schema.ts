@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { bit } from './columns/bit';
 import { createdAt, updatedAt } from './columns/datetime';
 export { createdAt, updatedAt };
 
@@ -230,7 +231,7 @@ export const mediaEnrichment = sqliteTable(
     plexViewCount: integer('plexViewCount'),
     plexLastViewedAt: integer('plexLastViewedAt'),
     overseerrRequestStatus: integer('overseerrRequestStatus'),
-    overseerrHasIssue: integer('overseerrHasIssue'),
+    overseerrHasIssue: bit('overseerrHasIssue'),
     tmdbStatus: text('tmdbStatus'),
     enrichedAt: integer('enrichedAt'),
   },
