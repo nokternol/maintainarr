@@ -30,6 +30,12 @@ interface OverseerrRequestsResponse {
   };
 }
 
+export interface OverseerrIssue {
+  id: number;
+  status: number;
+  media: { tmdbId: number };
+}
+
 export interface OverseerrSearchResult {
   id: number;
   mediaType: string;
@@ -55,6 +61,13 @@ export class OverseerrProvider extends BaseMetadataProvider {
     const resp = await this.client
       .get('api/v1/request', { headers: this.authHeader })
       .json<OverseerrRequestsResponse>();
+    return resp.results;
+  }
+
+  public async getIssues(): Promise<OverseerrIssue[]> {
+    const resp = await this.client
+      .get('api/v1/issue', { headers: this.authHeader })
+      .json<{ results: OverseerrIssue[] }>();
     return resp.results;
   }
 

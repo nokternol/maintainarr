@@ -21,4 +21,11 @@ describe('OverseerrProvider', () => {
     expect(requests[0].type).toBe('movie');
     expect(requests[0].media.tmdbId).toBe(603);
   });
+
+  it('getIssues() returns all issues with id, status and media.tmdbId', async () => {
+    const issues = await provider.getIssues();
+    expect(issues).toHaveLength(2);
+    expect(issues[0]).toMatchObject({ id: 1, status: 1, media: { tmdbId: 603 } });
+    expect(issues[1]).toMatchObject({ id: 2, status: 1, media: { tmdbId: 704 } });
+  });
 });

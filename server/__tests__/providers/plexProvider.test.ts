@@ -37,4 +37,10 @@ describe('PlexProvider', () => {
     expect(items[0].title).toBe('Breaking Bad');
     expect(items[0].type).toBe('show');
   });
+
+  it('getLibraryContents passes through viewCount and lastViewedAt when present', async () => {
+    const items = await provider.getLibraryContents('1');
+    expect(items[0].viewCount).toBe(3);
+    expect(items[0].lastViewedAt).toBe(1700000000);
+  });
 });

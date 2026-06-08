@@ -24,6 +24,7 @@ export const plexProviderHandlers = [
             title: isMovies ? 'The Matrix' : 'Breaking Bad',
             type: isMovies ? 'movie' : 'show',
             year: isMovies ? 1999 : 2008,
+            ...(isMovies ? { viewCount: 3, lastViewedAt: 1700000000 } : {}),
           },
         ],
       },

@@ -13,6 +13,8 @@ export interface PlexMediaItem {
   year?: number;
   thumb?: string;
   guids?: { id: string }[];
+  viewCount?: number;
+  lastViewedAt?: number;
 }
 
 /**
@@ -39,5 +41,11 @@ export class PlexProvider extends BaseMetadataProvider {
       .get(`library/sections/${libraryKey}/all`, { headers: this.authHeader })
       .json<{ MediaContainer: { Metadata: PlexMediaItem[] } }>();
     return resp.MediaContainer.Metadata;
+  }
+
+  public async getAllItems(): Promise<PlexMediaItem[]> {
+    const libraries = await this.getLibraries();
+    const nested = await Promise.all(libraries.map((lib) => this.getLibraryContents(lib.key)));
+    return nested.flat();
   }
 }

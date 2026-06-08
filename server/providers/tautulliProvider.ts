@@ -24,6 +24,7 @@ export interface TautulliHistoryItem {
   watched_status: number;
   duration: number;
   play_duration: number;
+  played_at?: number;
 }
 
 interface TautulliResponse<T> {
