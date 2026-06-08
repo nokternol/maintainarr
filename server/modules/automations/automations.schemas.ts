@@ -34,13 +34,34 @@ export const automationSchemas = {
   },
 
   create: {
-    body: z.object({
-      name: z.string().min(1).max(200),
-      queryId: z.number().int().positive(),
-      providerId: z.number().int().positive(),
-      taskId: z.string().min(1),
-      schedule: z.string().min(1),
-    }),
+    body: z
+      .object({
+        name: z.string().min(1).max(200),
+        providerId: z.number().int().positive(),
+        taskId: z.string().min(1),
+        schedule: z.string().min(1),
+        querySources: z
+          .array(
+            z.object({
+              queryId: z.number().int().positive(),
+              role: z.enum(['include', 'exclude']),
+              sortOrder: z.number().int().optional(),
+            })
+          )
+          .min(1)
+          .optional(),
+        // Deprecated — convert to single include source when querySources not provided
+        queryId: z.number().int().positive().optional(),
+      })
+      .transform((val) => ({
+        name: val.name,
+        providerId: val.providerId,
+        taskId: val.taskId,
+        schedule: val.schedule,
+        querySources:
+          val.querySources ??
+          (val.queryId ? [{ queryId: val.queryId, role: 'include' as const, sortOrder: 0 }] : []),
+      })),
   },
 
   updateStatus: {

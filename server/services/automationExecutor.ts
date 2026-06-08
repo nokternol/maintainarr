@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import { mediaEnrichment, mediaIdentity } from '../database/schema';
+import type { MetadataProvider } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
@@ -11,7 +12,8 @@ import type { SonarrSeries } from '../providers/sonarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
 import { getFilterDef } from '../utils/filterRegistry';
 import type { AutomationRunService } from './automationRunService';
-import type { AutomationService } from './automationService';
+import type { AutomationQuerySourceDto, AutomationService } from './automationService';
+import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { FilterValueEntry } from './savedQueryService';
 import type { SavedQueryService } from './savedQueryService';
@@ -109,68 +111,25 @@ export class AutomationExecutor {
 
     try {
       const automation = await this.automationService.getById(automationId);
-      if (!automation.provider || !automation.query) {
-        throw new Error(`Automation ${automationId} has no provider or query — cannot execute`);
+      if (!automation.provider) {
+        throw new Error(`Automation ${automationId} has no provider — cannot execute`);
+      }
+
+      const sources = automation.querySources ?? [];
+
+      if (!sources.length) {
+        throw new Error(`Automation ${automationId} has no query sources — cannot execute`);
       }
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
-      const queryDto = await this.savedQueryService.getById(automation.query.id);
-      const { contentType, filterValues } = queryDto;
-      const taskId = automation.taskId;
-
-      if (contentType === 'movie') {
-        const radarr = this.providerFactory.create(providerSettings, log) as RadarrProvider;
-        const movies = await radarr.getMovies();
-        const normalized = movies.map(normalizeRadarrMovie);
-        if (this.db) {
-          await this.mergeMovieEnrichment(
-            normalized,
-            movies.map((m) => m.id)
-          );
-        }
-        const matched = applyFilters(normalized, filterValues, 'movie');
-        itemCount = matched.length;
-
-        const handler = RADARR_TASKS[taskId];
-        if (handler) {
-          await handler(
-            radarr,
-            matched.map((m) => m._sourceIds.radarr!)
-          );
-        } else {
-          return await this.recordUnimplemented(automationId, taskId, contentType);
-        }
-      } else if (contentType === 'show') {
-        const sonarr = this.providerFactory.create(providerSettings, log) as SonarrProvider;
-        const series = await sonarr.getSeries();
-        const normalized = series.map(normalizeSonarrSeries);
-        const matched = applyFilters(normalized, filterValues, 'show');
-        itemCount = matched.length;
-
-        const handler = SONARR_TASKS[taskId];
-        if (handler) {
-          await handler(
-            sonarr,
-            matched.map((s) => s._sourceIds.sonarr!)
-          );
-        } else {
-          return await this.recordUnimplemented(automationId, taskId, contentType);
-        }
-      } else {
-        log.warn('Query contentType not yet supported for execution', {
-          contentType,
-          automationId,
-        });
-        await this.recordResult(automationId, {
-          itemCount: 0,
-          status: 'error',
-          error: `Query contentType "${contentType}" is not yet supported`,
-        });
-        return;
-      }
-
+      itemCount = await this.executeWithSources(
+        automationId,
+        automation.taskId,
+        providerSettings,
+        sources
+      );
       await this.recordResult(automationId, { itemCount, status: 'success' });
-      log.info('Automation executed', { automationId, taskId, itemCount });
+      log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
       log.error('Automation execution failed', { automationId, err });
       await this.recordResult(automationId, {
@@ -181,16 +140,84 @@ export class AutomationExecutor {
     }
   }
 
-  private async mergeMovieEnrichment(
-    normalized: NormalizedMovie[],
-    radarrIds: number[]
+  private async executeWithSources(
+    automationId: number,
+    taskId: string,
+    providerSettings: MetadataProvider,
+    sources: AutomationQuerySourceDto[]
+  ): Promise<number> {
+    const queryDtos = await Promise.all(
+      sources.map((s) => this.savedQueryService.getById(s.queryId))
+    );
+    const contentType = queryDtos[0].contentType;
+    const provider = this.providerFactory.create(providerSettings, log);
+    const queryResults: QueryResult[] = [];
+
+    if (contentType === 'movie') {
+      const radarr = provider as RadarrProvider;
+      const movies = await radarr.getMovies();
+      const normalized = movies.map(normalizeRadarrMovie);
+      if (this.db)
+        await this.mergeEnrichment(
+          normalized,
+          movies.map((m) => m.id),
+          'RADARR',
+          (m) => m._sourceIds.radarr
+        );
+      for (let i = 0; i < sources.length; i++) {
+        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'movie');
+        queryResults.push({
+          role: sources[i].role,
+          items: matched.map((m) => m._sourceIds.radarr!),
+        });
+      }
+      const finalIds = evaluateCombination(queryResults).map(Number);
+      const handler = RADARR_TASKS[taskId];
+      if (!handler) throw new Error(`Task "${taskId}" is not yet implemented`);
+      await handler(radarr, finalIds);
+      return finalIds.length;
+    }
+
+    if (contentType === 'show') {
+      const sonarr = provider as SonarrProvider;
+      const series = await sonarr.getSeries();
+      const normalized = series.map(normalizeSonarrSeries);
+      if (this.db)
+        await this.mergeEnrichment(
+          normalized,
+          series.map((s) => s.id),
+          'SONARR',
+          (s) => s._sourceIds.sonarr
+        );
+      for (let i = 0; i < sources.length; i++) {
+        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'show');
+        queryResults.push({
+          role: sources[i].role,
+          items: matched.map((s) => s._sourceIds.sonarr!),
+        });
+      }
+      const finalIds = evaluateCombination(queryResults).map(Number);
+      const handler = SONARR_TASKS[taskId];
+      if (!handler) throw new Error(`Task "${taskId}" is not yet implemented`);
+      await handler(sonarr, finalIds);
+      return finalIds.length;
+    }
+
+    return 0;
+  }
+
+  private async mergeEnrichment<T extends NormalizedMovie | NormalizedShow>(
+    normalized: T[],
+    sourceIds: number[],
+    sourceType: 'RADARR' | 'SONARR',
+    getSourceId: (item: T) => number | undefined
   ): Promise<void> {
-    if (!this.db || radarrIds.length === 0) return;
+    if (!this.db || sourceIds.length === 0) return;
     const identities = await this.db
       .select()
       .from(mediaIdentity)
       .where(
-        and(eq(mediaIdentity.sourceType, 'RADARR'), inArray(mediaIdentity.sourceId, radarrIds))
+        and(eq(mediaIdentity.sourceType, sourceType), inArray(mediaIdentity.sourceId, sourceIds))
       );
     if (identities.length === 0) return;
     const identityIdToSourceId = new Map(identities.map((i) => [i.id, i.sourceId]));
@@ -203,15 +230,15 @@ export class AutomationExecutor {
           identities.map((i) => i.id)
         )
       );
-    const enrichByRadarrId = new Map<number, (typeof enrichments)[number]>();
+    const enrichBySourceId = new Map<number, (typeof enrichments)[number]>();
     for (const enr of enrichments) {
       const sourceId = identityIdToSourceId.get(enr.mediaIdentityId);
-      if (sourceId !== undefined) enrichByRadarrId.set(sourceId, enr);
+      if (sourceId !== undefined) enrichBySourceId.set(sourceId, enr);
     }
     for (const item of normalized) {
-      const radarrId = item._sourceIds.radarr;
-      if (radarrId === undefined) continue;
-      const enr = enrichByRadarrId.get(radarrId);
+      const id = getSourceId(item);
+      if (id === undefined) continue;
+      const enr = enrichBySourceId.get(id);
       if (!enr) continue;
       const rawPlay = enr.tautulliPlayCount ?? enr.plexViewCount ?? null;
       item.playCount = rawPlay !== null ? rawPlay : undefined;

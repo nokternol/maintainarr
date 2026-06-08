@@ -62,7 +62,7 @@ describe('GET /api/automations/runs', () => {
     });
     const automation = await automationService.create({
       name: 'Nightly Cleanup',
-      queryId: query.id,
+      querySources: [{ queryId: query.id, role: 'include' }],
       providerId: provider.id,
       taskId: 'unmonitorMovie',
       schedule: '0 2 * * *',

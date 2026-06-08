@@ -54,7 +54,7 @@ describe('API shape contracts — real server responses', () => {
     });
     const automation = await automationService.create({
       name: 'Test Automation',
-      queryId: query.id,
+      querySources: [{ queryId: query.id, role: 'include' }],
       providerId: provider.id,
       taskId: 'radarr.deleteUnmonitored',
       schedule: '0 2 * * *',

@@ -1,10 +1,11 @@
 import { Cron } from 'croner';
-import { type SQL, eq } from 'drizzle-orm';
+import { type SQL, eq, inArray } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type Automation as AutomationRow,
   MetadataProviderType,
   type NewAutomation,
+  automationQuerySources,
   automations,
   metadataProviders,
   savedQueries,
@@ -12,12 +13,24 @@ import {
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
 import type { ContentType } from './savedQueryService';
 
+export interface QuerySourceDraft {
+  queryId: number;
+  role: 'include' | 'exclude';
+  sortOrder?: number;
+}
+
 export interface AutomationDraft {
   name: string;
-  queryId: number;
+  querySources: QuerySourceDraft[];
   providerId: number;
   taskId: string;
   schedule: string;
+}
+
+export interface AutomationQuerySourceDto {
+  queryId: number;
+  role: 'include' | 'exclude';
+  sortOrder: number;
 }
 
 export interface AutomationDto {
@@ -25,6 +38,7 @@ export interface AutomationDto {
   name: string;
   kind: 'user' | 'system';
   query: { id: number; name: string; contentType: ContentType } | null;
+  querySources: AutomationQuerySourceDto[];
   provider: { id: number; name: string; type: string } | null;
   taskId: string;
   schedule: string;
@@ -59,7 +73,8 @@ const CONTENT_TYPE_PROVIDERS: Record<ContentType, MetadataProviderType[]> = {
 function rowToDto(
   row: AutomationRow,
   query: { id: number; name: string; contentType: string } | null,
-  provider: { id: number; name: string; type: string } | null
+  provider: { id: number; name: string; type: string } | null,
+  querySources: AutomationQuerySourceDto[] = []
 ): AutomationDto {
   const dto: AutomationDto = {
     id: row.id,
@@ -68,6 +83,7 @@ function rowToDto(
     query: query
       ? { id: query.id, name: query.name, contentType: query.contentType as ContentType }
       : null,
+    querySources,
     provider: provider ? { id: provider.id, name: provider.name, type: provider.type } : null,
     taskId: row.taskId,
     schedule: row.schedule,
@@ -103,25 +119,51 @@ export class AutomationService {
     const rows = await this.db
       .select({
         automation: automations,
-        queryId: savedQueries.id,
-        queryName: savedQueries.name,
-        queryContentType: savedQueries.contentType,
         providerId: metadataProviders.id,
         providerName: metadataProviders.name,
         providerType: metadataProviders.type,
       })
       .from(automations)
-      .innerJoin(savedQueries, eq(automations.queryId, savedQueries.id))
-      .innerJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
+      .leftJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
       .where(eq(automations.id, id));
 
     if (rows.length === 0) throw new NotFoundError(`Automation ${id} not found`);
     const r = rows[0];
-    return rowToDto(
-      r.automation,
-      { id: r.queryId, name: r.queryName, contentType: r.queryContentType },
-      { id: r.providerId, name: r.providerName, type: r.providerType }
-    );
+    const provider =
+      r.providerId != null && r.providerName != null && r.providerType != null
+        ? { id: r.providerId, name: r.providerName, type: r.providerType }
+        : null;
+
+    const sourceRows = await this.db
+      .select({
+        queryId: automationQuerySources.queryId,
+        role: automationQuerySources.role,
+        sortOrder: automationQuerySources.sortOrder,
+        queryName: savedQueries.name,
+        queryContentType: savedQueries.contentType,
+      })
+      .from(automationQuerySources)
+      .leftJoin(savedQueries, eq(savedQueries.id, automationQuerySources.queryId))
+      .where(eq(automationQuerySources.automationId, id))
+      .orderBy(automationQuerySources.sortOrder);
+
+    const querySources: AutomationQuerySourceDto[] = sourceRows.map((s) => ({
+      queryId: s.queryId,
+      role: s.role as 'include' | 'exclude',
+      sortOrder: s.sortOrder,
+    }));
+
+    const firstInclude = sourceRows.find((s) => s.role === 'include') ?? null;
+    const query =
+      firstInclude?.queryName && firstInclude?.queryContentType
+        ? {
+            id: firstInclude.queryId,
+            name: firstInclude.queryName,
+            contentType: firstInclude.queryContentType,
+          }
+        : null;
+
+    return rowToDto(r.automation, query, provider, querySources);
   }
 
   async list(options?: { kind?: 'user' | 'system' }): Promise<AutomationDto[]> {
@@ -129,64 +171,95 @@ export class AutomationService {
     const rows = await this.db
       .select({
         automation: automations,
-        queryId: savedQueries.id,
-        queryName: savedQueries.name,
-        queryContentType: savedQueries.contentType,
         providerId: metadataProviders.id,
         providerName: metadataProviders.name,
         providerType: metadataProviders.type,
       })
       .from(automations)
-      .leftJoin(savedQueries, eq(automations.queryId, savedQueries.id))
       .leftJoin(metadataProviders, eq(automations.providerId, metadataProviders.id))
       .where(where)
       .orderBy(automations.createdAt);
 
+    if (rows.length === 0) return [];
+
+    const automationIds = rows.map((r) => r.automation.id);
+    const sourceRows = await this.db
+      .select({
+        automationId: automationQuerySources.automationId,
+        queryId: automationQuerySources.queryId,
+        role: automationQuerySources.role,
+        sortOrder: automationQuerySources.sortOrder,
+        queryName: savedQueries.name,
+        queryContentType: savedQueries.contentType,
+      })
+      .from(automationQuerySources)
+      .leftJoin(savedQueries, eq(savedQueries.id, automationQuerySources.queryId))
+      .where(inArray(automationQuerySources.automationId, automationIds))
+      .orderBy(automationQuerySources.sortOrder);
+
+    const sourcesByAutomationId = new Map<number, typeof sourceRows>();
+    for (const s of sourceRows) {
+      const existing = sourcesByAutomationId.get(s.automationId) ?? [];
+      existing.push(s);
+      sourcesByAutomationId.set(s.automationId, existing);
+    }
+
     return rows.map((r) => {
+      const sources = sourcesByAutomationId.get(r.automation.id) ?? [];
+      const querySources: AutomationQuerySourceDto[] = sources.map((s) => ({
+        queryId: s.queryId,
+        role: s.role as 'include' | 'exclude',
+        sortOrder: s.sortOrder,
+      }));
+      const firstInclude = sources.find((s) => s.role === 'include') ?? null;
       const query =
-        r.queryId !== null && r.queryName !== null && r.queryContentType !== null
-          ? { id: r.queryId, name: r.queryName, contentType: r.queryContentType }
+        firstInclude?.queryName && firstInclude?.queryContentType
+          ? {
+              id: firstInclude.queryId,
+              name: firstInclude.queryName,
+              contentType: firstInclude.queryContentType,
+            }
           : null;
       const provider =
-        r.providerId !== null && r.providerName !== null && r.providerType !== null
+        r.providerId != null && r.providerName != null && r.providerType != null
           ? { id: r.providerId, name: r.providerName, type: r.providerType }
           : null;
-      return rowToDto(r.automation, query, provider);
+      return rowToDto(r.automation, query, provider, querySources);
     });
   }
 
   async create(draft: AutomationDraft): Promise<AutomationDto> {
-    // Validate cron expression
     try {
       new Cron(draft.schedule, { paused: true }).stop();
     } catch {
       throw new Error(`Invalid cron expression: ${draft.schedule}`);
     }
 
-    // Validate query/provider contentType compatibility
-    const [queryRow] = await this.db
-      .select({ contentType: savedQueries.contentType })
-      .from(savedQueries)
-      .where(eq(savedQueries.id, draft.queryId));
-    const [providerRow] = await this.db
-      .select({ type: metadataProviders.type })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.id, draft.providerId));
+    const includeSources = draft.querySources.filter((s) => s.role === 'include');
+    if (includeSources.length > 0) {
+      const [queryRow] = await this.db
+        .select({ contentType: savedQueries.contentType })
+        .from(savedQueries)
+        .where(eq(savedQueries.id, includeSources[0].queryId));
+      const [providerRow] = await this.db
+        .select({ type: metadataProviders.type })
+        .from(metadataProviders)
+        .where(eq(metadataProviders.id, draft.providerId));
 
-    if (queryRow && providerRow) {
-      const contentType = queryRow.contentType as ContentType;
-      const providerType = providerRow.type as MetadataProviderType;
-      const allowed = CONTENT_TYPE_PROVIDERS[contentType] ?? [];
-      if (!allowed.includes(providerType)) {
-        throw new ValidationError(
-          `Provider type "${providerType}" is not compatible with contentType "${contentType}"`
-        );
+      if (queryRow && providerRow) {
+        const contentType = queryRow.contentType as ContentType;
+        const providerType = providerRow.type as MetadataProviderType;
+        const allowed = CONTENT_TYPE_PROVIDERS[contentType] ?? [];
+        if (!allowed.includes(providerType)) {
+          throw new ValidationError(
+            `Provider type "${providerType}" is not compatible with contentType "${contentType}"`
+          );
+        }
       }
     }
 
     const insert: NewAutomation = {
       name: draft.name.trim(),
-      queryId: draft.queryId,
       providerId: draft.providerId,
       taskId: draft.taskId,
       schedule: draft.schedule,
@@ -194,6 +267,17 @@ export class AutomationService {
     };
 
     const [row] = await this.db.insert(automations).values(insert).returning();
+
+    if (draft.querySources.length > 0) {
+      await this.db.insert(automationQuerySources).values(
+        draft.querySources.map((s, i) => ({
+          automationId: row.id,
+          queryId: s.queryId,
+          role: s.role,
+          sortOrder: s.sortOrder ?? i,
+        }))
+      );
+    }
 
     return this.getById(row.id);
   }
