@@ -140,7 +140,6 @@ export const automations = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
-    queryId: integer('queryId').references(() => savedQueries.id, { onDelete: 'cascade' }),
     providerId: integer('providerId').references(() => metadataProviders.id, {
       onDelete: 'cascade',
     }),
@@ -157,6 +156,28 @@ export const automations = sqliteTable(
   },
   (table) => [index('IDX_automations_status').on(table.status)]
 );
+
+// ---------------------------------------------------------------------------
+// automationQuerySources
+// ---------------------------------------------------------------------------
+export const automationQuerySources = sqliteTable(
+  'automation_query_sources',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    automationId: integer('automationId')
+      .notNull()
+      .references(() => automations.id, { onDelete: 'cascade' }),
+    queryId: integer('queryId')
+      .notNull()
+      .references(() => savedQueries.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(), // 'include' | 'exclude'
+    sortOrder: integer('sortOrder').notNull().default(0),
+  },
+  (table) => [index('IDX_aqsources_automationId').on(table.automationId)]
+);
+
+export type AutomationQuerySource = typeof automationQuerySources.$inferSelect;
+export type NewAutomationQuerySource = typeof automationQuerySources.$inferInsert;
 
 export type SavedQuery = typeof savedQueries.$inferSelect;
 export type NewSavedQuery = typeof savedQueries.$inferInsert;
