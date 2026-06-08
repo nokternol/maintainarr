@@ -35,6 +35,11 @@ export interface MediaFilterBarProps {
   setSeriesType: (v: string | undefined) => void;
   setNetwork: (v: string | undefined) => void;
   setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
+  setLastWatchedDaysAgoGte: (v: number | undefined) => void;
+  setLastWatchedDaysAgoLte: (v: number | undefined) => void;
+  setOverseerrHasIssue: (v: 'true' | 'false' | undefined) => void;
+  setOverseerrRequestStatus: (v: string | undefined) => void;
+  setTmdbStatus: (v: string | undefined) => void;
   // ── Shared (movies + series) ─────────────────────────────────────────────
   setAddedDaysAgoGte: (v: number | undefined) => void;
   setAddedDaysAgoLte: (v: number | undefined) => void;
@@ -742,6 +747,26 @@ const SONARR_ENDED_OPTIONS = [
   { value: 'false' as const, label: 'Running' },
 ];
 
+const OVERSEERR_HAS_ISSUE_OPTIONS = [
+  { value: 'true' as const, label: 'Has Issue' },
+  { value: 'false' as const, label: 'No Issue' },
+];
+
+const OVERSEERR_REQUEST_STATUS_OPTIONS = [
+  { value: '1', label: 'Pending' },
+  { value: '2', label: 'Approved' },
+  { value: '3', label: 'Declined' },
+  { value: '4', label: 'Available' },
+];
+
+const TMDB_STATUS_OPTIONS = [
+  { value: 'Released', label: 'Released' },
+  { value: 'In Production', label: 'In Production' },
+  { value: 'Ended', label: 'Ended' },
+  { value: 'Returning Series', label: 'Returning Series' },
+  { value: 'Canceled', label: 'Canceled' },
+];
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MediaFilterBar({
@@ -761,6 +786,11 @@ export function MediaFilterBar({
   setSeriesType,
   setNetwork,
   setTautulliWatched,
+  setLastWatchedDaysAgoGte,
+  setLastWatchedDaysAgoLte,
+  setOverseerrHasIssue,
+  setOverseerrRequestStatus,
+  setTmdbStatus,
   setAddedDaysAgoGte,
   setAddedDaysAgoLte,
   setSizeOnDiskGbGte,
@@ -864,7 +894,9 @@ export function MediaFilterBar({
     configuredTypes.has('RADARR') && (activeTab === undefined || activeTab === 'movies');
   const hasSeriesSection =
     configuredTypes.has('SONARR') && (activeTab === undefined || activeTab === 'series');
-  const hasTautulliSection = configuredTypes.has('TAUTULLI');
+  const hasPlayHistorySection = configuredTypes.has('TAUTULLI') || configuredTypes.has('PLEX');
+  const hasOverseerrSection = configuredTypes.has('OVERSEERR');
+  const hasTmdbSection = configuredTypes.has('TMDB');
 
   const hasMovieDropdowns =
     lookups.tags.radarr.length > 0 || lookups.qualityProfiles.radarr.length > 0;
@@ -1071,11 +1103,44 @@ export function MediaFilterBar({
     />
   );
 
-  const tautulliFilter = hasTautulliSection ? (
+  const playHistoryFilter = hasPlayHistorySection ? (
+    <>
+      <OptionFilter
+        options={TAUTULLI_WATCHED_OPTIONS}
+        value={filterState.tautulliWatched}
+        onChange={setTautulliWatched}
+      />
+      <NumberRangeFilter
+        label="Last Watched"
+        min={filterState.lastWatchedDaysAgoGte}
+        max={filterState.lastWatchedDaysAgoLte}
+        onChangeMin={setLastWatchedDaysAgoGte}
+        onChangeMax={setLastWatchedDaysAgoLte}
+      />
+    </>
+  ) : null;
+
+  const overseerrFilter = hasOverseerrSection ? (
+    <>
+      <OptionFilter
+        options={OVERSEERR_HAS_ISSUE_OPTIONS}
+        value={filterState.overseerrHasIssue}
+        onChange={setOverseerrHasIssue}
+      />
+      <OptionFilter
+        label="Request Status"
+        options={OVERSEERR_REQUEST_STATUS_OPTIONS}
+        value={filterState.overseerrRequestStatus}
+        onChange={setOverseerrRequestStatus}
+      />
+    </>
+  ) : null;
+
+  const tmdbFilter = hasTmdbSection ? (
     <OptionFilter
-      options={TAUTULLI_WATCHED_OPTIONS}
-      value={filterState.tautulliWatched}
-      onChange={setTautulliWatched}
+      options={TMDB_STATUS_OPTIONS}
+      value={filterState.tmdbStatus}
+      onChange={setTmdbStatus}
     />
   ) : null;
 
@@ -1136,10 +1201,22 @@ export function MediaFilterBar({
                   {movieGroup}
                 </>
               )}
-              {tautulliFilter && (
+              {playHistoryFilter && (
                 <>
                   <Sep />
-                  {tautulliFilter}
+                  {playHistoryFilter}
+                </>
+              )}
+              {overseerrFilter && (
+                <>
+                  <Sep />
+                  {overseerrFilter}
+                </>
+              )}
+              {tmdbFilter && (
+                <>
+                  <Sep />
+                  {tmdbFilter}
                 </>
               )}
               {rightCluster}
@@ -1169,10 +1246,22 @@ export function MediaFilterBar({
             )}
             {(hasMovieSection || hasSeriesSection) && <Sep />}
             {yearFilter}
-            {tautulliFilter && (
+            {playHistoryFilter && (
               <>
                 <Sep />
-                {tautulliFilter}
+                {playHistoryFilter}
+              </>
+            )}
+            {overseerrFilter && (
+              <>
+                <Sep />
+                {overseerrFilter}
+              </>
+            )}
+            {tmdbFilter && (
+              <>
+                <Sep />
+                {tmdbFilter}
               </>
             )}
             {rightCluster}
@@ -1339,8 +1428,8 @@ export function MediaFilterBar({
               </div>
             )}
 
-            {/* Tautulli Watched section */}
-            {hasTautulliSection && (
+            {/* Play History section */}
+            {hasPlayHistorySection && (
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
                 <OptionFilter
@@ -1349,6 +1438,15 @@ export function MediaFilterBar({
                   value={filterState.tautulliWatched}
                   onChange={setTautulliWatched}
                 />
+                <div className="mt-3">
+                  <NumberRangeFilter
+                    label="Last Watched"
+                    min={filterState.lastWatchedDaysAgoGte}
+                    max={filterState.lastWatchedDaysAgoLte}
+                    onChangeMin={setLastWatchedDaysAgoGte}
+                    onChangeMax={setLastWatchedDaysAgoLte}
+                  />
+                </div>
               </div>
             )}
 

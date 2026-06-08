@@ -22,6 +22,11 @@ const DEFAULT_FILTER_STATE: MediaFilterBarProps['filterState'] = {
   seriesType: undefined,
   network: undefined,
   tautulliWatched: undefined,
+  lastWatchedDaysAgoGte: undefined,
+  lastWatchedDaysAgoLte: undefined,
+  overseerrHasIssue: undefined,
+  overseerrRequestStatus: undefined as string | undefined,
+  tmdbStatus: undefined,
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
   addedDaysAgoGte: undefined,
@@ -93,6 +98,11 @@ function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBar
     setSeriesType: vi.fn(),
     setNetwork: vi.fn(),
     setTautulliWatched: vi.fn(),
+    setLastWatchedDaysAgoGte: vi.fn(),
+    setLastWatchedDaysAgoLte: vi.fn(),
+    setOverseerrHasIssue: vi.fn(),
+    setOverseerrRequestStatus: vi.fn(),
+    setTmdbStatus: vi.fn(),
     setAddedDaysAgoGte: vi.fn(),
     setAddedDaysAgoLte: vi.fn(),
     setSizeOnDiskGbGte: vi.fn(),
@@ -517,6 +527,120 @@ describe('MediaFilterBar — Phase 1 movie predicate controls', () => {
   it('does not render movie-specific Phase 1 filters when RADARR is not configured', () => {
     render(<MediaFilterBar {...makeProps({ configuredTypes: new Set(['SONARR']) })} />);
     expect(screen.queryByRole('button', { name: /imdb rating/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MediaFilterBar — Tier 2 play history controls (Cycle 9)', () => {
+  it('shows Watched filter when PLEX is configured (not just TAUTULLI)', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['PLEX']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Watched' })).toBeInTheDocument();
+  });
+
+  it('shows Last Watched range filter when TAUTULLI is configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['TAUTULLI']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: /last watched/i })).toBeInTheDocument();
+  });
+
+  it('shows Last Watched range filter when PLEX is configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['PLEX']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: /last watched/i })).toBeInTheDocument();
+  });
+
+  it('does not show play history controls when neither TAUTULLI nor PLEX configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['RADARR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.queryByRole('button', { name: /last watched/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MediaFilterBar — Tier 2 Overseerr controls (Cycle 10)', () => {
+  it('shows Has Issue filter when OVERSEERR is configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['OVERSEERR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: /has issue/i })).toBeInTheDocument();
+  });
+
+  it('shows Request Status options (e.g. Approved) when OVERSEERR is configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['OVERSEERR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Approved' })).toBeInTheDocument();
+  });
+
+  it('does not show Overseerr controls when OVERSEERR is not configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['RADARR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.queryByRole('button', { name: /has issue/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MediaFilterBar — Tier 2 TMDB controls (Cycle 11)', () => {
+  it('shows TMDB Status options (e.g. Returning Series) when TMDB is configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['TMDB']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Returning Series' })).toBeInTheDocument();
+  });
+
+  it('does not show TMDB Status options when TMDB is not configured', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          configuredTypes: new Set(['RADARR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.queryByRole('button', { name: 'Returning Series' })).not.toBeInTheDocument();
   });
 });
 

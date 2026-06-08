@@ -40,6 +40,11 @@ const DEFAULT_FILTER: FilterState = {
   sonarrLastAiredDaysAgoLte: undefined,
   sonarrPercentEpisodesGte: undefined,
   sonarrPercentEpisodesLte: undefined,
+  lastWatchedDaysAgoGte: undefined,
+  lastWatchedDaysAgoLte: undefined,
+  overseerrHasIssue: undefined,
+  overseerrRequestStatus: undefined,
+  tmdbStatus: undefined,
 };
 
 function emptySlice<T>(): MediaSlice<T> {
@@ -137,6 +142,11 @@ function Controlled({
       setSonarrLastAiredDaysAgoLte={(v) => patch({ sonarrLastAiredDaysAgoLte: v })}
       setSonarrPercentEpisodesGte={(v) => patch({ sonarrPercentEpisodesGte: v })}
       setSonarrPercentEpisodesLte={(v) => patch({ sonarrPercentEpisodesLte: v })}
+      setLastWatchedDaysAgoGte={(v) => patch({ lastWatchedDaysAgoGte: v })}
+      setLastWatchedDaysAgoLte={(v) => patch({ lastWatchedDaysAgoLte: v })}
+      setOverseerrHasIssue={(v) => patch({ overseerrHasIssue: v })}
+      setOverseerrRequestStatus={(v) => patch({ overseerrRequestStatus: v })}
+      setTmdbStatus={(v) => patch({ tmdbStatus: v })}
       clearAll={() => setFilterState(DEFAULT_FILTER)}
       isActive={isActive}
       activeFilterCount={0}

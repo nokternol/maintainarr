@@ -454,6 +454,11 @@ export interface MediaContentProps {
   setSonarrLastAiredDaysAgoLte: (v: number | undefined) => void;
   setSonarrPercentEpisodesGte: (v: number | undefined) => void;
   setSonarrPercentEpisodesLte: (v: number | undefined) => void;
+  setLastWatchedDaysAgoGte: (v: number | undefined) => void;
+  setLastWatchedDaysAgoLte: (v: number | undefined) => void;
+  setOverseerrHasIssue: (v: 'true' | 'false' | undefined) => void;
+  setOverseerrRequestStatus: (v: string | undefined) => void;
+  setTmdbStatus: (v: string | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   activeFilterCount: number;
@@ -513,6 +518,11 @@ export function MediaContent({
   setSonarrLastAiredDaysAgoLte,
   setSonarrPercentEpisodesGte,
   setSonarrPercentEpisodesLte,
+  setLastWatchedDaysAgoGte,
+  setLastWatchedDaysAgoLte,
+  setOverseerrHasIssue,
+  setOverseerrRequestStatus,
+  setTmdbStatus,
   clearAll,
   onSaveQuery,
   isActive,
@@ -570,6 +580,11 @@ export function MediaContent({
         setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
         setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
         setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
+        setLastWatchedDaysAgoGte={setLastWatchedDaysAgoGte}
+        setLastWatchedDaysAgoLte={setLastWatchedDaysAgoLte}
+        setOverseerrHasIssue={setOverseerrHasIssue}
+        setOverseerrRequestStatus={setOverseerrRequestStatus}
+        setTmdbStatus={setTmdbStatus}
         clearAll={clearAll}
         onSaveQuery={onSaveQuery}
         isActive={isActive}
@@ -810,6 +825,11 @@ export default function MediaPage() {
     setSonarrLastAiredDaysAgoLte,
     setSonarrPercentEpisodesGte,
     setSonarrPercentEpisodesLte,
+    setLastWatchedDaysAgoGte,
+    setLastWatchedDaysAgoLte,
+    setOverseerrHasIssue,
+    setOverseerrRequestStatus,
+    setTmdbStatus,
     setMovieSort,
     setSeriesSort,
     clearAll,
@@ -937,6 +957,11 @@ export default function MediaPage() {
           setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
           setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
           setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
+          setLastWatchedDaysAgoGte={setLastWatchedDaysAgoGte}
+          setLastWatchedDaysAgoLte={setLastWatchedDaysAgoLte}
+          setOverseerrHasIssue={setOverseerrHasIssue}
+          setOverseerrRequestStatus={setOverseerrRequestStatus}
+          setTmdbStatus={setTmdbStatus}
           clearAll={clearAll}
           onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
           isActive={isActive}

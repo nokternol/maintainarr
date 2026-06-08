@@ -23,6 +23,11 @@ export const FILTER_FIELDS = {
   yearMin: { type: 'number', default: undefined },
   yearMax: { type: 'number', default: undefined },
   tautulliWatched: { type: 'bool3', default: undefined },
+  lastWatchedDaysAgoGte: { type: 'number', default: undefined },
+  lastWatchedDaysAgoLte: { type: 'number', default: undefined },
+  overseerrHasIssue: { type: 'bool3', default: undefined },
+  overseerrRequestStatus: { type: 'string', default: undefined },
+  tmdbStatus: { type: 'string', default: undefined },
   // ── Shared (movies + series) ───────────────────────────────────────────────
   addedDaysAgoGte: { type: 'number', default: undefined },
   addedDaysAgoLte: { type: 'number', default: undefined },
