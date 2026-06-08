@@ -76,10 +76,10 @@ issue has `media.tmdbId` and a status. `overseerrHasIssue` should be `1` if any 
 exists for that tmdbId. Add `getIssues(): Promise<OverseerrIssue[]>` to `OverseerrProvider`.
 `OverseerrIssue` shape: `{ id: number; status: number; media: { tmdbId: number } }`.
 
-**`overseerrHasIssue` INTEGER vs boolean:** SQLite has no native boolean. The schema stores
-`0 | 1` as INTEGER — this is correct and intentional. The `=== 1` conversion in the executor
-merge is the only place that needs to know this. The Overseerr API returns boolean fields in
-JSON which are mapped to `0|1` at write time. No change needed.
+**`overseerrHasIssue` INTEGER vs boolean:** Handled transparently by the `bit()` custom Drizzle
+type (`server/database/columns/bit.ts`). The inferred type is `boolean | null`; the ORM converts
+to/from `0|1` at the driver boundary. Application code (executor, enrichment job, filter registry)
+works with `boolean` throughout — no manual conversion needed.
 
 **TMDB status:** `OverseerrSearchResult.mediaInfo` is typed as `unknown` — Phase 2 design doc
 flagged this. For TMDB status enrichment, add a dedicated TMDB provider call rather than
