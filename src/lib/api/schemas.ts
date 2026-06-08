@@ -14,31 +14,39 @@ export const ContentTypeSchema = z.enum(['movie', 'show']);
 
 export const FilterValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
-export const FilterValueEntrySchema = z.object({
-  key: z.string(),
-  value: FilterValueSchema,
-});
+export const FilterValueEntrySchema = z
+  .object({
+    key: z.string(),
+    value: FilterValueSchema,
+  })
+  .strict();
 
-export const ProviderStatusSchema = z.object({
-  providerType: z.string(),
-  required: z.boolean(),
-  configured: z.boolean(),
-  affectedFilterKeys: z.array(z.string()),
-});
+export const ProviderStatusSchema = z
+  .object({
+    providerType: z.string(),
+    required: z.boolean(),
+    configured: z.boolean(),
+    affectedFilterKeys: z.array(z.string()),
+  })
+  .strict();
 
-export const QueryHealthSchema = z.object({
-  status: z.enum(['healthy', 'degraded', 'unavailable']),
-  providerStatus: z.array(ProviderStatusSchema),
-});
+export const QueryHealthSchema = z
+  .object({
+    status: z.enum(['healthy', 'degraded', 'unavailable']),
+    providerStatus: z.array(ProviderStatusSchema),
+  })
+  .strict();
 
-export const SavedQuerySchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  contentType: ContentTypeSchema,
-  filterValues: z.array(FilterValueEntrySchema),
-  health: QueryHealthSchema,
-  createdAt: z.string(),
-});
+export const SavedQuerySchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    contentType: ContentTypeSchema,
+    filterValues: z.array(FilterValueEntrySchema),
+    health: QueryHealthSchema,
+    createdAt: z.string(),
+  })
+  .strict();
 
 export const AutomationQueryRefSchema = z
   .object({
@@ -46,6 +54,7 @@ export const AutomationQueryRefSchema = z
     name: z.string(),
     contentType: ContentTypeSchema,
   })
+  .strict()
   .nullable();
 
 export const ProviderRefSchema = z
@@ -54,28 +63,43 @@ export const ProviderRefSchema = z
     name: z.string(),
     type: z.string(),
   })
+  .strict()
   .nullable();
 
-export const AutomationLastRunSchema = z.object({
-  at: z.string(),
-  itemCount: z.number(),
-  status: z.enum(['success', 'error']),
-  error: z.string().optional(),
-});
+export const AutomationLastRunSchema = z
+  .object({
+    at: z.string(),
+    itemCount: z.number(),
+    status: z.enum(['success', 'error']),
+    error: z.string().optional(),
+  })
+  .strict();
 
-export const AutomationSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  query: AutomationQueryRefSchema,
-  provider: ProviderRefSchema,
-  taskId: z.string(),
-  schedule: z.string(),
-  status: z.enum(['active', 'paused']),
-  lastRun: AutomationLastRunSchema.optional(),
-  nextRun: z.string().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
+export const AutomationQuerySourceSchema = z
+  .object({
+    queryId: z.number(),
+    role: z.enum(['include', 'exclude']),
+    sortOrder: z.number(),
+  })
+  .strict();
+
+export const AutomationSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    kind: z.enum(['user', 'system']),
+    query: AutomationQueryRefSchema,
+    querySources: z.array(AutomationQuerySourceSchema),
+    provider: ProviderRefSchema,
+    taskId: z.string(),
+    schedule: z.string(),
+    status: z.enum(['active', 'paused']),
+    lastRun: AutomationLastRunSchema.optional(),
+    nextRun: z.string().optional(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .strict();
 
 // ─── Input schemas (request bodies) ─────────────────────────────────────────
 
@@ -116,25 +140,29 @@ export const UpdateProviderInputSchema = z.object({
 
 // ─── Additional response schemas ─────────────────────────────────────────────
 
-export const ProviderSchema = z.object({
-  id: z.number(),
-  type: z.string(),
-  name: z.string(),
-  url: z.string(),
-  apiKey: z.union([z.literal('***'), z.null()]),
-  settings: z.record(z.string(), z.unknown()).nullable(),
-  isActive: z.boolean(),
-  createdAt: IsoDateSchema,
-  updatedAt: IsoDateSchema,
-});
+export const ProviderSchema = z
+  .object({
+    id: z.number(),
+    type: z.string(),
+    name: z.string(),
+    url: z.string(),
+    apiKey: z.union([z.literal('***'), z.null()]),
+    settings: z.record(z.string(), z.unknown()).nullable(),
+    isActive: z.boolean(),
+    createdAt: IsoDateSchema,
+    updatedAt: IsoDateSchema,
+  })
+  .strict();
 
-export const AutomationRunSchema = z.object({
-  id: z.number(),
-  automationId: z.number(),
-  automationName: z.string(),
-  ranAt: IsoDateSchema,
-  status: z.enum(['success', 'error']),
-  itemCount: z.number().nullable(),
-  error: z.string().nullable(),
-  createdAt: IsoDateSchema,
-});
+export const AutomationRunSchema = z
+  .object({
+    id: z.number(),
+    automationId: z.number(),
+    automationName: z.string(),
+    ranAt: IsoDateSchema,
+    status: z.enum(['success', 'error']),
+    itemCount: z.number().nullable(),
+    error: z.string().nullable(),
+    createdAt: IsoDateSchema,
+  })
+  .strict();

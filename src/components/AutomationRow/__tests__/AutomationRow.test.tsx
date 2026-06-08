@@ -8,11 +8,13 @@ import AutomationRow from '../index';
 const mockAutomation: AutomationDto = {
   id: 1,
   name: 'Archive old movies',
+  kind: 'user',
   query: {
     id: 1,
     name: 'Stale Movies',
     contentType: 'movie',
   },
+  querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
   provider: { id: 1, name: 'Radarr', type: 'RADARR' },
   taskId: 'deleteMovieWithFiles',
   schedule: '0 2 * * *',

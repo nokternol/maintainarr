@@ -235,6 +235,18 @@ export class AutomationService {
       throw new Error(`Invalid cron expression: ${draft.schedule}`);
     }
 
+    if (draft.querySources.length > 1) {
+      const allQueryIds = draft.querySources.map((s) => s.queryId);
+      const contentTypeRows = await this.db
+        .select({ contentType: savedQueries.contentType })
+        .from(savedQueries)
+        .where(inArray(savedQueries.id, allQueryIds));
+      const distinct = new Set(contentTypeRows.map((r) => r.contentType));
+      if (distinct.size > 1) {
+        throw new ValidationError('All query sources must share the same contentType');
+      }
+    }
+
     const includeSources = draft.querySources.filter((s) => s.role === 'include');
     if (includeSources.length > 0) {
       const [queryRow] = await this.db

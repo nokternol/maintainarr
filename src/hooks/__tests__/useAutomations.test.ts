@@ -12,7 +12,9 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 const makeAutomation = (overrides: Partial<AutomationDto> = {}): AutomationDto => ({
   id: 1,
   name: 'Test Automation',
+  kind: 'user',
   query: { id: 1, name: 'My Query', contentType: 'movie' as const },
+  querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
   provider: { id: 1, name: 'Radarr', type: 'RADARR' },
   taskId: 'delete-movie',
   schedule: '0 * * * *',

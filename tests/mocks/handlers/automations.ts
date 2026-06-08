@@ -5,7 +5,9 @@ export const MOCK_AUTOMATIONS: AutomationDto[] = [
   {
     id: 1,
     name: 'Nightly cleanup',
+    kind: 'user',
     query: { id: 1, name: 'Unwatched movies', contentType: 'movie' },
+    querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
     provider: { id: 1, name: 'Radarr Main', type: 'RADARR' },
     taskId: 'radarr.deleteUnmonitored',
     schedule: '0 2 * * *',
@@ -18,7 +20,9 @@ export const MOCK_AUTOMATIONS: AutomationDto[] = [
   {
     id: 2,
     name: 'Weekly report',
+    kind: 'user',
     query: { id: 2, name: 'All series', contentType: 'show' },
+    querySources: [{ queryId: 2, role: 'include', sortOrder: 0 }],
     provider: { id: 1, name: 'Radarr Main', type: 'RADARR' },
     taskId: 'radarr.deleteUnmonitored',
     schedule: '0 2 * * 0',
@@ -40,7 +44,9 @@ export const automationsHandlers = [
     const created: AutomationDto = {
       id: 99,
       name: String(body.name),
+      kind: 'user',
       query: { id: Number(body.queryId), name: 'Query', contentType: 'movie' as const },
+      querySources: [{ queryId: Number(body.queryId), role: 'include', sortOrder: 0 }],
       provider: { id: Number(body.providerId), name: 'Radarr Main', type: 'RADARR' },
       taskId: String(body.taskId),
       schedule: String(body.schedule),
