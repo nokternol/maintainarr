@@ -214,6 +214,43 @@ where the executor is redesigned for multi-source fetching.
 
 ---
 
+## TDD Cycle Plan (context-window resume guide)
+
+### Pre-flight (execute before any RED)
+- [x] Write `server/database/migrations/0011_automation_query_sources.sql` — create table, backfill, drop `automations.queryId`
+- [x] Update `server/database/schema.ts` — add `automationQuerySources` table + types, remove `queryId` from `automations`
+- [x] Run `yarn vitest run --project server` — must stay green before Cycle 1
+
+### Session B — CombinationEvaluator (`server/services/combinationEvaluator.ts`)
+- [x] Cycle 1: `evaluateCombination` with two include arrays returns deduped union
+- [x] Cycle 2: one include + one exclude returns difference
+- [x] Cycle 3: item in both include and exclude → excluded (exclude wins)
+- [x] Cycle 4: empty includes → empty result regardless of excludes
+- [x] Cycle 5: empty excludes → all includes returned
+
+### Session B — Executor (`server/services/automationExecutor.ts`)
+- [x] Cycle 6: `AutomationService.getById` returns `querySources` array alongside automation
+- [x] Cycle 7: `AutomationExecutor.execute` with two include sources returns unioned item set
+- [x] Cycle 8: `AutomationExecutor.execute` with include+exclude applies difference
+
+### Session B — Debt cleanup (post-Cycle 8, pre-Session C)
+- [x] D1: Merge `mergeMovieEnrichment` + `mergeShowEnrichment` → single generic `mergeEnrichment<T>`
+- [x] D2: Remove legacy `execute()` path; guard throws when `querySources` is empty
+- [x] D3: Hoist provider creation + media fetch before per-source loop (N+1 → 1 `create()` call)
+- [x] D4: Remove redundant JOIN in `getById`/`list()`; derive `query` from `querySources`
+
+### Session C — API (`server/modules/automations/`)
+- [ ] Cycle 9: `POST /api/automations` with `querySources` array creates automation and sources
+- [ ] Cycle 10: `POST /api/automations` with cross-type `querySources` returns 400
+- [ ] Cycle 11: `POST /api/automations` with legacy `queryId` converts to single include source
+
+### Test runner
+```
+yarn vitest run --project server
+```
+
+---
+
 ## Acceptance criteria
 
 - `automation_query_sources` table exists and contains backfilled rows for all existing automations
@@ -224,3 +261,71 @@ where the executor is redesigned for multi-source fetching.
 - Automation with two include sources applies UNION (deduped) semantics
 - All existing automation tests pass
 - `execute(automationId)` signature is unchanged
+
+---
+
+## Design Debt (post-implementation cleanup)
+
+Identified by /simplify review after Cycles 7–8. Do not block Phase 4 on these — all are internal quality issues, no user-facing behaviour change.
+
+### D1 — Merge duplicate enrichment methods (Medium)
+`automationExecutor.ts` has `mergeMovieEnrichment` and `mergeShowEnrichment` as two private methods with identical structure — only `sourceType` ('RADARR' vs 'SONARR') and the `_sourceIds` field differ.
+
+**Fix:** Replace both with a single generic `mergeEnrichment<T>(normalized, sourceIds, sourceType, getSourceId)` method:
+```ts
+private async mergeEnrichment<T extends NormalizedMovie | NormalizedShow>(
+  normalized: T[],
+  sourceIds: number[],
+  sourceType: 'RADARR' | 'SONARR',
+  getSourceId: (item: T) => number | undefined
+): Promise<void>
+```
+Call sites become:
+```ts
+await this.mergeEnrichment(normalized, movies.map(m => m.id), 'RADARR', m => m._sourceIds.radarr);
+await this.mergeEnrichment(normalized, series.map(s => s.id), 'SONARR', s => s._sourceIds.sonarr);
+```
+
+### D2 — Remove legacy `execute()` path (Medium)
+`execute()` has a dead `sources.length === 0` branch (lines ~128–178) that duplicates the movie/show fetch+filter+dispatch logic already in `executeWithSources`. The branch only exists for one test mock (`contentType discriminator`) that predates `querySources` on `AutomationDto`.
+
+**Fix:**
+1. Add `querySources: [{ queryId: 1, role: 'include' as const, sortOrder: 0 }]` to the discriminator test mock.
+2. Delete the legacy branch from `execute()`. The guard becomes:
+```ts
+if (!automation.querySources?.length) {
+  throw new Error(`Automation ${automationId} has no query sources — cannot execute`);
+}
+```
+
+### D3 — N+1 provider creates + redundant media fetches in `executeWithSources` (Medium)
+`executeWithSources` calls `providerFactory.create()` once per source in the loop, then once more for task dispatch. `getMovies()`/`getSeries()` is also called once per source even though all sources query the same provider and get identical results.
+
+**Fix:** Hoist provider creation and media fetch before the loop. All sources share one contentType (v1 constraint), so:
+```ts
+// Before loop: create provider + fetch + normalize + enrich once
+const provider = this.providerFactory.create(providerSettings, log);
+const movies = await (provider as RadarrProvider).getMovies();
+const normalized = movies.map(normalizeRadarrMovie);
+if (this.db) await this.mergeEnrichment(normalized, ...);
+
+// In loop: only apply filters per source
+for (const source of sources) {
+  const { filterValues } = await this.savedQueryService.getById(source.queryId);
+  const matched = applyFilters(normalized, filterValues, 'movie');
+  queryResults.push({ role: source.role, items: matched.map(m => m._sourceIds.radarr!) });
+}
+
+// Dispatch: reuse same provider instance (no second create)
+await handler(provider as RadarrProvider, finalIds);
+```
+
+### D4 — `getById` queries `automationQuerySources` twice (Low)
+`getById` does a LEFT JOIN through `automationQuerySources WHERE role='include'` to populate the legacy `query` field, then a second `SELECT FROM automationQuerySources` (all roles) to populate `querySources`. The first join is redundant once D2 is done (nothing reads `automation.query` in the executor).
+
+**Fix:** After D2 removes the legacy path, also remove the LEFT JOIN to `automationQuerySources`/`savedQueries` from the main query. Derive `query` from the first include in the `querySources` result:
+```ts
+const firstInclude = querySources.find(s => s.role === 'include') ?? null;
+const query = firstInclude ? { id: firstInclude.queryId, ... } : null;
+```
+Then drop `query` from `AutomationDto` entirely once all test assertions migrate to `querySources`.
