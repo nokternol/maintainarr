@@ -1,3 +1,6 @@
+import { and, eq, inArray } from 'drizzle-orm';
+import type { DrizzleDb } from '../database';
+import { mediaEnrichment, mediaIdentity } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
@@ -21,6 +24,7 @@ interface ExecutorDeps {
   providerSettingsService: ProviderSettingsService;
   savedQueryService: SavedQueryService;
   providerFactory?: IProviderFactory;
+  db?: DrizzleDb;
 }
 
 // ─── Normalizers ──────────────────────────────────────────────────────────────
@@ -89,6 +93,7 @@ export class AutomationExecutor {
   private readonly providerSettingsService: ProviderSettingsService;
   private readonly savedQueryService: SavedQueryService;
   private readonly providerFactory: IProviderFactory;
+  private readonly db?: DrizzleDb;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
@@ -96,6 +101,7 @@ export class AutomationExecutor {
     this.providerSettingsService = deps.providerSettingsService;
     this.savedQueryService = deps.savedQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
+    this.db = deps.db;
   }
 
   async execute(automationId: number): Promise<void> {
@@ -116,6 +122,12 @@ export class AutomationExecutor {
         const radarr = this.providerFactory.create(providerSettings, log) as RadarrProvider;
         const movies = await radarr.getMovies();
         const normalized = movies.map(normalizeRadarrMovie);
+        if (this.db) {
+          await this.mergeMovieEnrichment(
+            normalized,
+            movies.map((m) => m.id)
+          );
+        }
         const matched = applyFilters(normalized, filterValues, 'movie');
         itemCount = matched.length;
 
@@ -166,6 +178,49 @@ export class AutomationExecutor {
         status: 'error',
         error: err instanceof Error ? err.message : 'Unknown error',
       });
+    }
+  }
+
+  private async mergeMovieEnrichment(
+    normalized: NormalizedMovie[],
+    radarrIds: number[]
+  ): Promise<void> {
+    if (!this.db || radarrIds.length === 0) return;
+    const identities = await this.db
+      .select()
+      .from(mediaIdentity)
+      .where(
+        and(eq(mediaIdentity.sourceType, 'RADARR'), inArray(mediaIdentity.sourceId, radarrIds))
+      );
+    if (identities.length === 0) return;
+    const identityIdToSourceId = new Map(identities.map((i) => [i.id, i.sourceId]));
+    const enrichments = await this.db
+      .select()
+      .from(mediaEnrichment)
+      .where(
+        inArray(
+          mediaEnrichment.mediaIdentityId,
+          identities.map((i) => i.id)
+        )
+      );
+    const enrichByRadarrId = new Map<number, (typeof enrichments)[number]>();
+    for (const enr of enrichments) {
+      const sourceId = identityIdToSourceId.get(enr.mediaIdentityId);
+      if (sourceId !== undefined) enrichByRadarrId.set(sourceId, enr);
+    }
+    for (const item of normalized) {
+      const radarrId = item._sourceIds.radarr;
+      if (radarrId === undefined) continue;
+      const enr = enrichByRadarrId.get(radarrId);
+      if (!enr) continue;
+      const rawPlay = enr.tautulliPlayCount ?? enr.plexViewCount ?? null;
+      item.playCount = rawPlay !== null ? rawPlay : undefined;
+      const rawTs = enr.tautulliLastPlayed ?? enr.plexLastViewedAt ?? null;
+      item.lastWatchedAt = rawTs !== null ? new Date(rawTs * 1000).toISOString() : undefined;
+      if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue === 1;
+      if (enr.overseerrRequestStatus !== null)
+        item.overseerrRequestStatus = enr.overseerrRequestStatus;
+      if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus ?? undefined;
     }
   }
 

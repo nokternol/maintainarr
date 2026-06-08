@@ -49,8 +49,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('FILTER_REGISTRY', () => {
-  it('contains exactly 29 entries', () => {
-    expect(FILTER_REGISTRY).toHaveLength(29);
+  it('contains exactly 34 entries', () => {
+    expect(FILTER_REGISTRY).toHaveLength(34);
   });
 
   it('every entry has required fields', () => {
@@ -344,5 +344,44 @@ describe('show predicates', () => {
     const def = getFilterDef('watched', 'show')!;
     expect(def.apply(baseShow, false)).toBe(true); // playCount=0
     expect(def.apply({ ...baseShow, playCount: 2 }, true)).toBe(true);
+  });
+
+  it('tmdbStatus — movie: true when tmdbStatus matches value', () => {
+    const def = getFilterDef('tmdbStatus', 'movie')!;
+    expect(def.apply({ ...baseMovie, tmdbStatus: 'Ended' }, 'Ended')).toBe(true);
+    expect(def.apply({ ...baseMovie, tmdbStatus: 'In Production' }, 'Ended')).toBe(false);
+    expect(def.apply({ ...baseMovie, tmdbStatus: undefined }, 'Ended')).toBe(false);
+  });
+
+  it('overseerrRequestStatus — movie: true when overseerrRequestStatus equals value', () => {
+    const def = getFilterDef('overseerrRequestStatus', 'movie')!;
+    expect(def.apply({ ...baseMovie, overseerrRequestStatus: 2 }, 2)).toBe(true);
+    expect(def.apply({ ...baseMovie, overseerrRequestStatus: 1 }, 2)).toBe(false);
+    expect(def.apply({ ...baseMovie, overseerrRequestStatus: undefined }, 2)).toBe(false);
+  });
+
+  it('overseerrHasIssue — movie: true when overseerrHasIssue matches value', () => {
+    const def = getFilterDef('overseerrHasIssue', 'movie')!;
+    expect(def.apply({ ...baseMovie, overseerrHasIssue: true }, true)).toBe(true);
+    expect(def.apply({ ...baseMovie, overseerrHasIssue: false }, true)).toBe(false);
+    expect(def.apply({ ...baseMovie, overseerrHasIssue: undefined }, true)).toBe(false);
+  });
+
+  it('lastWatchedDaysAgoLte — movie: true when lastWatchedAt is at most N days ago', () => {
+    const def = getFilterDef('lastWatchedDaysAgoLte', 'movie')!;
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(def.apply({ ...baseMovie, lastWatchedAt: twoDaysAgo }, 7)).toBe(true);
+    expect(def.apply({ ...baseMovie, lastWatchedAt: tenDaysAgo }, 7)).toBe(false);
+    expect(def.apply({ ...baseMovie, lastWatchedAt: undefined }, 7)).toBe(false);
+  });
+
+  it('lastWatchedDaysAgoGte — movie: true when lastWatchedAt is at least N days ago', () => {
+    const def = getFilterDef('lastWatchedDaysAgoGte', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    expect(def.apply({ ...baseMovie, lastWatchedAt: tenDaysAgo }, 7)).toBe(true);
+    expect(def.apply({ ...baseMovie, lastWatchedAt: twoDaysAgo }, 7)).toBe(false);
+    expect(def.apply({ ...baseMovie, lastWatchedAt: undefined }, 7)).toBe(false);
   });
 });

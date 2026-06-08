@@ -111,6 +111,43 @@ describe('IdentityResolutionJob', () => {
     expect(rows[0].tvMazeId).toBe(400);
   });
 
+  it('waits 500ms between consecutive TVMaze lookups', async () => {
+    const db = getDb();
+    const sonarrProvider = {
+      getSeries: vi.fn().mockResolvedValue([
+        makeSeries({ id: 10, tvdbId: 200, tvMazeId: undefined }),
+        makeSeries({ id: 11, tvdbId: 201, tvMazeId: undefined }),
+        makeSeries({ id: 12, tvdbId: 202, tvMazeId: 500 }), // already has tvMazeId — no delay
+      ]),
+    };
+    const tvMazeLookup = { lookupByTvdbId: vi.fn().mockResolvedValue({ id: 999 }) };
+    const delay = vi.fn().mockResolvedValue(undefined);
+
+    const job = new IdentityResolutionJob({ db, sonarrProvider, tvMazeLookup, delay });
+    await job.runForSeries();
+
+    // delay called once: between first and second lookup (not before first, not for the series with tvMazeId)
+    expect(delay).toHaveBeenCalledTimes(1);
+    expect(delay).toHaveBeenCalledWith(500);
+  });
+
+  it('fetches tvMazeId via TVMaze lookup when series has no tvMazeId', async () => {
+    const db = getDb();
+    const sonarrProvider = {
+      getSeries: vi.fn().mockResolvedValue([makeSeries({ tvMazeId: undefined })]),
+    };
+    const tvMazeLookup = {
+      lookupByTvdbId: vi.fn().mockResolvedValue({ id: 999 }),
+    };
+
+    const job = new IdentityResolutionJob({ db, sonarrProvider, tvMazeLookup });
+    await job.runForSeries();
+
+    const rows = await db.select().from(mediaIdentity);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].tvMazeId).toBe(999);
+  });
+
   it('is idempotent — re-running with same movies does not duplicate rows', async () => {
     const db = getDb();
     const radarrProvider = { getMovies: vi.fn().mockResolvedValue([makeMovie()]) };

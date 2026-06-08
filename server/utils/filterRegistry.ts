@@ -428,6 +428,66 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
       return show.episodePercentage <= Number(value);
     },
   },
+  {
+    key: 'tmdbStatus',
+    label: 'TMDB status',
+    contentTypes: ['movie', 'show'],
+    dataType: 'string',
+    sourceProviders: [MetadataProviderType.TMDB],
+    required: false,
+    apply: (item, value) => {
+      if (!item.tmdbStatus) return false;
+      return item.tmdbStatus === String(value);
+    },
+  },
+  {
+    key: 'overseerrRequestStatus',
+    label: 'Overseerr request status',
+    contentTypes: ['movie', 'show'],
+    dataType: 'number',
+    sourceProviders: [MetadataProviderType.OVERSEERR],
+    required: false,
+    apply: (item, value) => {
+      if (item.overseerrRequestStatus === undefined) return false;
+      return item.overseerrRequestStatus === Number(value);
+    },
+  },
+  {
+    key: 'overseerrHasIssue',
+    label: 'Overseerr has issue',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: [MetadataProviderType.OVERSEERR],
+    required: false,
+    apply: (item, value) => {
+      if (item.overseerrHasIssue === undefined) return false;
+      return item.overseerrHasIssue === asBool(value);
+    },
+  },
+  {
+    key: 'lastWatchedDaysAgoGte',
+    label: 'Last watched (days ago, min)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'number',
+    sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+    required: false,
+    apply: (item, value) => {
+      if (!item.lastWatchedAt) return false;
+      return daysElapsed(item.lastWatchedAt) >= Number(value);
+    },
+  },
+  {
+    key: 'lastWatchedDaysAgoLte',
+    label: 'Last watched (days ago, max)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'number',
+    sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+    required: false,
+    apply: (item, value) => {
+      if (!item.lastWatchedAt) return false;
+      return daysElapsed(item.lastWatchedAt) <= Number(value);
+    },
+  },
 ];
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────

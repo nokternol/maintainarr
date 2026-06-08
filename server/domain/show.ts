@@ -19,4 +19,7 @@ export interface NormalizedShow {
   communityRating?: number;
   playCount?: number;
   lastWatchedAt?: string;
+  overseerrHasIssue?: boolean;
+  overseerrRequestStatus?: number;
+  tmdbStatus?: string;
 }

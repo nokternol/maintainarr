@@ -672,7 +672,9 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
       const mockRadarr = {
         getMovies: async () => movies,
-        unmonitorMovies: async (ids: number[]) => { unmonitored.push(...ids); },
+        unmonitorMovies: async (ids: number[]) => {
+          unmonitored.push(...ids);
+        },
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
@@ -697,6 +699,77 @@ describe('AutomationExecutor', () => {
       await enrichedExecutor.execute(automation.id);
 
       expect(unmonitored).toEqual([1]);
+    });
+  });
+
+  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses tautulliLastPlayed from DB', () => {
+    it('only executes task on movies whose enrichment row shows lastPlayed >= N days ago', async () => {
+      const db = getDb();
+      const tenDaysAgoUnix = Math.floor((Date.now() - 10 * 86_400_000) / 1000);
+
+      const movies = [
+        createRadarrMovie({ id: 10, title: 'Old Play', hasFile: true }),
+        createRadarrMovie({ id: 11, title: 'Recent Play', hasFile: true }),
+        createRadarrMovie({ id: 12, title: 'Never Played', hasFile: true }),
+      ];
+
+      const [id10] = await db
+        .insert(mediaIdentity)
+        .values({ sourceType: 'RADARR', sourceId: 10 })
+        .returning();
+      await db
+        .insert(mediaEnrichment)
+        .values({
+          mediaIdentityId: id10.id,
+          tautulliLastPlayed: tenDaysAgoUnix,
+          enrichedAt: Math.floor(Date.now() / 1000),
+        });
+
+      const twoDaysAgoUnix = Math.floor((Date.now() - 2 * 86_400_000) / 1000);
+      const [id11] = await db
+        .insert(mediaIdentity)
+        .values({ sourceType: 'RADARR', sourceId: 11 })
+        .returning();
+      await db
+        .insert(mediaEnrichment)
+        .values({
+          mediaIdentityId: id11.id,
+          tautulliLastPlayed: twoDaysAgoUnix,
+          enrichedAt: Math.floor(Date.now() / 1000),
+        });
+
+      const unmonitored: number[] = [];
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async (ids: number[]) => {
+          unmonitored.push(...ids);
+        },
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+      const mockFactory: IProviderFactory = { create: () => mockRadarr };
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, [
+        { key: 'lastWatchedDaysAgoGte', value: 7 },
+      ]);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      const enrichedExecutor = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        providerFactory: mockFactory,
+        db,
+      });
+
+      await enrichedExecutor.execute(automation.id);
+
+      expect(unmonitored).toEqual([10]);
     });
   });
 
