@@ -1,0 +1,120 @@
+import useSWR from 'swr';
+
+export interface QuerySource {
+  queryId: number;
+  role: 'include' | 'exclude';
+  sortOrder: number;
+}
+
+export interface QuerySourceListProps {
+  sources: QuerySource[];
+  savedQueries: { id: number; name: string }[];
+  onChange: (sources: QuerySource[]) => void;
+}
+
+async function fetchPreview(url: string): Promise<{ count: number }> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Preview failed');
+  const json = (await res.json()) as { data: { count: number } };
+  return json.data;
+}
+
+function usePreviewCount(queryId: number): number | null {
+  const key = queryId > 0 ? `/api/saved-queries/${queryId}/preview` : null;
+  const { data } = useSWR(key, fetchPreview);
+  return data?.count ?? null;
+}
+
+function SourceRow({
+  src,
+  index,
+  sources,
+  onChange,
+}: {
+  src: QuerySource;
+  index: number;
+  sources: QuerySource[];
+  onChange: (s: QuerySource[]) => void;
+}) {
+  const count = usePreviewCount(src.queryId);
+
+  function handleRemove() {
+    onChange(sources.filter((_, i) => i !== index));
+  }
+
+  function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const updated = sources.map((s, j) =>
+      j === index ? { ...s, role: e.target.value as QuerySource['role'] } : s
+    );
+    onChange(updated);
+  }
+
+  const countLabel =
+    count != null
+      ? src.role === 'include'
+        ? `${count} matched`
+        : `${count} excluded`
+      : null;
+
+  return (
+    <div>
+      <span>{src.queryId}</span>
+      <select value={src.role} onChange={handleRoleChange}>
+        <option value="include">Include</option>
+        <option value="exclude">Exclude (unless)</option>
+      </select>
+      {countLabel && <span>{countLabel}</span>}
+      <button type="button" onClick={handleRemove}>Remove</button>
+    </div>
+  );
+}
+
+async function fetchAllPreviews(
+  sources: QuerySource[]
+): Promise<{ role: QuerySource['role']; count: number }[]> {
+  return Promise.all(
+    sources.map(async (s) => {
+      if (s.queryId === 0) return { role: s.role, count: 0 };
+      const data = await fetchPreview(`/api/saved-queries/${s.queryId}/preview`);
+      return { role: s.role, count: data.count };
+    })
+  );
+}
+
+function useNetCount(sources: QuerySource[]): number | null {
+  const key =
+    sources.length > 0 && sources.some((s) => s.role === 'exclude')
+      ? `preview:${sources.map((s) => `${s.queryId}:${s.role}`).join(',')}`
+      : null;
+  const { data } = useSWR(key, () => fetchAllPreviews(sources));
+  if (!data) return null;
+  const includeTotal = data.filter((d) => d.role === 'include').reduce((s, d) => s + d.count, 0);
+  const excludeTotal = data.filter((d) => d.role === 'exclude').reduce((s, d) => s + d.count, 0);
+  return Math.max(0, includeTotal - excludeTotal);
+}
+
+export default function QuerySourceList({ sources, savedQueries: _savedQueries, onChange }: QuerySourceListProps) {
+  function handleAdd() {
+    onChange([...sources, { queryId: 0, role: 'include', sortOrder: sources.length }]);
+  }
+
+  const excludeCount = sources.filter((s) => s.role === 'exclude').length;
+  const hasValidInclude = sources.some((s) => s.role === 'include' && s.queryId > 0);
+  const net = useNetCount(sources);
+
+  return (
+    <div>
+      {sources.map((src, i) => (
+        <SourceRow key={src.sortOrder} src={src} index={i} sources={sources} onChange={onChange} />
+      ))}
+      {net != null && <p>~{net} to act on</p>}
+      {!hasValidInclude && sources.length > 0 && (
+        <p>At least one include source with a selected query is required.</p>
+      )}
+      <button type="button" onClick={handleAdd}>Add query</button>
+      {excludeCount > 2 && (
+        <p>Complex exclusion rules can be hard to reason about — consider simplifying.</p>
+      )}
+    </div>
+  );
+}

@@ -112,4 +112,9 @@ export const savedQueriesHandlers = [
   http.delete('/api/saved-queries/:id', () => {
     return HttpResponse.json({ status: 'ok', data: null });
   }),
+
+  http.get('/api/saved-queries/:id/preview', ({ params }) => {
+    const id = Number(params.id);
+    return HttpResponse.json({ status: 'ok', data: { count: id === 1 ? 42 : 14 } });
+  }),
 ];

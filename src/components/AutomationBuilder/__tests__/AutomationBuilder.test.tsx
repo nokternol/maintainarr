@@ -60,7 +60,7 @@ describe('AutomationBuilder', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onSubmit with correct payload when form is filled and submitted', async () => {
+  it('calls onSubmit with querySources (not queryId) when form is filled and submitted', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(
@@ -75,7 +75,6 @@ describe('AutomationBuilder', () => {
     // Fill name
     await user.type(screen.getByLabelText('Name'), 'My Automation');
 
-    // Query is pre-selected (only one query)
     // Select the available task
     await user.click(screen.getByRole('radio', { name: /unmonitor movie/i }));
 
@@ -85,10 +84,13 @@ describe('AutomationBuilder', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'My Automation',
-        queryId: 1,
+        querySources: expect.arrayContaining([
+          expect.objectContaining({ queryId: 1, role: 'include' }),
+        ]),
         taskId: 'unmonitorMovie',
         providerId: 1,
       })
     );
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('queryId');
   });
 });

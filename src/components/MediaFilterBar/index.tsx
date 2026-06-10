@@ -73,10 +73,38 @@ export interface MediaFilterBarProps {
   onMobileClose?: () => void;
 }
 
-// ─── Separator ────────────────────────────────────────────────────────────────
+// ─── FilterGroup ──────────────────────────────────────────────────────────────
+//
+// Labeled container that clusters one provider source's filters. The small
+// uppercase label answers "which source does this filter belong to?" at a
+// glance, mirroring the provider grouping used in AutomationBuilder. Replaces
+// the old free-floating dividers, which broke apart when the row wrapped.
 
-function Sep() {
-  return <div className="h-5 w-px bg-border flex-shrink-0" aria-hidden="true" />;
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-divider bg-surface-bg/40 px-2.5 py-1">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted whitespace-nowrap select-none">
+        {label}
+      </span>
+      <span className="h-4 w-px bg-divider flex-shrink-0" aria-hidden="true" />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">{children}</div>
+    </div>
+  );
+}
+
+// ─── ChipX — clear icon for the active-condition chips ────────────────────────
+
+function ChipX() {
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      className="w-2.5 h-2.5 flex-shrink-0 opacity-70"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 // ─── MultiSelectDropdown ──────────────────────────────────────────────────────
@@ -903,10 +931,6 @@ export function MediaFilterBar({
   const hasSeriesDropdowns =
     lookups.tags.sonarr.length > 0 || lookups.qualityProfiles.sonarr.length > 0;
 
-  // When only one type is visible (typical case: activeTab is always set in MediaContent),
-  // collapse to a single row so the year slider isn't orphaned on its own row.
-  const bothTypes = hasMovieSection && hasSeriesSection;
-
   // ─── Shared sub-elements ─────────────────────────────────────────────────
 
   const searchInput = (
@@ -937,13 +961,8 @@ export function MediaFilterBar({
   );
 
   const movieGroup = hasMovieSection ? (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
-      <OptionFilter
-        label="Movies"
-        options={HAS_FILE_OPTIONS}
-        value={filterState.hasFile}
-        onChange={setHasFile}
-      />
+    <FilterGroup label="Movies">
+      <OptionFilter options={HAS_FILE_OPTIONS} value={filterState.hasFile} onChange={setHasFile} />
       {hasMovieDropdowns && (
         <>
           <MultiSelectDropdown
@@ -993,13 +1012,12 @@ export function MediaFilterBar({
         onChangeMin={setRadarrImdbRatingGte}
         onChangeMax={setRadarrImdbRatingLte}
       />
-    </div>
+    </FilterGroup>
   ) : null;
 
   const seriesGroup = hasSeriesSection ? (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-surface-bg/40 border border-border rounded-lg px-3 py-1">
+    <FilterGroup label="Series">
       <OptionFilter
-        label="Series"
         options={MONITORED_OPTIONS}
         value={filterState.monitored}
         onChange={setMonitored}
@@ -1088,7 +1106,7 @@ export function MediaFilterBar({
         onChangeMin={setSonarrPercentEpisodesGte}
         onChangeMax={setSonarrPercentEpisodesLte}
       />
-    </div>
+    </FilterGroup>
   ) : null;
 
   const yearFilter = (
@@ -1104,7 +1122,7 @@ export function MediaFilterBar({
   );
 
   const playHistoryFilter = hasPlayHistorySection ? (
-    <>
+    <FilterGroup label="Play History">
       <OptionFilter
         options={TAUTULLI_WATCHED_OPTIONS}
         value={filterState.tautulliWatched}
@@ -1117,66 +1135,279 @@ export function MediaFilterBar({
         onChangeMin={setLastWatchedDaysAgoGte}
         onChangeMax={setLastWatchedDaysAgoLte}
       />
-    </>
+    </FilterGroup>
   ) : null;
 
   const overseerrFilter = hasOverseerrSection ? (
-    <>
+    <FilterGroup label="Requests">
       <OptionFilter
         options={OVERSEERR_HAS_ISSUE_OPTIONS}
         value={filterState.overseerrHasIssue}
         onChange={setOverseerrHasIssue}
       />
       <OptionFilter
-        label="Request Status"
+        label="Status"
         options={OVERSEERR_REQUEST_STATUS_OPTIONS}
         value={filterState.overseerrRequestStatus}
         onChange={setOverseerrRequestStatus}
       />
-    </>
+    </FilterGroup>
   ) : null;
 
   const tmdbFilter = hasTmdbSection ? (
-    <OptionFilter
-      options={TMDB_STATUS_OPTIONS}
-      value={filterState.tmdbStatus}
-      onChange={setTmdbStatus}
-    />
+    <FilterGroup label="TMDB">
+      <OptionFilter
+        options={TMDB_STATUS_OPTIONS}
+        value={filterState.tmdbStatus}
+        onChange={setTmdbStatus}
+      />
+    </FilterGroup>
   ) : null;
 
-  const rightCluster = isActive ? (
-    <div className="ml-auto flex items-center gap-3 flex-shrink-0">
-      {onSaveQuery && (
+  // ─── Active conditions — drives the saved-query summary row ───────────────
+  // Each active filter becomes one removable chip. The chips are exactly the
+  // conditions persisted by "Save as query", so the row makes the
+  // filters → saved-query relationship literal.
+  const fmtNum = (v: number | undefined) => (v != null ? String(v) : '…');
+  const range = (lo: number | undefined, hi: number | undefined) => `${fmtNum(lo)}–${fmtNum(hi)}`;
+  const optLabel = <T extends string>(
+    opts: ReadonlyArray<{ value: T; label: string }>,
+    v: string | undefined
+  ): string | undefined => opts.find((o) => o.value === v)?.label;
+
+  type Condition = { key: string; label: string; onClear: () => void };
+  const activeConditions: Condition[] = [];
+  const pushOpt = (key: string, label: string | undefined, onClear: () => void) => {
+    if (label) activeConditions.push({ key, label, onClear });
+  };
+
+  if (filterState.title) {
+    activeConditions.push({
+      key: 'title',
+      label: `“${filterState.title}”`,
+      onClear: () => setTitle(''),
+    });
+  }
+  // Movies
+  pushOpt('hasFile', optLabel(HAS_FILE_OPTIONS, filterState.hasFile), () => setHasFile(undefined));
+  if (movieTagIds.length > 0)
+    activeConditions.push({
+      key: 'movieTags',
+      label: `Movie tags · ${movieTagIds.length}`,
+      onClear: () => setMovieTagIds(undefined),
+    });
+  if (movieQualityProfileIds.length > 0)
+    activeConditions.push({
+      key: 'movieQuality',
+      label: `Movie quality · ${movieQualityProfileIds.length}`,
+      onClear: () => setMovieQualityProfileIds(undefined),
+    });
+  if (selectedMovieGenres.length > 0)
+    activeConditions.push({
+      key: 'movieGenres',
+      label: `Movie genres · ${selectedMovieGenres.length}`,
+      onClear: () => setMovieGenres(undefined),
+    });
+  if (filterState.radarrImdbRatingGte != null || filterState.radarrImdbRatingLte != null)
+    activeConditions.push({
+      key: 'imdb',
+      label: `IMDB ${range(filterState.radarrImdbRatingGte, filterState.radarrImdbRatingLte)}`,
+      onClear: () => {
+        setRadarrImdbRatingGte(undefined);
+        setRadarrImdbRatingLte(undefined);
+      },
+    });
+  // Series
+  pushOpt('monitored', optLabel(MONITORED_OPTIONS, filterState.monitored), () =>
+    setMonitored(undefined)
+  );
+  pushOpt('seriesStatus', optLabel(SERIES_STATUS_OPTIONS, filterState.seriesStatus), () =>
+    setSeriesStatus(undefined)
+  );
+  pushOpt('seriesType', optLabel(SERIES_TYPE_OPTIONS, filterState.seriesType), () =>
+    setSeriesType(undefined)
+  );
+  if (seriesTagIds.length > 0)
+    activeConditions.push({
+      key: 'seriesTags',
+      label: `Series tags · ${seriesTagIds.length}`,
+      onClear: () => setSeriesTagIds(undefined),
+    });
+  if (seriesQualityProfileIds.length > 0)
+    activeConditions.push({
+      key: 'seriesQuality',
+      label: `Series quality · ${seriesQualityProfileIds.length}`,
+      onClear: () => setSeriesQualityProfileIds(undefined),
+    });
+  if (selectedSeriesGenres.length > 0)
+    activeConditions.push({
+      key: 'seriesGenres',
+      label: `Series genres · ${selectedSeriesGenres.length}`,
+      onClear: () => setSeriesGenres(undefined),
+    });
+  if (selectedNetworks.length > 0)
+    activeConditions.push({
+      key: 'network',
+      label: `Network · ${selectedNetworks.length}`,
+      onClear: () => setNetwork(undefined),
+    });
+  if (filterState.sonarrRatingGte != null || filterState.sonarrRatingLte != null)
+    activeConditions.push({
+      key: 'sonarrRating',
+      label: `Rating ${range(filterState.sonarrRatingGte, filterState.sonarrRatingLte)}`,
+      onClear: () => {
+        setSonarrRatingGte(undefined);
+        setSonarrRatingLte(undefined);
+      },
+    });
+  pushOpt('sonarrEnded', optLabel(SONARR_ENDED_OPTIONS, filterState.sonarrEnded), () =>
+    setSonarrEnded(undefined)
+  );
+  if (
+    filterState.sonarrLastAiredDaysAgoGte != null ||
+    filterState.sonarrLastAiredDaysAgoLte != null
+  )
+    activeConditions.push({
+      key: 'lastAired',
+      label: `Last aired ${range(filterState.sonarrLastAiredDaysAgoGte, filterState.sonarrLastAiredDaysAgoLte)}d`,
+      onClear: () => {
+        setSonarrLastAiredDaysAgoGte(undefined);
+        setSonarrLastAiredDaysAgoLte(undefined);
+      },
+    });
+  if (filterState.sonarrPercentEpisodesGte != null || filterState.sonarrPercentEpisodesLte != null)
+    activeConditions.push({
+      key: 'percentEpisodes',
+      label: `Episodes ${range(filterState.sonarrPercentEpisodesGte, filterState.sonarrPercentEpisodesLte)}%`,
+      onClear: () => {
+        setSonarrPercentEpisodesGte(undefined);
+        setSonarrPercentEpisodesLte(undefined);
+      },
+    });
+  // Shared (movies + series)
+  if (filterState.addedDaysAgoGte != null || filterState.addedDaysAgoLte != null)
+    activeConditions.push({
+      key: 'added',
+      label: `Added ${range(filterState.addedDaysAgoGte, filterState.addedDaysAgoLte)}d`,
+      onClear: () => {
+        setAddedDaysAgoGte(undefined);
+        setAddedDaysAgoLte(undefined);
+      },
+    });
+  if (filterState.sizeOnDiskGbGte != null || filterState.sizeOnDiskGbLte != null)
+    activeConditions.push({
+      key: 'size',
+      label: `Size ${range(filterState.sizeOnDiskGbGte, filterState.sizeOnDiskGbLte)} GB`,
+      onClear: () => {
+        setSizeOnDiskGbGte(undefined);
+        setSizeOnDiskGbLte(undefined);
+      },
+    });
+  // Year (library-global)
+  if (filterState.yearMin != null || filterState.yearMax != null)
+    activeConditions.push({
+      key: 'year',
+      label: `Year ${range(filterState.yearMin, filterState.yearMax)}`,
+      onClear: () => {
+        setYearMin(undefined);
+        setYearMax(undefined);
+      },
+    });
+  // Play History
+  pushOpt('watched', optLabel(TAUTULLI_WATCHED_OPTIONS, filterState.tautulliWatched), () =>
+    setTautulliWatched(undefined)
+  );
+  if (filterState.lastWatchedDaysAgoGte != null || filterState.lastWatchedDaysAgoLte != null)
+    activeConditions.push({
+      key: 'lastWatched',
+      label: `Last watched ${range(filterState.lastWatchedDaysAgoGte, filterState.lastWatchedDaysAgoLte)}d`,
+      onClear: () => {
+        setLastWatchedDaysAgoGte(undefined);
+        setLastWatchedDaysAgoLte(undefined);
+      },
+    });
+  // Requests (Overseerr)
+  pushOpt(
+    'overseerrHasIssue',
+    optLabel(OVERSEERR_HAS_ISSUE_OPTIONS, filterState.overseerrHasIssue),
+    () => setOverseerrHasIssue(undefined)
+  );
+  pushOpt(
+    'overseerrRequestStatus',
+    optLabel(OVERSEERR_REQUEST_STATUS_OPTIONS, filterState.overseerrRequestStatus),
+    () => setOverseerrRequestStatus(undefined)
+  );
+  // TMDB
+  if (filterState.tmdbStatus)
+    activeConditions.push({
+      key: 'tmdbStatus',
+      label: filterState.tmdbStatus,
+      onClear: () => setTmdbStatus(undefined),
+    });
+
+  const conditionCount = activeConditions.length;
+
+  const summaryRow = isActive ? (
+    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-border/60 pt-2">
+      {conditionCount > 0 ? (
+        <>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-hover whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-hover" aria-hidden="true" />
+            Filtering by {conditionCount} {conditionCount === 1 ? 'condition' : 'conditions'}
+          </span>
+          <span className="h-3.5 w-px bg-border flex-shrink-0" aria-hidden="true" />
+          <ul className="flex flex-wrap items-center gap-1.5 min-w-0" aria-label="Active filters">
+            {activeConditions.map((c) => (
+              <li key={c.key}>
+                <button
+                  type="button"
+                  onClick={c.onClear}
+                  aria-label={`Remove filter: ${c.label}`}
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 pl-2 pr-1.5 py-0.5 text-[11px] font-medium text-primary-hover hover:bg-primary/20 hover:border-primary/60 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                >
+                  {c.label}
+                  <ChipX />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <span className="text-xs text-text-muted">Filters active</span>
+      )}
+      <div className="ml-auto flex items-center gap-3 flex-shrink-0 pl-2">
+        {onSaveQuery && (
+          <button
+            type="button"
+            onClick={onSaveQuery}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium border border-primary/40 text-primary-hover hover:bg-primary/10 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Save as query
+          </button>
+        )}
         <button
           type="button"
-          onClick={onSaveQuery}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          onClick={clearAll}
+          className="text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
         >
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-            <polyline points="17 21 17 13 7 13 7 21" />
-            <polyline points="7 3 7 8 15 8" />
-          </svg>
-          Save as query
+          Clear all
         </button>
-      )}
-      <button
-        type="button"
-        onClick={clearAll}
-        className="text-xs text-text-muted hover:text-text-primary transition-colors underline underline-offset-2"
-      >
-        Clear all
-      </button>
+      </div>
     </div>
   ) : null;
 
@@ -1184,89 +1415,22 @@ export function MediaFilterBar({
     <>
       {/* ── Desktop filter bar (md+) ─────────────────────────────────────────── */}
       <div
-        className="hidden md:block bg-surface-panel border-b border-border px-6 py-2"
+        className="hidden md:block bg-surface-panel border-b border-border px-6 py-2.5"
         role="search"
         aria-label="Filter media library"
       >
-        {bothTypes ? (
-          // Two-row layout: both movies and series sections visible simultaneously.
-          // Row 1: search + movies + tautulli + clear-all
-          // Row 2: series + year slider
-          <div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
-              {searchInput}
-              {movieGroup && (
-                <>
-                  <Sep />
-                  {movieGroup}
-                </>
-              )}
-              {playHistoryFilter && (
-                <>
-                  <Sep />
-                  {playHistoryFilter}
-                </>
-              )}
-              {overseerrFilter && (
-                <>
-                  <Sep />
-                  {overseerrFilter}
-                </>
-              )}
-              {tmdbFilter && (
-                <>
-                  <Sep />
-                  {tmdbFilter}
-                </>
-              )}
-              {rightCluster}
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              {seriesGroup}
-              <Sep />
-              {yearFilter}
-            </div>
-          </div>
-        ) : (
-          // Single-row layout: only one type section visible (or neither).
-          // Search | type-group | year-slider | tautulli | clear-all
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            {searchInput}
-            {movieGroup && (
-              <>
-                <Sep />
-                {movieGroup}
-              </>
-            )}
-            {seriesGroup && (
-              <>
-                <Sep />
-                {seriesGroup}
-              </>
-            )}
-            {(hasMovieSection || hasSeriesSection) && <Sep />}
-            {yearFilter}
-            {playHistoryFilter && (
-              <>
-                <Sep />
-                {playHistoryFilter}
-              </>
-            )}
-            {overseerrFilter && (
-              <>
-                <Sep />
-                {overseerrFilter}
-              </>
-            )}
-            {tmdbFilter && (
-              <>
-                <Sep />
-                {tmdbFilter}
-              </>
-            )}
-            {rightCluster}
-          </div>
-        )}
+        {/* Controls: search + year are library-global; each provider source is a
+            labeled group so the bar reads as grouped clusters, not a wrapped sea. */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+          {searchInput}
+          {yearFilter}
+          {movieGroup}
+          {seriesGroup}
+          {playHistoryFilter}
+          {overseerrFilter}
+          {tmdbFilter}
+        </div>
+        {summaryRow}
       </div>
 
       {/* ── Mobile full-screen filter modal (< md) ──────────────────────────── */}

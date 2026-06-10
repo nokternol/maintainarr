@@ -369,6 +369,106 @@ describe('MediaFilterBar — clearAll', () => {
   });
 });
 
+// ─── Active-conditions summary row ────────────────────────────────────────────
+
+describe('MediaFilterBar — active conditions summary', () => {
+  it('does not render the summary row when inactive', () => {
+    render(<MediaFilterBar {...makeProps({ isActive: false })} />);
+    expect(screen.queryByText(/filtering by/i)).not.toBeInTheDocument();
+  });
+
+  it('summarises active filters as a labelled count', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, hasFile: 'true', yearMin: 2010 },
+        })}
+      />
+    );
+    // hasFile=Downloaded + Year → 2 conditions
+    expect(screen.getByText(/filtering by 2 conditions/i)).toBeInTheDocument();
+  });
+
+  it('uses the singular noun for a single condition', () => {
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, hasFile: 'true' },
+        })}
+      />
+    );
+    expect(screen.getByText(/filtering by 1 condition$/i)).toBeInTheDocument();
+  });
+
+  it('renders a removable chip per active condition that clears just that filter', async () => {
+    const setHasFile = vi.fn();
+    const setYearMin = vi.fn();
+    const setYearMax = vi.fn();
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, hasFile: 'true', yearMin: 2010 },
+          setHasFile,
+          setYearMin,
+          setYearMax,
+        })}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /remove filter: downloaded/i }));
+    expect(setHasFile).toHaveBeenCalledWith(undefined);
+    expect(setYearMin).not.toHaveBeenCalled();
+  });
+
+  it('clears both ends of a range filter from its chip', async () => {
+    const setYearMin = vi.fn();
+    const setYearMax = vi.fn();
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, yearMin: 2010, yearMax: 2020 },
+          setYearMin,
+          setYearMax,
+        })}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /remove filter: year/i }));
+    expect(setYearMin).toHaveBeenCalledWith(undefined);
+    expect(setYearMax).toHaveBeenCalledWith(undefined);
+  });
+
+  it('shows the Save as query action only when onSaveQuery is provided', () => {
+    const onSaveQuery = vi.fn();
+    const { rerender } = render(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, hasFile: 'true' },
+        })}
+      />
+    );
+    expect(screen.queryByRole('button', { name: /save as query/i })).not.toBeInTheDocument();
+
+    rerender(
+      <MediaFilterBar
+        {...makeProps({
+          isActive: true,
+          filterState: { ...DEFAULT_FILTER_STATE, hasFile: 'true' },
+          onSaveQuery,
+        })}
+      />
+    );
+    expect(screen.getByRole('button', { name: /save as query/i })).toBeInTheDocument();
+  });
+});
+
 // ─── Mobile bottom sheet ──────────────────────────────────────────────────────
 
 describe('MediaFilterBar — mobile sheet', () => {

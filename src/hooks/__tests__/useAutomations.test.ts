@@ -24,6 +24,39 @@ const makeAutomation = (overrides: Partial<AutomationDto> = {}): AutomationDto =
   ...overrides,
 });
 
+describe('useAutomations — create sends querySources', () => {
+  it('sends querySources array in POST body when creating an automation', async () => {
+    let capturedBody: unknown;
+    const newAutomation = makeAutomation({ id: 2, name: 'New' });
+
+    server.use(
+      http.get('/api/automations', () => HttpResponse.json({ data: [] })),
+      http.post('/api/automations', async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({ data: newAutomation });
+      })
+    );
+
+    const { result } = renderHook(() => useAutomations(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.create({
+        name: 'New',
+        querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
+        providerId: 1,
+        taskId: 'delete-movie',
+        schedule: '0 * * * *',
+      });
+    });
+
+    expect(capturedBody).toMatchObject({
+      querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
+    });
+    expect(capturedBody).not.toHaveProperty('queryId');
+  });
+});
+
 describe('useAutomations — network call count', () => {
   it('create fires exactly one network request (POST, no subsequent GET)', async () => {
     const requests: string[] = [];
@@ -49,7 +82,7 @@ describe('useAutomations — network call count', () => {
     await act(async () => {
       await result.current.create({
         name: 'New',
-        queryId: 1,
+        querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
         providerId: 1,
         taskId: 'delete-movie',
         schedule: '0 * * * *',
