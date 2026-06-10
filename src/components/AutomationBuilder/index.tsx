@@ -1,13 +1,14 @@
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { SavedQuery } from '@app/hooks/useSavedQueries';
+import QuerySourceList from '@app/components/QuerySourceList';
+import type { QuerySource } from '@app/components/QuerySourceList';
 import { getEnabledTasksForProvider } from '@app/lib/tasks';
 import type { TaskDef } from '@app/lib/tasks';
 import { cn } from '@app/lib/utils/cn';
-import { summarizeFilters } from '@app/lib/utils/filterSummary';
 import { Cron } from 'croner';
 import cronstrue from 'cronstrue';
-import { BookMarked, Clock, TriangleAlert, Zap } from 'lucide-react';
+import { Clock, TriangleAlert, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Schedule presets ─────────────────────────────────────────────────────────
@@ -119,8 +120,8 @@ export default function AutomationBuilder({
   }, [availableTasks]);
 
   const [name, setName] = useState('');
-  const [selectedQueryId, setSelectedQueryId] = useState<number | null>(
-    queries.length === 1 ? queries[0].id : null
+  const [querySources, setQuerySources] = useState<QuerySource[]>(
+    queries.length === 1 ? [{ queryId: queries[0].id, role: 'include', sortOrder: 0 }] : []
   );
   const [selectedTask, setSelectedTask] = useState<BuilderTask | null>(null);
   const [schedulePreset, setSchedulePreset] = useState(SCHEDULE_PRESETS[1].value);
@@ -138,23 +139,25 @@ export default function AutomationBuilder({
   const nextRunDate = effectiveCron ? safeNextRun(effectiveCron) : null;
   const isValidCron = nextRunDate !== null;
 
+  const hasValidInclude = querySources.some((s) => s.role === 'include' && s.queryId > 0);
+
   const canSubmit =
-    name.trim().length > 0 && selectedQueryId !== null && selectedTask !== null && isValidCron;
+    name.trim().length > 0 && hasValidInclude && selectedTask !== null && isValidCron;
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!canSubmit || !selectedQueryId || !selectedTask) return;
+      if (!canSubmit || !selectedTask) return;
       setSubmitError(null);
       onSubmit({
         name: name.trim(),
-        queryId: selectedQueryId,
+        querySources,
         providerId: selectedTask.providerId,
         taskId: selectedTask.taskId,
         schedule: effectiveCron,
       });
     },
-    [canSubmit, selectedQueryId, selectedTask, name, effectiveCron, onSubmit]
+    [canSubmit, querySources, selectedTask, name, effectiveCron, onSubmit]
   );
 
   return (
@@ -196,77 +199,15 @@ export default function AutomationBuilder({
           />
         </div>
 
-        {/* ── Query ── */}
+        {/* ── Query sources ── */}
         <div>
-          <p className="text-xs font-medium text-text-secondary mb-1">Query</p>
+          <p className="text-xs font-medium text-text-secondary mb-1">Run on</p>
           <p className="text-xs text-text-muted mb-3">Which media this automation targets.</p>
-          {queries.length === 0 ? (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded bg-surface-bg/60 border border-border text-xs text-text-muted">
-              <BookMarked
-                size={13}
-                strokeWidth={1.75}
-                className="flex-shrink-0"
-                aria-hidden="true"
-              />
-              <span>
-                No saved queries yet.{' '}
-                <a href="/media" className="text-primary hover:underline">
-                  Save one from the media page
-                </a>{' '}
-                first.
-              </span>
-            </div>
-          ) : (
-            <div className="rounded border border-border overflow-hidden divide-y divide-border/60">
-              {queries.map((q) => {
-                const selected = selectedQueryId === q.id;
-                const parts = summarizeFilters(q.filterValues);
-                return (
-                  <label
-                    key={q.id}
-                    className={cn(
-                      'flex items-start gap-3 px-3.5 py-2.5 cursor-pointer transition-colors',
-                      selected ? 'bg-primary/8' : 'bg-surface-bg/40 hover:bg-surface-bg/60'
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="query"
-                      value={q.id}
-                      checked={selected}
-                      onChange={() => setSelectedQueryId(q.id)}
-                      className="mt-0.5 accent-primary flex-shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <p
-                        className={cn(
-                          'text-sm font-medium leading-tight',
-                          selected ? 'text-primary' : 'text-text-primary'
-                        )}
-                      >
-                        {q.name}
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {parts.slice(0, 5).map((p) => (
-                          <span
-                            key={p}
-                            className="text-[11px] text-text-muted bg-surface-elevated px-1.5 py-0.5 rounded"
-                          >
-                            {p}
-                          </span>
-                        ))}
-                        {parts.length > 5 && (
-                          <span className="text-[11px] text-text-muted">
-                            +{parts.length - 5} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          )}
+          <QuerySourceList
+            sources={querySources}
+            savedQueries={queries.map((q) => ({ id: q.id, name: q.name }))}
+            onChange={setQuerySources}
+          />
         </div>
 
         {/* ── Task ── */}

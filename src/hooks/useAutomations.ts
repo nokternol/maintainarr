@@ -5,9 +5,15 @@ import type { z } from 'zod';
 
 export type AutomationDto = z.infer<typeof AutomationSchema>;
 
+export interface QuerySourceInput {
+  queryId: number;
+  role: 'include' | 'exclude';
+  sortOrder: number;
+}
+
 export interface CreateAutomationInput {
   name: string;
-  queryId: number;
+  querySources: QuerySourceInput[];
   providerId: number;
   taskId: string;
   schedule: string;

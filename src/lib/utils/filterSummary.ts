@@ -27,6 +27,11 @@ const LABELS: Record<string, string> = {
   lastAiredDaysAgoLte: 'Last aired ≤ days',
   episodePercentageGte: 'Episodes ≥ %',
   episodePercentageLte: 'Episodes ≤ %',
+  tmdbStatus: 'TMDB status',
+  overseerrRequestStatus: 'Request status',
+  overseerrHasIssue: 'Has issue',
+  lastWatchedDaysAgoGte: 'Last watched ≥ days',
+  lastWatchedDaysAgoLte: 'Last watched ≤ days',
 };
 
 export function summarizeFilters(filterValues: FilterValueEntry[]): string[] {
