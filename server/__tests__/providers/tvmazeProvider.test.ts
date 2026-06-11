@@ -47,6 +47,30 @@ beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+describe('TvMazeProvider.lookupByTvdbId', () => {
+  it('resolves a TVmaze id from a thetvdb lookup', async () => {
+    server.use(
+      http.get('https://api.tvmaze.com/lookup/shows', ({ request }) => {
+        const tvdb = new URL(request.url).searchParams.get('thetvdb');
+        if (tvdb === '81189') return HttpResponse.json({ id: 169, name: 'Breaking Bad' });
+        return new HttpResponse(null, { status: 404 });
+      })
+    );
+    const provider = new TvMazeProvider(mockProvider, log);
+
+    expect(await provider.lookupByTvdbId(81189)).toEqual({ id: 169 });
+  });
+
+  it('returns null when no show matches the tvdb id', async () => {
+    server.use(
+      http.get('https://api.tvmaze.com/lookup/shows', () => new HttpResponse(null, { status: 404 }))
+    );
+    const provider = new TvMazeProvider(mockProvider, log);
+
+    expect(await provider.lookupByTvdbId(999999)).toBeNull();
+  });
+});
+
 describe('TvMazeProvider', () => {
   it('should search for shows', async () => {
     const provider = new TvMazeProvider(mockProvider, log);

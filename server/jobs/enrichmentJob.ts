@@ -4,6 +4,14 @@ import { mediaEnrichment, mediaIdentity } from '../database/schema';
 import type { OverseerrIssue, OverseerrRequest } from '../providers/overseerrProvider';
 import type { PlexMediaItem } from '../providers/plexProvider';
 import type { TautulliHistoryItem } from '../providers/tautulliProvider';
+import { mergeContributions } from '../utils/contributions';
+import { mapOverseerr, mapPlexItems, mapTautulliHistory } from './enrichment/mappers';
+import {
+  type EnrichmentContribution,
+  type EnrichmentKey,
+  type EnrichmentValues,
+  toEnrichmentValues,
+} from './enrichment/types';
 
 const STALENESS_SECONDS = 24 * 60 * 60;
 
@@ -15,17 +23,13 @@ interface Deps {
     getIssues(): Promise<OverseerrIssue[]>;
   };
   plexProvider?: { getAllItems(): Promise<PlexMediaItem[]> };
-  tmdbProvider?: { getStatus(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<string | null> };
 }
 
-interface EnrichmentValues {
-  tautulliPlayCount?: number;
-  tautulliLastPlayed?: number | null;
-  overseerrRequestStatus?: number | null;
-  overseerrHasIssue?: boolean | null;
-  plexViewCount?: number | null;
-  plexLastViewedAt?: number | null;
-  tmdbStatus?: string | null;
+/** A contribution matches an identity when they share a defined key dimension. */
+function matchesIdentity(identity: typeof mediaIdentity.$inferSelect, key: EnrichmentKey): boolean {
+  if (key.plexRatingKey !== undefined && key.plexRatingKey === identity.plexRatingKey) return true;
+  if (key.tmdbId !== undefined && key.tmdbId === identity.tmdbId) return true;
+  return false;
 }
 
 export class EnrichmentJob {
@@ -43,74 +47,30 @@ export class EnrichmentJob {
     const toEnrich = rows.filter(
       ({ enrichment }) => !enrichment || (enrichment.enrichedAt ?? 0) < staleThreshold
     );
-
     if (toEnrich.length === 0) return;
 
-    // ─── Collect tautulli values ─────────────────────────────────────────────
-    const playCountByKey = new Map<string, number>();
-    const lastPlayedByKey = new Map<string, number>();
-    if (this.deps.tautulliProvider) {
-      const history = await this.deps.tautulliProvider.getHistory();
-      for (const item of history) {
-        playCountByKey.set(item.rating_key, (playCountByKey.get(item.rating_key) ?? 0) + 1);
-        if (item.played_at !== undefined) {
-          const current = lastPlayedByKey.get(item.rating_key) ?? 0;
-          if (item.played_at > current) lastPlayedByKey.set(item.rating_key, item.played_at);
-        }
-      }
-    }
+    // ─── Collect contributions from every active bulk source (uniform) ────────
+    const contributions = await this.collectBulkContributions();
 
-    // ─── Collect overseerr values ────────────────────────────────────────────
-    const overseerrStatusByTmdbId = new Map<number, number>();
-    const tmdbIdsWithIssues = new Set<number>();
-    if (this.deps.overseerrProvider) {
-      const [requests, issues] = await Promise.all([
-        this.deps.overseerrProvider.getRequests(),
-        this.deps.overseerrProvider.getIssues(),
-      ]);
-      for (const req of requests) {
-        overseerrStatusByTmdbId.set(req.media.tmdbId, req.status);
-      }
-      for (const issue of issues) {
-        tmdbIdsWithIssues.add(issue.media.tmdbId);
-      }
-    }
+    // ─── Merge into each identity by shared key — no per-provider branches ────
+    const identities = toEnrich.map((r) => r.identity);
+    const merged = mergeContributions<
+      (typeof identities)[number],
+      EnrichmentKey,
+      Partial<EnrichmentValues>
+    >(
+      identities,
+      contributions,
+      matchesIdentity,
+      (acc, next) => ({ ...acc, ...next }),
+      () => ({})
+    );
+    const mergedById = new Map(merged.map((m) => [m.target.id, m.values]));
 
-    // ─── Collect Plex values ─────────────────────────────────────────────────
-    const plexViewCountByKey = new Map<string, number>();
-    const plexLastViewedAtByKey = new Map<string, number>();
-    if (this.deps.plexProvider) {
-      const items = await this.deps.plexProvider.getAllItems();
-      for (const item of items) {
-        if (item.viewCount !== undefined) plexViewCountByKey.set(item.ratingKey, item.viewCount);
-        if (item.lastViewedAt !== undefined)
-          plexLastViewedAtByKey.set(item.ratingKey, item.lastViewedAt);
-      }
-    }
-
-    // ─── Write enrichment rows ───────────────────────────────────────────────
+    // ─── Write rows ───────────────────────────────────────────────────────────
     for (const { identity, enrichment } of toEnrich) {
-      const values: EnrichmentValues = {};
-
-      if (this.deps.tautulliProvider && identity.plexRatingKey) {
-        values.tautulliPlayCount = playCountByKey.get(identity.plexRatingKey) ?? 0;
-        values.tautulliLastPlayed = lastPlayedByKey.get(identity.plexRatingKey) ?? null;
-      }
-
-      if (this.deps.plexProvider && identity.plexRatingKey) {
-        values.plexViewCount = plexViewCountByKey.get(identity.plexRatingKey) ?? null;
-        values.plexLastViewedAt = plexLastViewedAtByKey.get(identity.plexRatingKey) ?? null;
-      }
-
-      if (this.deps.tmdbProvider && identity.tmdbId !== null) {
-        const mediaType = identity.sourceType === 'SONARR' ? 'tv' : 'movie';
-        values.tmdbStatus = await this.deps.tmdbProvider.getStatus(identity.tmdbId, mediaType);
-      }
-
-      if (this.deps.overseerrProvider && identity.tmdbId !== null) {
-        values.overseerrRequestStatus = overseerrStatusByTmdbId.get(identity.tmdbId) ?? null;
-        values.overseerrHasIssue = tmdbIdsWithIssues.has(identity.tmdbId);
-      }
+      // Materialize the merged partial into the canonical record (undefined → null).
+      const values = toEnrichmentValues(mergedById.get(identity.id) ?? {});
 
       if (enrichment) {
         await this.deps.db
@@ -123,5 +83,25 @@ export class EnrichmentJob {
           .values({ mediaIdentityId: identity.id, ...values, enrichedAt: now });
       }
     }
+  }
+
+  private async collectBulkContributions(): Promise<EnrichmentContribution[]> {
+    const contributions: EnrichmentContribution[] = [];
+
+    if (this.deps.tautulliProvider) {
+      contributions.push(...mapTautulliHistory(await this.deps.tautulliProvider.getHistory()));
+    }
+    if (this.deps.plexProvider) {
+      contributions.push(...mapPlexItems(await this.deps.plexProvider.getAllItems()));
+    }
+    if (this.deps.overseerrProvider) {
+      const [requests, issues] = await Promise.all([
+        this.deps.overseerrProvider.getRequests(),
+        this.deps.overseerrProvider.getIssues(),
+      ]);
+      contributions.push(...mapOverseerr(requests, issues));
+    }
+
+    return contributions;
   }
 }

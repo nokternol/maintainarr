@@ -18,6 +18,7 @@ export interface CreateRunData {
   status: 'success' | 'error';
   itemCount?: number;
   error?: string;
+  kind?: 'user' | 'system';
 }
 
 export interface ListRunsOptions {
@@ -68,6 +69,7 @@ export class AutomationRunService {
         status: data.status,
         itemCount: data.itemCount ?? null,
         error: data.error ?? null,
+        kind: data.kind ?? 'user',
       })
       .returning();
 
