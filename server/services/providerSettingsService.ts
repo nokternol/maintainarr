@@ -7,7 +7,7 @@ import {
   type RawMetadataProvider,
   metadataProviders,
 } from '../database/schema';
-import { NotFoundError } from '../errors';
+import { NotFoundError, ValidationError } from '../errors';
 import { getChildLogger } from '../logger';
 
 const log = getChildLogger('ProviderSettingsService');
@@ -67,7 +67,26 @@ export class ProviderSettingsService {
     return rows.map((r) => redact(parseRaw(r)));
   }
 
+  /**
+   * Enforces the single-active-provider-per-type invariant (D8): rejects when an
+   * active provider of `type` already exists. `excludeId` omits the row being updated
+   * so re-saving an already-active provider is not treated as a conflict.
+   */
+  private async assertNoActiveConflict(
+    type: MetadataProviderType,
+    excludeId?: number
+  ): Promise<void> {
+    const active = await this.findActiveByTypes([type]);
+    if (active.some((p) => p.id !== excludeId)) {
+      throw new ValidationError(`An active ${type} provider already exists; deactivate it first`);
+    }
+  }
+
   async create(draft: ProviderSettingsDraft): Promise<ProviderSummary> {
+    if (draft.isActive ?? true) {
+      await this.assertNoActiveConflict(draft.type);
+    }
+
     const insert: NewMetadataProvider = {
       type: draft.type,
       name: draft.name,
@@ -83,6 +102,11 @@ export class ProviderSettingsService {
   }
 
   async update(id: number, patch: Partial<ProviderSettingsDraft>): Promise<ProviderSummary> {
+    if (patch.isActive === true) {
+      const current = await this.findById(id);
+      await this.assertNoActiveConflict(current.type, id);
+    }
+
     const updateValues: Partial<NewMetadataProvider> = {};
 
     if (patch.name !== undefined) updateValues.name = patch.name;

@@ -9,6 +9,7 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
+import { ValidationError } from '@server/errors';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -99,8 +100,57 @@ describe('ProviderSettingsService', () => {
   });
 
   // -------------------------------------------------------------------------
+  // single-active-provider-per-type invariant (D8)
+  // -------------------------------------------------------------------------
+
+  it('rejects creating a second active provider of an already-active type', async () => {
+    await service.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Radarr 1080p',
+      url: 'http://radarr1:7878/api/v3',
+    });
+
+    await expect(
+      service.create({
+        type: MetadataProviderType.RADARR,
+        name: 'Radarr 4K',
+        url: 'http://radarr2:7878/api/v3',
+      })
+    ).rejects.toThrow(ValidationError);
+  });
+
+  // -------------------------------------------------------------------------
   // update
   // -------------------------------------------------------------------------
+
+  it('rejects activating a provider when a different active provider of its type exists (D8)', async () => {
+    await service.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Active Radarr',
+      url: 'http://radarr1:7878/api/v3',
+    });
+    const inactive = await service.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Spare Radarr',
+      url: 'http://radarr2:7878/api/v3',
+      isActive: false,
+    });
+
+    await expect(service.update(inactive.id, { isActive: true })).rejects.toThrow(ValidationError);
+  });
+
+  it('allows re-saving an already-active provider with isActive:true (self-exclusion, D8)', async () => {
+    const active = await service.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Active Radarr',
+      url: 'http://radarr1:7878/api/v3',
+    });
+
+    const result = await service.update(active.id, { isActive: true, name: 'Renamed' });
+
+    expect(result.isActive).toBe(true);
+    expect(result.name).toBe('Renamed');
+  });
 
   it('updates name and url and returns the updated row with apiKey redacted', async () => {
     const created = await service.create({
@@ -179,7 +229,7 @@ describe('ProviderSettingsService', () => {
     expect(results).toHaveLength(0);
   });
 
-  it('returns multiple providers of the same type', async () => {
+  it('returns at most one active provider per type, even with an inactive duplicate (D8)', async () => {
     await service.create({
       type: MetadataProviderType.RADARR,
       name: 'Radarr 1080p',
@@ -191,10 +241,11 @@ describe('ProviderSettingsService', () => {
       name: 'Radarr 4K',
       url: 'http://radarr2:7878/api/v3',
       apiKey: 'key2',
+      isActive: false,
     });
 
     const results = await service.findActiveByTypes([MetadataProviderType.RADARR]);
-    expect(results).toHaveLength(2);
+    expect(results).toHaveLength(1);
   });
 
   // -------------------------------------------------------------------------
