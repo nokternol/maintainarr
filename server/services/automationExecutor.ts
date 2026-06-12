@@ -20,6 +20,10 @@ import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
+export interface SystemTaskRunnerLike {
+  run(taskId: string): Promise<void>;
+}
+
 interface ExecutorDeps {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
@@ -27,6 +31,7 @@ interface ExecutorDeps {
   savedQueryService: SavedQueryService;
   providerFactory?: IProviderFactory;
   db?: DrizzleDb;
+  systemTaskRunner?: SystemTaskRunnerLike;
 }
 
 // ─── Normalizers ──────────────────────────────────────────────────────────────
@@ -96,6 +101,7 @@ export class AutomationExecutor {
   private readonly savedQueryService: SavedQueryService;
   private readonly providerFactory: IProviderFactory;
   private readonly db?: DrizzleDb;
+  private readonly systemTaskRunner?: SystemTaskRunnerLike;
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
@@ -104,13 +110,27 @@ export class AutomationExecutor {
     this.savedQueryService = deps.savedQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
     this.db = deps.db;
+    this.systemTaskRunner = deps.systemTaskRunner;
   }
 
   async execute(automationId: number): Promise<void> {
     let itemCount = 0;
+    let kind: 'user' | 'system' = 'user';
 
     try {
       const automation = await this.automationService.getById(automationId);
+      kind = automation.kind;
+
+      if (automation.kind === 'system') {
+        if (!this.systemTaskRunner) {
+          throw new Error('System automation requires a systemTaskRunner');
+        }
+        await this.systemTaskRunner.run(automation.taskId);
+        await this.recordResult(automationId, { itemCount: 0, status: 'success', kind });
+        log.info('System automation executed', { automationId, taskId: automation.taskId });
+        return;
+      }
+
       if (!automation.provider) {
         throw new Error(`Automation ${automationId} has no provider — cannot execute`);
       }
@@ -128,7 +148,7 @@ export class AutomationExecutor {
         providerSettings,
         sources
       );
-      await this.recordResult(automationId, { itemCount, status: 'success' });
+      await this.recordResult(automationId, { itemCount, status: 'success', kind });
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
       log.error('Automation execution failed', { automationId, err });
@@ -136,6 +156,7 @@ export class AutomationExecutor {
         itemCount,
         status: 'error',
         error: err instanceof Error ? err.message : 'Unknown error',
+        kind,
       });
     }
   }
@@ -253,7 +274,12 @@ export class AutomationExecutor {
 
   private async recordResult(
     automationId: number,
-    result: { itemCount: number; status: 'success' | 'error'; error?: string }
+    result: {
+      itemCount: number;
+      status: 'success' | 'error';
+      error?: string;
+      kind?: 'user' | 'system';
+    }
   ): Promise<void> {
     await Promise.all([
       this.automationService.recordRun(automationId, result),
@@ -262,21 +288,9 @@ export class AutomationExecutor {
         status: result.status,
         itemCount: result.itemCount,
         error: result.error,
+        kind: result.kind ?? 'user',
       }),
     ]);
-  }
-
-  private async recordUnimplemented(
-    automationId: number,
-    taskId: string,
-    contentType: string
-  ): Promise<void> {
-    log.warn('Task not yet implemented', { taskId, automationId, contentType });
-    await this.recordResult(automationId, {
-      itemCount: 0,
-      status: 'error',
-      error: `Task "${taskId}" is not yet implemented`,
-    });
   }
 }
 

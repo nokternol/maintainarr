@@ -367,6 +367,13 @@ describe('show predicates', () => {
     expect(def.apply({ ...baseMovie, overseerrHasIssue: undefined }, true)).toBe(false);
   });
 
+  it('overseerrHasIssue — movie: unknown (null/undefined) reads as "no issue" (truthy/falsy)', () => {
+    const def = getFilterDef('overseerrHasIssue', 'movie')!;
+    // Data stores truth (null = Overseerr said nothing); the filter treats unknown as falsy,
+    // so "has issue = false" includes items with no reported issue.
+    expect(def.apply({ ...baseMovie, overseerrHasIssue: undefined }, false)).toBe(true);
+  });
+
   it('lastWatchedDaysAgoLte — movie: true when lastWatchedAt is at most N days ago', () => {
     const def = getFilterDef('lastWatchedDaysAgoLte', 'movie')!;
     const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();

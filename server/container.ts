@@ -1,4 +1,11 @@
-import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
+import {
+  type AwilixContainer,
+  InjectionMode,
+  asClass,
+  asFunction,
+  asValue,
+  createContainer,
+} from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import type { AppConfig } from './config';
 import { AutomationScheduler } from './cron/automationScheduler';
@@ -12,6 +19,7 @@ import { AutomationService } from './services/automationService';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
 import { SavedQueryService } from './services/savedQueryService';
+import { SystemTaskRunner } from './services/systemTaskRunner';
 import { TmdbService } from './services/tmdbService';
 
 const log = getChildLogger('Container');
@@ -31,6 +39,7 @@ export interface Cradle {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerFactory: ProviderFactory;
+  systemTaskRunner: SystemTaskRunner;
   automationExecutor: AutomationExecutor;
   automationScheduler: AutomationScheduler;
 }
@@ -63,6 +72,16 @@ export function buildContainer(deps: {
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
+    // asFunction: pass only registered cradle keys; the runner's test-only job-factory
+    // seams stay undefined so its defaults (real provider resolution) are used.
+    systemTaskRunner: asFunction(
+      (cradle: Cradle) =>
+        new SystemTaskRunner({
+          providerSettingsService: cradle.providerSettingsService,
+          providerFactory: cradle.providerFactory,
+          db: cradle.db,
+        })
+    ).singleton(),
     automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });

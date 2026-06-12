@@ -459,10 +459,8 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'boolean',
     sourceProviders: [MetadataProviderType.OVERSEERR],
     required: false,
-    apply: (item, value) => {
-      if (item.overseerrHasIssue === undefined) return false;
-      return item.overseerrHasIssue === asBool(value);
-    },
+    // Truthy/falsy: "has issue" treats unknown (null/undefined) and false alike as "no issue".
+    apply: (item, value) => Boolean(item.overseerrHasIssue) === asBool(value),
   },
   {
     key: 'lastWatchedDaysAgoGte',

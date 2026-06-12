@@ -144,11 +144,14 @@ describe('Provider mutation cache invalidation', () => {
 
   it('DELETE /providers/:id invalidates the movies cache so the next GET /media/movies re-fetches from Radarr', async () => {
     // Seed a second provider so we can delete it without removing the main one.
+    // Inactive to respect the single-active-provider-per-type invariant (D8) —
+    // its activation state is irrelevant to the cache-invalidation behaviour under test.
     const extra = await cradle.providerSettingsService.create({
       type: MetadataProviderType.RADARR,
       name: 'Radarr Extra',
       url: 'http://localhost:7879/api/v3',
       apiKey: 'fake-key-2',
+      isActive: false,
     });
 
     let radarrCallCount = 0;

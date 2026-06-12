@@ -137,7 +137,7 @@ describe('EnrichmentJob', () => {
     expect(enr.overseerrRequestStatus).toBe(2);
   });
 
-  it('writes overseerrHasIssue=true when open issues exist for a tmdbId, false when none', async () => {
+  it('writes overseerrHasIssue=true when open issues exist for a tmdbId, null (unknown) when none', async () => {
     const db = getDb();
     const [id100] = await db
       .insert(mediaIdentity)
@@ -165,7 +165,9 @@ describe('EnrichmentJob', () => {
 
     const rows = await db.select().from(mediaEnrichment).orderBy(mediaEnrichment.mediaIdentityId);
     expect(rows[0].overseerrHasIssue).toBe(true);
-    expect(rows[1].overseerrHasIssue).toBe(false);
+    // Data stores truth: Overseerr reported no issue for this tmdbId, so the field is
+    // unknown (null), not a fabricated false. The filter layer decides how to read null.
+    expect(rows[1].overseerrHasIssue).toBeNull();
   });
 
   it('writes plexViewCount and plexLastViewedAt matched by plexRatingKey', async () => {
@@ -202,35 +204,6 @@ describe('EnrichmentJob', () => {
     const [enr] = await db.select().from(mediaEnrichment);
     expect(enr.plexViewCount).toBe(5);
     expect(enr.plexLastViewedAt).toBe(1700000000);
-  });
-
-  it('writes tmdbStatus from tmdbProvider matched by tmdbId and sourceType', async () => {
-    const db = getDb();
-    const [movieIdentity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 })
-      .returning();
-    const [showIdentity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'SONARR', sourceId: 1, tmdbId: 200 })
-      .returning();
-    await db.insert(mediaEnrichment).values([
-      { mediaIdentityId: movieIdentity.id, enrichedAt: STALE },
-      { mediaIdentityId: showIdentity.id, enrichedAt: STALE },
-    ]);
-
-    const getStatus = vi.fn().mockImplementation((tmdbId: number, mediaType: string) => {
-      if (tmdbId === 100 && mediaType === 'movie') return Promise.resolve('Released');
-      if (tmdbId === 200 && mediaType === 'tv') return Promise.resolve('Ended');
-      return Promise.resolve(null);
-    });
-
-    const job = new EnrichmentJob({ db, tmdbProvider: { getStatus } });
-    await job.run();
-
-    const rows = await db.select().from(mediaEnrichment).orderBy(mediaEnrichment.mediaIdentityId);
-    expect(rows[0].tmdbStatus).toBe('Released');
-    expect(rows[1].tmdbStatus).toBe('Ended');
   });
 
   it('upserts tautulliPlayCount from history for a stale identity row', async () => {

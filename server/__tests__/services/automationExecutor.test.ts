@@ -1,6 +1,12 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import {
+  MetadataProviderType,
+  automationRuns,
+  automations,
+  mediaEnrichment,
+  mediaIdentity,
+} from '@server/database/schema';
 import type { IProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
@@ -97,6 +103,40 @@ describe('AutomationExecutor', () => {
   afterEach(async () => {
     await _resetDatabase();
     server.resetHandlers();
+  });
+
+  // ─── SYSTEM: kind-based dispatch ──────────────────────────────────────────
+
+  describe('SYSTEM — kind dispatch', () => {
+    async function seedSystemAutomation(taskId: string): Promise<number> {
+      const db = getDb();
+      const [row] = await db
+        .insert(automations)
+        .values({ name: `sys:${taskId}`, taskId, schedule: '0 * * * *', kind: 'system' })
+        .returning();
+      return row.id;
+    }
+
+    it('runs the system task and records a success run with kind=system, without the provider path', async () => {
+      const db = getDb();
+      const run = vi.fn(async () => {});
+      const systemExecutor = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run },
+      });
+      const id = await seedSystemAutomation('system:identity-resolution');
+
+      await systemExecutor.execute(id);
+
+      expect(run).toHaveBeenCalledWith('system:identity-resolution');
+      const runs = await db.select().from(automationRuns);
+      expect(runs).toHaveLength(1);
+      expect(runs[0].status).toBe('success');
+      expect(runs[0].kind).toBe('system');
+    });
   });
 
   // ─── RADARR: unmonitorMovie ───────────────────────────────────────────────

@@ -1,0 +1,112 @@
+/**
+ * Integration test for Phase 1 — system task execution via DI (D1).
+ *
+ * Resolves AutomationExecutor from the real container and executes the seeded
+ * `system:enrichment` automation. Asserts the enrichment job runs through the
+ * SystemTaskRunner and writes a media_enrichment row for an existing identity —
+ * i.e. the system tick no longer throws "has no provider".
+ *
+ * Run: yarn vitest run --project server server/__tests__/integration/system.task.execution.integration.test.ts
+ */
+import { loadConfig } from '@server/config';
+import { buildContainer } from '@server/container';
+import { closeDatabase, initializeDatabase } from '@server/database';
+import type { DrizzleDb } from '@server/database';
+import {
+  MetadataProviderType,
+  automations,
+  mediaEnrichment,
+  mediaIdentity,
+} from '@server/database/schema';
+import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
+import { createMockConfig } from '@tests/factories';
+import { server } from '@tests/mocks/server';
+import { eq } from 'drizzle-orm';
+import { http, HttpResponse } from 'msw';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+describe('system task execution via container — system:enrichment', () => {
+  let db: DrizzleDb;
+  let container: ReturnType<typeof buildContainer>;
+
+  beforeAll(async () => {
+    const mockConfig = createMockConfig({
+      NODE_ENV: 'test',
+      DB_PATH: ':memory:',
+      DB_LOGGING: false,
+    });
+    for (const [key, value] of Object.entries(mockConfig)) {
+      process.env[key] = String(value);
+    }
+    const config = loadConfig();
+    db = await initializeDatabase(config);
+    container = buildContainer({ config, db });
+    await ensureSystemJobs(db);
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  it('executes the seeded system:enrichment automation and writes media_enrichment', async () => {
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 603, resolvedAt: 0 })
+      .returning();
+
+    const [enrichmentAutomation] = await db
+      .select({ id: automations.id })
+      .from(automations)
+      .where(eq(automations.taskId, 'system:enrichment'));
+
+    await container.cradle.automationExecutor.execute(enrichmentAutomation.id);
+
+    const rows = await db
+      .select()
+      .from(mediaEnrichment)
+      .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('resolves an active Overseerr provider so enrichment writes a non-null overseerrRequestStatus', async () => {
+    server.use(
+      http.get('http://overseerr.test/api/v1/request', () =>
+        HttpResponse.json({
+          results: [
+            {
+              id: 1,
+              status: 2,
+              type: 'movie',
+              requestedBy: { id: 1, displayName: 'u', email: 'u@u.com' },
+              media: { tmdbId: 700, title: 'X' },
+              createdAt: '',
+            },
+          ],
+        })
+      ),
+      http.get('http://overseerr.test/api/v1/issue', () => HttpResponse.json({ results: [] }))
+    );
+    await container.cradle.providerSettingsService.create({
+      type: MetadataProviderType.OVERSEERR,
+      name: 'Overseerr',
+      url: 'http://overseerr.test',
+      apiKey: 'k',
+    });
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 7, tmdbId: 700, resolvedAt: 0 })
+      .returning();
+    const [enrichmentAutomation] = await db
+      .select({ id: automations.id })
+      .from(automations)
+      .where(eq(automations.taskId, 'system:enrichment'));
+
+    await container.cradle.automationExecutor.execute(enrichmentAutomation.id);
+
+    const [row] = await db
+      .select()
+      .from(mediaEnrichment)
+      .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
+    expect(row.overseerrRequestStatus).toBe(2);
+  });
+});
