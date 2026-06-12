@@ -17,10 +17,6 @@ export interface Contribution<K, V> {
   values: V;
 }
 
-export interface Source<K, V> {
-  collect(): Promise<Contribution<K, V>[]>;
-}
-
 export type Token = string | number;
 
 export function mergeContributions<T, K, V>(

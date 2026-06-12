@@ -42,7 +42,10 @@ export async function checkUser(req: Request, _res: Response, next: NextFunction
 export function isAuthenticated() {
   return (req: Request, _res: Response, next: NextFunction): void => {
     // DEV BYPASS: BYPASS_AUTH=true skips auth for Playwright analysis — remove before shipping
-    if (process.env.BYPASS_AUTH === 'true') return next();
+    if (process.env.BYPASS_AUTH === 'true') {
+      next();
+      return;
+    }
     if (!req.user) {
       log.warn('Unauthenticated request', {
         requestId: req.requestId,

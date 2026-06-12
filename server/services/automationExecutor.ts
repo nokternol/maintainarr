@@ -142,12 +142,7 @@ export class AutomationExecutor {
       }
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
-      itemCount = await this.executeWithSources(
-        automationId,
-        automation.taskId,
-        providerSettings,
-        sources
-      );
+      itemCount = await this.executeWithSources(automation.taskId, providerSettings, sources);
       await this.recordResult(automationId, { itemCount, status: 'success', kind });
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
@@ -162,7 +157,6 @@ export class AutomationExecutor {
   }
 
   private async executeWithSources(
-    automationId: number,
     taskId: string,
     providerSettings: MetadataProvider,
     sources: AutomationQuerySourceDto[]
@@ -278,7 +272,7 @@ export class AutomationExecutor {
       itemCount: number;
       status: 'success' | 'error';
       error?: string;
-      kind?: 'user' | 'system';
+      kind: 'user' | 'system';
     }
   ): Promise<void> {
     await Promise.all([
@@ -288,7 +282,7 @@ export class AutomationExecutor {
         status: result.status,
         itemCount: result.itemCount,
         error: result.error,
-        kind: result.kind ?? 'user',
+        kind: result.kind,
       }),
     ]);
   }
