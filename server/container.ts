@@ -1,15 +1,10 @@
-import {
-  type AwilixContainer,
-  InjectionMode,
-  asClass,
-  asFunction,
-  asValue,
-  createContainer,
-} from 'awilix';
+import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import type { AppConfig } from './config';
 import { AutomationScheduler } from './cron/automationScheduler';
 import type { DrizzleDb } from './database';
+import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
+import { IdentityJobFactory } from './jobs/identityJobFactory';
 import { getChildLogger } from './logger';
 import { ProviderFactory } from './providers/providerFactory';
 import { AuthService } from './services/authService';
@@ -39,6 +34,8 @@ export interface Cradle {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerFactory: ProviderFactory;
+  identityJobFactory: IdentityJobFactory;
+  enrichmentJobFactory: EnrichmentJobFactory;
   systemTaskRunner: SystemTaskRunner;
   automationExecutor: AutomationExecutor;
   automationScheduler: AutomationScheduler;
@@ -72,16 +69,9 @@ export function buildContainer(deps: {
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
-    // asFunction: pass only registered cradle keys; the runner's test-only job-factory
-    // seams stay undefined so its defaults (real provider resolution) are used.
-    systemTaskRunner: asFunction(
-      (cradle: Cradle) =>
-        new SystemTaskRunner({
-          providerSettingsService: cradle.providerSettingsService,
-          providerFactory: cradle.providerFactory,
-          db: cradle.db,
-        })
-    ).singleton(),
+    identityJobFactory: asClass(IdentityJobFactory).singleton(),
+    enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
+    systemTaskRunner: asClass(SystemTaskRunner).singleton(),
     automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
