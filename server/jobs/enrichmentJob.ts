@@ -4,7 +4,7 @@ import { mediaEnrichment, mediaIdentity } from '../database/schema';
 import type { OverseerrIssue, OverseerrRequest } from '../providers/overseerrProvider';
 import type { PlexMediaItem } from '../providers/plexProvider';
 import type { TautulliHistoryItem } from '../providers/tautulliProvider';
-import { mergeContributions } from '../utils/contributions';
+import { type Token, mergeContributions } from '../utils/contributions';
 import { mapOverseerr, mapPlexItems, mapTautulliHistory } from './enrichment/mappers';
 import {
   type EnrichmentContribution,
@@ -25,11 +25,24 @@ interface Deps {
   plexProvider?: { getAllItems(): Promise<PlexMediaItem[]> };
 }
 
-/** A contribution matches an identity when they share a defined key dimension. */
-function matchesIdentity(identity: typeof mediaIdentity.$inferSelect, key: EnrichmentKey): boolean {
-  if (key.plexRatingKey !== undefined && key.plexRatingKey === identity.plexRatingKey) return true;
-  if (key.tmdbId !== undefined && key.tmdbId === identity.tmdbId) return true;
-  return false;
+/**
+ * Namespaced match tokens for an identity. Two records join when they share a token, so
+ * each key dimension carries its own prefix — a `plexRatingKey` of "5" must never collide
+ * with a `tmdbId` of 5.
+ */
+function identityTokens(identity: typeof mediaIdentity.$inferSelect): Token[] {
+  const tokens: Token[] = [];
+  if (identity.plexRatingKey != null) tokens.push(`plex:${identity.plexRatingKey}`);
+  if (identity.tmdbId != null) tokens.push(`tmdb:${identity.tmdbId}`);
+  return tokens;
+}
+
+/** The same namespaced tokens derived from a contribution's key dimensions. */
+function keyTokens(key: EnrichmentKey): Token[] {
+  const tokens: Token[] = [];
+  if (key.plexRatingKey !== undefined) tokens.push(`plex:${key.plexRatingKey}`);
+  if (key.tmdbId !== undefined) tokens.push(`tmdb:${key.tmdbId}`);
+  return tokens;
 }
 
 export class EnrichmentJob {
@@ -61,7 +74,8 @@ export class EnrichmentJob {
     >(
       identities,
       contributions,
-      matchesIdentity,
+      identityTokens,
+      keyTokens,
       (acc, next) => ({ ...acc, ...next }),
       () => ({})
     );

@@ -25,8 +25,8 @@ are meaningless without it).
 
 | Phase | File | Status | Prerequisite |
 |---|---|---|---|
-| 0 — Single-active-provider-per-type invariant | `ENRICHED_FILTERS_phase_0.md` | NOT STARTED | — |
-| 1 — System task execution (hybrid dispatch) | `ENRICHED_FILTERS_phase_1.md` | NOT STARTED | Phase 0 |
+| 0 — Single-active-provider-per-type invariant | _(shipped — doc deleted)_ | ✅ COMPLETE | — |
+| 1 — System task execution (hybrid dispatch) | _(shipped — doc deleted)_ | ✅ COMPLETE | Phase 0 |
 | 2 — Unified filter engine | `ENRICHED_FILTERS_phase_2.md` | NOT STARTED | Phase 1 (for enriched data; predicates testable on fixtures sooner) |
 | 3 — Run Now + system panel | `ENRICHED_FILTERS_phase_3.md` | NOT STARTED | Phase 1 (system run-now does work only once dispatch lands) |
 
