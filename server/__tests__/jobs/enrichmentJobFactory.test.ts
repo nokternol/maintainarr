@@ -2,6 +2,7 @@ import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import { EnrichmentJobFactory } from '@server/jobs/enrichmentJobFactory';
+import { ProviderFactory } from '@server/providers/providerFactory';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { eq } from 'drizzle-orm';
 import { http, HttpResponse } from 'msw';
@@ -28,6 +29,7 @@ function makeFactory(): EnrichmentJobFactory {
   return new EnrichmentJobFactory({
     db,
     providerSettingsService: new ProviderSettingsService({ db }),
+    providerFactory: new ProviderFactory(),
   });
 }
 
