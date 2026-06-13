@@ -3,6 +3,7 @@ import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
+import { sortMedia } from '@server/modules/media/media.sort';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
@@ -284,16 +285,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
           )
         );
         const filtered = all.filter((m) => matchedIds.has(m.id));
-
-        const sorted = (() => {
-          const dir = query.sort.endsWith('_desc') ? -1 : 1;
-          const field = query.sort.replace(/_(?:asc|desc)$/, '');
-          return filtered.slice().sort((a, b) => {
-            if (field === 'year') return dir * ((a.year ?? 0) - (b.year ?? 0));
-            if (field === 'status') return dir * (Number(a.hasFile) - Number(b.hasFile));
-            return dir * a.title.localeCompare(b.title);
-          });
-        })();
+        const sorted = sortMedia(filtered, query.sort, (m) => m.hasFile);
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,
@@ -316,16 +308,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
           )
         );
         const filtered = all.filter((s) => matchedIds.has(s.id));
-
-        const sorted = (() => {
-          const dir = query.sort.endsWith('_desc') ? -1 : 1;
-          const field = query.sort.replace(/_(?:asc|desc)$/, '');
-          return filtered.slice().sort((a, b) => {
-            if (field === 'year') return dir * ((a.year ?? 0) - (b.year ?? 0));
-            if (field === 'status') return dir * (Number(a.monitored) - Number(b.monitored));
-            return dir * a.title.localeCompare(b.title);
-          });
-        })();
+        const sorted = sortMedia(filtered, query.sort, (s) => s.monitored);
         return {
           ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
           yearRange,
