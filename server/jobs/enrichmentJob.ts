@@ -48,7 +48,7 @@ function keyTokens(key: EnrichmentKey): Token[] {
 export class EnrichmentJob {
   constructor(private deps: Deps) {}
 
-  async run(): Promise<void> {
+  async run(): Promise<number> {
     const now = Math.floor(Date.now() / 1000);
     const staleThreshold = now - STALENESS_SECONDS;
 
@@ -60,7 +60,7 @@ export class EnrichmentJob {
     const toEnrich = rows.filter(
       ({ enrichment }) => !enrichment || (enrichment.enrichedAt ?? 0) < staleThreshold
     );
-    if (toEnrich.length === 0) return;
+    if (toEnrich.length === 0) return 0;
 
     // ─── Collect contributions from every active bulk source (uniform) ────────
     const contributions = await this.collectBulkContributions();
@@ -97,6 +97,8 @@ export class EnrichmentJob {
           .values({ mediaIdentityId: identity.id, ...values, enrichedAt: now });
       }
     }
+
+    return toEnrich.length;
   }
 
   private async collectBulkContributions(): Promise<EnrichmentContribution[]> {

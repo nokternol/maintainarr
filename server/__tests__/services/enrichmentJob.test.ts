@@ -206,6 +206,29 @@ describe('EnrichmentJob', () => {
     expect(enr.plexLastViewedAt).toBe(1700000000);
   });
 
+  it('returns the number of identity rows it enriched', async () => {
+    const db = getDb();
+    const [id100] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'k1' })
+      .returning();
+    const [id200] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 200, plexRatingKey: 'k2' })
+      .returning();
+    await db.insert(mediaEnrichment).values([
+      { mediaIdentityId: id100.id, enrichedAt: STALE },
+      { mediaIdentityId: id200.id, enrichedAt: STALE },
+    ]);
+
+    const job = new EnrichmentJob({
+      db,
+      tautulliProvider: { getHistory: vi.fn().mockResolvedValue([]) },
+    });
+
+    expect(await job.run()).toBe(2);
+  });
+
   it('upserts tautulliPlayCount from history for a stale identity row', async () => {
     const db = getDb();
     const [identity] = await db

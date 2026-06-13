@@ -19,7 +19,7 @@ import type { SavedQueryService } from './savedQueryService';
 const log = getChildLogger('AutomationExecutor');
 
 export interface SystemTaskRunnerLike {
-  run(taskId: string): Promise<void>;
+  run(taskId: string): Promise<number>;
 }
 
 interface ExecutorDeps {
@@ -86,9 +86,13 @@ export class AutomationExecutor {
         if (!this.systemTaskRunner) {
           throw new Error('System automation requires a systemTaskRunner');
         }
-        await this.systemTaskRunner.run(automation.taskId);
-        await this.recordResult(automationId, { itemCount: 0, status: 'success', kind });
-        log.info('System automation executed', { automationId, taskId: automation.taskId });
+        itemCount = await this.systemTaskRunner.run(automation.taskId);
+        await this.recordResult(automationId, { itemCount, status: 'success', kind });
+        log.info('System automation executed', {
+          automationId,
+          taskId: automation.taskId,
+          itemCount,
+        });
         return;
       }
 

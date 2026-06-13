@@ -25,7 +25,7 @@ observable (assert the next read re-fetches). Only Phase 6 is visual, and it is 
 
 | Phase | Spec | Observable value | Depends on | Kind |
 |---|---|---|---|---|
-| **1** | `phase-1-run-changed-counts.md` | A system data run (enrichment / identity-resolution) records a **real `itemCount`** instead of hardcoded `0`. | — | TDD (backend) |
+| **1** | ✅ shipped | A system data run (enrichment / identity-resolution) records a **real `itemCount`** instead of hardcoded `0`. The job→runner→executor chain is typed `Promise<number>`; `runForPlex` counts rows actually changed via `rowsAffected`. | — | TDD (backend) |
 | **2** | `phase-2-domain-event-bus.md` | `executor.execute()` **emits** `run:started`, `run:completed` (post-commit, real ids), and `data:changed` (gated on declared scope + `itemCount > 0`) — asserted via a test subscriber. | P1 (honest counts make the gate meaningful) | TDD (backend) |
 | **3** | `phase-3-enrichment-cache.md` | After a `data:changed`, the **next** `listMovies`/`listSeries` re-fetches the enrichment maps; an unrelated run does **not** evict; a missed emit self-heals within the absolute 5-min TTL. | P2 (`data:changed`) | TDD (backend) |
 | **4** | `phase-4-sse-task-stream.md` | A run (incl. Run Now) pushes frames over `GET /api/events/tasks`; `useTaskEvents` patches the row to *running* then to the committed result; a mid-run (re)connect resyncs. | P2 (`run:*`) | TDD (backend + client hooks) |
