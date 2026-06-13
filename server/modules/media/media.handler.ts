@@ -1,17 +1,24 @@
+import type { DrizzleDb } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
-import { TautulliProvider } from '@server/providers/tautulliProvider';
+import { mergeEnrichment } from '@server/services/enrichmentMerge';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
-import { applyMovieFilters, applySeriesFilters } from '@server/utils/mediaFilters';
-import { buildWatchedTitleSet, isTitleWatched } from '@server/utils/watchedTitleMatching';
+import {
+  type ContentType,
+  type FilterValue,
+  type NormalizedMovie,
+  type NormalizedShow,
+  getFilterDef,
+} from '@server/utils/filterRegistry';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
@@ -21,44 +28,143 @@ const paginationQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().optional().default(48),
 });
 
-const moviesQuerySchema = paginationQuerySchema.extend({
-  title: z.string().optional(),
-  yearMin: z.coerce.number().int().optional(),
-  yearMax: z.coerce.number().int().optional(),
-  hasFile: z
+// Query-param coercion helpers (browse params arrive as strings).
+const num = () => z.coerce.number().optional();
+const intNum = () => z.coerce.number().int().optional();
+const bool3 = () =>
+  z
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
-    .optional(),
+    .optional();
+const sortField = z
+  .enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc'])
+  .optional()
+  .default('title_asc');
+
+// Fields valid for both content types — including the enriched predicates.
+const sharedFilterFields = {
+  title: z.string().optional(),
+  yearMin: intNum(),
+  yearMax: intNum(),
+  certification: z.string().optional(),
+  addedDaysAgoGte: intNum(),
+  addedDaysAgoLte: intNum(),
+  sizeOnDiskGbGte: num(),
+  sizeOnDiskGbLte: num(),
+  overseerrRequestStatus: intNum(),
+  overseerrHasIssue: bool3(),
+  tmdbStatus: z.string().optional(),
+  lastWatchedDaysAgoGte: intNum(),
+  lastWatchedDaysAgoLte: intNum(),
+  sort: sortField,
+  tautulliWatched: z.enum(['true', 'false']).optional(),
+};
+
+const moviesQuerySchema = paginationQuerySchema.extend({
+  ...sharedFilterFields,
+  hasFile: bool3(),
   movieTagIds: z.string().optional(),
   movieQualityProfileIds: z.string().optional(),
   movieGenres: z.string().optional(),
-  sort: z
-    .enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc'])
-    .optional()
-    .default('title_asc'),
-  tautulliWatched: z.enum(['true', 'false']).optional(),
+  radarrImdbRatingGte: num(),
+  radarrImdbRatingLte: num(),
 });
 
 const seriesQuerySchema = paginationQuerySchema.extend({
-  title: z.string().optional(),
-  yearMin: z.coerce.number().int().optional(),
-  yearMax: z.coerce.number().int().optional(),
-  monitored: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
+  ...sharedFilterFields,
+  monitored: bool3(),
   seriesStatus: z.string().optional(),
   seriesTagIds: z.string().optional(),
   seriesQualityProfileIds: z.string().optional(),
   seriesGenres: z.string().optional(),
   seriesType: z.string().optional(),
   network: z.string().optional(),
-  sort: z
-    .enum(['title_asc', 'title_desc', 'year_asc', 'year_desc', 'status_asc', 'status_desc'])
-    .optional()
-    .default('title_asc'),
-  tautulliWatched: z.enum(['true', 'false']).optional(),
+  sonarrRatingGte: num(),
+  sonarrRatingLte: num(),
+  sonarrEnded: bool3(),
+  sonarrLastAiredDaysAgoGte: intNum(),
+  sonarrLastAiredDaysAgoLte: intNum(),
+  sonarrPercentEpisodesGte: num(),
+  sonarrPercentEpisodesLte: num(),
 });
+
+// ─── Registry delegation ───────────────────────────────────────────────────────
+// The browse contract uses content-prefixed param names; the registry uses bare
+// keys. These maps bridge URL param → registry key so a single engine
+// (filterRegistry) backs both the browse path and the automation executor.
+
+const MOVIE_PARAM_TO_KEY: Record<string, string> = {
+  title: 'title',
+  yearMin: 'yearMin',
+  yearMax: 'yearMax',
+  hasFile: 'hasFile',
+  movieTagIds: 'tagIds',
+  movieQualityProfileIds: 'qualityProfileIds',
+  movieGenres: 'genres',
+  tautulliWatched: 'watched',
+  certification: 'certification',
+  addedDaysAgoGte: 'addedDaysAgoGte',
+  addedDaysAgoLte: 'addedDaysAgoLte',
+  sizeOnDiskGbGte: 'sizeOnDiskGbGte',
+  sizeOnDiskGbLte: 'sizeOnDiskGbLte',
+  radarrImdbRatingGte: 'imdbRatingGte',
+  radarrImdbRatingLte: 'imdbRatingLte',
+  overseerrRequestStatus: 'overseerrRequestStatus',
+  overseerrHasIssue: 'overseerrHasIssue',
+  tmdbStatus: 'tmdbStatus',
+  lastWatchedDaysAgoGte: 'lastWatchedDaysAgoGte',
+  lastWatchedDaysAgoLte: 'lastWatchedDaysAgoLte',
+};
+
+const SERIES_PARAM_TO_KEY: Record<string, string> = {
+  title: 'title',
+  yearMin: 'yearMin',
+  yearMax: 'yearMax',
+  monitored: 'monitored',
+  seriesStatus: 'seriesStatus',
+  seriesTagIds: 'tagIds',
+  seriesQualityProfileIds: 'qualityProfileIds',
+  seriesGenres: 'genres',
+  seriesType: 'seriesType',
+  network: 'network',
+  tautulliWatched: 'watched',
+  certification: 'certification',
+  addedDaysAgoGte: 'addedDaysAgoGte',
+  addedDaysAgoLte: 'addedDaysAgoLte',
+  sizeOnDiskGbGte: 'sizeOnDiskGbGte',
+  sizeOnDiskGbLte: 'sizeOnDiskGbLte',
+  sonarrRatingGte: 'communityRatingGte',
+  sonarrRatingLte: 'communityRatingLte',
+  sonarrEnded: 'ended',
+  sonarrLastAiredDaysAgoGte: 'lastAiredDaysAgoGte',
+  sonarrLastAiredDaysAgoLte: 'lastAiredDaysAgoLte',
+  sonarrPercentEpisodesGte: 'episodePercentageGte',
+  sonarrPercentEpisodesLte: 'episodePercentageLte',
+  overseerrRequestStatus: 'overseerrRequestStatus',
+  overseerrHasIssue: 'overseerrHasIssue',
+  tmdbStatus: 'tmdbStatus',
+  lastWatchedDaysAgoGte: 'lastWatchedDaysAgoGte',
+  lastWatchedDaysAgoLte: 'lastWatchedDaysAgoLte',
+};
+
+function filterViaRegistry<T extends NormalizedMovie | NormalizedShow>(
+  items: T[],
+  query: Record<string, unknown>,
+  contentType: ContentType,
+  paramMap: Record<string, string>
+): T[] {
+  const active = Object.entries(paramMap)
+    .map(([param, key]) => ({ key, value: query[param] }))
+    .filter((e) => e.value !== undefined);
+  if (active.length === 0) return items;
+  return items.filter((item) =>
+    active.every(({ key, value }) => {
+      const def = getFilterDef(key, contentType);
+      if (!def) return true;
+      return def.apply(item, value as FilterValue);
+    })
+  );
+}
 
 // ─── Handler-local helpers ────────────────────────────────────────────────────
 
@@ -78,6 +184,7 @@ function computeYearRange(items: Array<{ year?: number }>): {
 interface MediaCradle {
   providerSettingsService: ProviderSettingsService;
   providerFactory?: IProviderFactory;
+  db?: DrizzleDb;
 }
 
 export interface MediaError {
@@ -93,7 +200,7 @@ function toMediaError(providerName: string, err: unknown): MediaError {
 }
 
 export function createMediaHandlers(cradle: MediaCradle) {
-  const { providerSettingsService } = cradle;
+  const { providerSettingsService, db } = cradle;
   const factory = cradle.providerFactory ?? new ProviderFactory();
 
   // Caches are owned by this factory invocation — same inputs produce isolated state.
@@ -106,8 +213,6 @@ export function createMediaHandlers(cradle: MediaCradle) {
   }>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
-  // 5-minute TTL: watched-title sets change infrequently and fetching is expensive (1 000-row query)
-  const watchedTitlesCache = new MediaCache<Set<string>>(300_000);
 
   async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
     return moviesCache.getOrFetch('movies', async () => {
@@ -153,27 +258,6 @@ export function createMediaHandlers(cradle: MediaCradle) {
     });
   }
 
-  async function fetchWatchedTitles(): Promise<Set<string>> {
-    return watchedTitlesCache.getOrFetch('watchedTitles', async () => {
-      const tautulliProviders = await providerSettingsService.findActiveByTypes([
-        MetadataProviderType.TAUTULLI,
-      ]);
-      const rawTitles: string[] = [];
-      await Promise.all(
-        tautulliProviders.map(async (provider) => {
-          try {
-            const tautulli = new TautulliProvider(provider, log);
-            const titles = await tautulli.getWatchedTitles();
-            rawTitles.push(...titles);
-          } catch (err) {
-            log.warn('Tautulli watched titles fetch failed', { provider: provider.name, err });
-          }
-        })
-      );
-      return buildWatchedTitleSet(rawTitles);
-    });
-  }
-
   function invalidateMediaCaches(): void {
     moviesCache.invalidate('movies');
     seriesCache.invalidate('series');
@@ -192,13 +276,14 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { movies: all, errors } = await getMovies();
 
         const yearRange = computeYearRange(all);
-        let filtered = applyMovieFilters(all, query);
-
-        if (query.tautulliWatched !== undefined) {
-          const watchedTitles = await fetchWatchedTitles();
-          const want = query.tautulliWatched === 'true';
-          filtered = filtered.filter((m) => isTitleWatched(m.title, watchedTitles) === want);
-        }
+        const normalized = all.map(normalizeRadarrMovie);
+        if (db) await mergeEnrichment(db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
+        const matchedIds = new Set(
+          filterViaRegistry(normalized, query, 'movie', MOVIE_PARAM_TO_KEY).map(
+            (m) => m._sourceIds.radarr
+          )
+        );
+        const filtered = all.filter((m) => matchedIds.has(m.id));
 
         const sorted = (() => {
           const dir = query.sort.endsWith('_desc') ? -1 : 1;
@@ -223,13 +308,14 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { series: all, errors } = await getSeries();
 
         const yearRange = computeYearRange(all);
-        let filtered = applySeriesFilters(all, query);
-
-        if (query.tautulliWatched !== undefined) {
-          const watchedTitles = await fetchWatchedTitles();
-          const want = query.tautulliWatched === 'true';
-          filtered = filtered.filter((s) => isTitleWatched(s.title, watchedTitles) === want);
-        }
+        const normalized = all.map(normalizeSonarrSeries);
+        if (db) await mergeEnrichment(db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
+        const matchedIds = new Set(
+          filterViaRegistry(normalized, query, 'show', SERIES_PARAM_TO_KEY).map(
+            (s) => s._sourceIds.sonarr
+          )
+        );
+        const filtered = all.filter((s) => matchedIds.has(s.id));
 
         const sorted = (() => {
           const dir = query.sort.endsWith('_desc') ? -1 : 1;

@@ -11,6 +11,17 @@ Always stop any server or dev process you start before ending your response. Thi
 
 Use `pkill -f "<process pattern>"` or track the PID at start and kill it explicitly. Do not leave background processes running — the user will find stale `yarn dev` or `yarn ladle` instances after every session otherwise.
 
+## Writing: comments, commits, PRs
+
+Everything written into the repo must be **durable** — describe the thing as it stands (what/why), not the process that produced it or transient session context. Anything grounded in "current context" that isn't in the artifact drifts stale.
+
+- **Code comments:** explain what the code does/why, not "changed from…", "now we…", or migration narration.
+- **Commits & PR bodies:** describe the delivered end-state — What / Why / Changes / Testing. Never the journey (no "first… then…", no RED/GREEN/REFACTOR steps, no cycle-by-cycle evolution).
+
+## UI changes
+
+Ladle story first, then in-place. (1) Create/update the component's `.stories.tsx`; `yarn ladle serve` + `playwright-cli` to iterate in isolation. (2) Then `yarn dev` + `playwright-cli` to verify in context. Don't skip the story step for non-trivial component work.
+
 ## Docs convention
 
 | Directory | What it means | How to treat it |

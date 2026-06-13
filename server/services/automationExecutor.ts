@@ -1,19 +1,17 @@
-import { and, eq, inArray } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
-import { mediaEnrichment, mediaIdentity } from '../database/schema';
 import type { MetadataProvider } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '../providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
-import type { RadarrMovie } from '../providers/radarrProvider';
 import type { RadarrProvider } from '../providers/radarrProvider';
-import type { SonarrSeries } from '../providers/sonarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
 import { getFilterDef } from '../utils/filterRegistry';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
+import { mergeEnrichment } from './enrichmentMerge';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { FilterValueEntry } from './savedQueryService';
 import type { SavedQueryService } from './savedQueryService';
@@ -32,47 +30,6 @@ interface ExecutorDeps {
   providerFactory?: IProviderFactory;
   db?: DrizzleDb;
   systemTaskRunner?: SystemTaskRunnerLike;
-}
-
-// ─── Normalizers ──────────────────────────────────────────────────────────────
-
-function normalizeRadarrMovie(m: RadarrMovie): NormalizedMovie {
-  return {
-    _sourceIds: { radarr: m.id },
-    title: m.title,
-    year: m.year,
-    hasFile: m.hasFile,
-    monitored: m.monitored,
-    qualityProfileId: m.qualityProfileId,
-    tags: m.tags,
-    genres: m.genres,
-    addedDate: m.added,
-    sizeOnDiskBytes: m.statistics?.sizeOnDisk,
-    certification: m.certification,
-    imdbRating: m.ratings?.imdb?.value,
-  };
-}
-
-function normalizeSonarrSeries(s: SonarrSeries): NormalizedShow {
-  return {
-    _sourceIds: { sonarr: s.id },
-    title: s.title,
-    year: s.year,
-    monitored: s.monitored,
-    qualityProfileId: s.qualityProfileId,
-    tags: s.tags,
-    genres: s.genres,
-    addedDate: s.added,
-    sizeOnDiskBytes: s.statistics?.sizeOnDisk,
-    certification: s.certification,
-    seriesType: s.seriesType as NormalizedShow['seriesType'],
-    network: s.network,
-    status: s.status as NormalizedShow['status'],
-    ended: s.ended,
-    episodePercentage: s.statistics?.percentOfEpisodes,
-    lastAiredAt: s.previousAiring,
-    communityRating: s.ratings?.value,
-  };
 }
 
 // ─── Filter application ───────────────────────────────────────────────────────
@@ -172,13 +129,7 @@ export class AutomationExecutor {
       const radarr = provider as RadarrProvider;
       const movies = await radarr.getMovies();
       const normalized = movies.map(normalizeRadarrMovie);
-      if (this.db)
-        await this.mergeEnrichment(
-          normalized,
-          movies.map((m) => m.id),
-          'RADARR',
-          (m) => m._sourceIds.radarr
-        );
+      if (this.db) await mergeEnrichment(this.db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
       for (let i = 0; i < sources.length; i++) {
         const matched = applyFilters(normalized, queryDtos[i].filterValues, 'movie');
         queryResults.push({
@@ -197,13 +148,7 @@ export class AutomationExecutor {
       const sonarr = provider as SonarrProvider;
       const series = await sonarr.getSeries();
       const normalized = series.map(normalizeSonarrSeries);
-      if (this.db)
-        await this.mergeEnrichment(
-          normalized,
-          series.map((s) => s.id),
-          'SONARR',
-          (s) => s._sourceIds.sonarr
-        );
+      if (this.db) await mergeEnrichment(this.db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
       for (let i = 0; i < sources.length; i++) {
         const matched = applyFilters(normalized, queryDtos[i].filterValues, 'show');
         queryResults.push({
@@ -219,51 +164,6 @@ export class AutomationExecutor {
     }
 
     return 0;
-  }
-
-  private async mergeEnrichment<T extends NormalizedMovie | NormalizedShow>(
-    normalized: T[],
-    sourceIds: number[],
-    sourceType: 'RADARR' | 'SONARR',
-    getSourceId: (item: T) => number | undefined
-  ): Promise<void> {
-    if (!this.db || sourceIds.length === 0) return;
-    const identities = await this.db
-      .select()
-      .from(mediaIdentity)
-      .where(
-        and(eq(mediaIdentity.sourceType, sourceType), inArray(mediaIdentity.sourceId, sourceIds))
-      );
-    if (identities.length === 0) return;
-    const identityIdToSourceId = new Map(identities.map((i) => [i.id, i.sourceId]));
-    const enrichments = await this.db
-      .select()
-      .from(mediaEnrichment)
-      .where(
-        inArray(
-          mediaEnrichment.mediaIdentityId,
-          identities.map((i) => i.id)
-        )
-      );
-    const enrichBySourceId = new Map<number, (typeof enrichments)[number]>();
-    for (const enr of enrichments) {
-      const sourceId = identityIdToSourceId.get(enr.mediaIdentityId);
-      if (sourceId !== undefined) enrichBySourceId.set(sourceId, enr);
-    }
-    for (const item of normalized) {
-      const id = getSourceId(item);
-      if (id === undefined) continue;
-      const enr = enrichBySourceId.get(id);
-      if (!enr) continue;
-      const rawPlay = enr.tautulliPlayCount ?? enr.plexViewCount ?? null;
-      item.playCount = rawPlay !== null ? rawPlay : undefined;
-      const rawTs = enr.tautulliLastPlayed ?? enr.plexLastViewedAt ?? null;
-      item.lastWatchedAt = rawTs !== null ? new Date(rawTs * 1000).toISOString() : undefined;
-      if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue;
-      if (enr.overseerrRequestStatus !== null)
-        item.overseerrRequestStatus = enr.overseerrRequestStatus;
-      if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus ?? undefined;
-    }
   }
 
   private async recordResult(
