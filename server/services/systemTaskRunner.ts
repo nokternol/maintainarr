@@ -1,11 +1,11 @@
 export interface IdentityJobLike {
-  runForMovies(): Promise<void>;
-  runForSeries(): Promise<void>;
-  runForPlex(): Promise<void>;
+  runForMovies(): Promise<number>;
+  runForSeries(): Promise<number>;
+  runForPlex(): Promise<number>;
 }
 
 export interface EnrichmentJobLike {
-  run(): Promise<void>;
+  run(): Promise<number>;
 }
 
 export interface IdentityJobFactoryLike {
@@ -30,18 +30,17 @@ export class SystemTaskRunner {
     this.enrichmentJobFactory = deps.enrichmentJobFactory;
   }
 
-  async run(taskId: string): Promise<void> {
+  async run(taskId: string): Promise<number> {
     if (taskId === 'system:identity-resolution') {
       const job = await this.identityJobFactory.create();
-      await job.runForMovies();
-      await job.runForSeries();
-      await job.runForPlex();
-      return;
+      const movies = await job.runForMovies();
+      const series = await job.runForSeries();
+      const plex = await job.runForPlex();
+      return movies + series + plex;
     }
     if (taskId === 'system:enrichment') {
       const job = await this.enrichmentJobFactory.create();
-      await job.run();
-      return;
+      return await job.run();
     }
     throw new Error(`Task "${taskId}" is not yet implemented`);
   }

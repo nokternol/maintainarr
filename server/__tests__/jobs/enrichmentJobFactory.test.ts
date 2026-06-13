@@ -84,6 +84,6 @@ describe('EnrichmentJobFactory', () => {
 
     const job = await makeFactory().create();
 
-    await expect(job.run()).resolves.toBeUndefined();
+    await expect(job.run()).resolves.toBeTypeOf('number');
   });
 });

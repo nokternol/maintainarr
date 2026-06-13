@@ -79,6 +79,23 @@ describe('IdentityResolutionJob', () => {
     expect(rows[0].plexRatingKey).toBe('plex-key-42');
   });
 
+  it('runForPlex counts rows actually changed, not Plex items processed', async () => {
+    const db = getDb();
+    // one identity exists for tmdbId=100; nothing for tmdbId=999
+    await db.insert(mediaIdentity).values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 });
+
+    const plexProvider = {
+      getAllItems: vi.fn().mockResolvedValue([
+        { ratingKey: 'plex-match', guids: [{ id: 'tmdb://100' }] }, // updates 1 row
+        { ratingKey: 'plex-miss', guids: [{ id: 'tmdb://999' }] }, // matches no row
+      ]),
+    };
+
+    const job = new IdentityResolutionJob({ db, plexProvider });
+
+    expect(await job.runForPlex()).toBe(1);
+  });
+
   it('upserts Radarr movies into media_identity with sourceType=RADARR', async () => {
     const db = getDb();
     const radarrProvider = { getMovies: vi.fn().mockResolvedValue([makeMovie()]) };
@@ -146,6 +163,49 @@ describe('IdentityResolutionJob', () => {
     const rows = await db.select().from(mediaIdentity);
     expect(rows).toHaveLength(1);
     expect(rows[0].tvMazeId).toBe(999);
+  });
+
+  it('runForMovies returns the number of movies it upserted', async () => {
+    const db = getDb();
+    const radarrProvider = {
+      getMovies: vi
+        .fn()
+        .mockResolvedValue([makeMovie({ id: 1, tmdbId: 100 }), makeMovie({ id: 2, tmdbId: 200 })]),
+    };
+
+    const job = new IdentityResolutionJob({ db, radarrProvider });
+
+    expect(await job.runForMovies()).toBe(2);
+  });
+
+  it('runForMovies returns 0 when no Radarr provider is configured', async () => {
+    const db = getDb();
+    const job = new IdentityResolutionJob({ db });
+
+    expect(await job.runForMovies()).toBe(0);
+  });
+
+  it('runForSeries returns the number of series it upserted', async () => {
+    const db = getDb();
+    const sonarrProvider = {
+      getSeries: vi
+        .fn()
+        .mockResolvedValue([
+          makeSeries({ id: 10, tvdbId: 200 }),
+          makeSeries({ id: 11, tvdbId: 201 }),
+        ]),
+    };
+
+    const job = new IdentityResolutionJob({ db, sonarrProvider });
+
+    expect(await job.runForSeries()).toBe(2);
+  });
+
+  it('runForSeries returns 0 when no Sonarr provider is configured', async () => {
+    const db = getDb();
+    const job = new IdentityResolutionJob({ db });
+
+    expect(await job.runForSeries()).toBe(0);
   });
 
   it('is idempotent — re-running with same movies does not duplicate rows', async () => {

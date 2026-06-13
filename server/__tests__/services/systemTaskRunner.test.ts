@@ -7,16 +7,20 @@ import type {
 } from '@server/services/systemTaskRunner';
 import { describe, expect, it, vi } from 'vitest';
 
-function makeIdentityJob(): IdentityJobLike {
+function makeIdentityJob(counts?: {
+  movies?: number;
+  series?: number;
+  plex?: number;
+}): IdentityJobLike {
   return {
-    runForMovies: vi.fn(async () => {}),
-    runForSeries: vi.fn(async () => {}),
-    runForPlex: vi.fn(async () => {}),
+    runForMovies: vi.fn(async () => counts?.movies ?? 0),
+    runForSeries: vi.fn(async () => counts?.series ?? 0),
+    runForPlex: vi.fn(async () => counts?.plex ?? 0),
   };
 }
 
-function makeEnrichmentJob(): EnrichmentJobLike {
-  return { run: vi.fn(async () => {}) };
+function makeEnrichmentJob(count = 0): EnrichmentJobLike {
+  return { run: vi.fn(async () => count) };
 }
 
 function factoryReturning<T>(job: T): { create: ReturnType<typeof vi.fn> } {
@@ -68,6 +72,20 @@ describe('SystemTaskRunner', () => {
     await runner.run('system:identity-resolution');
 
     expect(enrichmentJobFactory.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the enrichment job count for system:enrichment', async () => {
+    const { runner } = makeRunner({ enrichmentJob: makeEnrichmentJob(7) });
+
+    expect(await runner.run('system:enrichment')).toBe(7);
+  });
+
+  it('returns the sum of the three identity counts for system:identity-resolution', async () => {
+    const { runner } = makeRunner({
+      identityJob: makeIdentityJob({ movies: 3, series: 4, plex: 2 }),
+    });
+
+    expect(await runner.run('system:identity-resolution')).toBe(9);
   });
 
   it('throws for an unknown task id', async () => {

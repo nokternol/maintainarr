@@ -119,7 +119,7 @@ describe('AutomationExecutor', () => {
 
     it('runs the system task and records a success run with kind=system, without the provider path', async () => {
       const db = getDb();
-      const run = vi.fn(async () => {});
+      const run = vi.fn(async () => 0);
       const systemExecutor = new AutomationExecutor({
         automationService,
         automationRunService: new AutomationRunService({ db }),
@@ -138,6 +138,25 @@ describe('AutomationExecutor', () => {
       expect(runs[0].kind).toBe('system');
     });
 
+    it('records the runner-reported changed count as itemCount, not a hardcoded 0', async () => {
+      const db = getDb();
+      const run = vi.fn(async () => 5);
+      const systemExecutor = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run },
+      });
+      const id = await seedSystemAutomation('system:enrichment');
+
+      await systemExecutor.execute(id);
+
+      const runs = await db.select().from(automationRuns);
+      expect(runs).toHaveLength(1);
+      expect(runs[0].itemCount).toBe(5);
+    });
+
     it('does not start a second run while a run for the same id is in flight', async () => {
       const db = getDb();
       let release!: () => void;
@@ -146,6 +165,7 @@ describe('AutomationExecutor', () => {
       });
       const run = vi.fn(async () => {
         await gate;
+        return 0;
       });
       const guardedExecutor = new AutomationExecutor({
         automationService,
