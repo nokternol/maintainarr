@@ -49,7 +49,12 @@ API routes must enforce:
 
 ## UI placement
 
-- **Main dashboard** — user automations, fully configurable, run history, enable/disable
-- **System panel** (settings or dedicated system page) — system automations, read-only,
-  shows schedule, last run, next run, run history. Makes system health observable without
-  requiring console access.
+- **Main dashboard / Automations** — user automations, fully configurable, run history,
+  Run Now + Disable + Archive.
+- **System → Tasks** — system automations. Read-only **except Run Now** — schedule, last run,
+  next run, run history, plus on-demand execution. Makes system health observable and operable
+  without console access.
+
+> The verb model (Run Now / Disable / Archive — not Play/Pause) and the rule that system tasks are
+> Run-Now-only are detailed in `automation-verbs-and-separation.md`. That supersedes the bare
+> "read-only" wording above: Run Now is the one operator action permitted on a system task.
