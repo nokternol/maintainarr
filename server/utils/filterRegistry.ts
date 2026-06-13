@@ -14,7 +14,7 @@ export interface FilterDefinition<
   key: string;
   label: string;
   contentTypes: ContentType[];
-  dataType: 'boolean' | 'number' | 'string' | 'csv-ids';
+  dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings';
   sourceProviders: MetadataProviderType[];
   required: boolean;
   apply: (item: T, value: FilterValue) => boolean;
@@ -163,7 +163,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     key: 'certification',
     label: 'Certification',
     contentTypes: ['movie', 'show'],
-    dataType: 'csv-ids',
+    dataType: 'csv-strings',
     sourceProviders: [
       MetadataProviderType.RADARR,
       MetadataProviderType.SONARR,
@@ -220,7 +220,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     key: 'genres',
     label: 'Genres',
     contentTypes: ['movie'],
-    dataType: 'csv-ids',
+    dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.TMDB],
     required: false,
     apply: (item, value) => {
@@ -305,7 +305,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     key: 'genres',
     label: 'Genres',
     contentTypes: ['show'],
-    dataType: 'csv-ids',
+    dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TMDB],
     required: false,
     apply: (item, value) => {
@@ -329,7 +329,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     key: 'network',
     label: 'Network',
     contentTypes: ['show'],
-    dataType: 'csv-ids',
+    dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TVMAZE],
     required: false,
     apply: (item, value) => {

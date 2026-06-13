@@ -79,7 +79,7 @@ describe('GET /api/filter-fields', () => {
     for (const field of res.body) {
       expect(field.key).toBeTruthy();
       expect(field.label).toBeTruthy();
-      expect(['boolean', 'number', 'string', 'csv-ids']).toContain(field.dataType);
+      expect(['boolean', 'number', 'string', 'csv-ids', 'csv-strings']).toContain(field.dataType);
       expect(Array.isArray(field.contentTypes)).toBe(true);
     }
   });

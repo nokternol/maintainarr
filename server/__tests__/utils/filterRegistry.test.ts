@@ -58,11 +58,36 @@ describe('FILTER_REGISTRY', () => {
       expect(def.key).toBeTruthy();
       expect(def.label).toBeTruthy();
       expect(def.contentTypes.length).toBeGreaterThan(0);
-      expect(['boolean', 'number', 'string', 'csv-ids']).toContain(def.dataType);
+      expect(['boolean', 'number', 'string', 'csv-ids', 'csv-strings']).toContain(def.dataType);
       expect(def.sourceProviders.length).toBeGreaterThan(0);
       expect(typeof def.required).toBe('boolean');
       expect(typeof def.apply).toBe('function');
     }
+  });
+});
+
+// ─── dataType classification ───────────────────────────────────────────────────
+// The dataType is the contract the client reads to choose an input widget: `csv-ids`
+// means numeric ids, `csv-strings` means free-text tokens. It must match what the
+// predicate parses, otherwise the UI offers the wrong control.
+
+describe('dataType classification', () => {
+  it('genres compares strings — csv-strings, both content types', () => {
+    expect(getFilterDef('genres', 'movie')!.dataType).toBe('csv-strings');
+    expect(getFilterDef('genres', 'show')!.dataType).toBe('csv-strings');
+  });
+
+  it('certification compares strings — csv-strings', () => {
+    expect(getFilterDef('certification', 'movie')!.dataType).toBe('csv-strings');
+  });
+
+  it('network compares strings — csv-strings', () => {
+    expect(getFilterDef('network', 'show')!.dataType).toBe('csv-strings');
+  });
+
+  it('tagIds / qualityProfileIds compare numeric ids — csv-ids', () => {
+    expect(getFilterDef('tagIds', 'movie')!.dataType).toBe('csv-ids');
+    expect(getFilterDef('qualityProfileIds', 'movie')!.dataType).toBe('csv-ids');
   });
 });
 
