@@ -66,6 +66,21 @@ The dispatch entries carry the scope alongside the handler. Today `RADARR_TASKS`
 
 The knowledge of "did this change data" lives with the task definition, not scattered across handlers.
 
+### Per-producer `sourceType` (verified against the writers)
+
+`sourceType` is **not** a single property of the task — it depends on what the producer touches:
+
+- **User tasks carry a specific source.** `unmonitorMovie` writes Radarr → `sourceType:'RADARR'`;
+  `unmonitorSeries` writes Sonarr → `sourceType:'SONARR'`. Derivable from the query's `contentType`
+  (`movie`→RADARR, `show`→SONARR) at the emit site.
+- **System data jobs span everything → `sourceType` absent (evict both).** `system:enrichment`
+  enriches *all* identities regardless of source (`enrichmentJob.ts`); `system:identity-resolution`
+  runs movies + series + plex in one task (`identityResolutionJob.ts`). Neither can name one source, so
+  both emit with `sourceType` undefined ⇒ both movie and series lists evict.
+
+So the gate's `sourceType` is computed per producer, not read off a static field: specific for user
+unmonitor tasks, absent for the system jobs.
+
 ## Producers & consumers
 
 - **Producer:** `AutomationExecutor.execute()` — `run:started`, `run:completed`, and gated
@@ -92,10 +107,13 @@ The knowledge of "did this change data" lives with the task definition, not scat
 5. **Task scope declaration.** RED: the dispatch entry for `unmonitorMovie` exposes `affects:'media'`;
    `triggerSearch` exposes none. GREEN: reshape entries to `{ run, affects? }`; update call sites
    (`:147`,`:166`). REFACTOR.
-6. **`data:changed` gated.** RED: a scoped task with `itemCount>0` emits `data:changed` with the right
-   `sourceType`; the same task with `itemCount===0` emits nothing; a no-scope task (`triggerSearch`,
-   backup) emits nothing regardless of count. GREEN: implement the gate at the emit site. REFACTOR:
-   derive `sourceType` from the task's content type in one place.
+6. **`data:changed` gated.** RED: a scoped task with `itemCount>0` emits `data:changed`; the same task
+   with `itemCount===0` emits nothing; a no-scope task (`triggerSearch`, backup) emits nothing
+   regardless of count. GREEN: implement the gate at the emit site. REFACTOR.
+7. **`sourceType` per producer.** RED: `unmonitorMovie` emits `sourceType:'RADARR'`, `unmonitorSeries`
+   `'SONARR'` (from `contentType`); `system:enrichment` and `system:identity-resolution` emit with
+   `sourceType` **absent** (they span both). GREEN: compute `sourceType` per producer at the emit site.
+   REFACTOR: one helper mapping producer→sourceType.
 
 ## Why not the alternatives
 

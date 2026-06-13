@@ -34,12 +34,23 @@ gate would suppress events for the very producers — `system:enrichment`, `syst
 
 ## Target shape
 
-Thread a count up the chain, narrowest signature that carries it:
+Thread a count up the chain, narrowest signature that carries it. The count source for each writer
+(verified against the code):
 
-- `EnrichmentJobLike.run(): Promise<number>` — rows enriched (the job already computes `toEnrich` /
-  `contributions`; return its length).
-- `IdentityJobLike.runForMovies/Series/Plex(): Promise<number>` — rows resolved; `SystemTaskRunner`
-  sums the three for `system:identity-resolution`.
+- `EnrichmentJobLike.run(): Promise<number>` — **return `toEnrich.length`** (`enrichmentJob.ts:51`).
+  It is already computed and in scope; the early `if (toEnrich.length === 0) return` path returns `0`.
+  Over-counts only the staleness-refresh case (a stale row re-written with identical values, bumping
+  `enrichedAt`) — safe over-eviction under the contract.
+- `IdentityJobLike.runForMovies/Series/Plex(): Promise<number>` —
+  - `runForMovies` (`:96`) and `runForSeries` (`:51`): one `insert…onConflictDoUpdate` **per item**, and
+    an upsert always touches a row → return `movies.length` / `series.length` (guarded `0` when the
+    provider is absent).
+  - `runForPlex` (`:30`): writes are **conditional** — an `update … where tmdbId = X` fires only on a
+    matching guid and may affect **0 rows** if no identity has that id yet. `items.length` would be
+    wrong here. Count the rows **actually changed** (prefer the better-sqlite3 `.changes` rows-affected
+    per statement; fall back to counting matched-guid updates issued). This is the only writer where
+    "statements issued" ≠ "rows changed".
+  - `SystemTaskRunner` **sums the three** for `system:identity-resolution`.
 - `SystemTaskRunner.run(taskId): Promise<number>` — the per-task changed-row count.
 - `AutomationExecutor.execute()` — replace the hardcoded `0` with the runner's returned count for the
   system branch; user branch unchanged.
@@ -49,12 +60,15 @@ Thread a count up the chain, narrowest signature that carries it:
 1. **`EnrichmentJob.run` returns rows-enriched.** RED: a test asserting `run()` resolves to the count
    of rows it wrote (0 when `toEnrich` is empty, N otherwise). GREEN: change return type, return the
    length. REFACTOR: name the count at its source.
-2. **`IdentityJob.runFor*` return rows-resolved.** RED: each of the three resolves to its written-row
-   count. GREEN: return counts. REFACTOR: dedupe the count derivation across the three if shaped alike.
-3. **`SystemTaskRunner.run` returns the task's count.** RED: `run('system:enrichment')` → the job's
+2. **`IdentityJob.runForMovies/Series` return rows-resolved.** RED: each resolves to `items.length`
+   (every upsert touches a row); `0` when the provider is absent. GREEN: return counts. REFACTOR.
+3. **`IdentityJob.runForPlex` counts rows *actually changed*.** RED: items whose guids match **0**
+   identity rows contribute `0` to the count; a guid that updates a real row contributes `1` (never
+   `items.length`). GREEN: count via rows-affected (`.changes`) or matched-guid updates. REFACTOR.
+4. **`SystemTaskRunner.run` returns the task's count.** RED: `run('system:enrichment')` → the job's
    count; `run('system:identity-resolution')` → the sum of the three; unknown id behaviour preserved.
    GREEN: change signature, propagate/sum. REFACTOR.
-4. **Executor records the real system count.** RED: an integration test — execute a system automation
+5. **Executor records the real system count.** RED: an integration test — execute a system automation
    whose job wrote N rows; assert the recorded `automation_runs.itemCount === N` (not 0). GREEN: pass
    the runner's return into `recordResult`. REFACTOR: collapse the system/user branches' `recordResult`
    calls if they converge.

@@ -55,6 +55,13 @@ backstop's only purpose. Provider lists stay at their own 60s (they drift from o
 - **Thrash** = under Run Now + many overlapping data tasks, N rapid `data:changed` → N evict/refetch
   cycles. A *performance* concern, handled by debounce.
 
+> **Watch-item — scheduled enrichment re-eviction.** `system:enrichment` re-writes any *stale* identity
+> row (bumping `enrichedAt`) even when the merged values are unchanged, so it emits `data:changed`
+> (`sourceType` absent → evicts both lists) on every scheduled pass. The absolute 5-min TTL and ~250ms
+> debounce make this harmless at normal cadence, but a very frequent enrichment schedule becomes a
+> source of steady-state full-cache eviction. If observed, this is the trigger for keyed eviction
+> below — not a v1 concern.
+
 ### v1: scope-selective + debounce
 
 - `data:changed{scope:'media', sourceType}` evicts only the matching list — `RADARR`→movies,
