@@ -2,19 +2,24 @@ import StatusDot from '@app/components/StatusDot';
 import type { AutomationDto } from '@app/hooks/useAutomations';
 import { cn } from '@app/lib/utils/cn';
 import { relativeTime, safeHumanSchedule } from '@app/lib/utils/time';
-import { Pause, Play, Trash2 } from 'lucide-react';
+import { Pause, Play, Trash2, Zap } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AutomationRow({
   automation,
   onToggle,
   onDelete,
+  onRun,
 }: {
   automation: AutomationDto;
   onToggle: () => void;
   onDelete: () => void;
+  onRun?: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  // System automations are invariants: they can only be run on demand. The schedule toggle and
+  // delete (both forbidden by the API for kind=system) are user-automation controls only.
+  const isUserAutomation = automation.kind !== 'system';
   const nextRunLabel = automation.nextRun ? relativeTime(automation.nextRun) : null;
   const lastRunLabel = automation.lastRun ? relativeTime(automation.lastRun.at) : null;
 
@@ -90,26 +95,40 @@ export default function AutomationRow({
           </div>
         ) : (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={onToggle}
-              title={automation.status === 'active' ? 'Pause' : 'Resume'}
-              className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            >
-              {automation.status === 'active' ? (
-                <Pause size={12} strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <Play size={12} strokeWidth={2} aria-hidden="true" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              title="Delete automation"
-              className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-danger/10 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger"
-            >
-              <Trash2 size={12} strokeWidth={2} aria-hidden="true" />
-            </button>
+            {onRun && (
+              <button
+                type="button"
+                onClick={onRun}
+                title="Run now"
+                className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-primary hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              >
+                <Zap size={12} strokeWidth={2} aria-hidden="true" />
+              </button>
+            )}
+            {isUserAutomation && (
+              <>
+                <button
+                  type="button"
+                  onClick={onToggle}
+                  title={automation.status === 'active' ? 'Pause' : 'Resume'}
+                  className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                >
+                  {automation.status === 'active' ? (
+                    <Pause size={12} strokeWidth={2} aria-hidden="true" />
+                  ) : (
+                    <Play size={12} strokeWidth={2} aria-hidden="true" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(true)}
+                  title="Delete automation"
+                  className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-danger/10 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger"
+                >
+                  <Trash2 size={12} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

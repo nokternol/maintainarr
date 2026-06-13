@@ -26,7 +26,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 export default function AutomationsPage() {
   const router = useRouter();
   const { queries, remove: removeQuery } = useSavedQueries();
-  const { automations, isCreating, create, setStatus, remove: removeAutomation } = useAutomations();
+  const {
+    automations,
+    isCreating,
+    create,
+    setStatus,
+    remove: removeAutomation,
+    run,
+  } = useAutomations();
   const [showBuilder, setShowBuilder] = useState(false);
 
   const handleLoad = (_query: SavedQuery) => {
@@ -136,6 +143,9 @@ export default function AutomationsPage() {
                   }}
                   onDelete={() => {
                     void removeAutomation(a.id);
+                  }}
+                  onRun={() => {
+                    void run(a.id);
                   }}
                 />
               ))}

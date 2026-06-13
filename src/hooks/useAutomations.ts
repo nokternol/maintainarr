@@ -64,8 +64,9 @@ async function deleteAutomation(_key: string, { arg }: { arg: number }): Promise
   if (!res.ok) throw new Error('Failed to delete automation');
 }
 
-export function useAutomations() {
-  const { data: automations = [], isLoading, mutate } = useSWR(KEY, fetchAutomations);
+export function useAutomations(options?: { kind?: 'user' | 'system' }) {
+  const key = options?.kind ? `${KEY}?kind=${options.kind}` : KEY;
+  const { data: automations = [], isLoading, mutate } = useSWR(key, fetchAutomations);
 
   const { trigger: triggerCreate, isMutating: isCreating } = useSWRMutation(KEY, createAutomation);
   const { trigger: triggerStatus } = useSWRMutation(KEY, updateStatus);
@@ -90,5 +91,10 @@ export function useAutomations() {
     await mutate();
   };
 
-  return { automations, isLoading, isCreating, create, setStatus, remove };
+  const run = async (id: number): Promise<void> => {
+    const res = await fetch(`${KEY}/${id}/run`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to run automation');
+  };
+
+  return { automations, isLoading, isCreating, create, setStatus, remove, run };
 }

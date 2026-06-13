@@ -45,6 +45,36 @@ describe('AutomationRow', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
+  it('calls onRun when the run-now button is clicked', async () => {
+    const user = userEvent.setup();
+    const onRun = vi.fn();
+    render(
+      <AutomationRow
+        automation={mockAutomation}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onRun={onRun}
+      />
+    );
+    await user.click(screen.getByTitle('Run now'));
+    expect(onRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows only Run-now for a system automation — no schedule toggle, no delete', () => {
+    const systemAutomation: AutomationDto = { ...mockAutomation, kind: 'system' };
+    render(
+      <AutomationRow
+        automation={systemAutomation}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onRun={vi.fn()}
+      />
+    );
+    expect(screen.getByTitle('Run now')).toBeInTheDocument();
+    expect(screen.queryByTitle('Pause')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Delete automation')).not.toBeInTheDocument();
+  });
+
   it('requires confirmation before calling onDelete', async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();

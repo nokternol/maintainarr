@@ -57,6 +57,46 @@ describe('useAutomations — create sends querySources', () => {
   });
 });
 
+describe('useAutomations — kind filter', () => {
+  it('requests ?kind=system when called with { kind: "system" }', async () => {
+    let requestedUrl = '';
+    server.use(
+      http.get('/api/automations', ({ request }) => {
+        requestedUrl = request.url;
+        return HttpResponse.json({ data: [] });
+      })
+    );
+
+    const { result } = renderHook(() => useAutomations({ kind: 'system' }), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(requestedUrl).toContain('kind=system');
+  });
+});
+
+describe('useAutomations — run now', () => {
+  it('POSTs to /api/automations/:id/run when run() is called', async () => {
+    const requests: string[] = [];
+    server.use(
+      http.get('/api/automations', () => HttpResponse.json({ data: [makeAutomation({ id: 7 })] })),
+      http.post('/api/automations/7/run', ({ request }) => {
+        requests.push(`POST ${request.url}`);
+        return new HttpResponse(null, { status: 202 });
+      })
+    );
+
+    const { result } = renderHook(() => useAutomations(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.run(7);
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatch(/\/api\/automations\/7\/run$/);
+  });
+});
+
 describe('useAutomations — network call count', () => {
   it('create fires exactly one network request (POST, no subsequent GET)', async () => {
     const requests: string[] = [];
