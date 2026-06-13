@@ -1,8 +1,9 @@
 import AppLayout from '@app/components/AppLayout';
-import Card from '@app/components/Card';
+import AutomationRow from '@app/components/AutomationRow';
 import EmptyState from '@app/components/EmptyState';
 import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
+import { useAutomations } from '@app/hooks/useAutomations';
 import { requireAuth } from '@app/lib/utils/requireAuth';
 import { Monitor } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
@@ -16,19 +17,57 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 const MonitorIcon = () => <Monitor className="w-12 h-12" strokeWidth={1.5} />;
 
 export default function SystemPage() {
+  const { automations, isLoading, run } = useAutomations({ kind: 'system' });
+
   return (
     <AppLayout
       sidebar={<SidebarNav />}
       topBar={<TopBar title="System" breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }]} />}
     >
-      <div className="p-6">
-        <Card variant="outlined" padding="none">
-          <EmptyState
-            icon={<MonitorIcon />}
-            title="System information"
-            description="Server status, version details, and diagnostics will be displayed here."
-          />
-        </Card>
+      <div className="p-6 max-w-4xl">
+        <section aria-labelledby="system-automations-heading">
+          <div className="flex items-center gap-3 mb-1">
+            <Monitor size={16} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+            <h2 id="system-automations-heading" className="text-sm font-semibold text-text-primary">
+              System tasks
+            </h2>
+          </div>
+          <p className="text-xs text-text-muted mb-4 ml-[28px]">
+            Built-in data jobs. Their task and schedule are fixed; you can pause or run them on
+            demand.
+          </p>
+
+          {!isLoading && automations.length === 0 ? (
+            <div className="rounded-lg border border-border bg-surface-panel overflow-hidden">
+              <EmptyState
+                icon={<MonitorIcon />}
+                title="No system tasks"
+                description="System data jobs will appear here once configured."
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border bg-surface-panel overflow-hidden">
+              <div className="hidden sm:grid sm:grid-cols-[1fr_160px_168px_88px] items-center px-4 py-2 border-b border-border bg-surface-bg/30">
+                <span className="text-xs font-medium text-text-muted">Task</span>
+                <span className="text-xs font-medium text-text-muted">Schedule</span>
+                <span className="text-xs font-medium text-text-muted">Last run</span>
+                <span className="text-xs font-medium text-text-muted">Next run</span>
+              </div>
+              {automations.map((a) => (
+                <AutomationRow
+                  key={a.id}
+                  automation={a}
+                  // System rows expose only Run-now; toggle/delete are never rendered for kind=system.
+                  onToggle={() => {}}
+                  onDelete={() => {}}
+                  onRun={() => {
+                    void run(a.id);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </AppLayout>
   );

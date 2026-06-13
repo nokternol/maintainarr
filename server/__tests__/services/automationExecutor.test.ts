@@ -137,6 +137,34 @@ describe('AutomationExecutor', () => {
       expect(runs[0].status).toBe('success');
       expect(runs[0].kind).toBe('system');
     });
+
+    it('does not start a second run while a run for the same id is in flight', async () => {
+      const db = getDb();
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const run = vi.fn(async () => {
+        await gate;
+      });
+      const guardedExecutor = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run },
+      });
+      const id = await seedSystemAutomation('system:identity-resolution');
+
+      const first = guardedExecutor.execute(id);
+      const second = guardedExecutor.execute(id);
+      release();
+      await Promise.all([first, second]);
+
+      expect(run).toHaveBeenCalledTimes(1);
+      const runs = await db.select().from(automationRuns);
+      expect(runs).toHaveLength(1);
+    });
   });
 
   // ─── RADARR: unmonitorMovie ───────────────────────────────────────────────

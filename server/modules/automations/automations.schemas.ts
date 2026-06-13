@@ -75,6 +75,10 @@ export const automationSchemas = {
     params: idParams,
   },
 
+  run: {
+    params: idParams,
+  },
+
   listRuns: {
     query: listRunsQuery,
   },
