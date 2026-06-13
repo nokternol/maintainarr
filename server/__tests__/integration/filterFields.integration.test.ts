@@ -28,7 +28,7 @@ describe('GET /api/filter-fields', () => {
     app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
-      (req as any).user = { id: 1, email: 'test@example.com' };
+      req.user = { id: 1, email: 'test@example.com' } as unknown as NonNullable<typeof req.user>;
       next();
     });
     app.use('/api', createApiRouter(container.cradle));

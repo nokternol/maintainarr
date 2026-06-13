@@ -1,8 +1,8 @@
+import QuerySourceList from '@app/components/QuerySourceList';
+import type { QuerySource } from '@app/components/QuerySourceList';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { SavedQuery } from '@app/hooks/useSavedQueries';
-import QuerySourceList from '@app/components/QuerySourceList';
-import type { QuerySource } from '@app/components/QuerySourceList';
 import { getEnabledTasksForProvider } from '@app/lib/tasks';
 import type { TaskDef } from '@app/lib/tasks';
 import { cn } from '@app/lib/utils/cn';

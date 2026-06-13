@@ -75,8 +75,32 @@ describe('SonarrProvider — task methods', () => {
     server.use(
       http.get(`${SONARR_BASE}/series`, () =>
         HttpResponse.json([
-          { id: 1, title: 'Show A', monitored: true, status: 'ended', tvdbId: 1, profileId: 1, qualityProfileId: 1, languageProfileId: 1, tags: [], path: '/tv/A', seasons: [] },
-          { id: 2, title: 'Show B', monitored: true, status: 'ended', tvdbId: 2, profileId: 1, qualityProfileId: 1, languageProfileId: 1, tags: [], path: '/tv/B', seasons: [] },
+          {
+            id: 1,
+            title: 'Show A',
+            monitored: true,
+            status: 'ended',
+            tvdbId: 1,
+            profileId: 1,
+            qualityProfileId: 1,
+            languageProfileId: 1,
+            tags: [],
+            path: '/tv/A',
+            seasons: [],
+          },
+          {
+            id: 2,
+            title: 'Show B',
+            monitored: true,
+            status: 'ended',
+            tvdbId: 2,
+            profileId: 1,
+            qualityProfileId: 1,
+            languageProfileId: 1,
+            tags: [],
+            path: '/tv/B',
+            seasons: [],
+          },
         ])
       ),
       http.put(`${SONARR_BASE}/series/:id`, async ({ params, request }) => {

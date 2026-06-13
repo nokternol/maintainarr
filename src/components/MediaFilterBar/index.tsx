@@ -823,7 +823,6 @@ export function MediaFilterBar({
   setAddedDaysAgoLte,
   setSizeOnDiskGbGte,
   setSizeOnDiskGbLte,
-  setCertification,
   setRadarrImdbRatingGte,
   setRadarrImdbRatingLte,
   setSonarrRatingGte,

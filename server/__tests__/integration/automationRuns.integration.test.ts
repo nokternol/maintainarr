@@ -75,8 +75,7 @@ describe('GET /api/automations/runs', () => {
     app.use(requestIdMiddleware);
     // Inject a fake user so isAuthenticated() passes
     app.use((req, _res, next) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (req as any).user = { id: 1, email: 'test@example.com' };
+      req.user = { id: 1, email: 'test@example.com' } as unknown as NonNullable<typeof req.user>;
       next();
     });
     app.use('/api/automations', createAutomationRoutes(container.cradle));

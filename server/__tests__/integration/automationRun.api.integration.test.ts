@@ -50,8 +50,7 @@ describe('POST /api/automations/:id/run — Phase 3', () => {
     app.use(express.json());
     app.use(requestIdMiddleware);
     app.use((req, _res, next) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (req as any).user = { id: 1 };
+      req.user = { id: 1 } as unknown as NonNullable<typeof req.user>;
       next();
     });
     app.use('/api/automations', createAutomationRoutes(container.cradle));

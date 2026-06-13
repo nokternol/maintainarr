@@ -69,8 +69,30 @@ describe('RadarrProvider — task methods', () => {
     server.use(
       http.get(`${RADARR_BASE}/movie`, () =>
         HttpResponse.json([
-          { id: 1, title: 'Movie A', monitored: true, hasFile: true, tags: [], qualityProfileId: 1, profileId: 1, tmdbId: 1, folderName: '', path: '' },
-          { id: 2, title: 'Movie B', monitored: true, hasFile: true, tags: [], qualityProfileId: 1, profileId: 1, tmdbId: 2, folderName: '', path: '' },
+          {
+            id: 1,
+            title: 'Movie A',
+            monitored: true,
+            hasFile: true,
+            tags: [],
+            qualityProfileId: 1,
+            profileId: 1,
+            tmdbId: 1,
+            folderName: '',
+            path: '',
+          },
+          {
+            id: 2,
+            title: 'Movie B',
+            monitored: true,
+            hasFile: true,
+            tags: [],
+            qualityProfileId: 1,
+            profileId: 1,
+            tmdbId: 2,
+            folderName: '',
+            path: '',
+          },
         ])
       ),
       http.put(`${RADARR_BASE}/movie/:id`, async ({ params, request }) => {

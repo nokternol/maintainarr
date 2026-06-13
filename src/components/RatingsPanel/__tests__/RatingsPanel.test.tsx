@@ -78,7 +78,7 @@ describe('RatingsPanel', () => {
           totalSources: 3,
           foundSources: 3,
         },
-      } as any,
+      } as unknown as ReturnType<typeof useRatings>['data'],
       error: undefined,
       isLoading: false,
     });
