@@ -27,7 +27,7 @@ are meaningless without it).
 |---|---|---|---|
 | 0 — Single-active-provider-per-type invariant | _(shipped — doc deleted)_ | ✅ COMPLETE | — |
 | 1 — System task execution (hybrid dispatch) | _(shipped — doc deleted)_ | ✅ COMPLETE | Phase 0 |
-| 2 — Unified filter engine | `ENRICHED_FILTERS_phase_2.md` | NOT STARTED | Phase 1 (for enriched data; predicates testable on fixtures sooner) |
+| 2 — Unified filter engine | _(shipped — doc deleted)_ | ✅ COMPLETE | Phase 1 |
 | 3 — Run Now + system panel | `ENRICHED_FILTERS_phase_3.md` | NOT STARTED | Phase 1 (system run-now does work only once dispatch lands) |
 
 ---
@@ -58,6 +58,15 @@ are meaningless without it).
 | `MediaCradle` has no `db` | `media.handler`, `container.ts` | 2 | Needed to build the enrichment map |
 | Croner `{ protect: true }` only guards *cron* overlap; a manual run can overlap a scheduled run | Executor | 3 | Add an in-flight guard keyed by automationId |
 | Browse query-param names are content-prefixed (`movieTagIds`); registry keys are not (`tagIds`) | `media.handler` schemas | 2 | Keep the URL contract; map param names → registry keys inside the handler |
+
+### Debt raised during Phase 2
+
+| Finding | Affects | Priority | Status / Note |
+|---|---|---|---|
+| **Enrichment merge is uncached.** The old `watchedTitlesCache` (5-min TTL) was removed with the title-matching path and nothing replaced it. `mergeEnrichment` now issues two DB queries (identity + enrichment) on **every** `listMovies`/`listSeries` request, even when `moviesCache`/`seriesCache` serve the provider data from cache. There are no tests for a replacement cache because there is no replacement. | `media.handler.ts`, `enrichmentMerge.ts` | **High (perf)** | **OPEN — deliberately deferred** (own concern, not Phase 2 tidy-up). Design forks to settle before implementing: (a) cache the merged `Normalized*` result vs the raw enrichment rows; (b) TTL vs explicit invalidation; (c) **invalidation must fire when the EnrichmentJob writes** — the job runs in the scheduler/executor context and has no handle to the handler-owned `MediaCache`, so this crosses the job→handler boundary (mirror the existing `invalidateMediaCaches` wiring used by settings changes). Likely Phase 2.5 or folded into Phase 3. |
+| `TautulliProvider.getWatchedTitles()` dead after D3 removed its only consumer | `tautulliProvider.ts` | Medium | ✅ RESOLVED — method + its two tests removed (2026-06-13). |
+| Registry `genres` is `dataType: 'csv-ids'` but its `apply` compares genre **strings** via `parseCsvStrings` | `filterRegistry.ts` | Low | OPEN — mislabeled, functionally correct (browse + executor both pass csv strings). Rename dataType to `csv-strings` or add a distinct type. |
+| `listMovies`/`listSeries` repeat the normalize → merge → filter → map-back sequence | `media.handler.ts` | Low | OPEN — symmetrical but differs in normalizer/id-accessor/contentType; a higher-order wrapper was judged to obscure more than it saves. |
 
 ---
 

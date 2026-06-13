@@ -154,7 +154,6 @@ const mockUser = {
 describe('Media Filter API', () => {
   let client: ReturnType<typeof createApiClient>;
   let unauthedClient: ReturnType<typeof createApiClient>;
-  let sharedCradle: import('@server/container').Cradle;
 
   beforeAll(async () => {
     const mockConfig = createMockConfig({
@@ -169,7 +168,6 @@ describe('Media Filter API', () => {
     const config = loadConfig();
     const db = await initializeDatabase(config);
     const container = buildContainer({ config, db });
-    sharedCradle = container.cradle;
     const { providerSettingsService } = container.cradle;
 
     await providerSettingsService.create({
@@ -182,12 +180,6 @@ describe('Media Filter API', () => {
       type: MetadataProviderType.SONARR,
       name: 'Sonarr',
       url: 'http://localhost:8989/api/v3',
-      apiKey: 'fake-key',
-    });
-    await providerSettingsService.create({
-      type: MetadataProviderType.TAUTULLI,
-      name: 'Tautulli',
-      url: 'http://localhost:8181',
       apiKey: 'fake-key',
     });
 
@@ -497,170 +489,6 @@ describe('Media Filter API', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await unauthedClient.get('/api/media/tags');
       expect(res.status).toBe(401);
-    });
-  });
-
-  // ─── A09 — tautulliWatched filter (normalized title matching) ────────────
-
-  describe('GET /api/media/movies — tautulliWatched filter (A09)', () => {
-    let tautulliMoviesClient: ReturnType<typeof createApiClient>;
-
-    beforeAll(() => {
-      // Fresh routes instance so the watchedTitlesCache is isolated from other A09 tests.
-      const freshRoutes = createMediaRoutes(sharedCradle);
-      const app: Express = express();
-      app.use(express.json());
-      app.use(requestIdMiddleware);
-      app.use((_req: Request, _res: Response, next: NextFunction) => {
-        _req.user = mockUser;
-        next();
-      });
-      app.use('/api/media', freshRoutes);
-      app.use(errorHandlerMiddleware);
-      tautulliMoviesClient = createApiClient(app);
-    });
-
-    beforeEach(() => {
-      // Tautulli history: "the matrix (1999)" and "Batman Begins (2005)" — both should
-      // match via normalisation regardless of casing / year suffix.
-      server.use(
-        http.get('http://localhost:8181/api/v2', ({ request }) => {
-          const url = new URL(request.url);
-          if (url.searchParams.get('cmd') === 'get_history') {
-            return HttpResponse.json({
-              response: {
-                result: 'success',
-                data: {
-                  data: [
-                    {
-                      rating_key: '1',
-                      title: 'the matrix (1999)',
-                      user: 'testuser',
-                      watched_status: 1,
-                      duration: 7380,
-                      play_duration: 7380,
-                    },
-                    {
-                      rating_key: '2',
-                      title: 'Batman Begins (2005)',
-                      user: 'testuser',
-                      watched_status: 1,
-                      duration: 6900,
-                      play_duration: 6900,
-                    },
-                  ],
-                  total_count: 2,
-                },
-              },
-            });
-          }
-          return HttpResponse.json(
-            { response: { result: 'error', message: 'Unknown command' } },
-            { status: 400 }
-          );
-        })
-      );
-    });
-
-    it('returns only watched movies when tautulliWatched=true (normalized match)', async () => {
-      const res = await tautulliMoviesClient.get(
-        '/api/media/movies?tautulliWatched=true&pageSize=100'
-      );
-      const data = expectSuccessResponse(res);
-
-      const titles = data.items.map((m: { title: string }) => m.title);
-      // "the matrix (1999)" normalises to "matrix", matching "The Matrix"
-      // "Batman Begins (2005)" normalises to "batman begins", matching "Batman Begins"
-      expect(titles).toContain('The Matrix');
-      expect(titles).toContain('Batman Begins');
-      expect(titles).not.toContain('Batman Returns');
-      expect(titles).not.toContain('Dark Knight');
-    });
-
-    it('returns only unwatched movies when tautulliWatched=false', async () => {
-      const res = await tautulliMoviesClient.get(
-        '/api/media/movies?tautulliWatched=false&pageSize=100'
-      );
-      const data = expectSuccessResponse(res);
-
-      const titles = data.items.map((m: { title: string }) => m.title);
-      expect(titles).toContain('Batman Returns');
-      expect(titles).toContain('Dark Knight');
-      expect(titles).not.toContain('The Matrix');
-      expect(titles).not.toContain('Batman Begins');
-    });
-  });
-
-  describe('GET /api/media/series — tautulliWatched filter (A09)', () => {
-    let tautulliSeriesClient: ReturnType<typeof createApiClient>;
-
-    beforeAll(() => {
-      // Fresh routes instance so the watchedTitlesCache is isolated from other A09 tests.
-      const freshRoutes = createMediaRoutes(sharedCradle);
-      const app: Express = express();
-      app.use(express.json());
-      app.use(requestIdMiddleware);
-      app.use((_req: Request, _res: Response, next: NextFunction) => {
-        _req.user = mockUser;
-        next();
-      });
-      app.use('/api/media', freshRoutes);
-      app.use(errorHandlerMiddleware);
-      tautulliSeriesClient = createApiClient(app);
-    });
-
-    beforeEach(() => {
-      // Tautulli history: only "Breaking Bad" watched
-      server.use(
-        http.get('http://localhost:8181/api/v2', ({ request }) => {
-          const url = new URL(request.url);
-          if (url.searchParams.get('cmd') === 'get_history') {
-            return HttpResponse.json({
-              response: {
-                result: 'success',
-                data: {
-                  data: [
-                    {
-                      rating_key: '10',
-                      title: 'Breaking Bad',
-                      user: 'testuser',
-                      watched_status: 1,
-                      duration: 3600,
-                      play_duration: 3600,
-                    },
-                  ],
-                  total_count: 1,
-                },
-              },
-            });
-          }
-          return HttpResponse.json(
-            { response: { result: 'error', message: 'Unknown command' } },
-            { status: 400 }
-          );
-        })
-      );
-    });
-
-    it('returns only watched series when tautulliWatched=true', async () => {
-      const res = await tautulliSeriesClient.get(
-        '/api/media/series?tautulliWatched=true&pageSize=100'
-      );
-      const data = expectSuccessResponse(res);
-
-      const titles = data.items.map((s: { title: string }) => s.title);
-      expect(titles).toEqual(['Breaking Bad']);
-    });
-
-    it('returns only unwatched series when tautulliWatched=false', async () => {
-      const res = await tautulliSeriesClient.get(
-        '/api/media/series?tautulliWatched=false&pageSize=100'
-      );
-      const data = expectSuccessResponse(res);
-
-      const titles = data.items.map((s: { title: string }) => s.title);
-      expect(titles).not.toContain('Breaking Bad');
-      expect(titles).toHaveLength(3);
     });
   });
 
