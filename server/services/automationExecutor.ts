@@ -59,6 +59,7 @@ export class AutomationExecutor {
   private readonly providerFactory: IProviderFactory;
   private readonly db?: DrizzleDb;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
+  private readonly inFlight = new Set<number>();
 
   constructor(deps: ExecutorDeps) {
     this.automationService = deps.automationService;
@@ -71,6 +72,9 @@ export class AutomationExecutor {
   }
 
   async execute(automationId: number): Promise<void> {
+    if (this.inFlight.has(automationId)) return;
+    this.inFlight.add(automationId);
+
     let itemCount = 0;
     let kind: 'user' | 'system' = 'user';
 
@@ -110,6 +114,8 @@ export class AutomationExecutor {
         error: err instanceof Error ? err.message : 'Unknown error',
         kind,
       });
+    } finally {
+      this.inFlight.delete(automationId);
     }
   }
 

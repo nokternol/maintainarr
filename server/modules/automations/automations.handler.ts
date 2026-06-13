@@ -1,20 +1,26 @@
 import { AutomationSchema } from '@app/lib/api/schemas';
 import { isAuthenticated } from '@server/middleware/auth';
+import type { AutomationExecutor } from '@server/services/automationExecutor';
 import type { AutomationRunService } from '@server/services/automationRunService';
 import type { AutomationService } from '@server/services/automationService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { z } from 'zod';
 import type { AutomationScheduler } from '../../cron/automationScheduler';
+import { getChildLogger } from '../../logger';
 import { automationSchemas } from './automations.schemas';
+
+const log = getChildLogger('AutomationHandler');
 
 interface Cradle {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   automationScheduler: AutomationScheduler;
+  automationExecutor: AutomationExecutor;
 }
 
 export function createAutomationHandlers(cradle: Cradle) {
-  const { automationService, automationRunService, automationScheduler } = cradle;
+  const { automationService, automationRunService, automationScheduler, automationExecutor } =
+    cradle;
 
   return {
     list: [
@@ -68,6 +74,21 @@ export function createAutomationHandlers(cradle: Cradle) {
         handler: async ({ params }) => {
           automationScheduler.unschedule(params.id);
           await automationService.delete(params.id);
+          return null;
+        },
+      }),
+    ],
+
+    run: [
+      isAuthenticated(),
+      defineRoute({
+        schemas: { ...automationSchemas.run, response: z.null() },
+        handler: async ({ params, res }) => {
+          await automationService.getById(params.id);
+          void automationExecutor.execute(params.id).catch((err) => {
+            log.error('Background automation run failed', { automationId: params.id, err });
+          });
+          res.status(202);
           return null;
         },
       }),

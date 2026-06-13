@@ -281,7 +281,6 @@ describe('AutomationService', () => {
   describe('delete()', () => {
     it('throws ForbiddenError when the automation has kind=system', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedQueryService);
       const db = getDb();
       const [row] = await db
         .insert(automations)
@@ -301,7 +300,6 @@ describe('AutomationService', () => {
   describe('updateStatus()', () => {
     it('throws ForbiddenError when the automation has kind=system', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedQueryService);
       const db = getDb();
       const [row] = await db
         .insert(automations)
