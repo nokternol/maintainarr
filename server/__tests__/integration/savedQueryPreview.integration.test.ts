@@ -41,8 +41,7 @@ describe('GET /api/saved-queries/:id/preview', () => {
     app.use(express.json());
     app.use(requestIdMiddleware);
     app.use((req, _res, next) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (req as any).user = { id: 1 };
+      req.user = { id: 1 } as unknown as NonNullable<typeof req.user>;
       next();
     });
     app.use('/api/saved-queries', createSavedQueryRoutes(container.cradle));

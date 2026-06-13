@@ -1,9 +1,9 @@
+import { describe, expect, it } from 'vitest';
 /**
  * Factory helpers — createRadarrMovie and createSonarrSeries.
  * Verifies factories return valid typed objects and accept partial overrides.
  */
 import { createRadarrMovie, createSonarrSeries } from '../../tests/factories';
-import { describe, expect, it } from 'vitest';
 
 describe('createRadarrMovie', () => {
   it('returns a RadarrMovie with sensible defaults', () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { getProviderEntry, getProviderOrder, getProviderTypes } from '@app/lib/provider-registry';
+import { describe, expect, it } from 'vitest';
 
 describe('getProviderEntry', () => {
   it('returns RADARR entry with correct apiSuffix, order, filterCapabilities, and first task id', () => {
@@ -91,7 +91,7 @@ describe('PROVIDER_TASKS backward compat (tasks.ts re-export)', () => {
     const { PROVIDER_TASKS } = await import('@app/lib/tasks');
     const registryEntry = getProviderEntry('RADARR');
 
-    expect(PROVIDER_TASKS['RADARR']).toBeDefined();
-    expect(PROVIDER_TASKS['RADARR']).toEqual(registryEntry!.tasks);
+    expect(PROVIDER_TASKS.RADARR).toBeDefined();
+    expect(PROVIDER_TASKS.RADARR).toEqual(registryEntry!.tasks);
   });
 });

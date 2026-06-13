@@ -717,9 +717,9 @@ describe('AutomationExecutor', () => {
       };
 
       const legacyExecutor = new AutomationExecutor({
-        automationService: mockAutomationService as any,
-        savedQueryService: mockSavedQueryService as any,
-        providerSettingsService: mockProviderSettingsService as any,
+        automationService: mockAutomationService as unknown as AutomationService,
+        savedQueryService: mockSavedQueryService as unknown as SavedQueryService,
+        providerSettingsService: mockProviderSettingsService as unknown as ProviderSettingsService,
         providerFactory: { create: () => mockRadarr },
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -796,9 +796,9 @@ describe('AutomationExecutor', () => {
       };
 
       const executorWithMocks = new AutomationExecutor({
-        automationService: mockAutomationService as any,
-        savedQueryService: mockSavedQueryService as any,
-        providerSettingsService: mockProviderSettingsService as any,
+        automationService: mockAutomationService as unknown as AutomationService,
+        savedQueryService: mockSavedQueryService as unknown as SavedQueryService,
+        providerSettingsService: mockProviderSettingsService as unknown as ProviderSettingsService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });

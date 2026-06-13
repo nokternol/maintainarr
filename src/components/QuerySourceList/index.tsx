@@ -50,11 +50,7 @@ function SourceRow({
   }
 
   const countLabel =
-    count != null
-      ? src.role === 'include'
-        ? `${count} matched`
-        : `${count} excluded`
-      : null;
+    count != null ? (src.role === 'include' ? `${count} matched` : `${count} excluded`) : null;
 
   return (
     <div>
@@ -64,7 +60,9 @@ function SourceRow({
         <option value="exclude">Exclude (unless)</option>
       </select>
       {countLabel && <span>{countLabel}</span>}
-      <button type="button" onClick={handleRemove}>Remove</button>
+      <button type="button" onClick={handleRemove}>
+        Remove
+      </button>
     </div>
   );
 }
@@ -93,7 +91,11 @@ function useNetCount(sources: QuerySource[]): number | null {
   return Math.max(0, includeTotal - excludeTotal);
 }
 
-export default function QuerySourceList({ sources, savedQueries: _savedQueries, onChange }: QuerySourceListProps) {
+export default function QuerySourceList({
+  sources,
+  savedQueries: _savedQueries,
+  onChange,
+}: QuerySourceListProps) {
   function handleAdd() {
     onChange([...sources, { queryId: 0, role: 'include', sortOrder: sources.length }]);
   }
@@ -111,7 +113,9 @@ export default function QuerySourceList({ sources, savedQueries: _savedQueries, 
       {!hasValidInclude && sources.length > 0 && (
         <p>At least one include source with a selected query is required.</p>
       )}
-      <button type="button" onClick={handleAdd}>Add query</button>
+      <button type="button" onClick={handleAdd}>
+        Add query
+      </button>
       {excludeCount > 2 && (
         <p>Complex exclusion rules can be hard to reason about — consider simplifying.</p>
       )}

@@ -10,25 +10,19 @@ const savedQueries = [
 
 describe('QuerySourceList', () => {
   it('renders an "Add query" button when sources is empty', () => {
-    render(
-      <QuerySourceList sources={[]} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={[]} savedQueries={savedQueries} onChange={vi.fn()} />);
     expect(screen.getByRole('button', { name: /add query/i })).toBeInTheDocument();
   });
 
   it('shows preview count for an include source as "N matched"', async () => {
     const sources = [{ queryId: 1, role: 'include' as const, sortOrder: 0 }];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/42 matched/i)).toBeInTheDocument());
   });
 
   it('shows preview count for an exclude source as "N excluded"', async () => {
     const sources = [{ queryId: 2, role: 'exclude' as const, sortOrder: 0 }];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/14 excluded/i)).toBeInTheDocument());
   });
 
@@ -37,26 +31,20 @@ describe('QuerySourceList', () => {
       { queryId: 1, role: 'include' as const, sortOrder: 0 },
       { queryId: 2, role: 'exclude' as const, sortOrder: 1 },
     ];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     // MSW: id=1 → 42, id=2 → 14; net = 42 - 14 = 28
     await waitFor(() => expect(screen.getByText(/~28 to act on/i)).toBeInTheDocument());
   });
 
   it('shows an inline error when sources has no include entry with a selected query', () => {
     const sources = [{ queryId: 1, role: 'exclude' as const, sortOrder: 0 }];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     expect(screen.getByText(/at least one include/i)).toBeInTheDocument();
   });
 
   it('hides the error when at least one include source with a valid queryId is present', () => {
     const sources = [{ queryId: 1, role: 'include' as const, sortOrder: 0 }];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     expect(screen.queryByText(/at least one include/i)).not.toBeInTheDocument();
   });
 
@@ -67,9 +55,7 @@ describe('QuerySourceList', () => {
       { queryId: 3, role: 'exclude' as const, sortOrder: 2 },
       { queryId: 4, role: 'exclude' as const, sortOrder: 3 },
     ];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     expect(screen.getByText(/complex exclusion rules/i)).toBeInTheDocument();
   });
 
@@ -79,9 +65,7 @@ describe('QuerySourceList', () => {
       { queryId: 2, role: 'exclude' as const, sortOrder: 1 },
       { queryId: 3, role: 'exclude' as const, sortOrder: 2 },
     ];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={vi.fn()} />);
     expect(screen.queryByText(/complex exclusion rules/i)).not.toBeInTheDocument();
   });
 
@@ -89,9 +73,7 @@ describe('QuerySourceList', () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const sources = [{ queryId: 1, role: 'include' as const, sortOrder: 0 }];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={onChange} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={onChange} />);
     await user.selectOptions(screen.getByRole('combobox'), 'exclude');
     expect(onChange).toHaveBeenCalledOnce();
     const [result] = onChange.mock.calls[0] as [typeof sources];
@@ -105,9 +87,7 @@ describe('QuerySourceList', () => {
       { queryId: 1, role: 'include' as const, sortOrder: 0 },
       { queryId: 2, role: 'exclude' as const, sortOrder: 1 },
     ];
-    render(
-      <QuerySourceList sources={sources} savedQueries={savedQueries} onChange={onChange} />
-    );
+    render(<QuerySourceList sources={sources} savedQueries={savedQueries} onChange={onChange} />);
     const removeButtons = screen.getAllByRole('button', { name: /remove/i });
     await user.click(removeButtons[0]);
     expect(onChange).toHaveBeenCalledOnce();
@@ -119,9 +99,7 @@ describe('QuerySourceList', () => {
   it('clicking "Add query" calls onChange with one new include entry', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(
-      <QuerySourceList sources={[]} savedQueries={savedQueries} onChange={onChange} />
-    );
+    render(<QuerySourceList sources={[]} savedQueries={savedQueries} onChange={onChange} />);
     await user.click(screen.getByRole('button', { name: /add query/i }));
     expect(onChange).toHaveBeenCalledOnce();
     const [result] = onChange.mock.calls[0] as [ReturnType<typeof onChange>];
