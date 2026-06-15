@@ -74,8 +74,26 @@ media_identity  (group; id-bundle; one logical title)
 version table. A `version`/`edition` label can be added to `media_item` later only where a source
 actually exposes multiples.
 
-Tasks act on **`media_item`s**; filtering and display act on **`media_identity` groups**. A matched set
-of groups fans out to their `media_item`s at execution time.
+## Task targeting (decided)
+
+Tasks stay **instance-bound** — there is **no group-level fan-out**. An automation remains
+`(one provider instance, query, task)` via the existing single `automations.providerId` binding; the
+executor fetches that provider's items, filters, and acts on the matches, exactly as today. Running the
+same query across two instances (4k + non-4k Radarr) is **two automations** — same query, one task per
+provider. The duplication is accepted in exchange for keeping targeting unchanged and explicit.
+
+Consequently the group model (`media_identity`) is **not** a task-routing mechanism. It exists for:
+
+- **Display dedup** in the *browse/library* view (the whole-catalog view across all providers shows one
+  row per title, not one per instance). An automation's own preview is already single-instance, so it
+  needs no dedup.
+- **Enrichment**, which hangs off the group; a per-instance automation reaches title-level facts
+  (watched, requested) by joining `media_item → media_identity → media_enrichment`.
+- **Correctable matching**, per the auto-resolver above.
+
+This also collapses the filter-classification concern: there is no "instance" filter, because the
+automation's bound provider *is* the instance. Item attributes come from the provider; group-level
+enrichment predicates are joined in via the item's `media_identity`.
 
 ## Logical grouping & the auto-resolver (decided)
 
@@ -109,25 +127,23 @@ later — `runForPlex` changing from *stamping* existing rows to *inserting* the
   See "Logical grouping & the auto-resolver".
 - **Manual correction** — explicitly deferred; the model supports it (surrogate id vs match), but it is
   not built now.
+- **Task targeting** — instance-bound, no fan-out; multi-instance = N automations. Automation→provider
+  binding unchanged. See "Task targeting".
 
 ## Still open / the next modeling work
 
-1. **Filter classification.** Some filters are group-level (watched, year, requested); some are
-   item-level (quality, 4k, has-file-in-*this*-instance). The registry needs to know which level each
-   filter binds to, since a group aggregates several `media_item`s.
-2. **Task targeting semantics.** When a group matches and it has N `media_item`s, does the task hit all
-   of them, a filtered subset, or require the automation to name an instance? Tasks become per-item.
-3. **Display grouping source.** The browse path reads *live* provider data (`radarr.getMovies()`), not
-   the DB. Display can dedup live items by their own primary id without waiting on the resolver, while
-   the persisted `media_item`/`media_identity` spine backs tasks/enrichment/correction. Confirm the
-   read path groups live items by primary id rather than joining the (eventually-consistent) tables.
-4. **Migration.** Drop `(sourceType, sourceId)` from `media_identity`; add `media_item` with
+1. **Display grouping source.** The browse path reads *live* provider data (`radarr.getMovies()`), not
+   the DB. Library-view dedup can group live items by their own primary id without waiting on the
+   resolver, while the persisted `media_item`/`media_identity` spine backs enrichment/correction.
+   Confirm the read path groups live items by primary id rather than joining the
+   (eventually-consistent) tables.
+2. **Migration.** Drop `(sourceType, sourceId)` from `media_identity`; add `media_item` with
    `(providerId, externalId)` UNIQUE + `mediaIdentityId`; rework `IdentityResolutionJob` to upsert
    `media_item` and resolve groups; `enrichmentMerge` and `_sourceIds` follow. `media_enrichment`'s FK
    to `media_identity` is unchanged.
-5. **Other multi-instance types.** SEERR/Overseerr and future types may also be multi-instance; the
+3. **Other multi-instance types.** SEERR/Overseerr and future types may also be multi-instance; the
    instance-not-type correction should be uniform, not Radarr/Sonarr-special.
-6. **Surrogate id type.** Whether new ids are time-ordered UUIDs or keep the existing autoincrement
+4. **Surrogate id type.** Whether new ids are time-ordered UUIDs or keep the existing autoincrement
    integer (`media_identity` uses integer today). Minor and reversible; noted so it is a choice.
 
 ## Relationship to earlier decisions
