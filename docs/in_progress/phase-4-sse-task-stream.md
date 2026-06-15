@@ -56,7 +56,7 @@ persisted truth. Phase 2 already guarantees this; Phase 4 relies on it.
    `run:started` frame when a run begins and a `run:completed` frame after it commits; an unauthed
    request is rejected. GREEN: SSE endpoint subscribing to the bus's task family under session
    middleware. REFACTOR: extract a reusable SSE-writer helper (consumed again in P5).
-2. **Endpoint isolates the task family.** RED: a `data:changed` does **not** appear on
+2. **Endpoint isolates the task family.** RED: a `media:changed` does **not** appear on
    `/api/events/tasks`. GREEN: subscribe to `run:*` only. REFACTOR.
 3. **`useTaskEvents` patches running state.** RED (mocked `EventSource`): dispatching `run:started`
    moves the row to "running…" and starts the ticker from `startedAt`. GREEN: hook opens the source,

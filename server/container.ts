@@ -11,6 +11,7 @@ import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
+import { DomainEventBus } from './services/eventBus';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
 import { SavedQueryService } from './services/savedQueryService';
@@ -26,6 +27,7 @@ const log = getChildLogger('Container');
 export interface Cradle {
   config: AppConfig;
   db: DrizzleDb;
+  eventBus: DomainEventBus;
   tmdbService: TmdbService;
   plexService: PlexService;
   authService: AuthService;
@@ -59,6 +61,7 @@ export function buildContainer(deps: {
   container.register({
     config: asValue(deps.config),
     db: asValue(deps.db),
+    eventBus: asClass(DomainEventBus).singleton(),
 
     // Services
     tmdbService: asClass(TmdbService).singleton(),

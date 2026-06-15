@@ -10,9 +10,14 @@ import {
 import type { IProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
-import { AutomationExecutor } from '@server/services/automationExecutor';
+import {
+  AutomationExecutor,
+  RADARR_TASKS,
+  SONARR_TASKS,
+} from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { DomainEventBus, type DomainEvents } from '@server/services/eventBus';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
 import type { FilterValueEntry } from '@server/services/savedQueryService';
@@ -76,6 +81,15 @@ async function seedAutomation(
     taskId: opts.taskId,
     schedule: '0 * * * *',
   });
+}
+
+async function seedSystemTask(taskId: string): Promise<number> {
+  const db = getDb();
+  const [row] = await db
+    .insert(automations)
+    .values({ name: `sys:${taskId}`, taskId, schedule: '0 * * * *', kind: 'system' })
+    .returning();
+  return row.id;
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -1145,6 +1159,246 @@ describe('AutomationExecutor', () => {
     });
   });
 
+  // ─── Domain events: run:started ──────────────────────────────────────────
+
+  describe('domain events — run:started', () => {
+    it('emits run:started with automation metadata before the run body runs', async () => {
+      const db = getDb();
+      const bus = new DomainEventBus();
+      const started: DomainEvents['run:started'][] = [];
+      bus.on('run:started', (p) => started.push(p));
+
+      let firedBeforeBody = false;
+      const run = vi.fn(async () => {
+        firedBeforeBody = started.length === 1;
+        return 0;
+      });
+
+      const ex = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run },
+        eventBus: bus,
+      });
+      const id = await seedSystemTask('system:enrichment');
+
+      await ex.execute(id);
+
+      expect(started).toHaveLength(1);
+      expect(started[0]).toMatchObject({
+        automationId: id,
+        kind: 'system',
+        taskId: 'system:enrichment',
+      });
+      expect(started[0].startedAt).toBeInstanceOf(Date);
+      expect(firedBeforeBody).toBe(true);
+    });
+  });
+
+  // ─── Domain events: run:completed (success) ──────────────────────────────
+
+  describe('domain events — run:completed', () => {
+    it('emits run:completed post-commit carrying the persisted run id and ranAt', async () => {
+      const db = getDb();
+      const bus = new DomainEventBus();
+      const completed: DomainEvents['run:completed'][] = [];
+      bus.on('run:completed', (p) => completed.push(p));
+
+      const ex = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run: vi.fn(async () => 3) },
+        eventBus: bus,
+      });
+      const id = await seedSystemTask('system:enrichment');
+
+      await ex.execute(id);
+
+      expect(completed).toHaveLength(1);
+      const [row] = await db.select().from(automationRuns);
+      expect(completed[0].runId).toBe(row.id);
+      expect(completed[0].ranAt.getTime()).toBe(row.ranAt.getTime());
+      expect(completed[0]).toMatchObject({
+        automationId: id,
+        kind: 'system',
+        status: 'success',
+        itemCount: 3,
+      });
+      expect(completed[0].finishedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  // ─── Domain events: run:completed (failure) ──────────────────────────────
+
+  describe('domain events — run:completed on failure', () => {
+    it('still emits run:completed with status error and the message when the run throws', async () => {
+      const db = getDb();
+      const bus = new DomainEventBus();
+      const completed: DomainEvents['run:completed'][] = [];
+      bus.on('run:completed', (p) => completed.push(p));
+
+      const ex = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: {
+          run: vi.fn(async () => {
+            throw new Error('runner boom');
+          }),
+        },
+        eventBus: bus,
+      });
+      const id = await seedSystemTask('system:enrichment');
+
+      await ex.execute(id);
+
+      expect(completed).toHaveLength(1);
+      expect(completed[0]).toMatchObject({
+        automationId: id,
+        status: 'error',
+        error: 'runner boom',
+      });
+      const [row] = await db.select().from(automationRuns);
+      expect(completed[0].runId).toBe(row.id);
+    });
+  });
+
+  // ─── Domain events: <scope>:changed gate ─────────────────────────────────
+
+  describe('domain events — media:changed gate', () => {
+    function makeExecutor(bus: DomainEventBus, provider: RadarrProvider) {
+      return new AutomationExecutor({
+        automationService,
+        providerSettingsService,
+        savedQueryService,
+        providerFactory: { create: () => provider },
+        automationRunService: new AutomationRunService({ db: getDb() }),
+        eventBus: bus,
+      });
+    }
+
+    it('emits media:changed for a media-scoped task that changed at least one item', async () => {
+      const bus = new DomainEventBus();
+      const changes: DomainEvents['media:changed'][] = [];
+      bus.on('media:changed', (p) => changes.push(p));
+
+      const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: true })];
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async () => {},
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, []);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      await makeExecutor(bus, mockRadarr).execute(automation.id);
+
+      expect(changes).toHaveLength(1);
+    });
+
+    it('does not emit media:changed when a scoped task changed zero items', async () => {
+      const bus = new DomainEventBus();
+      const changes: DomainEvents['media:changed'][] = [];
+      bus.on('media:changed', (p) => changes.push(p));
+
+      const mockRadarr = {
+        getMovies: async () => [],
+        unmonitorMovies: async () => {},
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, []);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      await makeExecutor(bus, mockRadarr).execute(automation.id);
+
+      expect(changes).toHaveLength(0);
+    });
+
+    it('does not emit media:changed for an unscoped task even when items match', async () => {
+      const bus = new DomainEventBus();
+      const changes: DomainEvents['media:changed'][] = [];
+      bus.on('media:changed', (p) => changes.push(p));
+
+      const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: false })];
+      const mockRadarr = {
+        getMovies: async () => movies,
+        unmonitorMovies: async () => {},
+        triggerMoviesSearch: async () => {},
+      } as unknown as RadarrProvider;
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedQueryService, []);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'triggerSearch',
+      });
+
+      await makeExecutor(bus, mockRadarr).execute(automation.id);
+
+      expect(changes).toHaveLength(0);
+    });
+
+    it('emits media:changed for a system data job that changed items', async () => {
+      const db = getDb();
+      const bus = new DomainEventBus();
+      const changes: DomainEvents['media:changed'][] = [];
+      bus.on('media:changed', (p) => changes.push(p));
+
+      const ex = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run: vi.fn(async () => 4) },
+        eventBus: bus,
+      });
+      const id = await seedSystemTask('system:enrichment');
+
+      await ex.execute(id);
+
+      expect(changes).toHaveLength(1);
+    });
+
+    it('does not emit media:changed for a system data job that changed zero items', async () => {
+      const db = getDb();
+      const bus = new DomainEventBus();
+      const changes: DomainEvents['media:changed'][] = [];
+      bus.on('media:changed', (p) => changes.push(p));
+
+      const ex = new AutomationExecutor({
+        automationService,
+        automationRunService: new AutomationRunService({ db }),
+        providerSettingsService,
+        savedQueryService,
+        systemTaskRunner: { run: vi.fn(async () => 0) },
+        eventBus: bus,
+      });
+      const id = await seedSystemTask('system:identity-resolution');
+
+      await ex.execute(id);
+
+      expect(changes).toHaveLength(0);
+    });
+  });
+
   // ─── Scheduler wiring ────────────────────────────────────────────────────
 
   describe('AutomationScheduler integration', () => {
@@ -1166,5 +1420,14 @@ describe('AutomationExecutor', () => {
 
       expect(executedId).toBe(42);
     });
+  });
+});
+
+describe('dispatch scope declaration', () => {
+  it('declares media scope on unmonitor tasks and none on triggerSearch', () => {
+    expect(RADARR_TASKS.unmonitorMovie.affects).toBe('media');
+    expect(RADARR_TASKS.triggerSearch.affects).toBeUndefined();
+    expect(SONARR_TASKS.unmonitorSeries.affects).toBe('media');
+    expect(SONARR_TASKS.triggerSearch.affects).toBeUndefined();
   });
 });
