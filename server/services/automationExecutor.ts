@@ -12,6 +12,7 @@ import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
+import type { DomainEventBus } from './eventBus';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { FilterValueEntry } from './savedQueryService';
 import type { SavedQueryService } from './savedQueryService';
@@ -30,6 +31,7 @@ interface ExecutorDeps {
   providerFactory?: IProviderFactory;
   db?: DrizzleDb;
   systemTaskRunner?: SystemTaskRunnerLike;
+  eventBus?: DomainEventBus;
 }
 
 // ─── Filter application ───────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ export class AutomationExecutor {
   private readonly providerFactory: IProviderFactory;
   private readonly db?: DrizzleDb;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
+  private readonly eventBus?: DomainEventBus;
   private readonly inFlight = new Set<number>();
 
   constructor(deps: ExecutorDeps) {
@@ -69,6 +72,7 @@ export class AutomationExecutor {
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
     this.db = deps.db;
     this.systemTaskRunner = deps.systemTaskRunner;
+    this.eventBus = deps.eventBus;
   }
 
   async execute(automationId: number): Promise<void> {
@@ -77,17 +81,29 @@ export class AutomationExecutor {
 
     let itemCount = 0;
     let kind: 'user' | 'system' = 'user';
+    let taskId = '';
 
     try {
       const automation = await this.automationService.getById(automationId);
       kind = automation.kind;
+      taskId = automation.taskId;
+
+      this.eventBus?.emit('run:started', {
+        automationId,
+        kind,
+        taskId: automation.taskId,
+        startedAt: new Date(),
+      });
 
       if (automation.kind === 'system') {
         if (!this.systemTaskRunner) {
           throw new Error('System automation requires a systemTaskRunner');
         }
         itemCount = await this.systemTaskRunner.run(automation.taskId);
-        await this.recordResult(automationId, { itemCount, status: 'success', kind });
+        await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
+
+        this.emitDataChange(SYSTEM_TASKS[taskId]?.affects, itemCount);
+
         log.info('System automation executed', {
           automationId,
           taskId: automation.taskId,
@@ -108,11 +124,14 @@ export class AutomationExecutor {
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
       itemCount = await this.executeWithSources(automation.taskId, providerSettings, sources);
-      await this.recordResult(automationId, { itemCount, status: 'success', kind });
+      await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
+
+      this.emitDataChange((RADARR_TASKS[taskId] ?? SONARR_TASKS[taskId])?.affects, itemCount);
+
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
       log.error('Automation execution failed', { automationId, err });
-      await this.recordResult(automationId, {
+      await this.recordResult(automationId, taskId, {
         itemCount,
         status: 'error',
         error: err instanceof Error ? err.message : 'Unknown error',
@@ -148,9 +167,9 @@ export class AutomationExecutor {
         });
       }
       const finalIds = evaluateCombination(queryResults).map(Number);
-      const handler = RADARR_TASKS[taskId];
-      if (!handler) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await handler(radarr, finalIds);
+      const task = RADARR_TASKS[taskId];
+      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
+      await task.run(radarr, finalIds);
       return finalIds.length;
     }
 
@@ -167,17 +186,29 @@ export class AutomationExecutor {
         });
       }
       const finalIds = evaluateCombination(queryResults).map(Number);
-      const handler = SONARR_TASKS[taskId];
-      if (!handler) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await handler(sonarr, finalIds);
+      const task = SONARR_TASKS[taskId];
+      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
+      await task.run(sonarr, finalIds);
       return finalIds.length;
     }
 
     return 0;
   }
 
+  /**
+   * Emits the namespaced `<scope>:changed` event when a run with a declared data
+   * scope actually changed items. The payload is empty — consumers evict the whole
+   * scope, so the event need only signal *that* the scope changed.
+   */
+  private emitDataChange(affects: 'media' | undefined, itemCount: number): void {
+    if (affects && itemCount > 0) {
+      this.eventBus?.emit(`${affects}:changed`, {});
+    }
+  }
+
   private async recordResult(
     automationId: number,
+    taskId: string,
     result: {
       itemCount: number;
       status: 'success' | 'error';
@@ -185,7 +216,7 @@ export class AutomationExecutor {
       kind: 'user' | 'system';
     }
   ): Promise<void> {
-    await Promise.all([
+    const [, run] = await Promise.all([
       this.automationService.recordRun(automationId, result),
       this.automationRunService.createRun({
         automationId,
@@ -195,6 +226,18 @@ export class AutomationExecutor {
         kind: result.kind,
       }),
     ]);
+
+    this.eventBus?.emit('run:completed', {
+      automationId,
+      kind: result.kind,
+      taskId,
+      status: result.status,
+      itemCount: result.itemCount,
+      error: result.error,
+      finishedAt: new Date(),
+      runId: run.id,
+      ranAt: run.ranAt,
+    });
   }
 }
 
@@ -203,12 +246,29 @@ export class AutomationExecutor {
 type RadarrTaskFn = (provider: RadarrProvider, ids: number[]) => Promise<void>;
 type SonarrTaskFn = (provider: SonarrProvider, ids: number[]) => Promise<void>;
 
-const RADARR_TASKS: Record<string, RadarrTaskFn> = {
-  unmonitorMovie: (provider, ids) => provider.unmonitorMovies(ids),
-  triggerSearch: (provider, ids) => provider.triggerMoviesSearch(ids),
+interface RadarrTask {
+  run: RadarrTaskFn;
+  affects?: 'media';
+}
+
+interface SonarrTask {
+  run: SonarrTaskFn;
+  affects?: 'media';
+}
+
+export const RADARR_TASKS: Record<string, RadarrTask> = {
+  unmonitorMovie: { run: (provider, ids) => provider.unmonitorMovies(ids), affects: 'media' },
+  triggerSearch: { run: (provider, ids) => provider.triggerMoviesSearch(ids) },
 };
 
-const SONARR_TASKS: Record<string, SonarrTaskFn> = {
-  unmonitorSeries: (provider, ids) => provider.unmonitorSeries(ids),
-  triggerSearch: (provider, ids) => provider.triggerSeriesSearch(ids),
+export const SONARR_TASKS: Record<string, SonarrTask> = {
+  unmonitorSeries: { run: (provider, ids) => provider.unmonitorSeries(ids), affects: 'media' },
+  triggerSearch: { run: (provider, ids) => provider.triggerSeriesSearch(ids) },
+};
+
+// System data jobs span every source, so they declare scope but no sourceType —
+// a `media:changed` from here evicts both movie and series caches.
+export const SYSTEM_TASKS: Record<string, { affects?: 'media' }> = {
+  'system:enrichment': { affects: 'media' },
+  'system:identity-resolution': { affects: 'media' },
 };

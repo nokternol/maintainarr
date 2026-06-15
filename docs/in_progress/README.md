@@ -26,10 +26,10 @@ observable (assert the next read re-fetches). Only Phase 6 is visual, and it is 
 | Phase | Spec | Observable value | Depends on | Kind |
 |---|---|---|---|---|
 | **1** | ✅ shipped | A system data run (enrichment / identity-resolution) records a **real `itemCount`** instead of hardcoded `0`. The job→runner→executor chain is typed `Promise<number>`; `runForPlex` counts rows actually changed via `rowsAffected`. | — | TDD (backend) |
-| **2** | `phase-2-domain-event-bus.md` | `executor.execute()` **emits** `run:started`, `run:completed` (post-commit, real ids), and `data:changed` (gated on declared scope + `itemCount > 0`) — asserted via a test subscriber. | P1 (honest counts make the gate meaningful) | TDD (backend) |
-| **3** | `phase-3-enrichment-cache.md` | After a `data:changed`, the **next** `listMovies`/`listSeries` re-fetches the enrichment maps; an unrelated run does **not** evict; a missed emit self-heals within the absolute 5-min TTL. | P2 (`data:changed`) | TDD (backend) |
+| **2** | ✅ shipped | `executor.execute()` **emits** `run:started`, `run:completed` (post-commit, real ids), and the namespaced `media:changed` (gated on declared scope + `itemCount > 0`) — asserted via a test subscriber. Pattern: `docs/architecture/domain-event-bus.md`. | P1 (honest counts make the gate meaningful) | TDD (backend) |
+| **3** | `phase-3-enrichment-cache.md` | After a `media:changed`, the **next** `listMovies`/`listSeries` re-fetches the enrichment maps; an unrelated run does **not** evict; a missed emit self-heals within the absolute 5-min TTL. | P2 (`media:changed`) | TDD (backend) |
 | **4** | `phase-4-sse-task-stream.md` | A run (incl. Run Now) pushes frames over `GET /api/events/tasks`; `useTaskEvents` patches the row to *running* then to the committed result; a mid-run (re)connect resyncs. | P2 (`run:*`) | TDD (backend + client hooks) |
-| **5** | `phase-5-sse-data-stream.md` | A data-mutating run pushes a frame over `GET /api/events/data`; a mounted grid revalidates (now cheap — P3). | P2 (`data:changed`), P3 (cheap revalidate), P4 (reuses the SSE-hook pattern) | TDD (backend + client hooks) |
+| **5** | `phase-5-sse-data-stream.md` | A data-mutating run pushes a frame over `GET /api/events/data`; a mounted grid revalidates (now cheap — P3). | P2 (`media:changed`), P3 (cheap revalidate), P4 (reuses the SSE-hook pattern) | TDD (backend + client hooks) |
 | **6** | `phase-6-impeccable-automation-verbs.md` | Verb relabel (Run Now/Disable/Archive), the live "running…" visual, and the System → Tasks column treatment. | P4 + P5 (live state to design against) | **impeccable** (visual, not TDD) |
 
 ```
@@ -54,9 +54,9 @@ backend-only, clears the standing enrichment-cache perf debt, and makes P5's gri
   SWR patching, the duration ticker) is TDD-tested inside P4/P5 against a mocked `EventSource`. P6 owns
   only the *visual* layer and runs through `impeccable` (Ladle story first, per `CLAUDE.md`).
 
-## The `data:changed` gate contract (decided)
+## The `media:changed` gate contract (decided)
 
-Emit `data:changed{ scope:'media', sourceType? }` **iff** the task declares a media scope **and**
+Emit the namespaced `media:changed` (no payload) **iff** the task declares a media scope **and**
 `itemCount > 0`.
 
 - `itemCount` **must be non-zero whenever cached-relevant data was written** (no false zero — that is
@@ -64,8 +64,11 @@ Emit `data:changed{ scope:'media', sourceType? }` **iff** the task declares a me
 - `itemCount` **may over-count** actual mutations (e.g. user `unmonitor` of already-unmonitored items).
   Over-emission causes only safe, scope-level **over-eviction**, which the debounce absorbs.
 - The cache **does not read the count's magnitude** — eviction is whole-scope. The count's only job in
-  the gate is the zero/non-zero decision. Per-identity/keyed eviction (which *would* need a richer
-  payload) is explicitly deferred.
+  the gate is the zero/non-zero decision.
+- **No within-scope discriminator.** The event carries no `sourceType`/`kind`: the cache is whole-scope,
+  so a discriminator would be premature friction. It returns only if a consumer segments its cache and
+  proves it needs one, in that consumer's own vocabulary — *not* the provider-source axis inherited
+  from `media_identity`. See `docs/intent/domain-event-bus-hardening.md`.
 
 ## Out of this target (left in `docs/intent/`)
 
