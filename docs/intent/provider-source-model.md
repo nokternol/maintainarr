@@ -95,6 +95,23 @@ This also collapses the filter-classification concern: there is no "instance" fi
 automation's bound provider *is* the instance. Item attributes come from the provider; group-level
 enrichment predicates are joined in via the item's `media_identity`.
 
+## Library-view display grouping (decided)
+
+The whole-catalog browse/library view (across all providers) collapses N source items into **one row
+per title** by **live-dedup on the native primary id** — `tmdbId` for movies, `tvdbId` for series —
+computed per request over the live provider data. No DB join and no dependency on
+`IdentityResolutionJob` having run, so a just-added title groups immediately. It uses the *same* key
+the auto-resolver does, so view and persistence agree by construction.
+
+- **Prerequisite:** the native id must be threaded into the normalized projection — today
+  `normalizeRadarrMovie`/`normalizeSonarrSeries` drop `tmdbId`/`tvdbId` (`normalizeMedia.ts`).
+- **Filter semantics: ANY.** A title shows if at least one of its items satisfies an item-level filter
+  (e.g. "do I have this in 4k?"). The row carries an "N sources" badge.
+- **Row composition: representative + badge for now.** Cross-item aggregation (sum `sizeOnDisk`,
+  earliest `added`, union of qualities/tags, ANY for `hasFile`/`monitored`) is **deferred** until a
+  real multi-item case appears — most titles are single-item, so the collapse is a no-op today.
+- **Display concern only** — it does not touch task targeting (per-instance) or the persisted spine.
+
 ## Logical grouping & the auto-resolver (decided)
 
 Grouping is **auto-resolved only** for now — no manual-correction layer yet. The surrogate-id /
@@ -129,21 +146,18 @@ later — `runForPlex` changing from *stamping* existing rows to *inserting* the
   not built now.
 - **Task targeting** — instance-bound, no fan-out; multi-instance = N automations. Automation→provider
   binding unchanged. See "Task targeting".
+- **Library-view display grouping** — live-dedup by native id, ANY filter semantics, representative +
+  badge (aggregation deferred). See "Library-view display grouping".
 
 ## Still open / the next modeling work
 
-1. **Display grouping source.** The browse path reads *live* provider data (`radarr.getMovies()`), not
-   the DB. Library-view dedup can group live items by their own primary id without waiting on the
-   resolver, while the persisted `media_item`/`media_identity` spine backs enrichment/correction.
-   Confirm the read path groups live items by primary id rather than joining the
-   (eventually-consistent) tables.
-2. **Migration.** Drop `(sourceType, sourceId)` from `media_identity`; add `media_item` with
+1. **Migration.** Drop `(sourceType, sourceId)` from `media_identity`; add `media_item` with
    `(providerId, externalId)` UNIQUE + `mediaIdentityId`; rework `IdentityResolutionJob` to upsert
    `media_item` and resolve groups; `enrichmentMerge` and `_sourceIds` follow. `media_enrichment`'s FK
    to `media_identity` is unchanged.
-3. **Other multi-instance types.** SEERR/Overseerr and future types may also be multi-instance; the
+2. **Other multi-instance types.** SEERR/Overseerr and future types may also be multi-instance; the
    instance-not-type correction should be uniform, not Radarr/Sonarr-special.
-4. **Surrogate id type.** Whether new ids are time-ordered UUIDs or keep the existing autoincrement
+3. **Surrogate id type.** Whether new ids are time-ordered UUIDs or keep the existing autoincrement
    integer (`media_identity` uses integer today). Minor and reversible; noted so it is a choice.
 
 ## Relationship to earlier decisions
