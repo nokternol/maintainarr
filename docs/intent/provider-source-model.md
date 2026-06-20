@@ -5,6 +5,11 @@ in `docs/architecture/provider-roles-and-identity.md`. Sharpens "what is a sourc
 setups, versions/editions, and per-source tasks have a home, while keeping the door open to media
 servers as catalog owners.
 
+**Scope:** this document specifies the **MediaSource** role in detail. It sits under the umbrella model
+in `docs/intent/system-roles-and-capabilities.md`, which defines all three roles a configured system can
+play (MediaSource / MetadataEnricher / MediaActuator). Read the umbrella first for how source relates to
+enrichment and actuation.
+
 ## Decision: the catalog is *seeded* by sources; everything else enriches
 
 Some providers **seed** the catalog (define what exists + a canonical id); others **enrich** it.

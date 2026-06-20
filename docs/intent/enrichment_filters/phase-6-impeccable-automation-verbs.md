@@ -1,6 +1,6 @@
 # Phase 6 — impeccable visual pass: automation verbs & live state
 
-**Status:** IN PROGRESS — **Phase 6** of the Realtime & Event-Driven Cache plan (see `README.md`).
+**Status:** INTENT (reverted from in-flight) — **Phase 6** of the Realtime & Event-Driven Cache plan (see `README.md`).
 **This is the frontend visual phase — run through the `impeccable` skill, NOT RED/GREEN TDD.** The
 functional behaviour it dresses (SSE push, running state, SWR patching) was already built and tested in
 Phases 4–5. Phase 6 owns *looks*, not *logic*.

@@ -1,6 +1,6 @@
 # Phase 5 — Realtime UI: SSE data stream
 
-**Status:** IN PROGRESS — **Phase 5** of the Realtime & Event-Driven Cache plan (see `README.md`).
+**Status:** INTENT (reverted from in-flight) — **Phase 5** of the Realtime & Event-Driven Cache plan (see `README.md`).
 TDD (backend + functional client hooks). **Depends on:** Phase 2 (`media:changed`), Phase 3 (makes the
 grid revalidation cheap), Phase 4 (reuses the SSE endpoint + hook + resync pattern).
 

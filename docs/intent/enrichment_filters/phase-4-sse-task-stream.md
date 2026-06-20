@@ -1,6 +1,6 @@
 # Phase 4 — Realtime UI: SSE task stream
 
-**Status:** IN PROGRESS — **Phase 4** of the Realtime & Event-Driven Cache plan (see `README.md`).
+**Status:** INTENT (reverted from in-flight) — **Phase 4** of the Realtime & Event-Driven Cache plan (see `README.md`).
 TDD (backend + functional client hooks). **Depends on:** Phase 2 (`run:*`). Closes the Run-Now feedback
 gap (the button + 202 work today, but nothing reflects the result in the UI).
 

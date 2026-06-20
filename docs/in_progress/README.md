@@ -1,78 +1,80 @@
-# Realtime & Event-Driven Cache — phased TDD plan
+# System-Roles & MediaQueryEngine Heal — phased TDD plan
 
-**Status:** IN PROGRESS — active implementation plan. One target (the domain event bus and everything
-that rides on it) broken into six phases. Each backend phase is a full TDD phase (RED/GREEN/REFACTOR)
-with enumerated cycles and a single observable behaviour; the final phase is a frontend visual pass run
-through the `impeccable` skill, not TDD. Delete a phase's spec from `docs/in_progress/` when it ships,
-moving any durable implemented pattern to `docs/architecture/`.
+**Status:** IN PROGRESS — active implementation plan. Heals two standing fractures end-to-end (server +
+client) before further feature work resumes: the **provider/role** fracture (a configured system is one
+amalgamated "provider" assumed equally capable) and the **collection-resolution** fracture (one truth —
+"what does this query match" — owned by three sites that disagree). The model these phases realise is in
+`docs/intent/system-roles-and-capabilities.md` and `docs/intent/media-query-engine.md`.
 
-## The target
+This plan **outranks** the Realtime & Event-Driven Cache plan, which was reverted from in-flight to
+`docs/intent/enrichment_filters/` (P1–P2 shipped; P3–P6 paused). Those phases ride on the executor and
+the automation create/run path that Phases 1–2 here rewrite; resuming them first would mean reworking
+them. They come back once this heal lands.
 
-Two standing needs — pushing run status to the UI, and invalidating the enrichment cache when data
-changes — both reduce to *"something inside the scheduler/executor happened, and something outside it
-must react."* That single `job → handler` seam is the target. The phases below build it bottom-up:
-make run results carry honest data, emit events off them, then hang consumers (cache, then two SSE
-streams) off the bus, then make it look right.
+## The two fractures, one program
 
-## "Observable value" in this plan
-
-Per the tdd skill, every TDD phase delivers a behaviour **detectable from outside the unit under
-test** — not necessarily visual. An emitted event is observable (assert via a test subscriber); a
-persisted run-record field is observable (assert via the service/API); an evicted cache entry is
-observable (assert the next read re-fetches). Only Phase 6 is visual, and it is explicitly *not* TDD.
+- **Collection** is a missing *verb*, not an entity. "Which items match these filter values" lives in
+  three places — the executor (complete, but private), `GET /saved-queries/:id/preview` (`{count:0}`
+  stub), and the browse handler (duplicated loop, no combination). Heal: one owner, `MediaQueryEngine`,
+  the others call it.
+- **Provider** conflates three roles — `MediaSource`, `MetadataEnricher`, `MediaActuator`. Tasks belong
+  to the actuator role only, yet the client advertises ~30 across all systems while the executor runs 3,
+  and `taskId` is unvalidated. Heal: declare roles; make the **server** the source of truth for the task
+  manifest; the **client derives** instead of holding its own 281-line catalogue.
 
 ## Phases
 
 | Phase | Spec | Observable value | Depends on | Kind |
 |---|---|---|---|---|
-| **1** | ✅ shipped | A system data run (enrichment / identity-resolution) records a **real `itemCount`** instead of hardcoded `0`. The job→runner→executor chain is typed `Promise<number>`; `runForPlex` counts rows actually changed via `rowsAffected`. | — | TDD (backend) |
-| **2** | ✅ shipped | `executor.execute()` **emits** `run:started`, `run:completed` (post-commit, real ids), and the namespaced `media:changed` (gated on declared scope + `itemCount > 0`) — asserted via a test subscriber. Pattern: `docs/architecture/domain-event-bus.md`. | P1 (honest counts make the gate meaningful) | TDD (backend) |
-| **3** | `phase-3-enrichment-cache.md` | After a `media:changed`, the **next** `listMovies`/`listSeries` re-fetches the enrichment maps; an unrelated run does **not** evict; a missed emit self-heals within the absolute 5-min TTL. | P2 (`media:changed`) | TDD (backend) |
-| **4** | `phase-4-sse-task-stream.md` | A run (incl. Run Now) pushes frames over `GET /api/events/tasks`; `useTaskEvents` patches the row to *running* then to the committed result; a mid-run (re)connect resyncs. | P2 (`run:*`) | TDD (backend + client hooks) |
-| **5** | `phase-5-sse-data-stream.md` | A data-mutating run pushes a frame over `GET /api/events/data`; a mounted grid revalidates (now cheap — P3). | P2 (`media:changed`), P3 (cheap revalidate), P4 (reuses the SSE-hook pattern) | TDD (backend + client hooks) |
-| **6** | `phase-6-impeccable-automation-verbs.md` | Verb relabel (Run Now/Disable/Archive), the live "running…" visual, and the System → Tasks column treatment. | P4 + P5 (live state to design against) | **impeccable** (visual, not TDD) |
+| **1** | `phase-1-media-query-engine.md` | A `MediaQuery` evaluates to its matched `MediaItemSet` through one engine; `/preview` returns a **real count** (not `0`); the executor and browse handler both resolve via that engine. | — | TDD (backend) |
+| **2** | `phase-2-actuator-role-and-task-manifest.md` | A server **task manifest** declares each system's actuator tasks; creating an automation with an **unrunnable `taskId` is rejected**; `GET` exposes the manifest. | P1 (executor already routes through the engine; task dispatch is the remaining executor concern) | TDD (backend) |
+| **3** | `phase-3-client-task-source-of-truth.md` | The client builds automations from the **server manifest**; the hardcoded client task catalogue is gone; the builder cannot offer a task the server can't run. | P2 (manifest endpoint) | TDD (client hooks) + impeccable (builder visual) |
+| **4** | `phase-4-client-query-alignment.md` | The filter view and saved-query preview reflect the engine's `MediaQuery`/`MediaItemSet` shape; preview count shown in the UI matches what an automation will act on. | P1 (engine + real preview) | TDD (client hooks) + impeccable (filter view visual) |
 
 ```
-P1 run counts ─► P2 event bus ─┬─► P3 enrichment cache ─┐
-                               │                        ├─► P5 SSE data-stream ─► P6 impeccable
-                               └─► P4 SSE task-stream ───┘                          (visual)
+P1 engine ─┬─► P4 client query alignment
+           │
+P2 manifest┴─► P3 client task source-of-truth
 ```
 
-P3 and P4 both depend only on P2 and may be built in either order; P3 is sequenced first because it is
-backend-only, clears the standing enrichment-cache perf debt, and makes P5's grid revalidation cheap.
+P1 and P2 are server-only and restore cohesion (divergence gone at the end of P2). P3 and P4 make the
+client honest and may proceed in parallel once their server dependency lands.
 
-## Why this shape (boundaries redrawn from the original 4 docs)
+## Implementing a phase (agent invocation)
 
-- **P1 split out of the bus doc.** The bus's `itemCount > 0` gate is only honest if data jobs report a
-  real count, but `automationExecutor.ts:90` hardcodes `0` for *every* system task and the job chain
-  returns `Promise<void>`. Threading a real count (job → `SystemTaskRunner` → executor → run record)
-  is its own observable behaviour and a prerequisite, so it is its own phase, not a buried footnote.
-- **The SSE doc split into P4 + P5.** Two streams, two consumers, two screens, two distinct observable
-  behaviours; P5 also depends on P3 while P4 does not. P4 establishes the shared SSE-hook + resync
-  pattern that P5 reuses.
-- **Frontend cleanly separated (P6).** Functional client *logic* (EventSource lifecycle, resync,
-  SWR patching, the duration ticker) is TDD-tested inside P4/P5 against a mocked `EventSource`. P6 owns
-  only the *visual* layer and runs through `impeccable` (Ladle story first, per `CLAUDE.md`).
+Each phase ships with a thin `phase-N-prompt.md` (the phase-specific seams and traps) beside its
+`phase-N-<name>.md` cycle doc. Shared context that applies to every phase lives once in `AGENT_BRIEF.md`.
+A fresh agent is invoked with just:
 
-## The `media:changed` gate contract (decided)
+```
+tdd docs/in_progress/phase-N-prompt.md docs/in_progress/phase-N-<name>.md
+```
 
-Emit the namespaced `media:changed` (no payload) **iff** the task declares a media scope **and**
-`itemCount > 0`.
+The prompt doc points the agent at `AGENT_BRIEF.md` and the relevant model/intent docs, so the two-file
+invocation is sufficient.
 
-- `itemCount` **must be non-zero whenever cached-relevant data was written** (no false zero — that is
-  the only failure mode that matters; it would leave the cache stale until the TTL backstop).
-- `itemCount` **may over-count** actual mutations (e.g. user `unmonitor` of already-unmonitored items).
-  Over-emission causes only safe, scope-level **over-eviction**, which the debounce absorbs.
-- The cache **does not read the count's magnitude** — eviction is whole-scope. The count's only job in
-  the gate is the zero/non-zero decision.
-- **No within-scope discriminator.** The event carries no `sourceType`/`kind`: the cache is whole-scope,
-  so a discriminator would be premature friction. It returns only if a consumer segments its cache and
-  proves it needs one, in that consumer's own vocabulary — *not* the provider-source axis inherited
-  from `media_identity`. See `docs/intent/domain-event-bus-hardening.md`.
+## Sequencing rationale
 
-## Out of this target (left in `docs/intent/`)
+- **P1 first** — smallest and safest (its first moves are behaviour-preserving extractions guarded by
+  existing executor tests), it deletes the `{count:0}` lie, and it creates the single seam every later
+  phase and the reverted event-bus plan land into.
+- **P2 next** — with resolution out of the executor, task dispatch is the executor's remaining concern;
+  the manifest + `taskId` validation close the actuator over-promise.
+- **P3 / P4** — client inversion. They depend on the server truth existing (P2 / P1 respectively). Each
+  carries a visual pass via `impeccable` per `CLAUDE.md` (Ladle story first), separated from its
+  TDD-tested hook logic.
 
-- `automation-archive.md` — soft delete / restore; independent of the bus, slot any time. Its Archive
-  *verb visual* folds into P6 only if both are ready together.
-- `filter-ui.md` — provider-gating + prop-accumulation cleanup; a separate Phase-4-combination-builder
-  concern needing its own design pass.
+## Relationship to the model docs
+
+- `docs/intent/media-query-engine.md` — the `MediaQuery` / `MediaQueryEngine` / `MediaItemSet` model and
+  the 5-step heal that Phase 1 implements.
+- `docs/intent/system-roles-and-capabilities.md` — the three-role model Phases 2–3 realise.
+- `docs/architecture/task-execution-and-actuator-gap.md` — the as-built actuator divergence Phase 2 closes.
+- When a phase ships, move its durable pattern to `docs/architecture/` and delete its spec here.
+
+## Not in this program
+
+- The `media_item` / `media_identity` migration (`docs/intent/provider-source-model.md`) — it lands
+  **into** `MediaItemSet` after this heal gives it a stable seam; explicitly sequenced behind P1.
+- Media servers as sources, manual match-correction — deferred per the source model.
+</content>

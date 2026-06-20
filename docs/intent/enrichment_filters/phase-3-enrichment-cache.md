@@ -1,6 +1,6 @@
 # Phase 3 — Enrichment Cache & Invalidation
 
-**Status:** IN PROGRESS — **Phase 3** of the Realtime & Event-Driven Cache plan (see `README.md`).
+**Status:** INTENT (reverted from in-flight) — **Phase 3** of the Realtime & Event-Driven Cache plan (see `README.md`).
 TDD (backend). **Depends on:** Phase 2 (`media:changed`). Resolves the standing Phase 2 debt
 ("enrichment merge is uncached").
 
