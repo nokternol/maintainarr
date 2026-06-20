@@ -3,18 +3,14 @@ import type { MetadataProvider } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '../providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
-import { getFilterDef } from '../utils/filterRegistry';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
-import { type QueryResult, evaluateCombination } from './combinationEvaluator';
-import { mergeEnrichment } from './enrichmentMerge';
 import type { DomainEventBus } from './eventBus';
+import { MediaQueryEngine } from './mediaQueryEngine';
 import type { ProviderSettingsService } from './providerSettingsService';
-import type { FilterValueEntry } from './savedQueryService';
 import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
@@ -29,26 +25,10 @@ interface ExecutorDeps {
   providerSettingsService: ProviderSettingsService;
   savedQueryService: SavedQueryService;
   providerFactory?: IProviderFactory;
+  mediaQueryEngine?: MediaQueryEngine;
   db?: DrizzleDb;
   systemTaskRunner?: SystemTaskRunnerLike;
   eventBus?: DomainEventBus;
-}
-
-// ─── Filter application ───────────────────────────────────────────────────────
-
-function applyFilters<T extends NormalizedMovie | NormalizedShow>(
-  items: T[],
-  filterValues: FilterValueEntry[],
-  contentType: 'movie' | 'show'
-): T[] {
-  if (filterValues.length === 0) return items;
-  return items.filter((item) =>
-    filterValues.every(({ key, value }) => {
-      const def = getFilterDef(key, contentType);
-      if (!def) return true;
-      return def.apply(item, value);
-    })
-  );
 }
 
 // ─── Executor ─────────────────────────────────────────────────────────────────
@@ -59,7 +39,7 @@ export class AutomationExecutor {
   private readonly providerSettingsService: ProviderSettingsService;
   private readonly savedQueryService: SavedQueryService;
   private readonly providerFactory: IProviderFactory;
-  private readonly db?: DrizzleDb;
+  private readonly mediaQueryEngine: MediaQueryEngine;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
   private readonly eventBus?: DomainEventBus;
   private readonly inFlight = new Set<number>();
@@ -70,7 +50,7 @@ export class AutomationExecutor {
     this.providerSettingsService = deps.providerSettingsService;
     this.savedQueryService = deps.savedQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
-    this.db = deps.db;
+    this.mediaQueryEngine = deps.mediaQueryEngine ?? new MediaQueryEngine({ db: deps.db });
     this.systemTaskRunner = deps.systemTaskRunner;
     this.eventBus = deps.eventBus;
   }
@@ -152,43 +132,26 @@ export class AutomationExecutor {
     );
     const contentType = queryDtos[0].contentType;
     const provider = this.providerFactory.create(providerSettings, log);
-    const queryResults: QueryResult[] = [];
+
+    const matched = await this.mediaQueryEngine.evaluate({
+      provider: provider as RadarrProvider | SonarrProvider,
+      contentType,
+      sources: sources.map((s, i) => ({ filterValues: queryDtos[i].filterValues, role: s.role })),
+    });
 
     if (contentType === 'movie') {
-      const radarr = provider as RadarrProvider;
-      const movies = await radarr.getMovies();
-      const normalized = movies.map(normalizeRadarrMovie);
-      if (this.db) await mergeEnrichment(this.db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
-      for (let i = 0; i < sources.length; i++) {
-        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'movie');
-        queryResults.push({
-          role: sources[i].role,
-          items: matched.map((m) => m._sourceIds.radarr!),
-        });
-      }
-      const finalIds = evaluateCombination(queryResults).map(Number);
+      const finalIds = (matched as NormalizedMovie[]).map((m) => m._sourceIds.radarr!);
       const task = RADARR_TASKS[taskId];
       if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(radarr, finalIds);
+      await task.run(provider as RadarrProvider, finalIds);
       return finalIds.length;
     }
 
     if (contentType === 'show') {
-      const sonarr = provider as SonarrProvider;
-      const series = await sonarr.getSeries();
-      const normalized = series.map(normalizeSonarrSeries);
-      if (this.db) await mergeEnrichment(this.db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
-      for (let i = 0; i < sources.length; i++) {
-        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'show');
-        queryResults.push({
-          role: sources[i].role,
-          items: matched.map((s) => s._sourceIds.sonarr!),
-        });
-      }
-      const finalIds = evaluateCombination(queryResults).map(Number);
+      const finalIds = (matched as NormalizedShow[]).map((s) => s._sourceIds.sonarr!);
       const task = SONARR_TASKS[taskId];
       if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(sonarr, finalIds);
+      await task.run(provider as SonarrProvider, finalIds);
       return finalIds.length;
     }
 

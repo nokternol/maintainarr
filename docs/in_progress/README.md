@@ -26,7 +26,7 @@ them. They come back once this heal lands.
 
 | Phase | Spec | Observable value | Depends on | Kind |
 |---|---|---|---|---|
-| **1** | `phase-1-media-query-engine.md` | A `MediaQuery` evaluates to its matched `MediaItemSet` through one engine; `/preview` returns a **real count** (not `0`); the executor and browse handler both resolve via that engine. | — | TDD (backend) |
+| **1 ✅ shipped** | `docs/architecture/media-query-engine.md` | A `MediaQuery` evaluates to its matched `MediaItemSet` through one engine; `/preview` returns a **real count** (not `0`); the executor and browse handler both resolve via that engine. | — | TDD (backend) |
 | **2** | `phase-2-actuator-role-and-task-manifest.md` | A server **task manifest** declares each system's actuator tasks; creating an automation with an **unrunnable `taskId` is rejected**; `GET` exposes the manifest. | P1 (executor already routes through the engine; task dispatch is the remaining executor concern) | TDD (backend) |
 | **3** | `phase-3-client-task-source-of-truth.md` | The client builds automations from the **server manifest**; the hardcoded client task catalogue is gone; the builder cannot offer a task the server can't run. | P2 (manifest endpoint) | TDD (client hooks) + impeccable (builder visual) |
 | **4** | `phase-4-client-query-alignment.md` | The filter view and saved-query preview reflect the engine's `MediaQuery`/`MediaItemSet` shape; preview count shown in the UI matches what an automation will act on. | P1 (engine + real preview) | TDD (client hooks) + impeccable (filter view visual) |
@@ -66,8 +66,8 @@ invocation is sufficient.
 
 ## Relationship to the model docs
 
-- `docs/intent/media-query-engine.md` — the `MediaQuery` / `MediaQueryEngine` / `MediaItemSet` model and
-  the 5-step heal that Phase 1 implements.
+- `docs/architecture/media-query-engine.md` — the implemented `MediaQuery` / `MediaQueryEngine` /
+  `MediaItemSet` owner (Phase 1, shipped).
 - `docs/intent/system-roles-and-capabilities.md` — the three-role model Phases 2–3 realise.
 - `docs/architecture/task-execution-and-actuator-gap.md` — the as-built actuator divergence Phase 2 closes.
 - When a phase ships, move its durable pattern to `docs/architecture/` and delete its spec here.

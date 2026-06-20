@@ -4,22 +4,16 @@ import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { sortMedia } from '@server/modules/media/media.sort';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
-import { mergeEnrichment } from '@server/services/enrichmentMerge';
+import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
+import type { FilterValueEntry } from '@server/services/savedQueryService';
 import { defineRoute } from '@server/utils/defineRoute';
-import {
-  type ContentType,
-  type FilterValue,
-  type NormalizedMovie,
-  type NormalizedShow,
-  getFilterDef,
-} from '@server/utils/filterRegistry';
+import type { FilterValue, NormalizedMovie, NormalizedShow } from '@server/utils/filterRegistry';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
@@ -148,23 +142,15 @@ const SERIES_PARAM_TO_KEY: Record<string, string> = {
   lastWatchedDaysAgoLte: 'lastWatchedDaysAgoLte',
 };
 
-function filterViaRegistry<T extends NormalizedMovie | NormalizedShow>(
-  items: T[],
+// Project a browse query's content-prefixed params onto registry-keyed filter
+// values — the include source the MediaQueryEngine evaluates for the browse view.
+function toFilterValues(
   query: Record<string, unknown>,
-  contentType: ContentType,
   paramMap: Record<string, string>
-): T[] {
-  const active = Object.entries(paramMap)
-    .map(([param, key]) => ({ key, value: query[param] }))
+): FilterValueEntry[] {
+  return Object.entries(paramMap)
+    .map(([param, key]) => ({ key, value: query[param] as FilterValue }))
     .filter((e) => e.value !== undefined);
-  if (active.length === 0) return items;
-  return items.filter((item) =>
-    active.every(({ key, value }) => {
-      const def = getFilterDef(key, contentType);
-      if (!def) return true;
-      return def.apply(item, value as FilterValue);
-    })
-  );
 }
 
 // ─── Handler-local helpers ────────────────────────────────────────────────────
@@ -185,6 +171,7 @@ function computeYearRange(items: Array<{ year?: number }>): {
 interface MediaCradle {
   providerSettingsService: ProviderSettingsService;
   providerFactory?: IProviderFactory;
+  mediaQueryEngine: MediaQueryEngine;
   db?: DrizzleDb;
 }
 
@@ -201,7 +188,7 @@ function toMediaError(providerName: string, err: unknown): MediaError {
 }
 
 export function createMediaHandlers(cradle: MediaCradle) {
-  const { providerSettingsService, db } = cradle;
+  const { providerSettingsService, mediaQueryEngine } = cradle;
   const factory = cradle.providerFactory ?? new ProviderFactory();
 
   // Caches are owned by this factory invocation — same inputs produce isolated state.
@@ -277,13 +264,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { movies: all, errors } = await getMovies();
 
         const yearRange = computeYearRange(all);
-        const normalized = all.map(normalizeRadarrMovie);
-        if (db) await mergeEnrichment(db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
-        const matchedIds = new Set(
-          filterViaRegistry(normalized, query, 'movie', MOVIE_PARAM_TO_KEY).map(
-            (m) => m._sourceIds.radarr
-          )
-        );
+        const matched = await mediaQueryEngine.evaluate({
+          provider: { getMovies: async () => all } as RadarrProvider,
+          contentType: 'movie',
+          sources: [{ filterValues: toFilterValues(query, MOVIE_PARAM_TO_KEY), role: 'include' }],
+        });
+        const matchedIds = new Set(matched.map((m) => (m as NormalizedMovie)._sourceIds.radarr));
         const filtered = all.filter((m) => matchedIds.has(m.id));
         const sorted = sortMedia(filtered, query.sort, (m) => m.hasFile);
         return {
@@ -300,13 +286,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { series: all, errors } = await getSeries();
 
         const yearRange = computeYearRange(all);
-        const normalized = all.map(normalizeSonarrSeries);
-        if (db) await mergeEnrichment(db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
-        const matchedIds = new Set(
-          filterViaRegistry(normalized, query, 'show', SERIES_PARAM_TO_KEY).map(
-            (s) => s._sourceIds.sonarr
-          )
-        );
+        const matched = await mediaQueryEngine.evaluate({
+          provider: { getSeries: async () => all } as SonarrProvider,
+          contentType: 'show',
+          sources: [{ filterValues: toFilterValues(query, SERIES_PARAM_TO_KEY), role: 'include' }],
+        });
+        const matchedIds = new Set(matched.map((s) => (s as NormalizedShow)._sourceIds.sonarr));
         const filtered = all.filter((s) => matchedIds.has(s.id));
         const sorted = sortMedia(filtered, query.sort, (s) => s.monitored);
         return {
