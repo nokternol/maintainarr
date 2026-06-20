@@ -4,6 +4,11 @@
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 
+**Scope:** this covers the **MediaSource** and **MetadataEnricher** roles as built. The third role a
+system can play — **MediaActuator** (tasks/actions) — and its as-built gap are in
+`docs/architecture/task-execution-and-actuator-gap.md`. The unifying three-role model is
+`docs/intent/system-roles-and-capabilities.md`.
+
 ## Why this is recorded as architecture, not intent
 
 Providers were originally conceived as a flat, all-optional set of feeders mapped into one graph. In
