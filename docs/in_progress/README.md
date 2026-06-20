@@ -40,6 +40,19 @@ P2 manifest┴─► P3 client task source-of-truth
 P1 and P2 are server-only and restore cohesion (divergence gone at the end of P2). P3 and P4 make the
 client honest and may proceed in parallel once their server dependency lands.
 
+## Implementing a phase (agent invocation)
+
+Each phase ships with a thin `phase-N-prompt.md` (the phase-specific seams and traps) beside its
+`phase-N-<name>.md` cycle doc. Shared context that applies to every phase lives once in `AGENT_BRIEF.md`.
+A fresh agent is invoked with just:
+
+```
+tdd docs/in_progress/phase-N-prompt.md docs/in_progress/phase-N-<name>.md
+```
+
+The prompt doc points the agent at `AGENT_BRIEF.md` and the relevant model/intent docs, so the two-file
+invocation is sufficient.
+
 ## Sequencing rationale
 
 - **P1 first** — smallest and safest (its first moves are behaviour-preserving extractions guarded by
