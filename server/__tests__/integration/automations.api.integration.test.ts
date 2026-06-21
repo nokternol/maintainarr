@@ -10,7 +10,7 @@ import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedMediaQueryService';
+import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -38,7 +38,7 @@ describe('POST /api/automations — Session C', () => {
     const container = buildContainer({ config, db });
 
     const providerService = new ProviderSettingsService({ db });
-    const savedQueryService = new SavedQueryService({ db });
+    const savedMediaQueryService = new SavedMediaQueryService({ db });
 
     const provider = await providerService.create({
       type: MetadataProviderType.RADARR,
@@ -48,14 +48,14 @@ describe('POST /api/automations — Session C', () => {
     });
     movieProviderId = provider.id;
 
-    const movieQuery = await savedQueryService.create({
+    const movieQuery = await savedMediaQueryService.create({
       name: 'Movie Query',
       contentType: 'movie',
       filterValues: [],
     });
     movieQueryId = movieQuery.id;
 
-    const showQuery = await savedQueryService.create({
+    const showQuery = await savedMediaQueryService.create({
       name: 'Show Query',
       contentType: 'show',
       filterValues: [],

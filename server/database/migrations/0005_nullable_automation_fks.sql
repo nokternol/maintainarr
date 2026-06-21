@@ -17,7 +17,7 @@ CREATE TABLE `automations_new` (
 	`lastRunError` text,
 	`createdAt` text DEFAULT (datetime('now')) NOT NULL,
 	`updatedAt` text DEFAULT (datetime('now')) NOT NULL,
-	FOREIGN KEY (`queryId`) REFERENCES `saved_queries`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`queryId`) REFERENCES `media_queries`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`providerId`) REFERENCES `metadata_provider`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint

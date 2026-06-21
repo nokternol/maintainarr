@@ -16,7 +16,7 @@ import { DomainEventBus } from './services/eventBus';
 import { MediaQueryEngine } from './services/mediaQueryEngine';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
-import { SavedQueryService } from './services/savedMediaQueryService';
+import { SavedMediaQueryService } from './services/savedMediaQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
 import { TmdbService } from './services/tmdbService';
 
@@ -34,7 +34,7 @@ export interface Cradle {
   plexService: PlexService;
   authService: AuthService;
   providerSettingsService: ProviderSettingsService;
-  savedQueryService: SavedQueryService;
+  savedMediaQueryService: SavedMediaQueryService;
   mediaQueryEngine: MediaQueryEngine;
   automationService: AutomationService;
   automationRunService: AutomationRunService;
@@ -72,7 +72,7 @@ export function buildContainer(deps: {
     plexService: asClass(PlexService).scoped(),
     authService: asClass(AuthService).scoped(),
     providerSettingsService: asClass(ProviderSettingsService).singleton(),
-    savedQueryService: asClass(SavedQueryService).singleton(),
+    savedMediaQueryService: asClass(SavedMediaQueryService).singleton(),
     mediaQueryEngine: asClass(MediaQueryEngine).singleton(),
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),

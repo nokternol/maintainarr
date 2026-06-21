@@ -13,7 +13,7 @@ import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedMediaQueryService';
+import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRadarrMovie } from '../../../tests/factories';
@@ -38,7 +38,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
   let automationService: AutomationService;
   let automationRunService: AutomationRunService;
   let providerSettingsService: ProviderSettingsService;
-  let savedQueryService: SavedQueryService;
+  let savedMediaQueryService: SavedMediaQueryService;
   let executor: AutomationExecutor;
 
   beforeEach(async () => {
@@ -47,12 +47,12 @@ describe('AutomationExecutor writes to automation_runs', () => {
     automationService = new AutomationService({ db });
     automationRunService = new AutomationRunService({ db });
     providerSettingsService = new ProviderSettingsService({ db });
-    savedQueryService = new SavedQueryService({ db });
+    savedMediaQueryService = new SavedMediaQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
       automationRunService,
       providerSettingsService,
-      savedQueryService,
+      savedMediaQueryService,
     });
   });
 
@@ -76,7 +76,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({
+    const query = await savedMediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],
@@ -109,7 +109,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({
+    const query = await savedMediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],

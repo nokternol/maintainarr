@@ -7,8 +7,8 @@ import {
   type NewAutomation,
   automationQuerySources,
   automations,
+  mediaQueries,
   metadataProviders,
-  savedQueries,
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
 import type { ContentType } from './savedMediaQueryService';
@@ -140,11 +140,11 @@ export class AutomationService {
         queryId: automationQuerySources.queryId,
         role: automationQuerySources.role,
         sortOrder: automationQuerySources.sortOrder,
-        queryName: savedQueries.name,
-        queryContentType: savedQueries.contentType,
+        queryName: mediaQueries.name,
+        queryContentType: mediaQueries.contentType,
       })
       .from(automationQuerySources)
-      .leftJoin(savedQueries, eq(savedQueries.id, automationQuerySources.queryId))
+      .leftJoin(mediaQueries, eq(mediaQueries.id, automationQuerySources.queryId))
       .where(eq(automationQuerySources.automationId, id))
       .orderBy(automationQuerySources.sortOrder);
 
@@ -190,11 +190,11 @@ export class AutomationService {
         queryId: automationQuerySources.queryId,
         role: automationQuerySources.role,
         sortOrder: automationQuerySources.sortOrder,
-        queryName: savedQueries.name,
-        queryContentType: savedQueries.contentType,
+        queryName: mediaQueries.name,
+        queryContentType: mediaQueries.contentType,
       })
       .from(automationQuerySources)
-      .leftJoin(savedQueries, eq(savedQueries.id, automationQuerySources.queryId))
+      .leftJoin(mediaQueries, eq(mediaQueries.id, automationQuerySources.queryId))
       .where(inArray(automationQuerySources.automationId, automationIds))
       .orderBy(automationQuerySources.sortOrder);
 
@@ -239,9 +239,9 @@ export class AutomationService {
     if (draft.querySources.length > 1) {
       const allQueryIds = draft.querySources.map((s) => s.queryId);
       const contentTypeRows = await this.db
-        .select({ contentType: savedQueries.contentType })
-        .from(savedQueries)
-        .where(inArray(savedQueries.id, allQueryIds));
+        .select({ contentType: mediaQueries.contentType })
+        .from(mediaQueries)
+        .where(inArray(mediaQueries.id, allQueryIds));
       const distinct = new Set(contentTypeRows.map((r) => r.contentType));
       if (distinct.size > 1) {
         throw new ValidationError('All query sources must share the same contentType');
@@ -263,9 +263,9 @@ export class AutomationService {
     const includeSources = draft.querySources.filter((s) => s.role === 'include');
     if (includeSources.length > 0 && providerType) {
       const [queryRow] = await this.db
-        .select({ contentType: savedQueries.contentType })
-        .from(savedQueries)
-        .where(eq(savedQueries.id, includeSources[0].queryId));
+        .select({ contentType: mediaQueries.contentType })
+        .from(mediaQueries)
+        .where(eq(mediaQueries.id, includeSources[0].queryId));
 
       if (queryRow) {
         const contentType = queryRow.contentType as ContentType;

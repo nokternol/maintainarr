@@ -16,7 +16,7 @@ import { createAutomationRoutes } from '@server/modules/automations/automations.
 import type { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedMediaQueryService';
+import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -46,7 +46,7 @@ describe('GET /api/automations/runs', () => {
 
     // Seed fixtures
     const providerService = new ProviderSettingsService({ db });
-    const savedQueryService = new SavedQueryService({ db });
+    const savedMediaQueryService = new SavedMediaQueryService({ db });
     const automationService = new AutomationService({ db });
 
     const provider = await providerService.create({
@@ -55,7 +55,7 @@ describe('GET /api/automations/runs', () => {
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({
+    const query = await savedMediaQueryService.create({
       name: 'Test Query',
       contentType: 'movie',
       filterValues: [],

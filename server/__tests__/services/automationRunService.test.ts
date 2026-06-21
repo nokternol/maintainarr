@@ -12,7 +12,7 @@ import { MetadataProviderType } from '@server/database/schema';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedMediaQueryService';
+import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -35,7 +35,7 @@ const testConfig: AppConfig = {
 async function seedFixtures() {
   const db = getDb();
   const providerService = new ProviderSettingsService({ db });
-  const savedQueryService = new SavedQueryService({ db });
+  const savedMediaQueryService = new SavedMediaQueryService({ db });
   const automationService = new AutomationService({ db });
 
   const provider = await providerService.create({
@@ -44,7 +44,7 @@ async function seedFixtures() {
     url: 'http://localhost:7878/api/v3',
     apiKey: 'test-key',
   });
-  const query = await savedQueryService.create({
+  const query = await savedMediaQueryService.create({
     name: 'All Movies',
     contentType: 'movie',
     filterValues: [],
@@ -148,7 +148,7 @@ describe('AutomationRunService', () => {
     it('filters runs by automationId', async () => {
       const db = getDb();
       const providerService = new ProviderSettingsService({ db });
-      const savedQueryService = new SavedQueryService({ db });
+      const savedMediaQueryService = new SavedMediaQueryService({ db });
       const automationService = new AutomationService({ db });
 
       const provider = await providerService.create({
@@ -157,7 +157,7 @@ describe('AutomationRunService', () => {
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
       });
-      const query = await savedQueryService.create({
+      const query = await savedMediaQueryService.create({
         name: 'Q',
         contentType: 'movie',
         filterValues: [],

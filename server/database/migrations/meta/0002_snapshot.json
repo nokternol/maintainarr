@@ -110,10 +110,10 @@
         }
       },
       "foreignKeys": {
-        "automations_queryId_saved_queries_id_fk": {
-          "name": "automations_queryId_saved_queries_id_fk",
+        "automations_queryId_media_queries_id_fk": {
+          "name": "automations_queryId_media_queries_id_fk",
           "tableFrom": "automations",
-          "tableTo": "saved_queries",
+          "tableTo": "media_queries",
           "columnsFrom": ["queryId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
@@ -497,8 +497,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "saved_queries": {
-      "name": "saved_queries",
+    "media_queries": {
+      "name": "media_queries",
       "columns": {
         "id": {
           "name": "id",

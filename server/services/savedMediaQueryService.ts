@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type MetadataProviderType,
+  mediaQueries,
+  mediaQueryFilterValues,
   metadataProviders,
-  savedQueries,
-  savedQueryFilterValues,
 } from '../database/schema';
 import { NotFoundError, ValidationError } from '../errors';
 import type { ContentType, FilterValue } from '../utils/filterRegistry';
@@ -22,9 +22,6 @@ export interface SavedMediaQueryDraft {
   contentType: ContentType;
   filterValues: FilterValueEntry[];
 }
-
-/** @deprecated ubiquitous-language alias — use `SavedMediaQueryDraft`. */
-export type SavedQueryDraft = SavedMediaQueryDraft;
 
 export interface ProviderStatus {
   providerType: MetadataProviderType;
@@ -53,9 +50,6 @@ export interface SavedMediaQuery {
   health: QueryHealth;
   createdAt: string;
 }
-
-/** @deprecated ubiquitous-language alias — use `SavedMediaQuery`. */
-export type SavedQueryDto = SavedMediaQuery;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,8 +112,8 @@ export class SavedMediaQueryService {
   }
 
   async list(): Promise<SavedMediaQuery[]> {
-    const rows = await this.db.select().from(savedQueries).orderBy(savedQueries.createdAt);
-    const fvRows = await this.db.select().from(savedQueryFilterValues);
+    const rows = await this.db.select().from(mediaQueries).orderBy(mediaQueries.createdAt);
+    const fvRows = await this.db.select().from(mediaQueryFilterValues);
 
     const activeRows = await this.db
       .select({ type: metadataProviders.type })
@@ -127,15 +121,15 @@ export class SavedMediaQueryService {
       .where(eq(metadataProviders.isActive, true));
     const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
 
-    // Group filter value rows by savedQueryId
+    // Group filter value rows by mediaQueryId
     const fvByQueryId = new Map<number, FilterValueEntry[]>();
     for (const fv of fvRows) {
       const def = FILTER_REGISTRY.find((d) => d.key === fv.filterKey);
       const dataType = def?.dataType ?? 'string';
       const entry: FilterValueEntry = { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
-      const arr = fvByQueryId.get(fv.savedQueryId) ?? [];
+      const arr = fvByQueryId.get(fv.mediaQueryId) ?? [];
       arr.push(entry);
-      fvByQueryId.set(fv.savedQueryId, arr);
+      fvByQueryId.set(fv.mediaQueryId, arr);
     }
 
     return rows.map((row) => {
@@ -168,14 +162,14 @@ export class SavedMediaQueryService {
     }
 
     const [row] = await this.db
-      .insert(savedQueries)
+      .insert(mediaQueries)
       .values({ name: draft.name.trim(), contentType: draft.contentType })
       .returning();
 
     if (draft.filterValues.length > 0) {
-      await this.db.insert(savedQueryFilterValues).values(
+      await this.db.insert(mediaQueryFilterValues).values(
         draft.filterValues.map(({ key, value }) => ({
-          savedQueryId: row.id,
+          mediaQueryId: row.id,
           filterKey: key,
           value: String(value),
         }))
@@ -201,13 +195,13 @@ export class SavedMediaQueryService {
   }
 
   async getById(id: number): Promise<SavedMediaQuery> {
-    const [row] = await this.db.select().from(savedQueries).where(eq(savedQueries.id, id));
+    const [row] = await this.db.select().from(mediaQueries).where(eq(mediaQueries.id, id));
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
 
     const fvRows = await this.db
       .select()
-      .from(savedQueryFilterValues)
-      .where(eq(savedQueryFilterValues.savedQueryId, id));
+      .from(mediaQueryFilterValues)
+      .where(eq(mediaQueryFilterValues.mediaQueryId, id));
 
     const activeRows = await this.db
       .select({ type: metadataProviders.type })
@@ -234,10 +228,7 @@ export class SavedMediaQueryService {
   }
 
   async delete(id: number): Promise<void> {
-    const [row] = await this.db.delete(savedQueries).where(eq(savedQueries.id, id)).returning();
+    const [row] = await this.db.delete(mediaQueries).where(eq(mediaQueries.id, id)).returning();
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
   }
 }
-
-/** @deprecated ubiquitous-language alias — use `SavedMediaQueryService`. */
-export { SavedMediaQueryService as SavedQueryService };

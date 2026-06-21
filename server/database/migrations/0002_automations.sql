@@ -12,12 +12,12 @@ CREATE TABLE `automations` (
 	`lastRunError` text,
 	`createdAt` text DEFAULT (datetime('now')) NOT NULL,
 	`updatedAt` text DEFAULT (datetime('now')) NOT NULL,
-	FOREIGN KEY (`queryId`) REFERENCES `saved_queries`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`queryId`) REFERENCES `media_queries`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`providerId`) REFERENCES `metadata_provider`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `IDX_automations_status` ON `automations` (`status`);--> statement-breakpoint
-CREATE TABLE `saved_queries` (
+CREATE TABLE `media_queries` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`filters` text NOT NULL,

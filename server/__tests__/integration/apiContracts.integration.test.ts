@@ -10,7 +10,7 @@ import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQuerie
 import { createSettingsRoutes } from '@server/modules/settings/settings.routes';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedMediaQueryService';
+import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -38,7 +38,7 @@ describe('API shape contracts — real server responses', () => {
     const container = buildContainer({ config, db });
 
     const providerService = new ProviderSettingsService({ db });
-    const savedQueryService = new SavedQueryService({ db });
+    const savedMediaQueryService = new SavedMediaQueryService({ db });
     const automationService = new AutomationService({ db });
 
     const provider = await providerService.create({
@@ -47,7 +47,7 @@ describe('API shape contracts — real server responses', () => {
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
     });
-    const query = await savedQueryService.create({
+    const query = await savedMediaQueryService.create({
       name: 'Test Query',
       contentType: 'movie',
       filterValues: [{ key: 'watched', value: true }],
