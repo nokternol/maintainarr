@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { TmdbProvider, type TmdbStreamingServices } from '@server/providers/tmdbProvider';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';

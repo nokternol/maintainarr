@@ -12,6 +12,7 @@ import {
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
 import type { ContentType } from './savedQueryService';
+import { taskManifest } from './taskManifest';
 
 export interface QuerySourceDraft {
   queryId: number;
@@ -247,20 +248,27 @@ export class AutomationService {
       }
     }
 
+    const [providerRow] = await this.db
+      .select({ type: metadataProviders.type })
+      .from(metadataProviders)
+      .where(eq(metadataProviders.id, draft.providerId));
+    const providerType = providerRow?.type as MetadataProviderType | undefined;
+
+    if (providerType && !taskManifest(providerType).some((t) => t.id === draft.taskId)) {
+      throw new ValidationError(
+        `Task "${draft.taskId}" is not a runnable task for provider type "${providerType}"`
+      );
+    }
+
     const includeSources = draft.querySources.filter((s) => s.role === 'include');
-    if (includeSources.length > 0) {
+    if (includeSources.length > 0 && providerType) {
       const [queryRow] = await this.db
         .select({ contentType: savedQueries.contentType })
         .from(savedQueries)
         .where(eq(savedQueries.id, includeSources[0].queryId));
-      const [providerRow] = await this.db
-        .select({ type: metadataProviders.type })
-        .from(metadataProviders)
-        .where(eq(metadataProviders.id, draft.providerId));
 
-      if (queryRow && providerRow) {
+      if (queryRow) {
         const contentType = queryRow.contentType as ContentType;
-        const providerType = providerRow.type as MetadataProviderType;
         const allowed = CONTENT_TYPE_PROVIDERS[contentType] ?? [];
         if (!allowed.includes(providerType)) {
           throw new ValidationError(

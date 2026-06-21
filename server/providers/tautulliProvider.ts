@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface TautulliLibraryStat {
   section_id: number;
@@ -34,7 +34,7 @@ interface TautulliResponse<T> {
   };
 }
 
-export class TautulliProvider extends BaseMetadataProvider {
+export class TautulliProvider extends BaseProviderConnection {
   private get baseParams() {
     return { apikey: this.provider.apiKey || '' };
   }

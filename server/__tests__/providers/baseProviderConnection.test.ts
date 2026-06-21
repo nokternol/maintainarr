@@ -1,11 +1,11 @@
 import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
-import { BaseMetadataProvider } from '@server/providers/baseMetadataProvider';
+import { BaseProviderConnection } from '@server/providers/baseProviderConnection';
 import { describe, expect, it } from 'vitest';
 
-const mockLogger = getChildLogger('TestBaseMetadataProvider');
+const mockLogger = getChildLogger('TestBaseProviderConnection');
 
-class TestProvider extends BaseMetadataProvider {}
+class TestProvider extends BaseProviderConnection {}
 
 const mockEntity: MetadataProvider = {
   id: 1,
@@ -19,7 +19,7 @@ const mockEntity: MetadataProvider = {
   updatedAt: new Date(),
 };
 
-describe('BaseMetadataProvider', () => {
+describe('BaseProviderConnection', () => {
   it('can be instantiated with a MetadataProvider entity', () => {
     const provider = new TestProvider(mockEntity, mockLogger);
     expect(provider).toBeDefined();

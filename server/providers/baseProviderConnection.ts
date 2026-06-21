@@ -8,7 +8,13 @@ export interface ProviderConfig {
   settings: Record<string, unknown> | null;
 }
 
-export abstract class BaseMetadataProvider {
+/**
+ * Shared HTTP-client + config base for every provider. It owns connection
+ * concerns (prefix URL, timeout, error logging) — not a metadata or role
+ * contract. Role membership is declared by the role interfaces a subclass
+ * `implements`, not by extending this class.
+ */
+export abstract class BaseProviderConnection {
   protected provider: ProviderConfig;
   protected log: Logger;
   protected client: KyInstance;

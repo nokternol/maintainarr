@@ -1,9 +1,23 @@
 # Phase 2 — Actuator role & server task manifest
 
-**Status:** IN PROGRESS — **Phase 2** of the System-Roles & MediaQueryEngine Heal (see `README.md`).
+**Status:** DONE — **Phase 2** of the System-Roles & MediaQueryEngine Heal (see `README.md`).
 TDD (backend). **Depends on:** Phase 1 (resolution is out of the executor; task dispatch is its
 remaining concern). Realises the actuator role in `docs/intent/system-roles-and-capabilities.md` and
 closes `docs/architecture/task-execution-and-actuator-gap.md`.
+
+**Shipped:** `server/services/taskManifest.ts` is the single server declaration of actuator tasks
+(`TaskDescriptor { id, label, destructive, affects?, run }`, keyed by `MetadataProviderType`); the
+executor dispatches from it (standalone `RADARR_TASKS`/`SONARR_TASKS` deleted); enricher-only types
+expose none (TMDB → `[]`); `automationService.create` rejects a `taskId` absent from the bound
+provider's manifest; `GET /api/providers/tasks` serves the `run`-stripped manifest for Phase 3.
+`BaseMetadataProvider` renamed to `BaseProviderConnection`; `MediaSource`/`MetadataEnricher`/
+`MediaActuator` role interfaces (`server/providers/roles.ts`) are `implements`-declared on
+Radarr/Sonarr. A genuine destructive task (`deleteMovieWithFiles`/`deleteSeriesWithFiles`, backed by
+`RadarrProvider.deleteMovies`/`SonarrProvider.deleteSeries`) exercises the `destructive` descriptor.
+
+**Deferred (debt):** `TmdbProvider implements MetadataEnricher` — a faithful enricher contract for
+non-owning providers needs the `media_enrichment` logical-key model (`docs/intent/provider-source-model.md`);
+the actuator concern this phase owns is fully met without it.
 
 ## Observable value
 

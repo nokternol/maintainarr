@@ -13,17 +13,14 @@ import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/n
 import type { IProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
 import type { SonarrProvider, SonarrSeries } from '@server/providers/sonarrProvider';
-import {
-  AutomationExecutor,
-  RADARR_TASKS,
-  SONARR_TASKS,
-} from '@server/services/automationExecutor';
+import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { DomainEventBus, type DomainEvents } from '@server/services/eventBus';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedQueryService } from '@server/services/savedQueryService';
 import type { FilterValueEntry } from '@server/services/savedQueryService';
+import { taskManifest } from '@server/services/taskManifest';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
@@ -595,27 +592,6 @@ describe('AutomationExecutor', () => {
       const [dto] = await automationService.list();
       expect(dto.lastRun!.status).toBe('success');
       expect(dto.lastRun!.itemCount).toBe(1);
-    });
-  });
-
-  // ─── Unimplemented tasks ──────────────────────────────────────────────────
-
-  describe('unimplemented tasks', () => {
-    it('records an error run for a destructive task that is not yet implemented', async () => {
-      const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
-      const automation = await seedAutomation(automationService, {
-        queryId: query.id,
-        providerId: provider.id,
-        taskId: 'deleteMovieWithFiles',
-      });
-
-      await executor.execute(automation.id);
-
-      const [dto] = await automationService.list();
-      expect(dto.lastRun).toBeDefined();
-      expect(dto.lastRun!.status).toBe('error');
-      expect(dto.lastRun!.error).toMatch(/not yet implemented/i);
     });
   });
 
@@ -1441,9 +1417,11 @@ describe('AutomationExecutor', () => {
 
 describe('dispatch scope declaration', () => {
   it('declares media scope on unmonitor tasks and none on triggerSearch', () => {
-    expect(RADARR_TASKS.unmonitorMovie.affects).toBe('media');
-    expect(RADARR_TASKS.triggerSearch.affects).toBeUndefined();
-    expect(SONARR_TASKS.unmonitorSeries.affects).toBe('media');
-    expect(SONARR_TASKS.triggerSearch.affects).toBeUndefined();
+    const radarr = taskManifest(MetadataProviderType.RADARR);
+    const sonarr = taskManifest(MetadataProviderType.SONARR);
+    expect(radarr.find((t) => t.id === 'unmonitorMovie')?.affects).toBe('media');
+    expect(radarr.find((t) => t.id === 'triggerSearch')?.affects).toBeUndefined();
+    expect(sonarr.find((t) => t.id === 'unmonitorSeries')?.affects).toBe('media');
+    expect(sonarr.find((t) => t.id === 'triggerSearch')?.affects).toBeUndefined();
   });
 });

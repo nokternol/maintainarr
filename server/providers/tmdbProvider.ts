@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface TmdbSearchResult {
   id: number;
@@ -189,7 +189,7 @@ function extractTvCertification(
   return first?.rating;
 }
 
-export class TmdbProvider extends BaseMetadataProvider {
+export class TmdbProvider extends BaseProviderConnection {
   private get apiParams() {
     return { api_key: this.provider.apiKey || '' };
   }

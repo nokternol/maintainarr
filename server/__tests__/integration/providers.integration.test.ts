@@ -42,6 +42,26 @@ describe('Providers API Integration', () => {
     await closeDatabase();
   });
 
+  describe('GET /api/providers/tasks', () => {
+    it('serves the per-type actuator task manifest', async () => {
+      const response = await client.get('/api/providers/tasks');
+      const data = expectSuccessResponse(response) as Record<
+        string,
+        Array<{ id: string; label: string; destructive: boolean; affects?: string }>
+      >;
+
+      const radarrIds = data.RADARR.map((t) => t.id);
+      expect(radarrIds).toContain('unmonitorMovie');
+      expect(radarrIds).toContain('deleteMovieWithFiles');
+
+      const del = data.RADARR.find((t) => t.id === 'deleteMovieWithFiles');
+      expect(del?.destructive).toBe(true);
+      expect(del).not.toHaveProperty('run');
+
+      expect(data.TMDB ?? []).toEqual([]);
+    });
+  });
+
   describe('GET /api/providers/metadata', () => {
     it('returns Sonarr metadata when given valid SONARR params', async () => {
       const response = await client.get(

@@ -1,8 +1,10 @@
+import { MetadataProviderType } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 import type { MediaItemSet, MediaSource } from './mediaSource';
 import { normalizeSonarrSeries } from './normalizeMedia';
+import type { MediaActuator, MetadataEnricher } from './roles';
 
 export interface SonarrSeason {
   seasonNumber: number;
@@ -66,8 +68,12 @@ export interface SonarrTag {
   label: string;
 }
 
-export class SonarrProvider extends BaseMetadataProvider implements MediaSource {
+export class SonarrProvider
+  extends BaseProviderConnection
+  implements MediaSource, MetadataEnricher, MediaActuator
+{
   public readonly enrichmentSourceType = 'SONARR' as const;
+  public readonly actuatorType = MetadataProviderType.SONARR;
 
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
@@ -129,6 +135,22 @@ export class SonarrProvider extends BaseMetadataProvider implements MediaSource 
           .post('command', {
             searchParams: this.apiParams,
             json: { name: 'SeriesSearch', seriesId: id },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async deleteSeries(seriesIds: number[]): Promise<void> {
+    await Promise.all(
+      seriesIds.map((id) =>
+        this.client
+          .delete(`series/${id}`, {
+            searchParams: {
+              ...this.apiParams,
+              deleteFiles: 'true',
+              addImportListExclusion: 'false',
+            },
           })
           .json()
       )

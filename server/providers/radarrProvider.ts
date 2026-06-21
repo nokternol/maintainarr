@@ -1,8 +1,10 @@
+import { MetadataProviderType } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 import type { MediaItemSet, MediaSource } from './mediaSource';
 import { normalizeRadarrMovie } from './normalizeMedia';
+import type { MediaActuator, MetadataEnricher } from './roles';
 
 export interface RadarrImage {
   coverType: string;
@@ -57,8 +59,12 @@ export interface RadarrTag {
   label: string;
 }
 
-export class RadarrProvider extends BaseMetadataProvider implements MediaSource {
+export class RadarrProvider
+  extends BaseProviderConnection
+  implements MediaSource, MetadataEnricher, MediaActuator
+{
   public readonly enrichmentSourceType = 'RADARR' as const;
+  public readonly actuatorType = MetadataProviderType.RADARR;
 
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
@@ -121,5 +127,17 @@ export class RadarrProvider extends BaseMetadataProvider implements MediaSource 
         json: { name: 'MoviesSearch', movieIds },
       })
       .json();
+  }
+
+  public async deleteMovies(movieIds: number[]): Promise<void> {
+    await Promise.all(
+      movieIds.map((id) =>
+        this.client
+          .delete(`movie/${id}`, {
+            searchParams: { ...this.apiParams, deleteFiles: 'true', addImportExclusion: 'false' },
+          })
+          .json()
+      )
+    );
   }
 }

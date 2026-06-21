@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface JellyfinLibrary {
   Name: string;
@@ -18,7 +18,7 @@ interface JellyfinItemsResponse {
   TotalRecordCount: number;
 }
 
-export class JellyfinProvider extends BaseMetadataProvider {
+export class JellyfinProvider extends BaseProviderConnection {
   private get authHeader() {
     return { 'X-Emby-Authorization': `MediaBrowser Token="${this.provider.apiKey}"` };
   }

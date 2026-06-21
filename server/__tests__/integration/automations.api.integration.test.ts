@@ -85,7 +85,7 @@ describe('POST /api/automations — Session C', () => {
     const res = await client.post('/api/automations', {
       name: 'Multi-source automation',
       providerId: movieProviderId,
-      taskId: 'radarr.deleteUnmonitored',
+      taskId: 'unmonitorMovie',
       schedule: '0 2 * * *',
       querySources: [{ queryId: movieQueryId, role: 'include', sortOrder: 0 }],
     });
@@ -101,12 +101,26 @@ describe('POST /api/automations — Session C', () => {
     const res = await client.post('/api/automations', {
       name: 'Cross-type automation',
       providerId: movieProviderId,
-      taskId: 'radarr.deleteUnmonitored',
+      taskId: 'unmonitorMovie',
       schedule: '0 2 * * *',
       querySources: [
         { queryId: movieQueryId, role: 'include', sortOrder: 0 },
         { queryId: showQueryId, role: 'exclude', sortOrder: 1 },
       ],
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  // ─── taskId manifest validation ───────────────────────────────────────────────
+
+  it('rejects a taskId absent from the bound provider manifest', async () => {
+    const res = await client.post('/api/automations', {
+      name: 'Unrunnable task automation',
+      providerId: movieProviderId,
+      taskId: 'radarr.deleteUnmonitored',
+      schedule: '0 2 * * *',
+      querySources: [{ queryId: movieQueryId, role: 'include', sortOrder: 0 }],
     });
 
     expect(res.status).toBe(400);
@@ -118,7 +132,7 @@ describe('POST /api/automations — Session C', () => {
     const res = await client.post('/api/automations', {
       name: 'Legacy automation',
       providerId: movieProviderId,
-      taskId: 'radarr.deleteUnmonitored',
+      taskId: 'unmonitorMovie',
       schedule: '0 2 * * *',
       queryId: movieQueryId,
     });

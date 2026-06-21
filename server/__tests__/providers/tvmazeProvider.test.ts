@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';

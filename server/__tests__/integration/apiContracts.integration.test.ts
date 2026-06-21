@@ -56,7 +56,7 @@ describe('API shape contracts — real server responses', () => {
       name: 'Test Automation',
       querySources: [{ queryId: query.id, role: 'include' }],
       providerId: provider.id,
-      taskId: 'radarr.deleteUnmonitored',
+      taskId: 'unmonitorMovie',
       schedule: '0 2 * * *',
     });
 
@@ -136,7 +136,7 @@ describe('API shape contracts — real server responses', () => {
       name: 'Contract test automation',
       queryId: seededQueryId,
       providerId: seededProviderId,
-      taskId: 'radarr.deleteUnmonitored',
+      taskId: 'unmonitorMovie',
       schedule: '0 3 * * *',
     });
     expect(res.status).toBe(200);

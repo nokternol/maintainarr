@@ -212,7 +212,7 @@ describe('AutomationService', () => {
         name: 'Automation B',
         querySources: [{ queryId: query.id, role: 'include' }],
         providerId: provider.id,
-        taskId: 'deleteMovie',
+        taskId: 'triggerSearch',
         schedule: '0 0 * * *',
       });
 

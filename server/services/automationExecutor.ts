@@ -1,5 +1,5 @@
 import type { DrizzleDb } from '../database';
-import type { MetadataProvider } from '../database/schema';
+import type { MetadataProvider, MetadataProviderType } from '../database/schema';
 import { getChildLogger } from '../logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
@@ -10,6 +10,7 @@ import type { DomainEventBus } from './eventBus';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { SavedQueryService } from './savedQueryService';
+import { taskManifest } from './taskManifest';
 
 const log = getChildLogger('AutomationExecutor');
 
@@ -104,7 +105,10 @@ export class AutomationExecutor {
       itemCount = await this.executeWithSources(automation.taskId, providerSettings, sources);
       await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
 
-      this.emitDataChange((RADARR_TASKS[taskId] ?? SONARR_TASKS[taskId])?.affects, itemCount);
+      const descriptor = taskManifest(automation.provider.type as MetadataProviderType).find(
+        (t) => t.id === taskId
+      );
+      this.emitDataChange(descriptor?.affects, itemCount);
 
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
@@ -140,21 +144,10 @@ export class AutomationExecutor {
     });
     const finalIds = matched.map((item) => source.idOf(item)!);
 
-    if (contentType === 'movie') {
-      const task = RADARR_TASKS[taskId];
-      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(source as RadarrProvider, finalIds);
-      return finalIds.length;
-    }
-
-    if (contentType === 'show') {
-      const task = SONARR_TASKS[taskId];
-      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(source as SonarrProvider, finalIds);
-      return finalIds.length;
-    }
-
-    return 0;
+    const task = taskManifest(providerSettings.type).find((t) => t.id === taskId);
+    if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
+    await task.run(source, finalIds);
+    return finalIds.length;
   }
 
   /**
@@ -202,31 +195,6 @@ export class AutomationExecutor {
     });
   }
 }
-
-// ─── Dispatch tables ──────────────────────────────────────────────────────────
-
-type RadarrTaskFn = (provider: RadarrProvider, ids: number[]) => Promise<void>;
-type SonarrTaskFn = (provider: SonarrProvider, ids: number[]) => Promise<void>;
-
-interface RadarrTask {
-  run: RadarrTaskFn;
-  affects?: 'media';
-}
-
-interface SonarrTask {
-  run: SonarrTaskFn;
-  affects?: 'media';
-}
-
-export const RADARR_TASKS: Record<string, RadarrTask> = {
-  unmonitorMovie: { run: (provider, ids) => provider.unmonitorMovies(ids), affects: 'media' },
-  triggerSearch: { run: (provider, ids) => provider.triggerMoviesSearch(ids) },
-};
-
-export const SONARR_TASKS: Record<string, SonarrTask> = {
-  unmonitorSeries: { run: (provider, ids) => provider.unmonitorSeries(ids), affects: 'media' },
-  triggerSearch: { run: (provider, ids) => provider.triggerSeriesSearch(ids) },
-};
 
 // System data jobs span every source, so they declare scope but no sourceType —
 // a `media:changed` from here evicts both movie and series caches.

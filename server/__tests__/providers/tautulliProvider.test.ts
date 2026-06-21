@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';

@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface PlexLibrary {
   key: string;
@@ -21,7 +21,7 @@ export interface PlexMediaItem {
  * PlexProvider handles metadata gathering from a Plex Media Server instance.
  * Auth token validation against plex.tv lives in services/plexService.ts (PlexService).
  */
-export class PlexProvider extends BaseMetadataProvider {
+export class PlexProvider extends BaseProviderConnection {
   private get authHeader() {
     return {
       'X-Plex-Token': this.provider.apiKey ?? '',

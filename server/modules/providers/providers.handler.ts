@@ -11,6 +11,7 @@ import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
+import { publicTaskManifest } from '@server/services/taskManifest';
 import { defineRoute } from '@server/utils/defineRoute';
 import { resolveApiKey } from '@server/utils/keyResolver';
 import { aggregateRatings } from '@server/utils/ratingsAggregation';
@@ -27,6 +28,10 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
   const { providerSettingsService, config } = cradle;
 
   return {
+    getTasks: defineRoute({
+      handler: async () => publicTaskManifest(),
+    }),
+
     getMetadata: defineRoute({
       schemas: providersSchemas.getMetadata,
       handler: async ({ query }) => {

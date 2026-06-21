@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface OverseerrRequestedBy {
   id: number;
@@ -52,7 +52,7 @@ interface OverseerrSearchResponse {
   totalResults: number;
 }
 
-export class OverseerrProvider extends BaseMetadataProvider {
+export class OverseerrProvider extends BaseProviderConnection {
   private get authHeader() {
     return { 'X-Api-Key': this.provider.apiKey ?? '' };
   }

@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { describe, expect, it } from 'vitest';
 
