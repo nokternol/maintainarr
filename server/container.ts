@@ -16,7 +16,7 @@ import { DomainEventBus } from './services/eventBus';
 import { MediaQueryEngine } from './services/mediaQueryEngine';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
-import { SavedQueryService } from './services/savedQueryService';
+import { SavedQueryService } from './services/savedMediaQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
 import { TmdbService } from './services/tmdbService';
 

@@ -5,7 +5,7 @@ import type { MediaItemSet, MediaSource } from '../providers/mediaSource';
 import { getFilterDef } from '../utils/filterRegistry';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
-import type { FilterValueEntry } from './savedQueryService';
+import type { FilterValueEntry } from './savedMediaQueryService';
 
 /** One source within a query: a set of predicates and the role it plays. */
 export interface MediaQuerySource {
@@ -14,15 +14,24 @@ export interface MediaQuerySource {
 }
 
 /**
- * A query bound to a `MediaSource`: the source the engine reads items from, the
- * content type whose predicate registry applies, and one-or-more include/exclude
- * sources. A saved query is a single-source include `MediaQuery`; the browse view
- * is the same with URL-derived filterValues.
+ * The persistable, source-less core of a query: the content type whose predicate
+ * registry applies and one-or-more include/exclude sources. Both the evaluatable
+ * `MediaQuery` and the persisted `SavedMediaQuery` are a `MediaQuerySpec` plus
+ * what each adds (a bound source / a database identity).
  */
-export interface MediaQuery {
-  source: MediaSource;
+export interface MediaQuerySpec {
   contentType: 'movie' | 'show';
   sources: MediaQuerySource[];
+}
+
+/**
+ * A `MediaQuerySpec` bound to a `MediaSource` — the engine's input. The source is
+ * what the engine reads items from; the spec says what to match. A saved query is
+ * a single-source include spec; the browse view is the same with URL-derived
+ * filterValues.
+ */
+export interface MediaQuery extends MediaQuerySpec {
+  source: MediaSource;
 }
 
 export type { MediaItemSet };

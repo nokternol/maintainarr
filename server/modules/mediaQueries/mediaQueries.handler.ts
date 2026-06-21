@@ -2,10 +2,10 @@ import { SavedQuerySchema } from '@app/lib/api/schemas';
 import { isAuthenticated } from '@server/middleware/auth';
 import type { MediaSourceFactory } from '@server/providers/mediaSourceFactory';
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
-import type { SavedQueryService } from '@server/services/savedQueryService';
+import type { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { z } from 'zod';
-import { savedQuerySchemas } from './savedQueries.schemas';
+import { mediaQuerySchemas } from './mediaQueries.schemas';
 
 interface Cradle {
   savedQueryService: SavedQueryService;
@@ -13,7 +13,7 @@ interface Cradle {
   mediaQueryEngine: MediaQueryEngine;
 }
 
-export function createSavedQueryHandlers(cradle: Cradle) {
+export function createMediaQueryHandlers(cradle: Cradle) {
   const { savedQueryService, mediaSourceFactory, mediaQueryEngine } = cradle;
 
   return {
@@ -28,7 +28,7 @@ export function createSavedQueryHandlers(cradle: Cradle) {
     create: [
       isAuthenticated(),
       defineRoute({
-        schemas: { ...savedQuerySchemas.create, response: SavedQuerySchema },
+        schemas: { ...mediaQuerySchemas.create, response: SavedQuerySchema },
         handler: async ({ body }) =>
           savedQueryService.create({
             name: body.name,
@@ -41,7 +41,7 @@ export function createSavedQueryHandlers(cradle: Cradle) {
     delete: [
       isAuthenticated(),
       defineRoute({
-        schemas: savedQuerySchemas.delete,
+        schemas: mediaQuerySchemas.delete,
         handler: async ({ params }) => {
           await savedQueryService.delete(params.id);
           return null;
@@ -53,7 +53,7 @@ export function createSavedQueryHandlers(cradle: Cradle) {
       isAuthenticated(),
       defineRoute({
         schemas: {
-          params: savedQuerySchemas.delete.params,
+          params: mediaQuerySchemas.delete.params,
           response: z.object({ count: z.number() }),
         },
         handler: async ({ params }) => {

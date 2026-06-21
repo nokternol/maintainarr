@@ -4,8 +4,8 @@ import { closeDatabase, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
-import { createSavedQueryRoutes } from '@server/modules/savedQueries/savedQueries.routes';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQueries.routes';
+import { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createRadarrMovie } from '@tests/factories';
 import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';
@@ -65,7 +65,7 @@ describe('GET /api/saved-queries/:id/preview', () => {
       req.user = { id: 1 } as unknown as NonNullable<typeof req.user>;
       next();
     });
-    app.use('/api/saved-queries', createSavedQueryRoutes(container.cradle));
+    app.use('/api/saved-queries', createMediaQueryRoutes(container.cradle));
     app.use(errorHandlerMiddleware);
 
     client = createApiClient(app);

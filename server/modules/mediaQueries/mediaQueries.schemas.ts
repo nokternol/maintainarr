@@ -12,7 +12,7 @@ const filterValueEntry = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
-export const savedQuerySchemas = {
+export const mediaQuerySchemas = {
   create: {
     body: z.object({
       name: z.string().min(1).max(200),
@@ -25,5 +25,5 @@ export const savedQuerySchemas = {
   },
 };
 
-export type CreateSavedQueryBody = z.infer<typeof savedQuerySchemas.create.body>;
-export type SavedQueryIdParams = z.infer<typeof idParams>;
+export type CreateMediaQueryBody = z.infer<typeof mediaQuerySchemas.create.body>;
+export type MediaQueryIdParams = z.infer<typeof idParams>;

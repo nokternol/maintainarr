@@ -11,7 +11,7 @@ import {
   savedQueries,
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
-import type { ContentType } from './savedQueryService';
+import type { ContentType } from './savedMediaQueryService';
 import { taskManifest } from './taskManifest';
 
 export interface QuerySourceDraft {

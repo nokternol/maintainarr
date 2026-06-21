@@ -4,7 +4,7 @@ import { MetadataProviderType, automations } from '@server/database/schema';
 import { ForbiddenError, ValidationError } from '@server/errors';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;

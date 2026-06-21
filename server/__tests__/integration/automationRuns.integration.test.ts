@@ -16,7 +16,7 @@ import { createAutomationRoutes } from '@server/modules/automations/automations.
 import type { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';

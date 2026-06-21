@@ -10,7 +10,7 @@ import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';

@@ -9,7 +9,7 @@ import type { AutomationQuerySourceDto, AutomationService } from './automationSe
 import type { DomainEventBus } from './eventBus';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import type { ProviderSettingsService } from './providerSettingsService';
-import type { SavedQueryService } from './savedQueryService';
+import type { SavedQueryService } from './savedMediaQueryService';
 import { taskManifest } from './taskManifest';
 
 const log = getChildLogger('AutomationExecutor');

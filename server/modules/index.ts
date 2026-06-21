@@ -8,8 +8,8 @@ import { createFilterFieldsRoutes } from './filterFields/filterFields.routes';
 import { createHealthRoutes } from './health/health.routes';
 import { createMediaHandlers } from './media/media.handler';
 import { createMediaRoutes } from './media/media.routes';
+import { createMediaQueryRoutes } from './mediaQueries/mediaQueries.routes';
 import { createProvidersRoutes } from './providers/providers.routes';
-import { createSavedQueryRoutes } from './savedQueries/savedQueries.routes';
 import { createSearchRoutes } from './search/search.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
 
@@ -40,7 +40,11 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/media', createMediaRoutes(cradle, mediaHandlers));
   router.use('/search', createSearchRoutes(cradle));
   router.use('/filter-fields', createFilterFieldsRoutes());
-  router.use('/saved-queries', createSavedQueryRoutes(cradle));
+  const mediaQueryRoutes = createMediaQueryRoutes(cradle);
+  router.use('/media-queries', mediaQueryRoutes);
+  // Back-compat alias — the client still calls /saved-queries until the Phase 4
+  // client migration lands. Both mount the same router.
+  router.use('/saved-queries', mediaQueryRoutes);
   router.use('/automations', createAutomationRoutes(cradle));
 
   return router;

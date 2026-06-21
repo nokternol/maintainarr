@@ -13,7 +13,7 @@ import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { SavedQueryService } from '@server/services/savedMediaQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRadarrMovie } from '../../../tests/factories';

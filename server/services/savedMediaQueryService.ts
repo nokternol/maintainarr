@@ -17,11 +17,14 @@ export interface FilterValueEntry {
   value: FilterValue;
 }
 
-export interface SavedQueryDraft {
+export interface SavedMediaQueryDraft {
   name: string;
   contentType: ContentType;
   filterValues: FilterValueEntry[];
 }
+
+/** @deprecated ubiquitous-language alias — use `SavedMediaQueryDraft`. */
+export type SavedQueryDraft = SavedMediaQueryDraft;
 
 export interface ProviderStatus {
   providerType: MetadataProviderType;
@@ -35,7 +38,14 @@ export interface QueryHealth {
   providerStatus: ProviderStatus[];
 }
 
-export interface SavedQueryDto {
+/**
+ * A persisted query: a `MediaQuerySpec` (contentType + sources) given a database
+ * identity and presentation metadata. The persisted form carries its single
+ * include source as the `filterValues` convenience accessor
+ * (`sources: [{ filterValues, role: 'include' }]`); the full multi-source
+ * projection is reserved for the client phase.
+ */
+export interface SavedMediaQuery {
   id: number;
   name: string;
   contentType: ContentType;
@@ -43,6 +53,9 @@ export interface SavedQueryDto {
   health: QueryHealth;
   createdAt: string;
 }
+
+/** @deprecated ubiquitous-language alias — use `SavedMediaQuery`. */
+export type SavedQueryDto = SavedMediaQuery;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,14 +110,14 @@ function computeHealth(
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-export class SavedQueryService {
+export class SavedMediaQueryService {
   private readonly db: DrizzleDb;
 
   constructor({ db }: { db: DrizzleDb }) {
     this.db = db;
   }
 
-  async list(): Promise<SavedQueryDto[]> {
+  async list(): Promise<SavedMediaQuery[]> {
     const rows = await this.db.select().from(savedQueries).orderBy(savedQueries.createdAt);
     const fvRows = await this.db.select().from(savedQueryFilterValues);
 
@@ -143,7 +156,7 @@ export class SavedQueryService {
     });
   }
 
-  async create(draft: SavedQueryDraft): Promise<SavedQueryDto> {
+  async create(draft: SavedMediaQueryDraft): Promise<SavedMediaQuery> {
     // Validate all filter keys exist in the registry for this contentType
     for (const { key } of draft.filterValues) {
       const def = getFilterDef(key, draft.contentType);
@@ -187,7 +200,7 @@ export class SavedQueryService {
     };
   }
 
-  async getById(id: number): Promise<SavedQueryDto> {
+  async getById(id: number): Promise<SavedMediaQuery> {
     const [row] = await this.db.select().from(savedQueries).where(eq(savedQueries.id, id));
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
 
@@ -225,3 +238,6 @@ export class SavedQueryService {
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
   }
 }
+
+/** @deprecated ubiquitous-language alias — use `SavedMediaQueryService`. */
+export { SavedMediaQueryService as SavedQueryService };

@@ -1,15 +1,26 @@
 # Pre-Phase-2 — Source-of-truth scaffolding
 
-**Status:** Strand 1 SHIPPED · Strand 2 DEFERRED — scaffolding between **Phase 1** (shipped:
-`docs/architecture/media-query-engine.md`) and **Phase 2** (shipped:
+**Status:** Strand 1 SHIPPED · Strand 2 SHIPPED (DB-table rename deferred) — scaffolding between
+**Phase 1** (shipped: `docs/architecture/media-query-engine.md`) and **Phase 2** (shipped:
 `phase-2-actuator-role-and-task-manifest.md`). TDD (backend). **Depends on:** Phase 1.
 
 **Strand 1 shipped:** `MediaSource` read role (`server/providers/mediaSource.ts`) on Radarr/Sonarr;
 `MediaQueryEngine` evaluates through `source` on a single path (movie/show branch gone); the four
 `MediaItemSet` id-projection casts collapsed to `source.idOf`; `MediaSourceFactory.forContentType`
 resolves a content type to its active owner source (consumed by preview; browse keeps its raw-list
-source for pagination). **Strand 2 (MediaQuery / SavedMediaQuery ubiquitous language) is deferred** to
-a later pass — the engine seam Phase 2 needed is delivered by Strand 1.
+source for pagination).
+
+**Strand 2 shipped (language):** `MediaQuerySpec` / `MediaQuery` / `SavedMediaQuery` are the named
+core/evaluatable/persisted trinity (`MediaQuery extends MediaQuerySpec`); `SavedQueryDto`/`SavedQueryService`
+renamed to `SavedMediaQuery`/`SavedMediaQueryService` (file `savedMediaQueryService.ts`, deprecated
+aliases kept); `modules/savedQueries` → `modules/mediaQueries`; the canonical route is
+`/api/media-queries` with `/api/saved-queries` mounted as a back-compat alias. The ubiquitous-language
+glossary now lives in `docs/architecture/warden-core-model.md`.
+
+**Strand 2 deferred:** the `savedQueries`/`savedQueryFilterValues` DB tables and the `savedQueryService`
+cradle key keep their old names (heaviest, data-migration cost) — defer until the value is worth it.
+Reshaping `SavedMediaQuery` to lead with `sources` (dropping the `filterValues` single-include sugar)
+waits for the Phase 4 client, which owns that contract.
 
 This is a **source-of-truth refactor**, not a feature. It closes two naming/ownership fractures the
 engine exposed, so Phase 2 lands on clean ground. It is deliberately **incremental** — the blast radius
