@@ -4,6 +4,8 @@ import { getChildLogger } from '@server/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { sortMedia } from '@server/modules/media/media.sort';
+import type { MediaSource } from '@server/providers/mediaSource';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
 import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
@@ -264,12 +266,17 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { movies: all, errors } = await getMovies();
 
         const yearRange = computeYearRange(all);
+        const source: MediaSource = {
+          getMediaItems: async () => all.map(normalizeRadarrMovie),
+          idOf: (item) => (item as NormalizedMovie)._sourceIds.radarr,
+          enrichmentSourceType: 'RADARR',
+        };
         const matched = await mediaQueryEngine.evaluate({
-          provider: { getMovies: async () => all } as RadarrProvider,
+          source,
           contentType: 'movie',
           sources: [{ filterValues: toFilterValues(query, MOVIE_PARAM_TO_KEY), role: 'include' }],
         });
-        const matchedIds = new Set(matched.map((m) => (m as NormalizedMovie)._sourceIds.radarr));
+        const matchedIds = new Set(matched.map((m) => source.idOf(m)));
         const filtered = all.filter((m) => matchedIds.has(m.id));
         const sorted = sortMedia(filtered, query.sort, (m) => m.hasFile);
         return {
@@ -286,12 +293,17 @@ export function createMediaHandlers(cradle: MediaCradle) {
         const { series: all, errors } = await getSeries();
 
         const yearRange = computeYearRange(all);
+        const source: MediaSource = {
+          getMediaItems: async () => all.map(normalizeSonarrSeries),
+          idOf: (item) => (item as NormalizedShow)._sourceIds.sonarr,
+          enrichmentSourceType: 'SONARR',
+        };
         const matched = await mediaQueryEngine.evaluate({
-          provider: { getSeries: async () => all } as SonarrProvider,
+          source,
           contentType: 'show',
           sources: [{ filterValues: toFilterValues(query, SERIES_PARAM_TO_KEY), role: 'include' }],
         });
-        const matchedIds = new Set(matched.map((s) => (s as NormalizedShow)._sourceIds.sonarr));
+        const matchedIds = new Set(matched.map((s) => source.idOf(s)));
         const filtered = all.filter((s) => matchedIds.has(s.id));
         const sorted = sortMedia(filtered, query.sort, (s) => s.monitored);
         return {

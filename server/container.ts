@@ -6,6 +6,7 @@ import type { DrizzleDb } from './database';
 import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
 import { IdentityJobFactory } from './jobs/identityJobFactory';
 import { getChildLogger } from './logger';
+import { MediaSourceFactory } from './providers/mediaSourceFactory';
 import { ProviderFactory } from './providers/providerFactory';
 import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
@@ -38,6 +39,7 @@ export interface Cradle {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerFactory: ProviderFactory;
+  mediaSourceFactory: MediaSourceFactory;
   identityJobFactory: IdentityJobFactory;
   enrichmentJobFactory: EnrichmentJobFactory;
   systemTaskRunner: SystemTaskRunner;
@@ -75,6 +77,7 @@ export function buildContainer(deps: {
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
+    mediaSourceFactory: asClass(MediaSourceFactory).singleton(),
     identityJobFactory: asClass(IdentityJobFactory).singleton(),
     enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
     systemTaskRunner: asClass(SystemTaskRunner).singleton(),

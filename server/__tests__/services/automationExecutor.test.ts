@@ -7,9 +7,12 @@ import {
   mediaEnrichment,
   mediaIdentity,
 } from '@server/database/schema';
+import type { NormalizedMovie } from '@server/domain/movie';
+import type { NormalizedShow } from '@server/domain/show';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import type { IProviderFactory } from '@server/providers/providerFactory';
-import type { RadarrProvider } from '@server/providers/radarrProvider';
-import type { SonarrProvider } from '@server/providers/sonarrProvider';
+import type { RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
+import type { SonarrProvider, SonarrSeries } from '@server/providers/sonarrProvider';
 import {
   AutomationExecutor,
   RADARR_TASKS,
@@ -41,6 +44,19 @@ const testConfig: AppConfig = {
 
 const RADARR_URL = 'http://localhost:7878';
 const SONARR_URL = 'http://localhost:8989';
+
+/** The `MediaSource` read role the engine consumes, over a raw provider list. */
+const radarrSource = (movies: RadarrMovie[]) => ({
+  getMediaItems: async () => movies.map(normalizeRadarrMovie),
+  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedMovie)._sourceIds.radarr,
+  enrichmentSourceType: 'RADARR' as const,
+});
+
+const sonarrSource = (series: SonarrSeries[]) => ({
+  getMediaItems: async () => series.map(normalizeSonarrSeries),
+  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedShow)._sourceIds.sonarr,
+  enrichmentSourceType: 'SONARR' as const,
+});
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -611,7 +627,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -646,7 +662,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockSonarr = {
-        getSeries: async () => seriesList,
+        ...sonarrSource(seriesList),
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -683,7 +699,7 @@ describe('AutomationExecutor', () => {
     it('records error when querySources is empty even if a legacy query field is defined', async () => {
       const movies = [createRadarrMovie({ id: 7, title: 'Dune', year: 2021 })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (_: number[]) => {},
       } as unknown as RadarrProvider;
 
@@ -758,7 +774,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -847,7 +863,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -912,7 +928,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -969,7 +985,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockSonarr = {
-        getSeries: async () => seriesList,
+        ...sonarrSource(seriesList),
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1020,7 +1036,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1071,7 +1087,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1120,7 +1136,7 @@ describe('AutomationExecutor', () => {
       ];
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1289,7 +1305,7 @@ describe('AutomationExecutor', () => {
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: true })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
@@ -1313,7 +1329,7 @@ describe('AutomationExecutor', () => {
       bus.on('media:changed', (p) => changes.push(p));
 
       const mockRadarr = {
-        getMovies: async () => [],
+        ...radarrSource([]),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
@@ -1338,7 +1354,7 @@ describe('AutomationExecutor', () => {
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: false })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;

@@ -1,4 +1,8 @@
+import type { NormalizedMovie } from '../domain/movie';
+import type { NormalizedShow } from '../domain/show';
 import { BaseMetadataProvider } from './baseMetadataProvider';
+import type { MediaItemSet, MediaSource } from './mediaSource';
+import { normalizeRadarrMovie } from './normalizeMedia';
 
 export interface RadarrImage {
   coverType: string;
@@ -53,9 +57,19 @@ export interface RadarrTag {
   label: string;
 }
 
-export class RadarrProvider extends BaseMetadataProvider {
+export class RadarrProvider extends BaseMetadataProvider implements MediaSource {
+  public readonly enrichmentSourceType = 'RADARR' as const;
+
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
+  }
+
+  public async getMediaItems(): Promise<MediaItemSet> {
+    return (await this.getMovies()).map(normalizeRadarrMovie);
+  }
+
+  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
+    return (item as NormalizedMovie)._sourceIds.radarr;
   }
 
   public async getMovies(): Promise<RadarrMovie[]> {

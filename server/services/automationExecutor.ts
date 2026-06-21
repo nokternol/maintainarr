@@ -1,7 +1,5 @@
 import type { DrizzleDb } from '../database';
 import type { MetadataProvider } from '../database/schema';
-import type { NormalizedMovie } from '../domain/movie';
-import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
@@ -131,27 +129,28 @@ export class AutomationExecutor {
       sources.map((s) => this.savedQueryService.getById(s.queryId))
     );
     const contentType = queryDtos[0].contentType;
-    const provider = this.providerFactory.create(providerSettings, log);
+    const source = this.providerFactory.create(providerSettings, log) as
+      | RadarrProvider
+      | SonarrProvider;
 
     const matched = await this.mediaQueryEngine.evaluate({
-      provider: provider as RadarrProvider | SonarrProvider,
+      source,
       contentType,
       sources: sources.map((s, i) => ({ filterValues: queryDtos[i].filterValues, role: s.role })),
     });
+    const finalIds = matched.map((item) => source.idOf(item)!);
 
     if (contentType === 'movie') {
-      const finalIds = (matched as NormalizedMovie[]).map((m) => m._sourceIds.radarr!);
       const task = RADARR_TASKS[taskId];
       if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(provider as RadarrProvider, finalIds);
+      await task.run(source as RadarrProvider, finalIds);
       return finalIds.length;
     }
 
     if (contentType === 'show') {
-      const finalIds = (matched as NormalizedShow[]).map((s) => s._sourceIds.sonarr!);
       const task = SONARR_TASKS[taskId];
       if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(provider as SonarrProvider, finalIds);
+      await task.run(source as SonarrProvider, finalIds);
       return finalIds.length;
     }
 

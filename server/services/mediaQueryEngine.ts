@@ -1,9 +1,7 @@
 import type { DrizzleDb } from '../database';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '../providers/normalizeMedia';
-import type { RadarrProvider } from '../providers/radarrProvider';
-import type { SonarrProvider } from '../providers/sonarrProvider';
+import type { MediaItemSet, MediaSource } from '../providers/mediaSource';
 import { getFilterDef } from '../utils/filterRegistry';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
@@ -16,18 +14,18 @@ export interface MediaQuerySource {
 }
 
 /**
- * A query specification: a bound provider instance, the content type it serves,
- * and one-or-more include/exclude sources. A saved query is a single-source
- * include `MediaQuery`; the browse view is the same with URL-derived filterValues.
+ * A query bound to a `MediaSource`: the source the engine reads items from, the
+ * content type whose predicate registry applies, and one-or-more include/exclude
+ * sources. A saved query is a single-source include `MediaQuery`; the browse view
+ * is the same with URL-derived filterValues.
  */
 export interface MediaQuery {
-  provider: RadarrProvider | SonarrProvider;
+  source: MediaSource;
   contentType: 'movie' | 'show';
   sources: MediaQuerySource[];
 }
 
-/** The transient result of evaluating a query: the matched normalized items. */
-export type MediaItemSet = (NormalizedMovie | NormalizedShow)[];
+export type { MediaItemSet };
 
 /**
  * The engine's match primitive: the subset of `items` satisfying every predicate
@@ -60,25 +58,12 @@ export class MediaQueryEngine {
   }
 
   async evaluate(query: MediaQuery): Promise<MediaItemSet> {
-    if (query.contentType === 'movie') {
-      const radarr = query.provider as RadarrProvider;
-      const normalized = (await radarr.getMovies()).map(normalizeRadarrMovie);
-      if (this.db) {
-        await mergeEnrichment(this.db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
-      }
-      return this.combine(normalized, query.sources, 'movie', (m) => m._sourceIds.radarr);
+    const { source } = query;
+    const items = await source.getMediaItems();
+    if (this.db) {
+      await mergeEnrichment(this.db, items, source.enrichmentSourceType, (i) => source.idOf(i));
     }
-
-    if (query.contentType === 'show') {
-      const sonarr = query.provider as SonarrProvider;
-      const normalized = (await sonarr.getSeries()).map(normalizeSonarrSeries);
-      if (this.db) {
-        await mergeEnrichment(this.db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
-      }
-      return this.combine(normalized, query.sources, 'show', (s) => s._sourceIds.sonarr);
-    }
-
-    return [];
+    return this.combine(items, query.sources, query.contentType, (i) => source.idOf(i));
   }
 
   /** Match every source, project ids, combine include/exclude, return survivors. */

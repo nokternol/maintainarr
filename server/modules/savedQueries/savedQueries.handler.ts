@@ -1,34 +1,20 @@
 import { SavedQuerySchema } from '@app/lib/api/schemas';
-import { MetadataProviderType } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
 import { isAuthenticated } from '@server/middleware/auth';
-import type { IProviderFactory } from '@server/providers/providerFactory';
-import type { RadarrProvider } from '@server/providers/radarrProvider';
-import type { SonarrProvider } from '@server/providers/sonarrProvider';
+import type { MediaSourceFactory } from '@server/providers/mediaSourceFactory';
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
-import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import type { ContentType, SavedQueryService } from '@server/services/savedQueryService';
+import type { SavedQueryService } from '@server/services/savedQueryService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { z } from 'zod';
 import { savedQuerySchemas } from './savedQueries.schemas';
 
-const log = getChildLogger('SavedQueryHandler');
-
-// The provider type that owns each content type under the single-active invariant.
-const OWNER_TYPE: Record<ContentType, MetadataProviderType> = {
-  movie: MetadataProviderType.RADARR,
-  show: MetadataProviderType.SONARR,
-};
-
 interface Cradle {
   savedQueryService: SavedQueryService;
-  providerSettingsService: ProviderSettingsService;
-  providerFactory: IProviderFactory;
+  mediaSourceFactory: MediaSourceFactory;
   mediaQueryEngine: MediaQueryEngine;
 }
 
 export function createSavedQueryHandlers(cradle: Cradle) {
-  const { savedQueryService, providerSettingsService, providerFactory, mediaQueryEngine } = cradle;
+  const { savedQueryService, mediaSourceFactory, mediaQueryEngine } = cradle;
 
   return {
     list: [
@@ -72,14 +58,11 @@ export function createSavedQueryHandlers(cradle: Cradle) {
         },
         handler: async ({ params }) => {
           const query = await savedQueryService.getById(params.id);
-          const [settings] = await providerSettingsService.findActiveByTypes([
-            OWNER_TYPE[query.contentType],
-          ]);
-          if (!settings) return { count: 0 };
+          const source = await mediaSourceFactory.forContentType(query.contentType);
+          if (!source) return { count: 0 };
 
-          const provider = providerFactory.create(settings, log) as RadarrProvider | SonarrProvider;
           const set = await mediaQueryEngine.evaluate({
-            provider,
+            source,
             contentType: query.contentType,
             sources: [{ filterValues: query.filterValues, role: 'include' }],
           });

@@ -1,4 +1,8 @@
+import type { NormalizedMovie } from '../domain/movie';
+import type { NormalizedShow } from '../domain/show';
 import { BaseMetadataProvider } from './baseMetadataProvider';
+import type { MediaItemSet, MediaSource } from './mediaSource';
+import { normalizeSonarrSeries } from './normalizeMedia';
 
 export interface SonarrSeason {
   seasonNumber: number;
@@ -62,9 +66,19 @@ export interface SonarrTag {
   label: string;
 }
 
-export class SonarrProvider extends BaseMetadataProvider {
+export class SonarrProvider extends BaseMetadataProvider implements MediaSource {
+  public readonly enrichmentSourceType = 'SONARR' as const;
+
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
+  }
+
+  public async getMediaItems(): Promise<MediaItemSet> {
+    return (await this.getSeries()).map(normalizeSonarrSeries);
+  }
+
+  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
+    return (item as NormalizedShow)._sourceIds.sonarr;
   }
 
   public async getSeries(): Promise<SonarrSeries[]> {
