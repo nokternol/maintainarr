@@ -6,6 +6,7 @@ import { PlexProvider } from './plexProvider';
 import { RadarrProvider } from './radarrProvider';
 import { SonarrProvider } from './sonarrProvider';
 import { TautulliProvider } from './tautulliProvider';
+import { TmdbProvider } from './tmdbProvider';
 import { TvMazeProvider } from './tvmazeProvider';
 
 // TVmaze is a keyless public service — no configured provider required.
@@ -17,7 +18,8 @@ export type AnyProvider =
   | SonarrProvider
   | PlexProvider
   | TautulliProvider
-  | OverseerrProvider;
+  | OverseerrProvider
+  | TmdbProvider;
 
 /** Active providers resolved into typed, named slots — absent types stay undefined. */
 export interface ProviderSet {
@@ -26,6 +28,7 @@ export interface ProviderSet {
   plex?: PlexProvider;
   tautulli?: TautulliProvider;
   overseerr?: OverseerrProvider;
+  tmdb?: TmdbProvider;
 }
 
 export interface IProviderFactory {
@@ -46,6 +49,8 @@ export class ProviderFactory implements IProviderFactory {
         return new TautulliProvider(provider, logger);
       case MetadataProviderType.OVERSEERR:
         return new OverseerrProvider(provider, logger);
+      case MetadataProviderType.TMDB:
+        return new TmdbProvider(provider, logger);
       default:
         throw new Error(`Unsupported provider type: ${provider.type}`);
     }
@@ -61,6 +66,7 @@ export class ProviderFactory implements IProviderFactory {
       else if (provider instanceof PlexProvider) set.plex = provider;
       else if (provider instanceof TautulliProvider) set.tautulli = provider;
       else if (provider instanceof OverseerrProvider) set.overseerr = provider;
+      else if (provider instanceof TmdbProvider) set.tmdb = provider;
     }
     return set;
   }

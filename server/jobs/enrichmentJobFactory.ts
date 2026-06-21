@@ -30,13 +30,10 @@ export class EnrichmentJobFactory implements EnrichmentJobFactoryLike {
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.OVERSEERR,
       MetadataProviderType.PLEX,
+      MetadataProviderType.TMDB,
     ]);
-    const { tautulli, overseerr, plex } = this.providerFactory.createMany(providers, log);
-    return new EnrichmentJob({
-      db: this.db,
-      tautulliProvider: tautulli,
-      overseerrProvider: overseerr,
-      plexProvider: plex,
-    });
+    const { tautulli, overseerr, plex, tmdb } = this.providerFactory.createMany(providers, log);
+    const enrichers = [tautulli, overseerr, plex, tmdb].filter((e) => e !== undefined);
+    return new EnrichmentJob({ db: this.db, enrichers });
   }
 }

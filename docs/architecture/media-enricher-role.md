@@ -1,35 +1,34 @@
-# MediaEnricher role (target model)
+# MediaEnricher role (as-built)
 
-**Status:** INTENT (target model, not built). Detailed spec of the **MediaEnricher** role under the
+**Status:** AS-BUILT (current fact) — Phase 2.5. Detailed spec of the **MediaEnricher** role under the
 umbrella `docs/intent/system-roles-and-capabilities.md` — the sibling of `docs/intent/provider-source-model.md`
-(which is the detailed spec of **MediaSource**). The as-built enrichment mechanism is recorded in
-`docs/architecture/provider-roles-and-identity.md`; this document is the corrective target it evolves to.
+(which is the detailed spec of **MediaSource**). The surrounding source/identity model is recorded in
+`docs/architecture/provider-roles-and-identity.md`.
 
-This doc closes a naming-and-ownership drift discovered in the role extraction: the as-built
-`MetadataEnricher` interface (`server/providers/roles.ts`) is the *opposite* of the role it names.
+This role replaced a naming-and-ownership drift found in the Phase 2 role extraction: the original
+`MetadataEnricher` interface was the *opposite* of the role it named.
 
-## The drift being closed
+## The drift that was closed
 
 ```ts
-// as-built — server/providers/roles.ts
+// before Phase 2.5 — server/providers/roles.ts
 interface MetadataEnricher { readonly enrichmentSourceType: 'RADARR' | 'SONARR'; }
 ```
 
 Three faults, one root cause:
 
-1. **It is the MediaSource identity key wearing an enricher's name.** `enrichmentSourceType: 'RADARR' |
-   'SONARR'` is byte-identical to `MediaSource.enrichmentSourceType` — the *owner* type used by
-   `mergeEnrichment(..., 'RADARR'|'SONARR', ...)` to find an owner's own rows in `media_identity`. So the
-   enricher contract embeds "which media I **own**" — the exact inverse of "metadata about media I do
-   **not** own."
-2. **Only the owners implement it.** Radarr and Sonarr `implements MetadataEnricher`; the genuine
-   enrichers (Plex, Tautulli, Overseerr, TMDB) declare no role.
-3. **The real mechanism never uses it.** `EnrichmentJob` hardcodes per-provider branches, each via a pure
-   mapper producing contributions keyed by a logical key. That *is* the role — but duck-typed in the job,
+1. **It was the MediaSource identity key wearing an enricher's name.** `enrichmentSourceType: 'RADARR' |
+   'SONARR'` was byte-identical to `MediaSource.enrichmentSourceType` — the *owner* type used by
+   `mergeEnrichment` to find an owner's own rows in `media_identity`. So the enricher contract embedded
+   "which media I **own**" — the exact inverse of "metadata about media I do **not** own."
+2. **Only the owners implemented it.** Radarr and Sonarr `implements MetadataEnricher`; the genuine
+   enrichers (Plex, Tautulli, Overseerr, TMDB) declared no role.
+3. **The real mechanism never used it.** `EnrichmentJob` hardcoded per-provider branches, each via a pure
+   mapper producing contributions keyed by a logical key. That *was* the role — but duck-typed in the job,
    invisible as a contract.
 
 Root cause: the role was named in the `Metadata*` family and modelled off the owner's merge key instead
-of the enricher's logical key. The fix is a rename **and** a re-grounding of the contract.
+of the enricher's logical key. The fix was a rename **and** a re-grounding of the contract, now built.
 
 ## The role
 
@@ -121,10 +120,11 @@ moving them from read-time to an explicit, testable write-time resolver.
 
 ### Storage holds resolved canonical values
 
-Precedence runs at write time, so the cache stores **resolved** fields (`playCount`), not provider-shaped
-columns (`tautulliPlayCount`/`plexViewCount`) side by side. Read-time `mergeEnrichment` collapses to a
-trivial copy of canonical columns onto items. Storage-level provenance is discarded — acceptable because
-the job recomputes from all enrichers on every staleness pass. **Requires a `media_enrichment` migration.**
+Precedence runs at write time, so the cache stores **resolved** canonical fields (`playCount`,
+`lastWatchedAt`), not provider-shaped columns (`tautulliPlayCount`/`plexViewCount`) side by side
+(migration `0012_media_enrichment_canonical`). Read-time `mergeEnrichment` is a trivial copy of canonical
+columns onto items. Storage-level provenance is discarded — acceptable because the job recomputes from all
+enrichers on every staleness pass.
 
 ## What stays (it is not enrichment)
 
@@ -132,28 +132,22 @@ the job recomputes from all enrichers on every staleness pass. **Requires a `med
 concern. It is what lets a Radarr-owned item learn its `plexRatingKey` (Radarr never knew it), hydrating
 `_sourceIds` so a `MediaEnricher` has a key to match. It is upstream of, and separate from, enrichment.
 
-## What retires
+## What was retired
 
-- `MetadataEnricher` interface (renamed `MediaEnricher`, re-grounded).
-- `EnrichmentContribution`, `EnrichmentKey`, `EnrichmentValues`, `toEnrichmentValues`.
+- `MetadataEnricher` interface — renamed `MediaEnricher` and re-grounded on `enrich(items)`.
+- `EnrichmentContribution`, `EnrichmentKey`, `EnrichmentValues`, `toEnrichmentValues` (`enrichment/types.ts`).
 - `utils/contributions.ts` generic token-merge (`mergeContributions`).
 - `EnrichmentJob.collectBulkContributions` hardcoded per-provider branches → uniform `enrichers` iteration.
 - `mergeEnrichment`'s `??` precedence → `resolvePrecedence` policy at write time.
 - `media_enrichment` provider-specific columns → canonical columns.
 
-## Path to close the drift (sequenced, TDD-able)
+## How it is wired
 
-1. **Rename** `MetadataEnricher` → `MediaEnricher`; remove it from Radarr/Sonarr; align doc/glossary
-   vocabulary. (Pure rename + membership correction; guarded by existing tests.)
-2. **Introduce the behavioral contract** `enrich(items) → EnrichmentResult` on the genuine enrichers
-   (Plex/Tautulli/Overseerr), each a thin shell over its existing pure mapper.
-3. **Introduce `resolvePrecedence` + POLICY**; have `EnrichmentJob` iterate `enrichers` uniformly and
-   resolve per-field. Delete `collectBulkContributions` branches.
-4. **Bring TMDB into the role** as a `MediaEnricher` (the original "fix `TmdbProvider`" — now well-formed:
-   it decorates `tmdbStatus`/rating/certification keyed by `_sourceIds.tmdb`).
-5. **Collapse `media_enrichment`** to canonical columns; reduce `mergeEnrichment` to a copy; retire
-   `EnrichmentContribution` and `contributions.ts`.
-
-Ordered so each step is green under existing tests before the next; the interim `MediaItem` contract makes
-every step a local change.
+- `server/providers/roles.ts` — `MediaEnricher` / `EnrichmentResult` contracts.
+- `PlexProvider`, `TautulliProvider`, `OverseerrProvider`, `TmdbProvider` — `implements MediaEnricher`,
+  each a thin shell: fetch, run its pure mapper (`enrichment/mappers.ts`), then `enrichment/decorate.ts`.
+- `enrichment/precedence.ts` — `resolvePrecedence` + the `ENRICHMENT_POLICY` per-field map.
+- `EnrichmentJob` (`jobs/enrichmentJob.ts`) — hydrates stale identities into `MediaItem`s, runs every
+  enricher, resolves per field, persists resolved canonical columns. Wired by `EnrichmentJobFactory`.
+- `services/enrichmentMerge.ts` — read-time copy of canonical columns onto browse/executor items.
 </content>

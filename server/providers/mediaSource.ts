@@ -1,8 +1,11 @@
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 
+/** The canonical media model every role acts on — a movie or a show. */
+export type MediaItem = NormalizedMovie | NormalizedShow;
+
 /** The transient result of resolving a source: its normalized items. */
-export type MediaItemSet = (NormalizedMovie | NormalizedShow)[];
+export type MediaItemSet = MediaItem[];
 
 /**
  * The read role a media-owning provider plays for the query engine. A source

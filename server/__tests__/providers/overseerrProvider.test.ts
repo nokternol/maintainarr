@@ -1,7 +1,9 @@
+import { MetadataProviderType } from '@server/database/schema';
+import type { NormalizedMovie } from '@server/domain/movie';
 import { getChildLogger } from '@server/logger';
 import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const logger = getChildLogger('TestOverseerrProvider');
 
@@ -27,5 +29,30 @@ describe('OverseerrProvider', () => {
     expect(issues).toHaveLength(2);
     expect(issues[0]).toMatchObject({ id: 1, status: 1, media: { tmdbId: 603 } });
     expect(issues[1]).toMatchObject({ id: 2, status: 1, media: { tmdbId: 704 } });
+  });
+
+  describe('enrich (MediaEnricher)', () => {
+    it('decorates a matched item with request status and issue flag, tagged by provider', async () => {
+      vi.spyOn(provider, 'getRequests').mockResolvedValue([
+        {
+          id: 1,
+          status: 2,
+          type: 'movie',
+          requestedBy: { id: 1, displayName: 'u', email: 'u@u.com' },
+          media: { tmdbId: 100, title: 'M' },
+          createdAt: '',
+        },
+      ]);
+      vi.spyOn(provider, 'getIssues').mockResolvedValue([
+        { id: 1, status: 1, media: { tmdbId: 100 } },
+      ]);
+      const item: NormalizedMovie = { _sourceIds: { tmdb: 100 }, title: 'M' };
+
+      const result = await provider.enrich([item]);
+
+      expect(result.provider).toBe(MetadataProviderType.OVERSEERR);
+      expect(result.items[0].overseerrRequestStatus).toBe(2);
+      expect(result.items[0].overseerrHasIssue).toBe(true);
+    });
   });
 });

@@ -30,7 +30,7 @@ fields** on its own rows — *not* enrichment, because enrichment is strictly me
 does **not** own. **TMDB is MediaEnricher only.** This multiplicity is exactly why "Provider" as a single
 amalgamated concept fails — the roles have different requirements and different consumers, and collapsing
 them forces every system to pretend it can do all three. The detailed MediaEnricher spec (contract,
-membership, the canonical-`MediaItem` shared model) is `docs/intent/media-enricher-role.md`.
+membership, the canonical-`MediaItem` shared model) is `docs/architecture/media-enricher-role.md`.
 
 ## Capabilities are declared and additive, never assumed
 
@@ -90,7 +90,7 @@ This collapses the two task catalogues — `src/lib/provider-registry.ts` (adver
 - **MediaSource** is the role formalised in `docs/intent/provider-source-model.md` (the `media_item` /
   `media_identity` split, instance-not-type keying, logical grouping). That document is the detailed
   spec of *this* role; this document is the umbrella.
-- **MediaEnricher** is the role formalised in `docs/intent/media-enricher-role.md` (behavioral
+- **MediaEnricher** is the role formalised in `docs/architecture/media-enricher-role.md` (behavioral
   `enrich(items)` contract, non-owner membership, the canonical-`MediaItem` shared model that retires
   `EnrichmentContribution`). The detailed spec of *this* role.
 - `docs/architecture/provider-roles-and-identity.md` records the **as-built** Source/Enricher tiering.

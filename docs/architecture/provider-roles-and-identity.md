@@ -4,9 +4,9 @@
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 
-**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher interface is named
-`MetadataEnricher` in code and is mis-grounded on the owner key; the corrected `MediaEnricher` target is
-`docs/intent/media-enricher-role.md`.) The third role a
+**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher role is the
+`MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
+`docs/architecture/media-enricher-role.md`.) The third role a
 system can play — **MediaActuator** (tasks/actions) — and its as-built gap are in
 `docs/architecture/task-execution-and-actuator-manifest.md`. The unifying three-role model is
 `docs/intent/system-roles-and-capabilities.md`.
@@ -81,9 +81,10 @@ back to the raw `.id`) so the engine evaluates the same list browse paginates.
   (`'RADARR'`/`'SONARR'`) and `sourceId` is that app's internal id. Cross-provider ids
   (`tmdbId`, `tvdbId`, `imdbId`, `plexRatingKey`, …) are resolved onto the same row.
 - **Enrichment hangs off identities.** `EnrichmentJob.run` selects `FROM media_identity LEFT JOIN
-  media_enrichment` and enriches stale rows from Tautulli/Plex/Overseerr contributions matched by
-  `tmdb:`/`plex:` tokens (`enrichmentJob.ts:55`). An empty identity table means the enrichers are
-  never even queried.
+  media_enrichment`, hydrates each stale row into a canonical `MediaItem`, and hands the batch to every
+  `MediaEnricher` (Tautulli/Plex/Overseerr/TMDB); each matches by the logical key it speaks
+  (`_sourceIds.plex`/`.tmdb`) and `resolvePrecedence` resolves per field at write time. An empty identity
+  table means the enrichers are never even queried. See `docs/architecture/media-enricher-role.md`.
 
 ## Known as-built limitations (the corrective targets)
 

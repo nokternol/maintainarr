@@ -1,4 +1,8 @@
+import { MetadataProviderType } from '../database/schema';
+import { decorate } from '../jobs/enrichment/decorate';
+import { mapTautulliHistory } from '../jobs/enrichment/mappers';
 import { BaseProviderConnection } from './baseProviderConnection';
+import type { EnrichmentResult, MediaEnricher, MediaItem } from './roles';
 
 export interface TautulliLibraryStat {
   section_id: number;
@@ -34,7 +38,15 @@ interface TautulliResponse<T> {
   };
 }
 
-export class TautulliProvider extends BaseProviderConnection {
+export class TautulliProvider extends BaseProviderConnection implements MediaEnricher {
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+    const fieldsByKey = mapTautulliHistory(await this.getHistory());
+    return {
+      provider: MetadataProviderType.TAUTULLI,
+      items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
+    };
+  }
+
   private get baseParams() {
     return { apikey: this.provider.apiKey || '' };
   }

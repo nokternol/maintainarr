@@ -1,48 +1,31 @@
 import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import { mediaEnrichment, mediaIdentity } from '../database/schema';
-import type { OverseerrIssue, OverseerrRequest } from '../providers/overseerrProvider';
-import type { PlexMediaItem } from '../providers/plexProvider';
-import type { TautulliHistoryItem } from '../providers/tautulliProvider';
-import { type Token, mergeContributions } from '../utils/contributions';
-import { mapOverseerr, mapPlexItems, mapTautulliHistory } from './enrichment/mappers';
-import {
-  type EnrichmentContribution,
-  type EnrichmentKey,
-  type EnrichmentValues,
-  toEnrichmentValues,
-} from './enrichment/types';
+import type { MediaItem } from '../providers/mediaSource';
+import type { MediaEnricher } from '../providers/roles';
+import { ENRICHMENT_POLICY, resolvePrecedence } from './enrichment/precedence';
 
 const STALENESS_SECONDS = 24 * 60 * 60;
 
 interface Deps {
   db: DrizzleDb;
-  tautulliProvider?: { getHistory(): Promise<TautulliHistoryItem[]> };
-  overseerrProvider?: {
-    getRequests(): Promise<OverseerrRequest[]>;
-    getIssues(): Promise<OverseerrIssue[]>;
-  };
-  plexProvider?: { getAllItems(): Promise<PlexMediaItem[]> };
+  enrichers?: MediaEnricher[];
 }
 
-/**
- * Namespaced match tokens for an identity. Two records join when they share a token, so
- * each key dimension carries its own prefix — a `plexRatingKey` of "5" must never collide
- * with a `tmdbId` of 5.
- */
-function identityTokens(identity: typeof mediaIdentity.$inferSelect): Token[] {
-  const tokens: Token[] = [];
-  if (identity.plexRatingKey != null) tokens.push(`plex:${identity.plexRatingKey}`);
-  if (identity.tmdbId != null) tokens.push(`tmdb:${identity.tmdbId}`);
-  return tokens;
+/** A stable identity for a hydrated item — matches `resolvePrecedence`'s grouping key. */
+function identityKey(item: MediaItem): string {
+  return JSON.stringify(item._sourceIds);
 }
 
-/** The same namespaced tokens derived from a contribution's key dimensions. */
-function keyTokens(key: EnrichmentKey): Token[] {
-  const tokens: Token[] = [];
-  if (key.plexRatingKey !== undefined) tokens.push(`plex:${key.plexRatingKey}`);
-  if (key.tmdbId !== undefined) tokens.push(`tmdb:${key.tmdbId}`);
-  return tokens;
+/** Project an identity row into the canonical item the enrichers match and decorate. */
+function hydrate(identity: typeof mediaIdentity.$inferSelect): MediaItem {
+  const ids: Record<string, number | string> = {};
+  if (identity.sourceType === 'RADARR') ids.radarr = identity.sourceId;
+  else if (identity.sourceType === 'SONARR') ids.sonarr = identity.sourceId;
+  if (identity.tmdbId != null) ids.tmdb = identity.tmdbId;
+  if (identity.plexRatingKey != null) ids.plex = identity.plexRatingKey;
+  if (identity.imdbId != null) ids.imdb = identity.imdbId;
+  return { _sourceIds: ids, title: '' } as MediaItem;
 }
 
 export class EnrichmentJob {
@@ -62,62 +45,43 @@ export class EnrichmentJob {
     );
     if (toEnrich.length === 0) return 0;
 
-    // ─── Collect contributions from every active bulk source (uniform) ────────
-    const contributions = await this.collectBulkContributions();
+    // Hydrate each stale identity into a canonical item, tracking the row to write back to.
+    const hydrated = toEnrich.map(({ identity, enrichment }) => ({
+      identityId: identity.id,
+      hasRow: enrichment != null,
+      item: hydrate(identity),
+    }));
+    const items = hydrated.map((h) => h.item);
 
-    // ─── Merge into each identity by shared key — no per-provider branches ────
-    const identities = toEnrich.map((r) => r.identity);
-    const merged = mergeContributions<
-      (typeof identities)[number],
-      EnrichmentKey,
-      Partial<EnrichmentValues>
-    >(
-      identities,
-      contributions,
-      identityTokens,
-      keyTokens,
-      (acc, next) => ({ ...acc, ...next }),
-      () => ({})
+    // Every enricher decorates the same batch; precedence resolves per field at write time.
+    const enrichers = this.deps.enrichers ?? [];
+    const results = await Promise.all(enrichers.map((e) => e.enrich(items)));
+    const resolvedByKey = new Map(
+      resolvePrecedence(results, ENRICHMENT_POLICY).map((item) => [identityKey(item), item])
     );
-    const mergedById = new Map(merged.map((m) => [m.target.id, m.values]));
 
-    // ─── Write rows ───────────────────────────────────────────────────────────
-    for (const { identity, enrichment } of toEnrich) {
-      // Materialize the merged partial into the canonical record (undefined → null).
-      const values = toEnrichmentValues(mergedById.get(identity.id) ?? {});
+    for (const { identityId, hasRow, item } of hydrated) {
+      const resolved = resolvedByKey.get(identityKey(item));
+      const values = {
+        playCount: resolved?.playCount ?? null,
+        lastWatchedAt: resolved?.lastWatchedAt ?? null,
+        overseerrRequestStatus: resolved?.overseerrRequestStatus ?? null,
+        overseerrHasIssue: resolved?.overseerrHasIssue ?? null,
+        tmdbStatus: resolved?.tmdbStatus ?? null,
+      };
 
-      if (enrichment) {
+      if (hasRow) {
         await this.deps.db
           .update(mediaEnrichment)
           .set({ ...values, enrichedAt: now })
-          .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
+          .where(eq(mediaEnrichment.mediaIdentityId, identityId));
       } else {
         await this.deps.db
           .insert(mediaEnrichment)
-          .values({ mediaIdentityId: identity.id, ...values, enrichedAt: now });
+          .values({ mediaIdentityId: identityId, ...values, enrichedAt: now });
       }
     }
 
     return toEnrich.length;
-  }
-
-  private async collectBulkContributions(): Promise<EnrichmentContribution[]> {
-    const contributions: EnrichmentContribution[] = [];
-
-    if (this.deps.tautulliProvider) {
-      contributions.push(...mapTautulliHistory(await this.deps.tautulliProvider.getHistory()));
-    }
-    if (this.deps.plexProvider) {
-      contributions.push(...mapPlexItems(await this.deps.plexProvider.getAllItems()));
-    }
-    if (this.deps.overseerrProvider) {
-      const [requests, issues] = await Promise.all([
-        this.deps.overseerrProvider.getRequests(),
-        this.deps.overseerrProvider.getIssues(),
-      ]);
-      contributions.push(...mapOverseerr(requests, issues));
-    }
-
-    return contributions;
   }
 }

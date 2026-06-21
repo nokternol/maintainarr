@@ -1,4 +1,8 @@
+import { MetadataProviderType } from '../database/schema';
+import { decorate } from '../jobs/enrichment/decorate';
+import { mapPlexItems } from '../jobs/enrichment/mappers';
 import { BaseProviderConnection } from './baseProviderConnection';
+import type { EnrichmentResult, MediaEnricher, MediaItem } from './roles';
 
 export interface PlexLibrary {
   key: string;
@@ -21,7 +25,15 @@ export interface PlexMediaItem {
  * PlexProvider handles metadata gathering from a Plex Media Server instance.
  * Auth token validation against plex.tv lives in services/plexService.ts (PlexService).
  */
-export class PlexProvider extends BaseProviderConnection {
+export class PlexProvider extends BaseProviderConnection implements MediaEnricher {
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+    const fieldsByKey = mapPlexItems(await this.getAllItems());
+    return {
+      provider: MetadataProviderType.PLEX,
+      items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
+    };
+  }
+
   private get authHeader() {
     return {
       'X-Plex-Token': this.provider.apiKey ?? '',

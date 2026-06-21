@@ -27,7 +27,7 @@ The canonical name for each crystallized concept. **The TypeScript type is the b
 | Term | Meaning | Binds in code |
 |---|---|---|
 | **MediaSource** | Role: owns a media collection — what *exists* + a canonical per-item id. Advertises `getMediaItems()`/`idOf()`, not `getMovies`/`getSeries`. | `server/providers/mediaSource.ts` |
-| **MediaEnricher** | Role: contributes metadata about media it does *not* own, joined by a logical key; decorates the canonical `MediaItem`. *(Code currently names it `MetadataEnricher` and mis-grounds it on the owner key — known drift, target model in `docs/intent/media-enricher-role.md`.)* | `server/providers/roles.ts` |
+| **MediaEnricher** | Role: contributes metadata about media it does *not* own, joined by a logical key; `enrich(items)` decorates the canonical `MediaItem`, precedence resolved per field at write time. Built by Plex/Tautulli/Overseerr/TMDB. Spec: `docs/architecture/media-enricher-role.md`. | `server/providers/roles.ts` |
 | **MediaActuator** | Role: exposes actions (tasks) on addressable media. A system without it has no tasks. | `server/providers/roles.ts` |
 | **BaseProviderConnection** | The shared HTTP-client + config base. A *connection* base, not a role/metadata contract. | `server/providers/baseProviderConnection.ts` |
 | **MediaQuerySpec** | The persistable, source-less core: `{ contentType, sources }`. Shared by the two below. | `server/services/mediaQueryEngine.ts` |

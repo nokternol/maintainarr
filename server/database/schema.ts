@@ -247,10 +247,8 @@ export const mediaEnrichment = sqliteTable(
     mediaIdentityId: integer('mediaIdentityId')
       .notNull()
       .references(() => mediaIdentity.id, { onDelete: 'cascade' }),
-    tautulliPlayCount: integer('tautulliPlayCount'),
-    tautulliLastPlayed: integer('tautulliLastPlayed'),
-    plexViewCount: integer('plexViewCount'),
-    plexLastViewedAt: integer('plexLastViewedAt'),
+    playCount: integer('playCount'),
+    lastWatchedAt: text('lastWatchedAt'),
     overseerrRequestStatus: integer('overseerrRequestStatus'),
     overseerrHasIssue: bit('overseerrHasIssue'),
     tmdbStatus: text('tmdbStatus'),

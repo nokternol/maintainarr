@@ -74,7 +74,7 @@ describe('EnrichmentJobFactory', () => {
       .select()
       .from(mediaEnrichment)
       .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
-    expect(row.tautulliPlayCount).toBe(1);
+    expect(row.playCount).toBe(1);
   });
 
   it('returns a runnable job when no enrichment providers are active', async () => {

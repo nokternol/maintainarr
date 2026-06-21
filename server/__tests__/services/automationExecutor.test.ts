@@ -826,14 +826,14 @@ describe('AutomationExecutor', () => {
         createRadarrMovie({ id: 2, title: 'Unwatched Movie', hasFile: true }),
       ];
 
-      // Seed media_identity + enrichment for movie 1 only (tautulliPlayCount=3)
+      // Seed media_identity + enrichment for movie 1 only (playCount=3)
       const [identity] = await db
         .insert(mediaIdentity)
         .values({ sourceType: 'RADARR', sourceId: 1 })
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
-        tautulliPlayCount: 3,
+        playCount: 3,
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
@@ -870,7 +870,7 @@ describe('AutomationExecutor', () => {
     });
   });
 
-  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses tautulliLastPlayed from DB', () => {
+  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses lastWatchedAt from DB', () => {
     it('only executes task on movies whose enrichment row shows lastPlayed >= N days ago', async () => {
       const db = getDb();
       const tenDaysAgoUnix = Math.floor((Date.now() - 10 * 86_400_000) / 1000);
@@ -887,7 +887,7 @@ describe('AutomationExecutor', () => {
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id10.id,
-        tautulliLastPlayed: tenDaysAgoUnix,
+        lastWatchedAt: new Date(tenDaysAgoUnix * 1000).toISOString(),
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
@@ -898,7 +898,7 @@ describe('AutomationExecutor', () => {
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id11.id,
-        tautulliLastPlayed: twoDaysAgoUnix,
+        lastWatchedAt: new Date(twoDaysAgoUnix * 1000).toISOString(),
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
@@ -948,14 +948,14 @@ describe('AutomationExecutor', () => {
         createSonarrSeries({ id: 2, title: 'Unwatched Show', status: 'ended' }),
       ];
 
-      // Seed media_identity + enrichment for series 1 only (tautulliPlayCount=5)
+      // Seed media_identity + enrichment for series 1 only (playCount=5)
       const [identity] = await db
         .insert(mediaIdentity)
         .values({ sourceType: 'SONARR', sourceId: 1 })
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
-        tautulliPlayCount: 5,
+        playCount: 5,
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 

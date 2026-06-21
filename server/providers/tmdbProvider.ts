@@ -1,4 +1,7 @@
+import { MetadataProviderType } from '../database/schema';
+import { decorate } from '../jobs/enrichment/decorate';
 import { BaseProviderConnection } from './baseProviderConnection';
+import type { EnrichmentResult, MediaEnricher, MediaItem } from './roles';
 
 export interface TmdbSearchResult {
   id: number;
@@ -189,9 +192,38 @@ function extractTvCertification(
   return first?.rating;
 }
 
-export class TmdbProvider extends BaseProviderConnection {
+export class TmdbProvider extends BaseProviderConnection implements MediaEnricher {
   private get apiParams() {
     return { api_key: this.provider.apiKey || '' };
+  }
+
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+    const fieldsByKey = new Map<number, Partial<MediaItem>>();
+    for (const item of items) {
+      const tmdbId = item._sourceIds.tmdb;
+      if (tmdbId === undefined || fieldsByKey.has(tmdbId)) continue;
+      const status = await this.getStatus(tmdbId);
+      if (status !== undefined) fieldsByKey.set(tmdbId, { tmdbStatus: status });
+    }
+    return {
+      provider: MetadataProviderType.TMDB,
+      items: decorate(items, (i) => i._sourceIds.tmdb, fieldsByKey),
+    };
+  }
+
+  /** The release/airing status TMDB reports for an id, trying movie then tv. */
+  public async getStatus(tmdbId: number): Promise<string | undefined> {
+    for (const kind of ['movie', 'tv'] as const) {
+      try {
+        const data = await this.client
+          .get(`${kind}/${tmdbId}`, { searchParams: this.apiParams })
+          .json<{ status?: string }>();
+        if (data.status) return data.status;
+      } catch {
+        // wrong media kind for this id — try the next endpoint
+      }
+    }
+    return undefined;
   }
 
   public async search(query: string): Promise<TmdbSearchResult[]> {

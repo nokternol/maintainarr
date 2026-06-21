@@ -48,9 +48,9 @@ jobs run via `SystemTaskRunner`, not provider actuator actions, and are not part
 
 ## Roles are declared, not duck-typed
 
-`server/providers/roles.ts` declares `MediaSource`, `MetadataEnricher`, and `MediaActuator`; concrete
-providers `implements` the ones they hold (Radarr/Sonarr currently declare all three — though the
-`MetadataEnricher` declaration is the mis-grounded one noted below). `BaseMetadataProvider` is
+`server/providers/roles.ts` declares `MediaSource`, `MediaEnricher`, and `MediaActuator`; concrete
+providers `implements` the ones they hold (Radarr/Sonarr are `MediaSource` + `MediaActuator`; the genuine
+enrichers Plex/Tautulli/Overseerr/TMDB are `MediaEnricher`). `BaseMetadataProvider` is
 renamed `BaseProviderConnection` to reflect that it is a connection/HTTP base, not a metadata contract.
 The roles are mostly type-level; their observable proof is the manifest — an enricher-only type yields an
 empty task list.
@@ -70,13 +70,7 @@ catalogue from the server instead of holding its own.
 
 ## Known limitations (corrective targets)
 
-1. **The enricher role is mis-grounded (`MetadataEnricher`).** As built, `MetadataEnricher` is the owner
-   key (`enrichmentSourceType: 'RADARR'|'SONARR'`) implemented only by Radarr/Sonarr — the inverse of the
-   role. The genuine enrichers (Plex/Tautulli/Overseerr/TMDB) declare nothing, and `TmdbProvider`
-   implements no role. The corrected target — rename to `MediaEnricher`, behavioral `enrich(items)`,
-   canonical-`MediaItem` shared model — is `docs/intent/media-enricher-role.md`. The actuator concern this
-   doc records is unaffected by that drift.
-2. **`filterCapabilities` remains a half-formed declaration.** `ProviderEntry.filterCapabilities:
+1. **`filterCapabilities` remains a half-formed declaration.** `ProviderEntry.filterCapabilities:
    string[]` is still client-side, free-text, untyped, and unconnected to the role model — it documents
    capability without modelling it. Unifying it with the role/manifest surface is unstarted.
 </content>

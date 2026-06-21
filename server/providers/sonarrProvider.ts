@@ -4,7 +4,7 @@ import type { NormalizedShow } from '../domain/show';
 import { BaseProviderConnection } from './baseProviderConnection';
 import type { MediaItemSet, MediaSource } from './mediaSource';
 import { normalizeSonarrSeries } from './normalizeMedia';
-import type { MediaActuator, MetadataEnricher } from './roles';
+import type { MediaActuator } from './roles';
 
 export interface SonarrSeason {
   seasonNumber: number;
@@ -68,10 +68,7 @@ export interface SonarrTag {
   label: string;
 }
 
-export class SonarrProvider
-  extends BaseProviderConnection
-  implements MediaSource, MetadataEnricher, MediaActuator
-{
+export class SonarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
   public readonly enrichmentSourceType = 'SONARR' as const;
   public readonly actuatorType = MetadataProviderType.SONARR;
 

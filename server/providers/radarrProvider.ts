@@ -4,7 +4,7 @@ import type { NormalizedShow } from '../domain/show';
 import { BaseProviderConnection } from './baseProviderConnection';
 import type { MediaItemSet, MediaSource } from './mediaSource';
 import { normalizeRadarrMovie } from './normalizeMedia';
-import type { MediaActuator, MetadataEnricher } from './roles';
+import type { MediaActuator } from './roles';
 
 export interface RadarrImage {
   coverType: string;
@@ -59,10 +59,7 @@ export interface RadarrTag {
   label: string;
 }
 
-export class RadarrProvider
-  extends BaseProviderConnection
-  implements MediaSource, MetadataEnricher, MediaActuator
-{
+export class RadarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
   public readonly enrichmentSourceType = 'RADARR' as const;
   public readonly actuatorType = MetadataProviderType.RADARR;
 

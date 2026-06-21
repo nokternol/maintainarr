@@ -286,8 +286,8 @@ describe('Media browse — series registry predicates', () => {
   describe('tautulliWatched (migrated to enrichment playCount)', () => {
     it('returns only series with enriched playCount > 0 when tautulliWatched=true', async () => {
       const client = clientWithSeries([series(1, 'Watched', {}), series(2, 'Unwatched', {})]);
-      await seedEnrichment(1, { tautulliPlayCount: 5 });
-      await seedEnrichment(2, { tautulliPlayCount: 0 });
+      await seedEnrichment(1, { playCount: 5 });
+      await seedEnrichment(2, { playCount: 0 });
       const res = await client.get('/api/media/series?tautulliWatched=true&pageSize=100');
       expect(expectSuccessResponse(res).items.map((s: { title: string }) => s.title)).toEqual([
         'Watched',
