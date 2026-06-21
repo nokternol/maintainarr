@@ -19,8 +19,9 @@ them. They come back once this heal lands.
   the others call it.
 - **Provider** conflates three roles — `MediaSource`, `MediaEnricher`, `MediaActuator`. Tasks belong
   to the actuator role only, yet the client advertises ~30 across all systems while the executor runs 3,
-  and `taskId` is unvalidated. Heal: declare roles; make the **server** the source of truth for the task
-  manifest; the **client derives** instead of holding its own 281-line catalogue.
+  and `taskId` is unvalidated. Heal: declare roles; make the **`MediaActuator` role own its tasks**
+  (retiring the type-keyed manifest table P2 shipped) with per-instance discovery and enablement; **then**
+  the client derives instead of holding its own 281-line catalogue.
 
 ## Phases
 
@@ -29,20 +30,21 @@ them. They come back once this heal lands.
 | **1 ✅ shipped** | `docs/architecture/media-query-engine.md` | A `MediaQuery` evaluates to its matched `MediaItemSet` through one engine; `/preview` returns a **real count** (not `0`); the executor and browse handler both resolve via that engine. | — | TDD (backend) |
 | **2 ✅ shipped** | `docs/architecture/task-execution-and-actuator-manifest.md` | A server **task manifest** declares each system's actuator tasks; creating an automation with an **unrunnable `taskId` is rejected**; `GET /api/providers/tasks` exposes the manifest. | P1 (executor already routes through the engine; task dispatch is the remaining executor concern) | TDD (backend) |
 | **2.5** | `phase-2.5-media-enricher-role.md` | The **MediaEnricher** role is real and cohesive: genuine enrichers (Plex/Tautulli/Overseerr/TMDB) `implements` it and decorate the canonical `MediaItem`; owners do not; precedence is an explicit per-field policy; `EnrichmentContribution` retires. **Closes the server role model.** | P2 (roles named) | TDD (backend) |
-| **3** | `phase-3-client-task-source-of-truth.md` | The client builds automations from the **server manifest**; the hardcoded client task catalogue is gone; the builder cannot offer a task the server can't run. | **P2.5** (server role model cohesive before any client work) + P2 (manifest endpoint) | TDD (client hooks) + impeccable (builder visual) |
+| **3** | `phase-3-actuator-task-ownership.md` | The `MediaActuator` role **owns** its tasks (the type-keyed manifest table is retired); tasks are discovered per configured instance and enabled per instance (default off, enforced at create + execution); **then** the client derives and its hardcoded catalogue is gone. | P2 (executor/create paths) — Phase 3 **itself** closes the **actuator** role server-side before its client stage | TDD (server, then client hooks) + impeccable (builder visual) |
 | **4** | `phase-4-client-query-alignment.md` | The filter view and saved-query preview reflect the engine's `MediaQuery`/`MediaItemSet` shape; preview count shown in the UI matches what an automation will act on. | P1 (engine + real preview) | TDD (client hooks) + impeccable (filter view visual) |
 
 ```
 P1 engine ──────────────────► P4 client query alignment
 
 P2 manifest ─┐
-             ├─► P3 client task source-of-truth
-P2.5 enricher┘   (server role model cohesive first)
+             ├─► P3a actuator role owns tasks (server) ─► P3b client derives
+P2.5 enricher┘   (P3a replaces the type-keyed table P2 shipped)
 ```
 
-P1, P2, and P2.5 are server-only and restore cohesion — the role model is whole only at the end of P2.5.
-P3 and P4 make the client honest; each may proceed once its server dependency lands (P3 after P2.5, P4
-after P1).
+P1, P2, and P2.5 are server-only. **The role model is not whole at the end of P2.5** — P2.5 closed only the
+*enricher* role; the *actuator* role was left as P2's type-keyed manifest table, detached from
+`MediaActuator`. Phase 3 closes that gap **server-first** (3a) and only then inverts the client (3b) onto
+the corrected, instance-keyed source. P4 (client query alignment) may proceed once P1 lands.
 
 ## Implementing a phase (agent invocation)
 
@@ -64,19 +66,27 @@ invocation is sufficient.
   phase and the reverted event-bus plan land into.
 - **P2 next** — with resolution out of the executor, task dispatch is the executor's remaining concern;
   the manifest + `taskId` validation close the actuator over-promise.
-- **P2.5 before any client** — P2 named the roles but shipped the enricher role mis-grounded (the inverse
-  of its own definition). The server role model is not cohesive until the `MediaEnricher` role is real;
-  Phase 3 expressly inverts the *client*, so the server truth it derives from must be whole first.
-- **P3 / P4** — client inversion. They depend on the server truth existing (P3 after P2.5, P4 after P1).
-  Each carries a visual pass via `impeccable` per `CLAUDE.md` (Ladle story first), separated from its
-  TDD-tested hook logic.
+- **P2.5** — P2 named the roles but shipped the enricher role mis-grounded (the inverse of its own
+  definition). P2.5 makes the `MediaEnricher` role real. It closes the *enricher* role only — **not** the
+  actuator role, which P2 left as a type-keyed manifest table detached from `MediaActuator`.
+- **P3 server-first, then client** — Phase 3 must *replace* (not combine with) that actuator table: the
+  `MediaActuator` role owns its tasks, discovery is per-instance, enablement is enforced server-side (3a).
+  Only then can the client honestly derive (3b) — a client cannot derive a correct catalogue from an
+  incorrect source. The detailed reasoning and the precedent it mirrors (`MediaEnricher.enrich()` retiring
+  `EnrichmentContribution`) are in `docs/intent/actuator-task-ownership.md`.
+- **P4** — client query alignment, depends on P1. Carries a visual pass via `impeccable` per `CLAUDE.md`
+  (Ladle story first), separated from its TDD-tested hook logic, as does P3b.
 
 ## Relationship to the model docs
 
 - `docs/architecture/media-query-engine.md` — the implemented `MediaQuery` / `MediaQueryEngine` /
   `MediaItemSet` owner (Phase 1, shipped).
 - `docs/intent/system-roles-and-capabilities.md` — the three-role model Phases 2–3 realise.
-- `docs/architecture/task-execution-and-actuator-manifest.md` — the as-built actuator manifest Phase 2 shipped.
+- `docs/architecture/task-execution-and-actuator-manifest.md` — the as-built actuator manifest Phase 2
+  shipped; **Phase 3 replaces it** with the role-owned model.
+- `docs/intent/actuator-task-ownership.md` — Phase 3's target model (the `MediaActuator` role owns its
+  tasks; instance-keyed discovery; per-instance enablement). `docs/intent/actuator-task-parameters.md` —
+  the deferred per-task parameter-injection requirement.
 - When a phase ships, move its durable pattern to `docs/architecture/` and delete its spec here.
 
 ## Not in this program
