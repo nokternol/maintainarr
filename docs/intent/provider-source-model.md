@@ -7,7 +7,7 @@ servers as catalog owners.
 
 **Scope:** this document specifies the **MediaSource** role in detail. It sits under the umbrella model
 in `docs/intent/system-roles-and-capabilities.md`, which defines all three roles a configured system can
-play (MediaSource / MetadataEnricher / MediaActuator). Read the umbrella first for how source relates to
+play (MediaSource / MediaEnricher / MediaActuator). Read the umbrella first for how source relates to
 enrichment and actuation.
 
 ## Decision: the catalog is *seeded* by sources; everything else enriches

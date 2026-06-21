@@ -4,9 +4,11 @@
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 
-**Scope:** this covers the **MediaSource** and **MetadataEnricher** roles as built. The third role a
+**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher interface is named
+`MetadataEnricher` in code and is mis-grounded on the owner key; the corrected `MediaEnricher` target is
+`docs/intent/media-enricher-role.md`.) The third role a
 system can play — **MediaActuator** (tasks/actions) — and its as-built gap are in
-`docs/architecture/task-execution-and-actuator-gap.md`. The unifying three-role model is
+`docs/architecture/task-execution-and-actuator-manifest.md`. The unifying three-role model is
 `docs/intent/system-roles-and-capabilities.md`.
 
 ## Why this is recorded as architecture, not intent
@@ -37,6 +39,35 @@ calling `getMovies()` / `getSeries()` per instance, concatenating results
 (`getMovies`/`getSeries`, `media.handler.ts:218-260`). Tags, quality profiles, genres, and networks
 derive from the same two types. Enrichment is then merged *onto* those owner rows
 (`mergeEnrichment(db, normalized, 'RADARR'|'SONARR', …)`).
+
+## The MediaSource read contract
+
+The source role is a typed read contract (`server/providers/mediaSource.ts`), not duck-typed access to
+`getMovies`/`getSeries`:
+
+```ts
+interface MediaSource {
+  getMediaItems(): Promise<MediaItemSet>;          // already normalized
+  idOf(item: NormalizedMovie | NormalizedShow): number | undefined;
+  readonly enrichmentSourceType: 'RADARR' | 'SONARR';
+}
+```
+
+The method names are role-named — a source advertises *media items*, not movies or series. Radarr serves
+movies and Sonarr serves shows, but `MediaQueryEngine.evaluate` never branches on that: it reads
+`source.getMediaItems()`, merges enrichment by `source.enrichmentSourceType`, and projects ids by
+`source.idOf` on a single path. `idOf` is the polymorphic answer that removed the per-variant
+`MediaItemSet` id-projection casts.
+
+`MediaSourceFactory.forContentType(contentType)` (`server/providers/mediaSourceFactory.ts`) resolves a
+`ContentType` to its active owner provider bound as a `MediaSource` — used by `/preview` and browse. The
+executor instead binds a specific provider by `automation.provider.id`, since it needs the actuator role
+on the same instance for `task.run`.
+
+**Browse nuance:** `media.handler.ts` still fetches raw `RadarrMovie[]`/`SonarrSeries[]` via
+`getMovies()`/`getSeries()` and keeps them for `yearRange`, sort, and pagination; it then wraps that
+cached raw list in an inline `MediaSource` (`getMediaItems` maps through `normalize*`, `idOf` projects
+back to the raw `.id`) so the engine evaluates the same list browse paginates.
 
 ## The identity model
 

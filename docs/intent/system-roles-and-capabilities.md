@@ -21,14 +21,16 @@ the system either has or does not have — never assumed:
 | Role | Responsibility | Hard requirement | Drives |
 |---|---|---|---|
 | **MediaSource** | Owns a collection of media: defines what *exists* and a canonical id | Stable per-item external id | Catalog rows (`media_item`), browse lists, content types |
-| **MetadataEnricher** | Contributes metadata about media it does *not* own, joined into the enrichment graph by logical key | A shared logical key (tmdb/tvdb/imdb/…) | Filter predicates, `media_enrichment` |
+| **MediaEnricher** | Contributes metadata about media it does *not* own, joined into the enrichment graph by logical key | A shared logical key (tmdb/tvdb/imdb/…) | Filter predicates, `media_enrichment` |
 | **MediaActuator** | Exposes an API to *perform actions* on media | An addressable target + an action endpoint | Tasks, the automation verb |
 
-One system commonly holds several roles. **Radarr is all three at once**: it owns movies (Source),
-exposes user tags and quality profiles to filter by (Enricher), and offers unmonitor/search/delete
-endpoints (Actuator). TMDB is **Enricher only**. This multiplicity is exactly why "Provider" as a
-single amalgamated concept fails — the roles have different requirements and different consumers, and
-collapsing them forces every system to pretend it can do all three.
+One system can hold several roles. **Radarr is Source + Actuator**: it owns movies (Source) and offers
+unmonitor/search/delete endpoints (Actuator). Its tags, quality profiles, and genres are **Source
+fields** on its own rows — *not* enrichment, because enrichment is strictly metadata about media a system
+does **not** own. **TMDB is MediaEnricher only.** This multiplicity is exactly why "Provider" as a single
+amalgamated concept fails — the roles have different requirements and different consumers, and collapsing
+them forces every system to pretend it can do all three. The detailed MediaEnricher spec (contract,
+membership, the canonical-`MediaItem` shared model) is `docs/intent/media-enricher-role.md`.
 
 ## Capabilities are declared and additive, never assumed
 
@@ -49,9 +51,9 @@ The correct shape is the inverse: **a system has a role only when it declares th
 A concrete provider class implements the role interfaces it qualifies for:
 
 ```ts
-class RadarrProvider implements MediaSource, MetadataEnricher, MediaActuator { … }
-class TmdbProvider   implements MetadataEnricher { … }
-class PlexProvider   implements MetadataEnricher /*, MediaActuator later */ { … }
+class RadarrProvider implements MediaSource, MediaActuator { … }
+class TmdbProvider   implements MediaEnricher { … }
+class PlexProvider   implements MediaEnricher /*, MediaActuator later */ { … }
 ```
 
 One runtime object per system — the roles share the system's HTTP client and auth, so splitting into
@@ -88,13 +90,16 @@ This collapses the two task catalogues — `src/lib/provider-registry.ts` (adver
 - **MediaSource** is the role formalised in `docs/intent/provider-source-model.md` (the `media_item` /
   `media_identity` split, instance-not-type keying, logical grouping). That document is the detailed
   spec of *this* role; this document is the umbrella.
+- **MediaEnricher** is the role formalised in `docs/intent/media-enricher-role.md` (behavioral
+  `enrich(items)` contract, non-owner membership, the canonical-`MediaItem` shared model that retires
+  `EnrichmentContribution`). The detailed spec of *this* role.
 - `docs/architecture/provider-roles-and-identity.md` records the **as-built** Source/Enricher tiering.
-- `docs/architecture/task-execution-and-actuator-gap.md` records the **as-built** state of the Actuator
-  role and the task-catalogue divergence this model corrects.
+- `docs/architecture/task-execution-and-actuator-manifest.md` records the **as-built** Actuator role:
+  the server task manifest, executor dispatch, and create-time validation that realise it.
 
 ## Course-correction sequencing (consequence, not goal)
 
-1. **Name the roles.** Introduce `MediaSource` / `MetadataEnricher` / `MediaActuator` interfaces; have
+1. **Name the roles.** Introduce `MediaSource` / `MediaEnricher` / `MediaActuator` interfaces; have
    concrete providers `implements` the ones they hold. Rename `BaseMetadataProvider` to reflect that it
    is a connection/HTTP base, not a metadata contract.
 2. **Server task manifest.** Move the task vocabulary server-side as the actuator's declaration; key it
