@@ -11,8 +11,8 @@ import {
   metadataProviders,
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
+import { readEnabledTaskIds } from '../providers/taskEnablement';
 import type { ContentType } from './savedMediaQueryService';
-import { taskManifest } from './taskManifest';
 
 export interface QuerySourceDraft {
   queryId: number;
@@ -249,15 +249,20 @@ export class AutomationService {
     }
 
     const [providerRow] = await this.db
-      .select({ type: metadataProviders.type })
+      .select({ type: metadataProviders.type, settings: metadataProviders.settings })
       .from(metadataProviders)
       .where(eq(metadataProviders.id, draft.providerId));
     const providerType = providerRow?.type as MetadataProviderType | undefined;
 
-    if (providerType && !taskManifest(providerType).some((t) => t.id === draft.taskId)) {
-      throw new ValidationError(
-        `Task "${draft.taskId}" is not a runnable task for provider type "${providerType}"`
-      );
+    if (providerRow) {
+      const settings = providerRow.settings
+        ? (JSON.parse(providerRow.settings) as Record<string, unknown>)
+        : null;
+      if (!readEnabledTaskIds(settings).includes(draft.taskId)) {
+        throw new ValidationError(
+          `Task "${draft.taskId}" is not enabled on provider instance ${draft.providerId}`
+        );
+      }
     }
 
     const includeSources = draft.querySources.filter((s) => s.role === 'include');

@@ -1,6 +1,8 @@
 import type { Logger } from 'winston';
 import type { MetadataProvider } from '../database/schema';
 import { MetadataProviderType } from '../database/schema';
+import { JellyfinProvider } from './jellyfinProvider';
+import { OmdbProvider } from './omdbProvider';
 import { OverseerrProvider } from './overseerrProvider';
 import { PlexProvider } from './plexProvider';
 import { RadarrProvider } from './radarrProvider';
@@ -17,9 +19,11 @@ export type AnyProvider =
   | RadarrProvider
   | SonarrProvider
   | PlexProvider
+  | JellyfinProvider
   | TautulliProvider
   | OverseerrProvider
-  | TmdbProvider;
+  | TmdbProvider
+  | OmdbProvider;
 
 /** Active providers resolved into typed, named slots — absent types stay undefined. */
 export interface ProviderSet {
@@ -45,12 +49,16 @@ export class ProviderFactory implements IProviderFactory {
         return new SonarrProvider(provider, logger);
       case MetadataProviderType.PLEX:
         return new PlexProvider(provider, logger);
+      case MetadataProviderType.JELLYFIN:
+        return new JellyfinProvider(provider, logger);
       case MetadataProviderType.TAUTULLI:
         return new TautulliProvider(provider, logger);
       case MetadataProviderType.OVERSEERR:
         return new OverseerrProvider(provider, logger);
       case MetadataProviderType.TMDB:
         return new TmdbProvider(provider, logger);
+      case MetadataProviderType.OMDB:
+        return new OmdbProvider(provider, logger);
       default:
         throw new Error(`Unsupported provider type: ${provider.type}`);
     }

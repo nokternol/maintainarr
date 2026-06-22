@@ -3,7 +3,7 @@
 Invocation: `tdd docs/in_progress/phase-3-prompt.md docs/in_progress/phase-3-actuator-task-ownership.md`
 
 Read `AGENT_BRIEF.md` first, then the plan doc and its target model
-`docs/intent/actuator-task-ownership.md` (plus `docs/intent/actuator-task-parameters.md` for the deferred
+`docs/architecture/actuator-task-ownership.md` (Stage 1 as-built; plus `docs/intent/actuator-task-parameters.md` for the deferred
 parameter work). The umbrella role model is `docs/intent/system-roles-and-capabilities.md`; the enricher
 precedent it mirrors is `docs/architecture/media-enricher-role.md`.
 

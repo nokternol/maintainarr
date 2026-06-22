@@ -1,16 +1,16 @@
 import type { DrizzleDb } from '../database';
-import type { MetadataProvider, MetadataProviderType } from '../database/schema';
+import type { MetadataProvider } from '../database/schema';
 import { getChildLogger } from '../logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
+import { readEnabledTaskIds } from '../providers/taskEnablement';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 import type { DomainEventBus } from './eventBus';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import type { ProviderSettingsService } from './providerSettingsService';
 import type { SavedMediaQueryService } from './savedMediaQueryService';
-import { taskManifest } from './taskManifest';
 
 const log = getChildLogger('AutomationExecutor');
 
@@ -102,13 +102,11 @@ export class AutomationExecutor {
       }
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
-      itemCount = await this.executeWithSources(automation.taskId, providerSettings, sources);
+      const outcome = await this.executeWithSources(automation.taskId, providerSettings, sources);
+      itemCount = outcome.itemCount;
       await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
 
-      const descriptor = taskManifest(automation.provider.type as MetadataProviderType).find(
-        (t) => t.id === taskId
-      );
-      this.emitDataChange(descriptor?.affects, itemCount);
+      this.emitDataChange(outcome.affects, itemCount);
 
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
@@ -128,7 +126,7 @@ export class AutomationExecutor {
     taskId: string,
     providerSettings: MetadataProvider,
     sources: AutomationQuerySourceDto[]
-  ): Promise<number> {
+  ): Promise<{ itemCount: number; affects: 'media' | undefined }> {
     const queryDtos = await Promise.all(
       sources.map((s) => this.savedMediaQueryService.getById(s.queryId))
     );
@@ -137,6 +135,15 @@ export class AutomationExecutor {
       | RadarrProvider
       | SonarrProvider;
 
+    const task = source.tasks().find((t) => t.id === taskId);
+    if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
+
+    if (!readEnabledTaskIds(providerSettings.settings).includes(taskId)) {
+      throw new Error(
+        `Task "${taskId}" is not enabled on provider instance ${providerSettings.id}`
+      );
+    }
+
     const matched = await this.mediaQueryEngine.evaluate({
       source,
       contentType,
@@ -144,10 +151,8 @@ export class AutomationExecutor {
     });
     const finalIds = matched.map((item) => source.idOf(item)!);
 
-    const task = taskManifest(providerSettings.type).find((t) => t.id === taskId);
-    if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-    await task.run(source, finalIds);
-    return finalIds.length;
+    await task.run(finalIds);
+    return { itemCount: finalIds.length, affects: task.affects };
   }
 
   /**

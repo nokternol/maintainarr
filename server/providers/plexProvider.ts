@@ -2,7 +2,14 @@ import { MetadataProviderType } from '../database/schema';
 import { decorate } from '../jobs/enrichment/decorate';
 import { mapPlexItems } from '../jobs/enrichment/mappers';
 import { BaseProviderConnection } from './baseProviderConnection';
-import type { EnrichmentResult, MediaEnricher, MediaItem } from './roles';
+import {
+  type ActuatorTask,
+  type EnrichmentResult,
+  type MediaActuator,
+  type MediaEnricher,
+  type MediaItem,
+  modelledRun,
+} from './roles';
 
 export interface PlexLibrary {
   key: string;
@@ -25,7 +32,49 @@ export interface PlexMediaItem {
  * PlexProvider handles metadata gathering from a Plex Media Server instance.
  * Auth token validation against plex.tv lives in services/plexService.ts (PlexService).
  */
-export class PlexProvider extends BaseProviderConnection implements MediaEnricher {
+export class PlexProvider extends BaseProviderConnection implements MediaEnricher, MediaActuator {
+  public readonly actuatorType = MetadataProviderType.PLEX;
+
+  public tasks(): ActuatorTask[] {
+    return [
+      {
+        id: 'deleteFromLibrary',
+        label: 'Delete from library',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('deleteFromLibrary'),
+      },
+      {
+        id: 'moveToTrash',
+        label: 'Move to trash',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('moveToTrash'),
+      },
+      {
+        id: 'refreshMetadata',
+        label: 'Refresh metadata',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('refreshMetadata'),
+      },
+      {
+        id: 'markPlayed',
+        label: 'Mark as played',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('markPlayed'),
+      },
+      {
+        id: 'markUnplayed',
+        label: 'Mark as unplayed',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('markUnplayed'),
+      },
+    ];
+  }
+
   async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
     const fieldsByKey = mapPlexItems(await this.getAllItems());
     return {

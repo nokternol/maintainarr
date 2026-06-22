@@ -1,6 +1,16 @@
 # Phase 3 — Actuator task ownership, then client derivation (server-first)
 
-**Status:** IN PROGRESS — implementation plan realising `docs/intent/actuator-task-ownership.md`.
+**Status:** IN PROGRESS — **Stage 1 (server) complete**; Stage 2 (client derivation + visual pass) outstanding.
+Implementation plan realising the **MediaActuator** task-ownership model. Stage 1 (server) is now as-built
+in `docs/architecture/actuator-task-ownership.md`.
+
+**Stage 1 delivered:** `MediaActuator.tasks()` owns the task surface (`ActuatorTask` =
+`ActuatorTaskDescriptor & { run(ids) }`, runner bound to the instance, no cast); Radarr/Sonarr carry real +
+modelled tasks, Plex/Jellyfin/Tautulli carry modelled-only sets (`run` throws via `modelledRun`); the
+type-keyed `taskManifest`/`publicTaskManifest` table is **deleted**; per-instance enablement
+(`settings.enabledTasks`, default off) is enforced at `automationService.create` **and** executor run via
+the shared `readEnabledTaskIds`; `GET /api/providers/tasks` returns instance-keyed availability
+(`{ providerId, type, tasks: [{…descriptor, enabled}] }`), non-actuators absent.
 
 **This replaces the earlier client-first Phase 3.** That version inverted the *client* onto the Phase 2
 server manifest, assuming that manifest was the whole, correct task truth. It is not: the manifest is a
@@ -20,7 +30,7 @@ incorrect source. Fix the source first.
 
 ## Stage 1 — the role owns its tasks (server)
 
-Target model in full: `docs/intent/actuator-task-ownership.md`. In short:
+Target model in full (now as-built): `docs/architecture/actuator-task-ownership.md`. In short:
 
 - `MediaActuator` exposes `tasks(): ActuatorTask[]`. `ActuatorTask = ActuatorTaskDescriptor & { run(ids) }`,
   `run` a bound method on the concrete provider — no cast. `ActuatorTaskDescriptor`
@@ -85,5 +95,6 @@ boundaries (provider HTTP / `ProviderFactory`, DB); never mock internal domain. 
 
 Nothing but a configured `MediaActuator` instance declares a task; discovery is per configured instance;
 enablement is per instance, default off, enforced at create and execution; the type-keyed `taskManifest`
-table is gone; the client derives from the instance-keyed API and holds no catalogue of its own. On ship,
-the durable pattern replaces `docs/architecture/task-execution-and-actuator-manifest.md`.
+table is gone; the client derives from the instance-keyed API and holds no catalogue of its own. The
+server half is shipped and recorded in `docs/architecture/actuator-task-ownership.md`; this plan is
+retired when Stage 2 (client) lands.

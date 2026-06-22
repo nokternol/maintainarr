@@ -1,17 +1,20 @@
 import type { AppConfig } from '@server/config';
 import { MetadataProviderType } from '@server/database/schema';
+import type { MetadataProvider } from '@server/database/schema';
 import { getChildLogger } from '@server/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { OmdbProvider } from '@server/providers/omdbProvider';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
+import type { ProviderFactory } from '@server/providers/providerFactory';
 import { RadarrProvider } from '@server/providers/radarrProvider';
+import { isMediaActuator } from '@server/providers/roles';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
+import { readEnabledTaskIds } from '@server/providers/taskEnablement';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { publicTaskManifest } from '@server/services/taskManifest';
 import { defineRoute } from '@server/utils/defineRoute';
 import { resolveApiKey } from '@server/utils/keyResolver';
 import { aggregateRatings } from '@server/utils/ratingsAggregation';
@@ -21,15 +24,41 @@ const log = getChildLogger('ProvidersHandler');
 
 interface ProvidersCradle {
   providerSettingsService: ProviderSettingsService;
+  providerFactory: ProviderFactory;
   config: AppConfig;
 }
 
 export function createProvidersHandlers(cradle: ProvidersCradle) {
-  const { providerSettingsService, config } = cradle;
+  const { providerSettingsService, providerFactory, config } = cradle;
 
   return {
     getTasks: defineRoute({
-      handler: async () => publicTaskManifest(),
+      handler: async () => {
+        const providers = await providerSettingsService.list();
+
+        return providers.flatMap((p) => {
+          let instance: object;
+          try {
+            instance = providerFactory.create(p as unknown as MetadataProvider, log);
+          } catch {
+            // A configured type with no constructable provider cannot be an actuator.
+            return [];
+          }
+          if (!isMediaActuator(instance)) return [];
+
+          const enabled = readEnabledTaskIds(p.settings);
+          return [
+            {
+              providerId: p.id,
+              type: p.type,
+              tasks: instance.tasks().map(({ run: _run, ...descriptor }) => ({
+                ...descriptor,
+                enabled: enabled.includes(descriptor.id),
+              })),
+            },
+          ];
+        });
+      },
     }),
 
     getMetadata: defineRoute({

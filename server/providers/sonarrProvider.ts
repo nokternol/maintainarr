@@ -4,7 +4,7 @@ import type { NormalizedShow } from '../domain/show';
 import { BaseProviderConnection } from './baseProviderConnection';
 import type { MediaItemSet, MediaSource } from './mediaSource';
 import { normalizeSonarrSeries } from './normalizeMedia';
-import type { MediaActuator } from './roles';
+import { type ActuatorTask, type MediaActuator, modelledRun } from './roles';
 
 export interface SonarrSeason {
   seasonNumber: number;
@@ -82,6 +82,47 @@ export class SonarrProvider extends BaseProviderConnection implements MediaSourc
 
   public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
     return (item as NormalizedShow)._sourceIds.sonarr;
+  }
+
+  public tasks(): ActuatorTask[] {
+    return [
+      {
+        id: 'unmonitorSeries',
+        label: 'Unmonitor series',
+        destructive: false,
+        affects: 'media',
+        run: (ids) => this.unmonitorSeries(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger episode search',
+        destructive: false,
+        run: (ids) => this.triggerSeriesSearch(ids),
+      },
+      {
+        id: 'deleteSeriesWithFiles',
+        label: 'Delete series + files',
+        destructive: true,
+        affects: 'media',
+        run: (ids) => this.deleteSeries(ids),
+      },
+      {
+        id: 'deleteSeriesKeepFiles',
+        label: 'Delete series (keep files)',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('deleteSeriesKeepFiles'),
+      },
+      {
+        id: 'changeQualityProfile',
+        label: 'Change quality profile',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('changeQualityProfile'),
+      },
+      { id: 'addTag', label: 'Add tag', destructive: false, run: modelledRun('addTag') },
+      { id: 'removeTag', label: 'Remove tag', destructive: false, run: modelledRun('removeTag') },
+    ];
   }
 
   public async getSeries(): Promise<SonarrSeries[]> {

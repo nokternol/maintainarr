@@ -1,9 +1,11 @@
 import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { closeDatabase, initializeDatabase } from '@server/database';
+import { MetadataProviderType } from '@server/database/schema';
 import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createProvidersRoutes } from '@server/modules/providers/providers.routes';
+import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -12,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 describe('Providers API Integration', () => {
   let app: Express;
   let client: ReturnType<typeof createApiClient>;
+  let providerSettingsService: ProviderSettingsService;
 
   beforeAll(async () => {
     const mockConfig = createMockConfig({
@@ -28,6 +31,7 @@ describe('Providers API Integration', () => {
     const config = loadConfig();
     const db = await initializeDatabase(config);
     const container = buildContainer({ config, db });
+    providerSettingsService = new ProviderSettingsService({ db });
 
     app = express();
     app.use(express.json());
@@ -43,22 +47,40 @@ describe('Providers API Integration', () => {
   });
 
   describe('GET /api/providers/tasks', () => {
-    it('serves the per-type actuator task manifest', async () => {
+    it('serves per configured actuator instance its descriptors tagged with enablement, omitting non-actuators', async () => {
+      const radarr = await providerSettingsService.create({
+        type: MetadataProviderType.RADARR,
+        name: 'My Radarr',
+        url: 'http://localhost:7878/api/v3',
+        apiKey: 'k',
+        settings: { enabledTasks: ['deleteMovieWithFiles'] },
+      });
+      await providerSettingsService.create({
+        type: MetadataProviderType.TMDB,
+        name: 'My TMDB',
+        url: 'https://api.themoviedb.org/3',
+        apiKey: 'k',
+      });
+
       const response = await client.get('/api/providers/tasks');
-      const data = expectSuccessResponse(response) as Record<
-        string,
-        Array<{ id: string; label: string; destructive: boolean; affects?: string }>
-      >;
+      const data = expectSuccessResponse(response) as Array<{
+        providerId: number;
+        type: string;
+        tasks: Array<{ id: string; label: string; destructive: boolean; enabled: boolean }>;
+      }>;
 
-      const radarrIds = data.RADARR.map((t) => t.id);
-      expect(radarrIds).toContain('unmonitorMovie');
-      expect(radarrIds).toContain('deleteMovieWithFiles');
+      // Non-actuator (TMDB) is absent; the Radarr instance is keyed by id.
+      expect(data.map((e) => e.type)).not.toContain('TMDB');
+      const entry = data.find((e) => e.providerId === radarr.id);
+      expect(entry?.type).toBe('RADARR');
 
-      const del = data.RADARR.find((t) => t.id === 'deleteMovieWithFiles');
+      const del = entry?.tasks.find((t) => t.id === 'deleteMovieWithFiles');
       expect(del?.destructive).toBe(true);
+      expect(del?.enabled).toBe(true);
       expect(del).not.toHaveProperty('run');
 
-      expect(data.TMDB ?? []).toEqual([]);
+      const unmonitor = entry?.tasks.find((t) => t.id === 'unmonitorMovie');
+      expect(unmonitor?.enabled).toBe(false);
     });
   });
 

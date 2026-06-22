@@ -45,10 +45,11 @@ onto the event surface; the model correction lives there.
 
 ## Single-source-of-truth for task scope
 
-Scope is declared across **three** registries: `RADARR_TASKS`, `SONARR_TASKS`, and `SYSTEM_TASKS`.
-There is no one place answering "what scope does taskId X affect." Adding a new data-writing system
-job means remembering the separate `SYSTEM_TASKS` registration or it silently never invalidates.
-Intent: a single task-metadata registry (scope + handler) keyed by taskId.
+Actuator-task scope now lives on the `ActuatorTaskDescriptor` the `MediaActuator` role declares (`affects`),
+so an actuator task answers "what scope do I affect" from its own definition. The remaining split is the
+separate `SYSTEM_TASKS` registry for internal jobs (`system:enrichment`, `system:identity-resolution`):
+adding a new data-writing system job means remembering that registration or it silently never invalidates.
+Intent: fold system-job scope into the same descriptor-carried model so there is one answer keyed by taskId.
 
 ## Hardening required before consumers attach
 

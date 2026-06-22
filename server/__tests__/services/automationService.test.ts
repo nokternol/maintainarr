@@ -22,12 +22,16 @@ const testConfig: AppConfig = {
   SESSION_SECRET: 'test-secret',
 };
 
+const RADARR_TASKS = ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'];
+const SONARR_TASKS = ['unmonitorSeries', 'triggerSearch', 'deleteSeriesWithFiles'];
+
 async function seedProvider(providerService: ProviderSettingsService) {
   return providerService.create({
     type: MetadataProviderType.RADARR,
     name: 'Test Radarr',
     url: 'http://localhost:7878/api/v3',
     apiKey: 'test-key',
+    settings: { enabledTasks: RADARR_TASKS },
   });
 }
 
@@ -64,6 +68,7 @@ describe('AutomationService', () => {
         name: 'Test Radarr',
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: RADARR_TASKS },
       });
 
       const dto = await automationService.create({
@@ -88,6 +93,7 @@ describe('AutomationService', () => {
         name: 'Test Radarr',
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: RADARR_TASKS },
       });
 
       const dto = await automationService.create({
@@ -119,6 +125,27 @@ describe('AutomationService', () => {
       expect(dto.createdAt).toMatch(ISO_REGEX);
       expect(dto.updatedAt).toMatch(ISO_REGEX);
     });
+
+    it('rejects a taskId not enabled on that provider instance', async () => {
+      const query = await seedQuery(savedMediaQueryService);
+      const provider = await providerSettingsService.create({
+        type: MetadataProviderType.RADARR,
+        name: 'No Tasks Enabled',
+        url: 'http://localhost:7878/api/v3',
+        apiKey: 'key',
+        settings: { enabledTasks: [] },
+      });
+
+      await expect(
+        automationService.create({
+          name: 'Disabled Task Automation',
+          querySources: [{ queryId: query.id, role: 'include' }],
+          providerId: provider.id,
+          taskId: 'unmonitorMovie',
+          schedule: '0 * * * *',
+        })
+      ).rejects.toThrow(/not enabled/i);
+    });
   });
 
   describe('contentType compatibility validation', () => {
@@ -133,6 +160,7 @@ describe('AutomationService', () => {
         name: 'Test Sonarr',
         url: 'http://localhost:8989/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: SONARR_TASKS },
       });
 
       await expect(
@@ -157,6 +185,7 @@ describe('AutomationService', () => {
         name: 'Test Radarr',
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: RADARR_TASKS },
       });
 
       await expect(
@@ -328,6 +357,7 @@ describe('AutomationService', () => {
         name: 'Test Sonarr',
         url: 'http://localhost:8989/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: SONARR_TASKS },
       });
 
       const created = await automationService.create({

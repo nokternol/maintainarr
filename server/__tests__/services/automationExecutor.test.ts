@@ -9,10 +9,11 @@ import {
 } from '@server/database/schema';
 import type { NormalizedMovie } from '@server/domain/movie';
 import type { NormalizedShow } from '@server/domain/show';
+import { getChildLogger } from '@server/logger';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import type { IProviderFactory } from '@server/providers/providerFactory';
-import type { RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
-import type { SonarrProvider, SonarrSeries } from '@server/providers/sonarrProvider';
+import { type RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
+import { SonarrProvider, type SonarrSeries } from '@server/providers/sonarrProvider';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
@@ -20,7 +21,6 @@ import { DomainEventBus, type DomainEvents } from '@server/services/eventBus';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import type { FilterValueEntry } from '@server/services/savedMediaQueryService';
-import { taskManifest } from '@server/services/taskManifest';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
@@ -42,17 +42,62 @@ const testConfig: AppConfig = {
 const RADARR_URL = 'http://localhost:7878';
 const SONARR_URL = 'http://localhost:8989';
 
-/** The `MediaSource` read role the engine consumes, over a raw provider list. */
+/**
+ * The `MediaSource` + `MediaActuator` roles the executor consumes, over a raw
+ * provider list. `tasks()` binds each runner to `this`, so a mock built by
+ * spreading this helper plus its action methods dispatches through the instance
+ * exactly as a real provider does.
+ */
 const radarrSource = (movies: RadarrMovie[]) => ({
   getMediaItems: async () => movies.map(normalizeRadarrMovie),
   idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedMovie)._sourceIds.radarr,
   enrichmentSourceType: 'RADARR' as const,
+  tasks(this: {
+    unmonitorMovies(ids: number[]): Promise<void>;
+    triggerMoviesSearch(ids: number[]): Promise<void>;
+  }) {
+    return [
+      {
+        id: 'unmonitorMovie',
+        label: 'Unmonitor movie',
+        destructive: false,
+        affects: 'media' as const,
+        run: (ids: number[]) => this.unmonitorMovies(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger download search',
+        destructive: false,
+        run: (ids: number[]) => this.triggerMoviesSearch(ids),
+      },
+    ];
+  },
 });
 
 const sonarrSource = (series: SonarrSeries[]) => ({
   getMediaItems: async () => series.map(normalizeSonarrSeries),
   idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedShow)._sourceIds.sonarr,
   enrichmentSourceType: 'SONARR' as const,
+  tasks(this: {
+    unmonitorSeries(ids: number[]): Promise<void>;
+    triggerSeriesSearch(ids: number[]): Promise<void>;
+  }) {
+    return [
+      {
+        id: 'unmonitorSeries',
+        label: 'Unmonitor series',
+        destructive: false,
+        affects: 'media' as const,
+        run: (ids: number[]) => this.unmonitorSeries(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger episode search',
+        destructive: false,
+        run: (ids: number[]) => this.triggerSeriesSearch(ids),
+      },
+    ];
+  },
 });
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -63,6 +108,7 @@ async function seedRadarrProvider(providerSettingsService: ProviderSettingsServi
     name: 'Test Radarr',
     url: `${RADARR_URL}/api/v3`,
     apiKey: 'test-api-key',
+    settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
   });
 }
 
@@ -72,6 +118,7 @@ async function seedSonarrProvider(providerSettingsService: ProviderSettingsServi
     name: 'Test Sonarr',
     url: `${SONARR_URL}/api/v3`,
     apiKey: 'test-api-key',
+    settings: { enabledTasks: ['unmonitorSeries', 'triggerSearch', 'deleteSeriesWithFiles'] },
   });
 }
 
@@ -349,6 +396,41 @@ describe('AutomationExecutor', () => {
       const dto = updated.find((a) => a.id === automation.id)!;
       expect(dto.lastRun).toBeDefined();
       expect(dto.lastRun!.status).toBe('error');
+    });
+  });
+
+  // ─── Enablement enforcement at run time ───────────────────────────────────
+
+  describe('per-instance enablement enforcement', () => {
+    it('records an error run for a task no longer enabled on the instance, without calling the provider', async () => {
+      let movieEndpointHit = false;
+      server.use(
+        http.get(`${RADARR_URL}/api/v3/movie`, () => {
+          movieEndpointHit = true;
+          return HttpResponse.json([createRadarrMovie({ id: 1, title: 'A', hasFile: true })]);
+        }),
+        http.put(`${RADARR_URL}/api/v3/movie/:id`, () =>
+          HttpResponse.json({ id: 1, monitored: false })
+        )
+      );
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedSavedQuery(savedMediaQueryService, []);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      // The task was enabled at create time; the operator later disables it.
+      await providerSettingsService.update(provider.id, { settings: { enabledTasks: [] } });
+
+      await executor.execute(automation.id);
+
+      const [dto] = await automationService.list();
+      expect(dto.lastRun!.status).toBe('error');
+      expect(dto.lastRun!.error).toMatch(/not enabled/i);
+      expect(movieEndpointHit).toBe(false);
     });
   });
 
@@ -715,7 +797,7 @@ describe('AutomationExecutor', () => {
           name: 'Radarr',
           url: 'http://localhost:7878',
           apiKey: null,
-          settings: null,
+          settings: { enabledTasks: ['unmonitorMovie'] },
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -794,7 +876,7 @@ describe('AutomationExecutor', () => {
           name: 'Radarr',
           url: 'http://localhost:7878',
           apiKey: null,
-          settings: null,
+          settings: { enabledTasks: ['unmonitorMovie'] },
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -1425,8 +1507,9 @@ describe('AutomationExecutor', () => {
 
 describe('dispatch scope declaration', () => {
   it('declares media scope on unmonitor tasks and none on triggerSearch', () => {
-    const radarr = taskManifest(MetadataProviderType.RADARR);
-    const sonarr = taskManifest(MetadataProviderType.SONARR);
+    const cfg = { name: 'x', url: 'http://localhost/api/v3', apiKey: 'k', settings: null };
+    const radarr = new RadarrProvider(cfg, getChildLogger('scope-test')).tasks();
+    const sonarr = new SonarrProvider(cfg, getChildLogger('scope-test')).tasks();
     expect(radarr.find((t) => t.id === 'unmonitorMovie')?.affects).toBe('media');
     expect(radarr.find((t) => t.id === 'triggerSearch')?.affects).toBeUndefined();
     expect(sonarr.find((t) => t.id === 'unmonitorSeries')?.affects).toBe('media');

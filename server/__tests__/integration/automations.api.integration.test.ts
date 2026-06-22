@@ -45,6 +45,7 @@ describe('POST /api/automations — Session C', () => {
       name: 'Test Radarr',
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
     movieProviderId = provider.id;
 

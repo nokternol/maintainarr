@@ -43,6 +43,7 @@ async function seedFixtures() {
     name: 'Test Radarr',
     url: 'http://localhost:7878/api/v3',
     apiKey: 'test-key',
+    settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
   });
   const query = await savedMediaQueryService.create({
     name: 'All Movies',
@@ -156,6 +157,7 @@ describe('AutomationRunService', () => {
         name: 'Radarr',
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
       });
       const query = await savedMediaQueryService.create({
         name: 'Q',

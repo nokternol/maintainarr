@@ -7,8 +7,8 @@ implements today, including its limits. The corrective target it is evolving tow
 **Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher role is the
 `MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
 `docs/architecture/media-enricher-role.md`.) The third role a
-system can play — **MediaActuator** (tasks/actions) — and its as-built gap are in
-`docs/architecture/task-execution-and-actuator-manifest.md`. The unifying three-role model is
+system can play — **MediaActuator** (tasks/actions) — is the role-owned task model in
+`docs/architecture/actuator-task-ownership.md`. The unifying three-role model is
 `docs/intent/system-roles-and-capabilities.md`.
 
 ## Why this is recorded as architecture, not intent

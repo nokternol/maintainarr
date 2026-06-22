@@ -54,6 +54,7 @@ describe('GET /api/automations/runs', () => {
       name: 'Test Radarr',
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
     const query = await savedMediaQueryService.create({
       name: 'Test Query',

@@ -28,7 +28,7 @@ them. They come back once this heal lands.
 | Phase | Spec | Observable value | Depends on | Kind |
 |---|---|---|---|---|
 | **1 ✅ shipped** | `docs/architecture/media-query-engine.md` | A `MediaQuery` evaluates to its matched `MediaItemSet` through one engine; `/preview` returns a **real count** (not `0`); the executor and browse handler both resolve via that engine. | — | TDD (backend) |
-| **2 ✅ shipped** | `docs/architecture/task-execution-and-actuator-manifest.md` | A server **task manifest** declares each system's actuator tasks; creating an automation with an **unrunnable `taskId` is rejected**; `GET /api/providers/tasks` exposes the manifest. | P1 (executor already routes through the engine; task dispatch is the remaining executor concern) | TDD (backend) |
+| **2 ✅ shipped → superseded by 3** | `docs/architecture/actuator-task-ownership.md` | Phase 2 moved actuator tasks server-side as a type-keyed manifest; **Phase 3 (Stage 1) retired that table** and gave the role ownership of its tasks. The as-built record is the role-owned doc. | P1 (executor already routes through the engine; task dispatch is the remaining executor concern) | TDD (backend) |
 | **2.5** | `phase-2.5-media-enricher-role.md` | The **MediaEnricher** role is real and cohesive: genuine enrichers (Plex/Tautulli/Overseerr/TMDB) `implements` it and decorate the canonical `MediaItem`; owners do not; precedence is an explicit per-field policy; `EnrichmentContribution` retires. **Closes the server role model.** | P2 (roles named) | TDD (backend) |
 | **3** | `phase-3-actuator-task-ownership.md` | The `MediaActuator` role **owns** its tasks (the type-keyed manifest table is retired); tasks are discovered per configured instance and enabled per instance (default off, enforced at create + execution); **then** the client derives and its hardcoded catalogue is gone. | P2 (executor/create paths) — Phase 3 **itself** closes the **actuator** role server-side before its client stage | TDD (server, then client hooks) + impeccable (builder visual) |
 | **4** | `phase-4-client-query-alignment.md` | The filter view and saved-query preview reflect the engine's `MediaQuery`/`MediaItemSet` shape; preview count shown in the UI matches what an automation will act on. | P1 (engine + real preview) | TDD (client hooks) + impeccable (filter view visual) |
@@ -73,7 +73,7 @@ invocation is sufficient.
   `MediaActuator` role owns its tasks, discovery is per-instance, enablement is enforced server-side (3a).
   Only then can the client honestly derive (3b) — a client cannot derive a correct catalogue from an
   incorrect source. The detailed reasoning and the precedent it mirrors (`MediaEnricher.enrich()` retiring
-  `EnrichmentContribution`) are in `docs/intent/actuator-task-ownership.md`.
+  `EnrichmentContribution`) are in `docs/architecture/actuator-task-ownership.md` (Stage 1 as-built).
 - **P4** — client query alignment, depends on P1. Carries a visual pass via `impeccable` per `CLAUDE.md`
   (Ladle story first), separated from its TDD-tested hook logic, as does P3b.
 
@@ -82,11 +82,10 @@ invocation is sufficient.
 - `docs/architecture/media-query-engine.md` — the implemented `MediaQuery` / `MediaQueryEngine` /
   `MediaItemSet` owner (Phase 1, shipped).
 - `docs/intent/system-roles-and-capabilities.md` — the three-role model Phases 2–3 realise.
-- `docs/architecture/task-execution-and-actuator-manifest.md` — the as-built actuator manifest Phase 2
-  shipped; **Phase 3 replaces it** with the role-owned model.
-- `docs/intent/actuator-task-ownership.md` — Phase 3's target model (the `MediaActuator` role owns its
-  tasks; instance-keyed discovery; per-instance enablement). `docs/intent/actuator-task-parameters.md` —
-  the deferred per-task parameter-injection requirement.
+- `docs/architecture/actuator-task-ownership.md` — the as-built **MediaActuator** role-owned task model
+  (Phase 3, Stage 1): the role owns its tasks, instance-keyed discovery, per-instance enablement. It
+  retired the type-keyed manifest Phase 2 shipped. `docs/intent/actuator-task-parameters.md` — the deferred
+  per-task parameter-injection requirement.
 - When a phase ships, move its durable pattern to `docs/architecture/` and delete its spec here.
 
 ## Not in this program

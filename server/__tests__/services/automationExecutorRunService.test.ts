@@ -75,6 +75,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       name: 'Test Radarr',
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
     const query = await savedMediaQueryService.create({
       name: 'Q',
@@ -108,6 +109,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       name: 'Test Radarr',
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
     const query = await savedMediaQueryService.create({
       name: 'Q',

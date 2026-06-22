@@ -53,37 +53,42 @@ A concrete provider class implements the role interfaces it qualifies for:
 ```ts
 class RadarrProvider implements MediaSource, MediaActuator { … }
 class TmdbProvider   implements MediaEnricher { … }
-class PlexProvider   implements MediaEnricher /*, MediaActuator later */ { … }
+class PlexProvider   implements MediaEnricher, MediaActuator { … }
 ```
 
 One runtime object per system — the roles share the system's HTTP client and auth, so splitting into
-separate Source/Enricher/Actuator services would only duplicate that wiring. What changes from today is
-that **role membership is declared and type-checked, not duck-typed.** Today the roles exist only as
-conventions: `BaseMetadataProvider` is just an HTTP-client+config base with no role contract, and
-membership is inferred from which methods a class happens to expose and which string-keyed dispatch
-table happens to mention it. There is no contract to reason about — which is why the roles form no node
-or edge in the knowledge graph.
+separate Source/Enricher/Actuator services would only duplicate that wiring. **Role membership is declared
+and type-checked, not duck-typed:** `server/providers/roles.ts` declares `MediaSource` / `MediaEnricher` /
+`MediaActuator` as real contracts a class `implements`, and `BaseProviderConnection` is an
+HTTP-client+config base with no role contract. Membership is no longer inferred from which methods a class
+happens to expose or which string-keyed dispatch table mentions it — the contract is the node, and a
+behavioral method (`enrich(items)`, `tasks()`) is its edge to the providers that hold it.
 
 `MediaActuator` is where **tasks** live. Tasks are the public action surface of the actuator role —
 **not a property every provider has.** A system without the actuator role has no tasks, by
 construction; the UI cannot offer one.
 
-## Server-authoritative capability manifest (single source of truth)
+## The actuator role owns its tasks, gated per instance (built server-side)
 
 The server is the only place that can *honor* the contract (only it can execute a task), so the server
-owns the truth:
+owns the truth — and it owns it **on the configured instance, not a type-keyed table**. As built
+(`docs/architecture/actuator-task-ownership.md`):
 
-- A **server-side manifest per provider type** declares: which roles it holds, and — for actuators —
-  its **task vocabulary** (id, label, destructive, what it affects, kind/role gating).
-- `automations.taskId` is **validated against the manifest on create/update**. An unrunnable task can
-  no longer be persisted. (Today `taskId` is `z.string().min(1)` — any string — so the executor throws
-  `Task "…" is not yet implemented` at run time instead.)
-- The **client registry derives from the manifest** (fetched or generated), instead of being a parallel
-  hand-maintained catalog. The client's existing `filterCapabilities` / `tasks` declaration is the
-  right instinct on the wrong side of the boundary; it becomes a projection of the server manifest.
+- **`MediaActuator` exposes `tasks(): ActuatorTask[]`.** Each task is a descriptor (`id`, `label`,
+  `destructive`, `affects?`) plus a runner **bound to the concrete instance** — no cast. The role is the
+  sole authority for what tasks exist; a system without the role has no tasks, by construction.
+- **The whole vocabulary is modelled now** as parameterless tasks: real (instance-bound) where runnable
+  today, otherwise a modelled task whose `run` throws via `modelledRun`, disabled by default.
+- **Enablement is per instance** (`provider.settings.enabledTasks`, default off), read by the single
+  authority `readEnabledTaskIds`, and **enforced at both `automationService.create` and the executor's
+  run** — not the UI. An unrunnable or disabled task can neither be persisted nor executed.
+- **Discovery is instance-keyed:** `GET /api/providers/tasks` returns, per configured actuator instance,
+  `{ providerId, type, tasks: [{…descriptor, enabled}] }`; non-actuators are absent.
 
-This collapses the two task catalogues — `src/lib/provider-registry.ts` (advertised) and the executor's
-`RADARR_TASKS` / `SONARR_TASKS` / `SYSTEM_TASKS` (executable) — into one, so they cannot drift.
+The role on the instance is the only server-side declaration of a task. The remaining duplicate is the
+**client** catalogue (`src/lib/provider-registry.ts` `tasks`, `src/lib/tasks.ts`): the right instinct on
+the wrong side of the boundary. Stage 2 makes it a projection of the instance-keyed API and deletes it;
+until then it is a known stale duplicate, not a second authority.
 
 ## Relationship to the other role docs
 
@@ -91,22 +96,23 @@ This collapses the two task catalogues — `src/lib/provider-registry.ts` (adver
   `media_identity` split, instance-not-type keying, logical grouping). That document is the detailed
   spec of *this* role; this document is the umbrella.
 - **MediaEnricher** is the role formalised in `docs/architecture/media-enricher-role.md` (behavioral
-  `enrich(items)` contract, non-owner membership, the canonical-`MediaItem` shared model that retires
-  `EnrichmentContribution`). The detailed spec of *this* role.
+  `enrich(items)` contract, non-owner membership, the canonical-`MediaItem` as the shared contract). The
+  detailed spec of *this* role.
 - `docs/architecture/provider-roles-and-identity.md` records the **as-built** Source/Enricher tiering.
-- `docs/architecture/task-execution-and-actuator-manifest.md` records the **as-built** Actuator role:
-  the server task manifest, executor dispatch, and create-time validation that realise it.
+- `docs/architecture/actuator-task-ownership.md` records the **as-built** Actuator role: the role owns its
+  tasks on the configured instance, per-instance enablement, and instance-keyed discovery that realise it.
 
 ## Course-correction sequencing (consequence, not goal)
 
-1. **Name the roles.** Introduce `MediaSource` / `MediaEnricher` / `MediaActuator` interfaces; have
-   concrete providers `implements` the ones they hold. Rename `BaseMetadataProvider` to reflect that it
-   is a connection/HTTP base, not a metadata contract.
-2. **Server task manifest.** Move the task vocabulary server-side as the actuator's declaration; key it
-   by provider type; include destructive/affects.
-3. **Validate `taskId`** against the manifest on automation create/update.
-4. **Derive the client registry** from the manifest; delete the parallel catalogue.
-5. **Per-type role audit.** Record each system's declared roles (see the matrix in the as-built doc) and
-   stop advertising actuator tasks for systems that hold no actuator capability.
+1. ✅ **Name the roles.** `MediaSource` / `MediaEnricher` / `MediaActuator` interfaces; concrete providers
+   `implements` the ones they hold, over the `BaseProviderConnection` HTTP/config base.
+2. ✅ **The role owns its tasks** (server). `MediaActuator.tasks()` declares the vocabulary on the
+   instance, runner bound (no cast); destructive/affects on the descriptor. The type-keyed manifest is
+   retired.
+3. ✅ **Enablement per instance** (`settings.enabledTasks`, default off), enforced at `create` **and**
+   executor run; instance-keyed discovery.
+4. ⬜ **Derive the client registry** from the instance-keyed API; delete the parallel catalogue (Stage 2).
+5. ⬜ **Resolve the source/actuator conflation** so a non-source actuator (Plex/Jellyfin/Tautulli) can
+   derive ids across the identity graph and actually run.
 </content>
 </invoke>
