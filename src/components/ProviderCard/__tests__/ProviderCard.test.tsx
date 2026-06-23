@@ -18,19 +18,125 @@ const mockProvider: ProviderSummary = {
 
 describe('ProviderCard', () => {
   it('renders the provider name', () => {
-    render(<ProviderCard provider={mockProvider} onUpdate={vi.fn()} onDelete={vi.fn()} />);
+    render(
+      <ProviderCard provider={mockProvider} tasks={[]} onUpdate={vi.fn()} onDelete={vi.fn()} />
+    );
     expect(screen.getByText('Radarr Main')).toBeInTheDocument();
   });
 
   it('is collapsed by default (no connection details visible)', () => {
-    render(<ProviderCard provider={mockProvider} onUpdate={vi.fn()} onDelete={vi.fn()} />);
+    render(
+      <ProviderCard provider={mockProvider} tasks={[]} onUpdate={vi.fn()} onDelete={vi.fn()} />
+    );
     expect(screen.queryByText('API key configured')).not.toBeInTheDocument();
   });
 
   it('expands to show connection details when header is clicked', async () => {
     const user = userEvent.setup();
-    render(<ProviderCard provider={mockProvider} onUpdate={vi.fn()} onDelete={vi.fn()} />);
+    render(
+      <ProviderCard provider={mockProvider} tasks={[]} onUpdate={vi.fn()} onDelete={vi.fn()} />
+    );
     await user.click(screen.getByRole('button', { name: /radarr main/i }));
     expect(screen.getByText('API key configured')).toBeInTheDocument();
+  });
+
+  it('reflects the server enabled flag per task — disabled by default', async () => {
+    const user = userEvent.setup();
+    render(
+      <ProviderCard
+        provider={mockProvider}
+        tasks={[
+          { id: 'unmonitorMovie', label: 'Unmonitor movie', destructive: false, enabled: true },
+          {
+            id: 'deleteMovieWithFiles',
+            label: 'Delete movie + files',
+            destructive: true,
+            enabled: false,
+          },
+        ]}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: /radarr main/i }));
+
+    // Enabled task offers "Disable"; disabled task offers "Enable".
+    expect(screen.getByRole('switch', { name: /disable "unmonitor movie"/i })).toBeChecked();
+    expect(
+      screen.getByRole('switch', { name: /enable "delete movie \+ files"/i })
+    ).not.toBeChecked();
+  });
+
+  it('persists an enablement change via onUpdate', async () => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn().mockResolvedValue({});
+    render(
+      <ProviderCard
+        provider={mockProvider}
+        tasks={[
+          { id: 'unmonitorMovie', label: 'Unmonitor movie', destructive: false, enabled: false },
+        ]}
+        onUpdate={onUpdate}
+        onDelete={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: /radarr main/i }));
+    await user.click(screen.getByRole('switch', { name: /enable "unmonitor movie"/i }));
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: expect.objectContaining({ enabledTasks: ['unmonitorMovie'] }),
+      })
+    );
+  });
+
+  it('rolls back and surfaces an error when persisting a toggle fails', async () => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn().mockRejectedValue(new Error('network'));
+    render(
+      <ProviderCard
+        provider={mockProvider}
+        tasks={[
+          { id: 'unmonitorMovie', label: 'Unmonitor movie', destructive: false, enabled: false },
+        ]}
+        onUpdate={onUpdate}
+        onDelete={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: /radarr main/i }));
+    await user.click(screen.getByRole('switch', { name: /enable "unmonitor movie"/i }));
+
+    expect(await screen.findByText(/failed to save/i)).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /enable "unmonitor movie"/i })).not.toBeChecked();
+  });
+
+  it('renders no Available tasks section for a provider with no tasks', async () => {
+    const user = userEvent.setup();
+    render(
+      <ProviderCard provider={mockProvider} tasks={[]} onUpdate={vi.fn()} onDelete={vi.fn()} />
+    );
+    await user.click(screen.getByRole('button', { name: /radarr main/i }));
+    expect(screen.queryByText('Available tasks')).not.toBeInTheDocument();
+  });
+
+  it('marks a destructive task with a warning', async () => {
+    const user = userEvent.setup();
+    render(
+      <ProviderCard
+        provider={mockProvider}
+        tasks={[
+          {
+            id: 'deleteMovieWithFiles',
+            label: 'Delete movie + files',
+            destructive: true,
+            enabled: false,
+          },
+        ]}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: /radarr main/i }));
+    expect(screen.getByLabelText('Destructive action')).toBeInTheDocument();
   });
 });

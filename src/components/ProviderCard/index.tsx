@@ -3,7 +3,7 @@ import ConnectionTestIcon from '@app/components/ConnectionTestIcon';
 import type { TestStatus } from '@app/components/ConnectionTestIcon';
 import Toggle from '@app/components/Toggle';
 import type { ProviderSummary, UpdateProviderParams } from '@app/hooks/useProviderSettings';
-import { PROVIDER_TASKS } from '@app/lib/tasks';
+import type { ProviderTaskDescriptor } from '@app/hooks/useProviderTasks';
 import { cn } from '@app/lib/utils/cn';
 import {
   BarChart2,
@@ -51,16 +51,6 @@ function stripSuffix(url: string, type: string): string {
   const suffix = API_SUFFIXES[type] ?? '';
   if (suffix && url.endsWith(suffix)) return url.slice(0, -suffix.length);
   return url;
-}
-
-function getDefaultEnabledTasks(type: string): string[] {
-  return (PROVIDER_TASKS[type] ?? []).filter((t) => !t.destructive).map((t) => t.id);
-}
-
-function getEnabledTasks(provider: ProviderSummary): string[] {
-  const stored = provider.settings?.enabledTasks;
-  if (Array.isArray(stored)) return stored as string[];
-  return getDefaultEnabledTasks(provider.type);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -116,10 +106,12 @@ interface EditFormState {
 
 export default function ProviderCard({
   provider,
+  tasks,
   onUpdate,
   onDelete,
 }: {
   provider: ProviderSummary;
+  tasks: ProviderTaskDescriptor[];
   onUpdate: (patch: UpdateProviderParams) => Promise<unknown>;
   onDelete: () => void;
 }) {
@@ -141,8 +133,11 @@ export default function ProviderCard({
   const [taskToggleLoading, setTaskToggleLoading] = useState<string | null>(null);
   const [taskToggleError, setTaskToggleError] = useState<string | null>(null);
 
-  const enabledTasks = localEnabledTasks ?? getEnabledTasks(provider);
-  const allTasks = PROVIDER_TASKS[provider.type] ?? [];
+  // Enablement is server truth (per instance, default off). Local state holds an
+  // optimistic override while a toggle is in flight.
+  const serverEnabledIds = tasks.filter((t) => t.enabled).map((t) => t.id);
+  const enabledTasks = localEnabledTasks ?? serverEnabledIds;
+  const allTasks = tasks;
   const filterData = PROVIDER_FILTER_DATA[provider.type] ?? [];
   const hasTasks = allTasks.length > 0;
 
@@ -202,7 +197,7 @@ export default function ProviderCard({
   };
 
   const handleTaskToggle = async (taskId: string, enabled: boolean) => {
-    const current = localEnabledTasks ?? getEnabledTasks(provider);
+    const current = localEnabledTasks ?? serverEnabledIds;
     const next = enabled ? [...current, taskId] : current.filter((id) => id !== taskId);
 
     setLocalEnabledTasks(next);
@@ -478,7 +473,6 @@ export default function ProviderCard({
                                 />
                               )}
                             </div>
-                            <p className="text-xs text-text-muted mt-0.5">{task.description}</p>
                           </div>
                         </div>
                       );

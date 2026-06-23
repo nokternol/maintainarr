@@ -2,9 +2,8 @@ import QuerySourceList from '@app/components/QuerySourceList';
 import type { QuerySource } from '@app/components/QuerySourceList';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
+import { useProviderTasks } from '@app/hooks/useProviderTasks';
 import type { SavedQuery } from '@app/hooks/useSavedQueries';
-import { getEnabledTasksForProvider } from '@app/lib/tasks';
-import type { TaskDef } from '@app/lib/tasks';
 import { cn } from '@app/lib/utils/cn';
 import { Cron } from 'croner';
 import cronstrue from 'cronstrue';
@@ -62,7 +61,8 @@ function relativeTime(isoOrDate: string | Date): string {
 
 interface BuilderTask {
   taskId: string;
-  taskDef: TaskDef;
+  label: string;
+  destructive: boolean;
   providerId: number;
   providerName: string;
   providerType: string;
@@ -82,24 +82,29 @@ export default function AutomationBuilder({
   isSubmitting: boolean;
 }) {
   const { providers } = useProviderSettings();
+  const { availability } = useProviderTasks();
 
+  // The server owns the task catalogue: each configured actuator instance
+  // declares its tasks with a per-instance `enabled` flag. The builder offers
+  // only enabled tasks of active providers, joining the instance's display name
+  // from settings (the availability endpoint is keyed by id + type only).
   const availableTasks = useMemo<BuilderTask[]>(() => {
-    if (!providers) return [];
-    return providers.flatMap((p) => {
-      if (!p.isActive) return [];
-      const enabledIds = Array.isArray(p.settings?.enabledTasks)
-        ? (p.settings!.enabledTasks as string[])
-        : [];
-      const tasks = getEnabledTasksForProvider(p.type, enabledIds);
-      return tasks.map((t) => ({
-        taskId: t.id,
-        taskDef: t,
-        providerId: p.id,
-        providerName: p.name,
-        providerType: p.type,
-      }));
+    if (!providers || !availability) return [];
+    return availability.flatMap((instance) => {
+      const provider = providers.find((p) => p.id === instance.providerId);
+      if (!provider || !provider.isActive) return [];
+      return instance.tasks
+        .filter((t) => t.enabled)
+        .map((t) => ({
+          taskId: t.id,
+          label: t.label,
+          destructive: t.destructive,
+          providerId: provider.id,
+          providerName: provider.name,
+          providerType: provider.type,
+        }));
     });
-  }, [providers]);
+  }, [providers, availability]);
 
   const tasksByProvider = useMemo(() => {
     const groups = new Map<
@@ -265,9 +270,9 @@ export default function AutomationBuilder({
                                   selected ? 'text-primary' : 'text-text-primary'
                                 )}
                               >
-                                {bt.taskDef.label}
+                                {bt.label}
                               </span>
-                              {bt.taskDef.destructive && (
+                              {bt.destructive && (
                                 <TriangleAlert
                                   size={12}
                                   strokeWidth={1.75}
@@ -276,9 +281,6 @@ export default function AutomationBuilder({
                                 />
                               )}
                             </div>
-                            <p className="text-xs text-text-muted mt-0.5">
-                              {bt.taskDef.description}
-                            </p>
                           </div>
                         </label>
                       );

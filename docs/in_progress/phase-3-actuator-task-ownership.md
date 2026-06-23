@@ -1,8 +1,16 @@
 # Phase 3 — Actuator task ownership, then client derivation (server-first)
 
-**Status:** IN PROGRESS — **Stage 1 (server) complete**; Stage 2 (client derivation + visual pass) outstanding.
-Implementation plan realising the **MediaActuator** task-ownership model. Stage 1 (server) is now as-built
-in `docs/architecture/actuator-task-ownership.md`.
+**Status:** IN PROGRESS — **Stage 1 (server) complete; Stage 2 client derivation delivered.** Remaining:
+the `impeccable` visual pass (Ladle story first). Implementation plan realising the **MediaActuator**
+task-ownership model. Stage 1 (server) is as-built in `docs/architecture/actuator-task-ownership.md`.
+
+**Stage 2 delivered:** the client derives tasks from the instance-keyed `GET /api/providers/tasks` via
+`useProviderTasks` (`src/hooks/useProviderTasks.ts`). `AutomationBuilder` offers only each active instance's
+**enabled** tasks (server truth), joining the instance name from settings; `ProviderCard` lists an
+instance's tasks with their server `enabled` state to toggle (default off — the old client default-on
+heuristic is gone). The hardcoded client catalogue is retired: `src/lib/tasks.ts` deleted and the `tasks`
+surface removed from `src/lib/provider-registry.ts` — nothing client-side declares what tasks exist. The
+JSON-honest descriptor carries no `description`, so that field is dropped from the UI.
 
 **Stage 1 delivered:** `MediaActuator.tasks()` owns the task surface (`ActuatorTask` =
 `ActuatorTaskDescriptor & { run(ids) }`, runner bound to the instance, no cast); Radarr/Sonarr carry real +
