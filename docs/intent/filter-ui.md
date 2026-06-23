@@ -1,6 +1,9 @@
 # Filter-bar UI — intent (needs design before implementation)
 
-**Status:** unbuilt. Not part of the enriched-filters work; surfaced for a future phase (relevant before the Phase 4 combination-builder UI). Needs planning before any code. Two known problems, verified against code 2026-06-13 (#2 grew during Phase 2).
+**Status:** absorbed into **Phase 4** (`docs/in_progress/phase-4-client-query-alignment.md`). Both problems
+below are solved for free by deriving the client controls from server `MediaRuleDescriptor`s: gating falls
+out of each rule's `sourceProviders`, and the prop accumulation collapses to a single `onRuleChange`. Kept
+for the problem detail; delete when Phase 4 ships. Verified against code 2026-06-13 (#2 grew during Phase 2).
 
 ## 1. Provider-gating for filter controls
 `MediaFilterBar` renders every control regardless of which providers are active, so predicates that can never match are still shown (e.g. series `addedDaysAgo` when only Radarr is configured; overseerr/tmdb controls with no such provider). User explicitly requested gating.
