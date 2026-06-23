@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
+import { server } from '../../../../tests/mocks/server';
 import AddProviderForm from '../index';
 
 describe('AddProviderForm', () => {
@@ -20,6 +22,15 @@ describe('AddProviderForm', () => {
   it('calls onSubmit with provider params when form is submitted', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
+
+    // Blurring the URL field fires a connection test; the test owns that endpoint
+    // so the request is handled rather than falling through as unhandled.
+    server.use(
+      http.get('/api/settings/providers/test', () =>
+        HttpResponse.json({ status: 'ok', data: { ok: true } })
+      )
+    );
+
     render(<AddProviderForm onSubmit={onSubmit} onCancel={vi.fn()} />);
 
     await user.selectOptions(screen.getByLabelText('Type'), 'RADARR');
