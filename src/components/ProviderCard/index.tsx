@@ -1,3 +1,4 @@
+import Badge from '@app/components/Badge';
 import Button from '@app/components/Button';
 import ConnectionTestIcon from '@app/components/ConnectionTestIcon';
 import type { TestStatus } from '@app/components/ConnectionTestIcon';
@@ -444,7 +445,7 @@ export default function ProviderCard({
                         <div
                           key={task.id}
                           className={cn(
-                            'flex items-start gap-3 py-2.5',
+                            'flex items-center gap-3 py-2.5',
                             idx < allTasks.length - 1 && 'border-b border-border/40'
                           )}
                         >
@@ -454,25 +455,26 @@ export default function ProviderCard({
                             disabled={isLoading}
                             label={`${isEnabled ? 'Disable' : 'Enable'} "${task.label}"`}
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={cn(
-                                  'text-sm font-medium',
-                                  isEnabled ? 'text-text-primary' : 'text-text-muted'
-                                )}
-                              >
-                                {task.label}
-                              </span>
-                              {task.destructive && (
-                                <TriangleAlert
-                                  size={13}
-                                  strokeWidth={1.75}
-                                  className="text-warning shrink-0"
-                                  aria-label="Destructive action"
-                                />
+                          <div className="flex flex-1 min-w-0 items-center gap-2">
+                            <span
+                              className={cn(
+                                'text-sm font-medium truncate',
+                                isEnabled ? 'text-text-primary' : 'text-text-muted'
                               )}
-                            </div>
+                            >
+                              {task.label}
+                            </span>
+                            {task.destructive && (
+                              <Badge
+                                variant="warning"
+                                size="sm"
+                                className="gap-1 shrink-0"
+                                aria-label="Destructive action"
+                              >
+                                <TriangleAlert size={11} strokeWidth={2} aria-hidden="true" />
+                                Destructive
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       );

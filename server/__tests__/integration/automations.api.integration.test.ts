@@ -9,8 +9,8 @@ import { MetadataProviderType } from '@server/database/schema';
 import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -38,7 +38,7 @@ describe('POST /api/automations — Session C', () => {
     const container = buildContainer({ config, db });
 
     const providerService = new ProviderSettingsService({ db });
-    const savedMediaQueryService = new SavedMediaQueryService({ db });
+    const mediaQueryService = new MediaQueryService({ db });
 
     const provider = await providerService.create({
       type: MetadataProviderType.RADARR,
@@ -49,14 +49,14 @@ describe('POST /api/automations — Session C', () => {
     });
     movieProviderId = provider.id;
 
-    const movieQuery = await savedMediaQueryService.create({
+    const movieQuery = await mediaQueryService.create({
       name: 'Movie Query',
       contentType: 'movie',
       filterValues: [],
     });
     movieQueryId = movieQuery.id;
 
-    const showQuery = await savedMediaQueryService.create({
+    const showQuery = await mediaQueryService.create({
       name: 'Show Query',
       contentType: 'show',
       filterValues: [],

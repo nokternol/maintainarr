@@ -107,7 +107,7 @@ export type MetadataProvider = {
 };
 
 // ---------------------------------------------------------------------------
-// mediaQueries — persisted SavedMediaQuery rows
+// mediaQueries — persisted MediaQueryRecord rows
 // ---------------------------------------------------------------------------
 export const mediaQueries = sqliteTable('media_queries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -179,8 +179,8 @@ export const automationQuerySources = sqliteTable(
 export type AutomationQuerySource = typeof automationQuerySources.$inferSelect;
 export type NewAutomationQuerySource = typeof automationQuerySources.$inferInsert;
 
-export type SavedMediaQueryRow = typeof mediaQueries.$inferSelect;
-export type NewSavedMediaQueryRow = typeof mediaQueries.$inferInsert;
+export type MediaQueryRow = typeof mediaQueries.$inferSelect;
+export type NewMediaQueryRow = typeof mediaQueries.$inferInsert;
 export type MediaQueryFilterValueRow = typeof mediaQueryFilterValues.$inferSelect;
 export type NewMediaQueryFilterValueRow = typeof mediaQueryFilterValues.$inferInsert;
 

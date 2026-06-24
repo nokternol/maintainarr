@@ -6,8 +6,8 @@ import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { useAutomations } from '@app/hooks/useAutomations';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
-import { useSavedQueries } from '@app/hooks/useSavedQueries';
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
+import { useMediaQueries } from '@app/hooks/useMediaQueries';
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import { cn } from '@app/lib/utils/cn';
 import { requireAuth } from '@app/lib/utils/requireAuth';
 import { BookMarked, Clapperboard, Zap } from 'lucide-react';
@@ -25,7 +25,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function AutomationsPage() {
   const router = useRouter();
-  const { queries, remove: removeQuery } = useSavedQueries();
+  const { queries, remove: removeQuery } = useMediaQueries();
   const {
     automations,
     isCreating,
@@ -36,7 +36,7 @@ export default function AutomationsPage() {
   } = useAutomations();
   const [showBuilder, setShowBuilder] = useState(false);
 
-  const handleLoad = (_query: SavedQuery) => {
+  const handleLoad = (_query: MediaQueryRecord) => {
     void router.push('/media');
   };
 

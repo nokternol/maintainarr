@@ -1,36 +1,36 @@
-import { SavedQuerySchema } from '@app/lib/api/schemas';
+import { MediaQueryRecordSchema } from '@app/lib/api/schemas';
 import { isAuthenticated } from '@server/middleware/auth';
 import type { MediaSourceFactory } from '@server/providers/mediaSourceFactory';
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
-import type { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
+import type { MediaQueryService } from '@server/services/mediaQueryService';
 import { defineRoute } from '@server/utils/defineRoute';
 import { z } from 'zod';
 import { mediaQuerySchemas } from './mediaQueries.schemas';
 
 interface Cradle {
-  savedMediaQueryService: SavedMediaQueryService;
+  mediaQueryService: MediaQueryService;
   mediaSourceFactory: MediaSourceFactory;
   mediaQueryEngine: MediaQueryEngine;
 }
 
 export function createMediaQueryHandlers(cradle: Cradle) {
-  const { savedMediaQueryService, mediaSourceFactory, mediaQueryEngine } = cradle;
+  const { mediaQueryService, mediaSourceFactory, mediaQueryEngine } = cradle;
 
   return {
     list: [
       isAuthenticated(),
       defineRoute({
-        schemas: { response: z.array(SavedQuerySchema) },
-        handler: async () => savedMediaQueryService.list(),
+        schemas: { response: z.array(MediaQueryRecordSchema) },
+        handler: async () => mediaQueryService.list(),
       }),
     ],
 
     create: [
       isAuthenticated(),
       defineRoute({
-        schemas: { ...mediaQuerySchemas.create, response: SavedQuerySchema },
+        schemas: { ...mediaQuerySchemas.create, response: MediaQueryRecordSchema },
         handler: async ({ body }) =>
-          savedMediaQueryService.create({
+          mediaQueryService.create({
             name: body.name,
             contentType: body.contentType,
             filterValues: body.filterValues,
@@ -43,7 +43,7 @@ export function createMediaQueryHandlers(cradle: Cradle) {
       defineRoute({
         schemas: mediaQuerySchemas.delete,
         handler: async ({ params }) => {
-          await savedMediaQueryService.delete(params.id);
+          await mediaQueryService.delete(params.id);
           return null;
         },
       }),
@@ -57,7 +57,7 @@ export function createMediaQueryHandlers(cradle: Cradle) {
           response: z.object({ count: z.number() }),
         },
         handler: async ({ params }) => {
-          const query = await savedMediaQueryService.getById(params.id);
+          const query = await mediaQueryService.getById(params.id);
           const source = await mediaSourceFactory.forContentType(query.contentType);
           if (!source) return { count: 0 };
 

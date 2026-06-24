@@ -3,8 +3,8 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, automations } from '@server/database/schema';
 import { ForbiddenError, ValidationError } from '@server/errors';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -35,21 +35,21 @@ async function seedProvider(providerService: ProviderSettingsService) {
   });
 }
 
-async function seedQuery(queryService: SavedMediaQueryService) {
+async function seedQuery(queryService: MediaQueryService) {
   return queryService.create({ name: 'Test Query', contentType: 'movie', filterValues: [] });
 }
 
 describe('AutomationService', () => {
   let automationService: AutomationService;
   let providerSettingsService: ProviderSettingsService;
-  let savedMediaQueryService: SavedMediaQueryService;
+  let mediaQueryService: MediaQueryService;
 
   beforeEach(async () => {
     await initializeDatabase(testConfig);
     const db = getDb();
     automationService = new AutomationService({ db });
     providerSettingsService = new ProviderSettingsService({ db });
-    savedMediaQueryService = new SavedMediaQueryService({ db });
+    mediaQueryService = new MediaQueryService({ db });
   });
 
   afterEach(async () => {
@@ -58,7 +58,7 @@ describe('AutomationService', () => {
 
   describe('create()', () => {
     it('returns a dto with query.contentType populated from the joined row', async () => {
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Movie Query',
         contentType: 'movie',
         filterValues: [],
@@ -83,7 +83,7 @@ describe('AutomationService', () => {
     });
 
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'My Query',
         contentType: 'movie',
         filterValues: [{ key: 'hasFile', value: true }],
@@ -112,7 +112,7 @@ describe('AutomationService', () => {
 
     it('returns createdAt and updatedAt as valid ISO 8601 strings', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
 
       const dto = await automationService.create({
         name: 'My Automation',
@@ -127,7 +127,7 @@ describe('AutomationService', () => {
     });
 
     it('rejects a taskId not enabled on that provider instance', async () => {
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
       const provider = await providerSettingsService.create({
         type: MetadataProviderType.RADARR,
         name: 'No Tasks Enabled',
@@ -150,7 +150,7 @@ describe('AutomationService', () => {
 
   describe('contentType compatibility validation', () => {
     it('throws ValidationError when a SONARR provider is paired with a movie query', async () => {
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Movie Query',
         contentType: 'movie',
         filterValues: [],
@@ -175,7 +175,7 @@ describe('AutomationService', () => {
     });
 
     it('throws ValidationError when a RADARR provider is paired with a show query', async () => {
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Show Query',
         contentType: 'show',
         filterValues: [],
@@ -203,7 +203,7 @@ describe('AutomationService', () => {
   describe('list()', () => {
     it('returns only user automations when kind=user is specified', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
       const db = getDb();
 
       await automationService.create({
@@ -228,7 +228,7 @@ describe('AutomationService', () => {
 
     it('returns each automation with createdAt and updatedAt as valid ISO 8601 strings', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
 
       await automationService.create({
         name: 'Automation A',
@@ -257,7 +257,7 @@ describe('AutomationService', () => {
   describe('getById()', () => {
     it('returns the automation with createdAt and updatedAt as valid ISO 8601 strings', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
 
       const created = await automationService.create({
         name: 'Automation C',
@@ -274,12 +274,12 @@ describe('AutomationService', () => {
 
     it('returns querySources array with role and queryId for each source', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const queryA = await savedMediaQueryService.create({
+      const queryA = await mediaQueryService.create({
         name: 'Include Q',
         contentType: 'movie',
         filterValues: [],
       });
-      const queryB = await savedMediaQueryService.create({
+      const queryB = await mediaQueryService.create({
         name: 'Exclude Q',
         contentType: 'movie',
         filterValues: [],
@@ -347,7 +347,7 @@ describe('AutomationService', () => {
     });
 
     it('returns a dto with query.name and provider.type populated from the joined rows', async () => {
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Status Query',
         contentType: 'show',
         filterValues: [],
@@ -377,7 +377,7 @@ describe('AutomationService', () => {
 
     it('returns updatedAt as a valid ISO 8601 string', async () => {
       const provider = await seedProvider(providerSettingsService);
-      const query = await seedQuery(savedMediaQueryService);
+      const query = await seedQuery(mediaQueryService);
 
       const created = await automationService.create({
         name: 'Automation D',

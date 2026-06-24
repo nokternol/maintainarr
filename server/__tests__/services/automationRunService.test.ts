@@ -11,8 +11,8 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -35,7 +35,7 @@ const testConfig: AppConfig = {
 async function seedFixtures() {
   const db = getDb();
   const providerService = new ProviderSettingsService({ db });
-  const savedMediaQueryService = new SavedMediaQueryService({ db });
+  const mediaQueryService = new MediaQueryService({ db });
   const automationService = new AutomationService({ db });
 
   const provider = await providerService.create({
@@ -45,7 +45,7 @@ async function seedFixtures() {
     apiKey: 'test-key',
     settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
   });
-  const query = await savedMediaQueryService.create({
+  const query = await mediaQueryService.create({
     name: 'All Movies',
     contentType: 'movie',
     filterValues: [],
@@ -149,7 +149,7 @@ describe('AutomationRunService', () => {
     it('filters runs by automationId', async () => {
       const db = getDb();
       const providerService = new ProviderSettingsService({ db });
-      const savedMediaQueryService = new SavedMediaQueryService({ db });
+      const mediaQueryService = new MediaQueryService({ db });
       const automationService = new AutomationService({ db });
 
       const provider = await providerService.create({
@@ -159,7 +159,7 @@ describe('AutomationRunService', () => {
         apiKey: 'key',
         settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
       });
-      const query = await savedMediaQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Q',
         contentType: 'movie',
         filterValues: [],

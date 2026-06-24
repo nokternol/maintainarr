@@ -1,6 +1,6 @@
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import type { ProviderSummary } from '@app/hooks/useProviderSettings';
 import type { ProviderTaskAvailability } from '@app/hooks/useProviderTasks';
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
 import type { Story } from '@ladle/react';
 import { SWRConfig } from 'swr';
 import AutomationBuilder from './index';
@@ -23,7 +23,7 @@ function makeProvider(overrides: Partial<ProviderSummary> = {}): ProviderSummary
   };
 }
 
-const queries: SavedQuery[] = [
+const queries: MediaQueryRecord[] = [
   {
     id: 1,
     name: 'Old Movies',

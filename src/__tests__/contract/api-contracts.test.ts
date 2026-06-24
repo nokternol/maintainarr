@@ -1,11 +1,11 @@
 import {
   AutomationSchema,
   CreateAutomationInputSchema,
-  CreateSavedQueryInputSchema,
-  SavedQuerySchema,
+  MediaQueryRecordSchema,
+  MediaQueryValueSchema,
   UpdateAutomationStatusInputSchema,
 } from '@app/lib/api/schemas';
-import { MOCK_AUTOMATIONS, MOCK_SAVED_QUERIES } from '@tests/mocks/handlers/automations';
+import { MOCK_AUTOMATIONS, MOCK_MEDIA_QUERIES } from '@tests/mocks/handlers/automations';
 import { describe, expect, it } from 'vitest';
 
 // ─── Response shape contracts ─────────────────────────────────────────────────
@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest';
 
 describe('API contracts — MSW mock data', () => {
   describe('GET /api/saved-queries', () => {
-    it.each(MOCK_SAVED_QUERIES)('item $name parses against SavedQuerySchema', (item) => {
-      const result = SavedQuerySchema.safeParse(item);
+    it.each(MOCK_MEDIA_QUERIES)('item $name parses against MediaQueryRecordSchema', (item) => {
+      const result = MediaQueryRecordSchema.safeParse(item);
       expect(result.success, JSON.stringify(result.error?.format())).toBe(true);
     });
   });
@@ -29,7 +29,7 @@ describe('API contracts — MSW mock data', () => {
 
 // ─── Input shape contracts ─────────────────────────────────────────────────────
 // The body each client hook sends must satisfy the server's input schema.
-// These fail if useSavedQueries/useAutomations sends a shape the server rejects.
+// These fail if useMediaQueries/useAutomations sends a shape the server rejects.
 
 describe('API contracts — client request bodies', () => {
   it('POST /api/saved-queries body is valid', () => {
@@ -38,7 +38,7 @@ describe('API contracts — client request bodies', () => {
       contentType: 'movie',
       filterValues: [{ key: 'watched', value: false }],
     };
-    const result = CreateSavedQueryInputSchema.safeParse(body);
+    const result = MediaQueryValueSchema.safeParse(body);
     expect(result.success, JSON.stringify(result.error?.format())).toBe(true);
   });
 

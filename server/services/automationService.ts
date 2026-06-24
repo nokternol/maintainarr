@@ -12,7 +12,7 @@ import {
 } from '../database/schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
 import { readEnabledTaskIds } from '../providers/taskEnablement';
-import type { ContentType } from './savedMediaQueryService';
+import type { ContentType } from './mediaQueryService';
 
 export interface QuerySourceDraft {
   queryId: number;

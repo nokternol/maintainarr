@@ -5,7 +5,7 @@ import type { MediaItemSet, MediaSource } from '../providers/mediaSource';
 import { getFilterDef } from '../utils/filterRegistry';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
-import type { FilterValueEntry } from './savedMediaQueryService';
+import type { FilterValueEntry } from './mediaQueryService';
 
 /** One source within a query: a set of predicates and the role it plays. */
 export interface MediaQuerySource {
@@ -16,7 +16,7 @@ export interface MediaQuerySource {
 /**
  * The persistable, source-less core of a query: the content type whose predicate
  * registry applies and one-or-more include/exclude sources. Both the evaluatable
- * `MediaQuery` and the persisted `SavedMediaQuery` are a `MediaQuerySpec` plus
+ * `MediaQuery` and the persisted `MediaQueryRecord` are a `MediaQuerySpec` plus
  * what each adds (a bound source / a database identity).
  */
 export interface MediaQuerySpec {

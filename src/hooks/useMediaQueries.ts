@@ -2,8 +2,8 @@ import type {
   ContentTypeSchema,
   FilterValueEntrySchema,
   FilterValueSchema,
+  MediaQueryRecordSchema,
   QueryHealthSchema,
-  SavedQuerySchema,
 } from '@app/lib/api/schemas';
 import useSWR from 'swr';
 import useSWRMutation from 'swr/mutation';
@@ -15,7 +15,7 @@ export type ContentType = z.infer<typeof ContentTypeSchema>;
 export type FilterValue = z.infer<typeof FilterValueSchema>;
 export type FilterValueEntry = z.infer<typeof FilterValueEntrySchema>;
 export type QueryHealth = z.infer<typeof QueryHealthSchema>;
-export type SavedQuery = z.infer<typeof SavedQuerySchema>;
+export type MediaQueryRecord = z.infer<typeof MediaQueryRecordSchema>;
 
 // Translation from FilterState keys to registry keys
 const KEY_RENAMES: Partial<Record<string, string>> = {
@@ -64,24 +64,24 @@ export function buildQueryParams(filterState: FilterState): string {
 
 const KEY = '/api/saved-queries';
 
-async function fetchQueries(url: string): Promise<SavedQuery[]> {
+async function fetchQueries(url: string): Promise<MediaQueryRecord[]> {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch saved queries');
-  const json = (await res.json()) as { data: SavedQuery[] };
+  const json = (await res.json()) as { data: MediaQueryRecord[] };
   return json.data;
 }
 
 async function createQuery(
   _key: string,
   { arg }: { arg: { name: string; contentType: ContentType; filterValues: FilterValueEntry[] } }
-): Promise<SavedQuery> {
+): Promise<MediaQueryRecord> {
   const res = await fetch(KEY, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(arg),
   });
   if (!res.ok) throw new Error('Failed to save query');
-  const json = (await res.json()) as { data: SavedQuery };
+  const json = (await res.json()) as { data: MediaQueryRecord };
   return json.data;
 }
 
@@ -90,7 +90,7 @@ async function deleteQuery(_key: string, { arg }: { arg: number }): Promise<void
   if (!res.ok) throw new Error('Failed to delete query');
 }
 
-export function useSavedQueries() {
+export function useMediaQueries() {
   const { data: queries = [], isLoading, mutate } = useSWR(KEY, fetchQueries);
 
   const { trigger: triggerCreate } = useSWRMutation(KEY, createQuery);
@@ -100,7 +100,7 @@ export function useSavedQueries() {
     name: string,
     contentType: ContentType,
     filterState: FilterState
-  ): Promise<SavedQuery> => {
+  ): Promise<MediaQueryRecord> => {
     const filterValues = toFilterValues(filterState);
     const q = await triggerCreate({ name, contentType, filterValues });
     await mutate();

@@ -15,8 +15,8 @@ import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
 import type { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -46,7 +46,7 @@ describe('GET /api/automations/runs', () => {
 
     // Seed fixtures
     const providerService = new ProviderSettingsService({ db });
-    const savedMediaQueryService = new SavedMediaQueryService({ db });
+    const mediaQueryService = new MediaQueryService({ db });
     const automationService = new AutomationService({ db });
 
     const provider = await providerService.create({
@@ -56,7 +56,7 @@ describe('GET /api/automations/runs', () => {
       apiKey: 'test-key',
       settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedMediaQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Test Query',
       contentType: 'movie',
       filterValues: [],

@@ -5,7 +5,7 @@ import { MetadataProviderType } from '@server/database/schema';
 import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQueries.routes';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createRadarrMovie } from '@tests/factories';
 import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';
@@ -36,15 +36,15 @@ describe('GET /api/saved-queries/:id/preview', () => {
     const db = await initializeDatabase(config);
     const container = buildContainer({ config, db });
 
-    const savedMediaQueryService = new SavedMediaQueryService({ db });
-    const query = await savedMediaQueryService.create({
+    const mediaQueryService = new MediaQueryService({ db });
+    const query = await mediaQueryService.create({
       name: 'Preview Query',
       contentType: 'movie',
       filterValues: [],
     });
     seededQueryId = query.id;
 
-    const filtered = await savedMediaQueryService.create({
+    const filtered = await mediaQueryService.create({
       name: 'Downloaded Movies',
       contentType: 'movie',
       filterValues: [{ key: 'hasFile', value: true }],

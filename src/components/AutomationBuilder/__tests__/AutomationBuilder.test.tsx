@@ -1,6 +1,6 @@
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import type { ProviderSummary } from '@app/hooks/useProviderSettings';
 import type { ProviderTaskAvailability } from '@app/hooks/useProviderTasks';
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -52,7 +52,7 @@ const DISABLED_DELETE = {
 };
 const ENABLED_DELETE = { ...DISABLED_DELETE, enabled: true };
 
-const mockQuery: SavedQuery = {
+const mockQuery: MediaQueryRecord = {
   id: 1,
   name: 'Old Movies',
   contentType: 'movie',
@@ -120,7 +120,7 @@ describe('AutomationBuilder', () => {
       [{ providerId: 1, type: 'RADARR', tasks: [ENABLED_UNMONITOR] }]
     );
     renderBuilder();
-    expect(await screen.findByText(/no enabled tasks found/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no tasks are enabled yet/i)).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /unmonitor movie/i })).not.toBeInTheDocument();
   });
 
@@ -136,7 +136,7 @@ describe('AutomationBuilder', () => {
   it('shows the empty state with a Settings link when no enabled tasks exist', async () => {
     mockApi([makeProvider()], [{ providerId: 1, type: 'RADARR', tasks: [DISABLED_DELETE] }]);
     renderBuilder();
-    expect(await screen.findByText(/no enabled tasks found/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no tasks are enabled yet/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/settings');
   });
 

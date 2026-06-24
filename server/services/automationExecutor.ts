@@ -9,8 +9,8 @@ import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 import type { DomainEventBus } from './eventBus';
 import { MediaQueryEngine } from './mediaQueryEngine';
+import type { MediaQueryService } from './mediaQueryService';
 import type { ProviderSettingsService } from './providerSettingsService';
-import type { SavedMediaQueryService } from './savedMediaQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
@@ -22,7 +22,7 @@ interface ExecutorDeps {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerSettingsService: ProviderSettingsService;
-  savedMediaQueryService: SavedMediaQueryService;
+  mediaQueryService: MediaQueryService;
   providerFactory?: IProviderFactory;
   mediaQueryEngine?: MediaQueryEngine;
   db?: DrizzleDb;
@@ -36,7 +36,7 @@ export class AutomationExecutor {
   private readonly automationService: AutomationService;
   private readonly automationRunService: AutomationRunService;
   private readonly providerSettingsService: ProviderSettingsService;
-  private readonly savedMediaQueryService: SavedMediaQueryService;
+  private readonly mediaQueryService: MediaQueryService;
   private readonly providerFactory: IProviderFactory;
   private readonly mediaQueryEngine: MediaQueryEngine;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
@@ -47,7 +47,7 @@ export class AutomationExecutor {
     this.automationService = deps.automationService;
     this.automationRunService = deps.automationRunService;
     this.providerSettingsService = deps.providerSettingsService;
-    this.savedMediaQueryService = deps.savedMediaQueryService;
+    this.mediaQueryService = deps.mediaQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
     this.mediaQueryEngine = deps.mediaQueryEngine ?? new MediaQueryEngine({ db: deps.db });
     this.systemTaskRunner = deps.systemTaskRunner;
@@ -128,7 +128,7 @@ export class AutomationExecutor {
     sources: AutomationQuerySourceDto[]
   ): Promise<{ itemCount: number; affects: 'media' | undefined }> {
     const queryDtos = await Promise.all(
-      sources.map((s) => this.savedMediaQueryService.getById(s.queryId))
+      sources.map((s) => this.mediaQueryService.getById(s.queryId))
     );
     const contentType = queryDtos[0].contentType;
     const source = this.providerFactory.create(providerSettings, log) as

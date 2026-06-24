@@ -52,12 +52,12 @@ describe('Container wiring', () => {
       expect(a).toBe(b);
     });
 
-    it('resolves savedMediaQueryService as the same instance on every resolution', () => {
+    it('resolves mediaQueryService as the same instance on every resolution', () => {
       const db = getDb();
       const container = buildContainer({ config: testConfig, db });
 
-      const a = container.cradle.savedMediaQueryService;
-      const b = container.cradle.savedMediaQueryService;
+      const a = container.cradle.mediaQueryService;
+      const b = container.cradle.mediaQueryService;
 
       expect(a).toBe(b);
     });

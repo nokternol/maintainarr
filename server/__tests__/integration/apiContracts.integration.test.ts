@@ -1,4 +1,4 @@
-import { AutomationSchema, ProviderSchema, SavedQuerySchema } from '@app/lib/api/schemas';
+import { AutomationSchema, MediaQueryRecordSchema, ProviderSchema } from '@app/lib/api/schemas';
 import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { closeDatabase, initializeDatabase } from '@server/database';
@@ -9,8 +9,8 @@ import { createAutomationRoutes } from '@server/modules/automations/automations.
 import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQueries.routes';
 import { createSettingsRoutes } from '@server/modules/settings/settings.routes';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -38,7 +38,7 @@ describe('API shape contracts — real server responses', () => {
     const container = buildContainer({ config, db });
 
     const providerService = new ProviderSettingsService({ db });
-    const savedMediaQueryService = new SavedMediaQueryService({ db });
+    const mediaQueryService = new MediaQueryService({ db });
     const automationService = new AutomationService({ db });
 
     const provider = await providerService.create({
@@ -48,7 +48,7 @@ describe('API shape contracts — real server responses', () => {
       apiKey: 'test-key',
       settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedMediaQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Test Query',
       contentType: 'movie',
       filterValues: [{ key: 'watched', value: true }],
@@ -86,13 +86,13 @@ describe('API shape contracts — real server responses', () => {
 
   // ─── GET responses ──────────────────────────────────────────────────────────
 
-  it('GET /api/saved-queries items match SavedQuerySchema', async () => {
+  it('GET /api/saved-queries items match MediaQueryRecordSchema', async () => {
     const res = await client.get('/api/saved-queries');
     expect(res.status).toBe(200);
     const items = (res.body as { data: unknown[] }).data;
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
-      const result = SavedQuerySchema.safeParse(item);
+      const result = MediaQueryRecordSchema.safeParse(item);
       expect(result.success, JSON.stringify(result.error?.format())).toBe(true);
     }
   });
@@ -121,14 +121,14 @@ describe('API shape contracts — real server responses', () => {
 
   // ─── POST / PATCH responses ─────────────────────────────────────────────────
 
-  it('POST /api/saved-queries response matches SavedQuerySchema', async () => {
+  it('POST /api/saved-queries response matches MediaQueryRecordSchema', async () => {
     const res = await client.post('/api/saved-queries', {
       name: 'Contract test query',
       contentType: 'show',
       filterValues: [{ key: 'monitored', value: true }],
     });
     expect(res.status).toBe(200);
-    const result = SavedQuerySchema.safeParse((res.body as { data: unknown }).data);
+    const result = MediaQueryRecordSchema.safeParse((res.body as { data: unknown }).data);
     expect(result.success, JSON.stringify(result.error?.format())).toBe(true);
   });
 

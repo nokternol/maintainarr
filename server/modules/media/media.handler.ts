@@ -12,8 +12,8 @@ import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/ra
 import type { SonarrProvider } from '@server/providers/sonarrProvider';
 import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
+import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import type { FilterValueEntry } from '@server/services/savedMediaQueryService';
 import { defineRoute } from '@server/utils/defineRoute';
 import type { FilterValue, NormalizedMovie, NormalizedShow } from '@server/utils/filterRegistry';
 import { z } from 'zod';

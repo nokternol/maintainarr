@@ -17,7 +17,7 @@ export interface FilterValueEntry {
   value: FilterValue;
 }
 
-export interface SavedMediaQueryDraft {
+export interface MediaQueryValue {
   name: string;
   contentType: ContentType;
   filterValues: FilterValueEntry[];
@@ -42,7 +42,7 @@ export interface QueryHealth {
  * (`sources: [{ filterValues, role: 'include' }]`); the full multi-source
  * projection is reserved for the client phase.
  */
-export interface SavedMediaQuery {
+export interface MediaQueryRecord {
   id: number;
   name: string;
   contentType: ContentType;
@@ -104,14 +104,14 @@ function computeHealth(
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-export class SavedMediaQueryService {
+export class MediaQueryService {
   private readonly db: DrizzleDb;
 
   constructor({ db }: { db: DrizzleDb }) {
     this.db = db;
   }
 
-  async list(): Promise<SavedMediaQuery[]> {
+  async list(): Promise<MediaQueryRecord[]> {
     const rows = await this.db.select().from(mediaQueries).orderBy(mediaQueries.createdAt);
     const fvRows = await this.db.select().from(mediaQueryFilterValues);
 
@@ -150,7 +150,7 @@ export class SavedMediaQueryService {
     });
   }
 
-  async create(draft: SavedMediaQueryDraft): Promise<SavedMediaQuery> {
+  async create(draft: MediaQueryValue): Promise<MediaQueryRecord> {
     // Validate all filter keys exist in the registry for this contentType
     for (const { key } of draft.filterValues) {
       const def = getFilterDef(key, draft.contentType);
@@ -194,7 +194,7 @@ export class SavedMediaQueryService {
     };
   }
 
-  async getById(id: number): Promise<SavedMediaQuery> {
+  async getById(id: number): Promise<MediaQueryRecord> {
     const [row] = await this.db.select().from(mediaQueries).where(eq(mediaQueries.id, id));
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
 

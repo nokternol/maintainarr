@@ -70,7 +70,7 @@ export const automationsHandlers = [
 
 const MOCK_HEALTH = { status: 'healthy' as const, providerStatus: [] };
 
-export const MOCK_SAVED_QUERIES = [
+export const MOCK_MEDIA_QUERIES = [
   {
     id: 1,
     name: 'Unwatched movies',
@@ -91,7 +91,7 @@ export const MOCK_SAVED_QUERIES = [
 
 export const savedQueriesHandlers = [
   http.get('/api/saved-queries', () => {
-    return HttpResponse.json({ status: 'ok', data: MOCK_SAVED_QUERIES });
+    return HttpResponse.json({ status: 'ok', data: MOCK_MEDIA_QUERIES });
   }),
 
   http.post('/api/saved-queries', async ({ request }) => {

@@ -12,8 +12,8 @@ import { MetadataProviderType } from '@server/database/schema';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedMediaQueryService } from '@server/services/savedMediaQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRadarrMovie } from '../../../tests/factories';
@@ -38,7 +38,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
   let automationService: AutomationService;
   let automationRunService: AutomationRunService;
   let providerSettingsService: ProviderSettingsService;
-  let savedMediaQueryService: SavedMediaQueryService;
+  let mediaQueryService: MediaQueryService;
   let executor: AutomationExecutor;
 
   beforeEach(async () => {
@@ -47,12 +47,12 @@ describe('AutomationExecutor writes to automation_runs', () => {
     automationService = new AutomationService({ db });
     automationRunService = new AutomationRunService({ db });
     providerSettingsService = new ProviderSettingsService({ db });
-    savedMediaQueryService = new SavedMediaQueryService({ db });
+    mediaQueryService = new MediaQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
       automationRunService,
       providerSettingsService,
-      savedMediaQueryService,
+      mediaQueryService,
     });
   });
 
@@ -77,7 +77,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       apiKey: 'test-key',
       settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedMediaQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],
@@ -111,7 +111,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
       apiKey: 'test-key',
       settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedMediaQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],
