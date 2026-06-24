@@ -1,4 +1,4 @@
-import type { FilterValueEntry } from '@app/hooks/useSavedQueries';
+import type { FilterValueEntry } from '@app/hooks/useMediaQueries';
 
 const LABELS: Record<string, string> = {
   title: 'Title',

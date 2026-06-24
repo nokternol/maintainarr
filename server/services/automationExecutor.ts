@@ -1,21 +1,16 @@
 import type { DrizzleDb } from '../database';
 import type { MetadataProvider } from '../database/schema';
-import type { NormalizedMovie } from '../domain/movie';
-import type { NormalizedShow } from '../domain/show';
 import { getChildLogger } from '../logger';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '../providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
-import { getFilterDef } from '../utils/filterRegistry';
+import { readEnabledTaskIds } from '../providers/taskEnablement';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
-import { type QueryResult, evaluateCombination } from './combinationEvaluator';
-import { mergeEnrichment } from './enrichmentMerge';
 import type { DomainEventBus } from './eventBus';
+import { MediaQueryEngine } from './mediaQueryEngine';
+import type { MediaQueryService } from './mediaQueryService';
 import type { ProviderSettingsService } from './providerSettingsService';
-import type { FilterValueEntry } from './savedQueryService';
-import type { SavedQueryService } from './savedQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
@@ -27,28 +22,12 @@ interface ExecutorDeps {
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerSettingsService: ProviderSettingsService;
-  savedQueryService: SavedQueryService;
+  mediaQueryService: MediaQueryService;
   providerFactory?: IProviderFactory;
+  mediaQueryEngine?: MediaQueryEngine;
   db?: DrizzleDb;
   systemTaskRunner?: SystemTaskRunnerLike;
   eventBus?: DomainEventBus;
-}
-
-// ─── Filter application ───────────────────────────────────────────────────────
-
-function applyFilters<T extends NormalizedMovie | NormalizedShow>(
-  items: T[],
-  filterValues: FilterValueEntry[],
-  contentType: 'movie' | 'show'
-): T[] {
-  if (filterValues.length === 0) return items;
-  return items.filter((item) =>
-    filterValues.every(({ key, value }) => {
-      const def = getFilterDef(key, contentType);
-      if (!def) return true;
-      return def.apply(item, value);
-    })
-  );
 }
 
 // ─── Executor ─────────────────────────────────────────────────────────────────
@@ -57,9 +36,9 @@ export class AutomationExecutor {
   private readonly automationService: AutomationService;
   private readonly automationRunService: AutomationRunService;
   private readonly providerSettingsService: ProviderSettingsService;
-  private readonly savedQueryService: SavedQueryService;
+  private readonly mediaQueryService: MediaQueryService;
   private readonly providerFactory: IProviderFactory;
-  private readonly db?: DrizzleDb;
+  private readonly mediaQueryEngine: MediaQueryEngine;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
   private readonly eventBus?: DomainEventBus;
   private readonly inFlight = new Set<number>();
@@ -68,9 +47,9 @@ export class AutomationExecutor {
     this.automationService = deps.automationService;
     this.automationRunService = deps.automationRunService;
     this.providerSettingsService = deps.providerSettingsService;
-    this.savedQueryService = deps.savedQueryService;
+    this.mediaQueryService = deps.mediaQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
-    this.db = deps.db;
+    this.mediaQueryEngine = deps.mediaQueryEngine ?? new MediaQueryEngine({ db: deps.db });
     this.systemTaskRunner = deps.systemTaskRunner;
     this.eventBus = deps.eventBus;
   }
@@ -123,10 +102,11 @@ export class AutomationExecutor {
       }
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
-      itemCount = await this.executeWithSources(automation.taskId, providerSettings, sources);
+      const outcome = await this.executeWithSources(automation.taskId, providerSettings, sources);
+      itemCount = outcome.itemCount;
       await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
 
-      this.emitDataChange((RADARR_TASKS[taskId] ?? SONARR_TASKS[taskId])?.affects, itemCount);
+      this.emitDataChange(outcome.affects, itemCount);
 
       log.info('Automation executed', { automationId, taskId: automation.taskId, itemCount });
     } catch (err) {
@@ -146,53 +126,33 @@ export class AutomationExecutor {
     taskId: string,
     providerSettings: MetadataProvider,
     sources: AutomationQuerySourceDto[]
-  ): Promise<number> {
+  ): Promise<{ itemCount: number; affects: 'media' | undefined }> {
     const queryDtos = await Promise.all(
-      sources.map((s) => this.savedQueryService.getById(s.queryId))
+      sources.map((s) => this.mediaQueryService.getById(s.queryId))
     );
     const contentType = queryDtos[0].contentType;
-    const provider = this.providerFactory.create(providerSettings, log);
-    const queryResults: QueryResult[] = [];
+    const source = this.providerFactory.create(providerSettings, log) as
+      | RadarrProvider
+      | SonarrProvider;
 
-    if (contentType === 'movie') {
-      const radarr = provider as RadarrProvider;
-      const movies = await radarr.getMovies();
-      const normalized = movies.map(normalizeRadarrMovie);
-      if (this.db) await mergeEnrichment(this.db, normalized, 'RADARR', (m) => m._sourceIds.radarr);
-      for (let i = 0; i < sources.length; i++) {
-        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'movie');
-        queryResults.push({
-          role: sources[i].role,
-          items: matched.map((m) => m._sourceIds.radarr!),
-        });
-      }
-      const finalIds = evaluateCombination(queryResults).map(Number);
-      const task = RADARR_TASKS[taskId];
-      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(radarr, finalIds);
-      return finalIds.length;
+    const task = source.tasks().find((t) => t.id === taskId);
+    if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
+
+    if (!readEnabledTaskIds(providerSettings.settings).includes(taskId)) {
+      throw new Error(
+        `Task "${taskId}" is not enabled on provider instance ${providerSettings.id}`
+      );
     }
 
-    if (contentType === 'show') {
-      const sonarr = provider as SonarrProvider;
-      const series = await sonarr.getSeries();
-      const normalized = series.map(normalizeSonarrSeries);
-      if (this.db) await mergeEnrichment(this.db, normalized, 'SONARR', (s) => s._sourceIds.sonarr);
-      for (let i = 0; i < sources.length; i++) {
-        const matched = applyFilters(normalized, queryDtos[i].filterValues, 'show');
-        queryResults.push({
-          role: sources[i].role,
-          items: matched.map((s) => s._sourceIds.sonarr!),
-        });
-      }
-      const finalIds = evaluateCombination(queryResults).map(Number);
-      const task = SONARR_TASKS[taskId];
-      if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
-      await task.run(sonarr, finalIds);
-      return finalIds.length;
-    }
+    const matched = await this.mediaQueryEngine.evaluate({
+      source,
+      contentType,
+      sources: sources.map((s, i) => ({ filterValues: queryDtos[i].filterValues, role: s.role })),
+    });
+    const finalIds = matched.map((item) => source.idOf(item)!);
 
-    return 0;
+    await task.run(finalIds);
+    return { itemCount: finalIds.length, affects: task.affects };
   }
 
   /**
@@ -240,31 +200,6 @@ export class AutomationExecutor {
     });
   }
 }
-
-// ─── Dispatch tables ──────────────────────────────────────────────────────────
-
-type RadarrTaskFn = (provider: RadarrProvider, ids: number[]) => Promise<void>;
-type SonarrTaskFn = (provider: SonarrProvider, ids: number[]) => Promise<void>;
-
-interface RadarrTask {
-  run: RadarrTaskFn;
-  affects?: 'media';
-}
-
-interface SonarrTask {
-  run: SonarrTaskFn;
-  affects?: 'media';
-}
-
-export const RADARR_TASKS: Record<string, RadarrTask> = {
-  unmonitorMovie: { run: (provider, ids) => provider.unmonitorMovies(ids), affects: 'media' },
-  triggerSearch: { run: (provider, ids) => provider.triggerMoviesSearch(ids) },
-};
-
-export const SONARR_TASKS: Record<string, SonarrTask> = {
-  unmonitorSeries: { run: (provider, ids) => provider.unmonitorSeries(ids), affects: 'media' },
-  triggerSearch: { run: (provider, ids) => provider.triggerSeriesSearch(ids) },
-};
 
 // System data jobs span every source, so they declare scope but no sourceType —
 // a `media:changed` from here evicts both movie and series caches.

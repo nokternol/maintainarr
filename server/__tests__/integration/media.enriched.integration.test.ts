@@ -174,9 +174,9 @@ describe('Media browse — enriched predicates', () => {
 
   describe('lastWatchedDaysAgoGte', () => {
     it('returns only movies last watched at least N days ago', async () => {
-      const daysAgoUnix = (d: number) => Math.floor((Date.now() - d * 86_400_000) / 1000);
-      await seedEnrichment(1, { tautulliLastPlayed: daysAgoUnix(10) });
-      await seedEnrichment(2, { tautulliLastPlayed: daysAgoUnix(2) });
+      const daysAgoIso = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+      await seedEnrichment(1, { lastWatchedAt: daysAgoIso(10) });
+      await seedEnrichment(2, { lastWatchedAt: daysAgoIso(2) });
 
       const res = await client.get('/api/media/movies?lastWatchedDaysAgoGte=7&pageSize=100');
       const data = expectSuccessResponse(res);
@@ -186,9 +186,9 @@ describe('Media browse — enriched predicates', () => {
 
   describe('lastWatchedDaysAgoLte', () => {
     it('returns only movies last watched at most N days ago', async () => {
-      const daysAgoUnix = (d: number) => Math.floor((Date.now() - d * 86_400_000) / 1000);
-      await seedEnrichment(1, { tautulliLastPlayed: daysAgoUnix(10) });
-      await seedEnrichment(2, { tautulliLastPlayed: daysAgoUnix(2) });
+      const daysAgoIso = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+      await seedEnrichment(1, { lastWatchedAt: daysAgoIso(10) });
+      await seedEnrichment(2, { lastWatchedAt: daysAgoIso(2) });
 
       const res = await client.get('/api/media/movies?lastWatchedDaysAgoLte=7&pageSize=100');
       const data = expectSuccessResponse(res);
@@ -198,8 +198,8 @@ describe('Media browse — enriched predicates', () => {
 
   describe('tautulliWatched (migrated to enrichment playCount)', () => {
     it('returns only movies with enriched playCount > 0 when tautulliWatched=true', async () => {
-      await seedEnrichment(1, { tautulliPlayCount: 3 });
-      await seedEnrichment(2, { tautulliPlayCount: 0 });
+      await seedEnrichment(1, { playCount: 3 });
+      await seedEnrichment(2, { playCount: 0 });
 
       const res = await client.get('/api/media/movies?tautulliWatched=true&pageSize=100');
       const data = expectSuccessResponse(res);
@@ -207,7 +207,7 @@ describe('Media browse — enriched predicates', () => {
     });
 
     it('returns the complement (incl. movies with no enrichment) when tautulliWatched=false', async () => {
-      await seedEnrichment(1, { tautulliPlayCount: 3 });
+      await seedEnrichment(1, { playCount: 3 });
 
       const res = await client.get('/api/media/movies?tautulliWatched=false&pageSize=100');
       const data = expectSuccessResponse(res);

@@ -6,15 +6,17 @@ import type { DrizzleDb } from './database';
 import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
 import { IdentityJobFactory } from './jobs/identityJobFactory';
 import { getChildLogger } from './logger';
+import { MediaSourceFactory } from './providers/mediaSourceFactory';
 import { ProviderFactory } from './providers/providerFactory';
 import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
 import { DomainEventBus } from './services/eventBus';
+import { MediaQueryEngine } from './services/mediaQueryEngine';
+import { MediaQueryService } from './services/mediaQueryService';
 import { PlexService } from './services/plexService';
 import { ProviderSettingsService } from './services/providerSettingsService';
-import { SavedQueryService } from './services/savedQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
 import { TmdbService } from './services/tmdbService';
 
@@ -32,10 +34,12 @@ export interface Cradle {
   plexService: PlexService;
   authService: AuthService;
   providerSettingsService: ProviderSettingsService;
-  savedQueryService: SavedQueryService;
+  mediaQueryService: MediaQueryService;
+  mediaQueryEngine: MediaQueryEngine;
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   providerFactory: ProviderFactory;
+  mediaSourceFactory: MediaSourceFactory;
   identityJobFactory: IdentityJobFactory;
   enrichmentJobFactory: EnrichmentJobFactory;
   systemTaskRunner: SystemTaskRunner;
@@ -68,10 +72,12 @@ export function buildContainer(deps: {
     plexService: asClass(PlexService).scoped(),
     authService: asClass(AuthService).scoped(),
     providerSettingsService: asClass(ProviderSettingsService).singleton(),
-    savedQueryService: asClass(SavedQueryService).singleton(),
+    mediaQueryService: asClass(MediaQueryService).singleton(),
+    mediaQueryEngine: asClass(MediaQueryEngine).singleton(),
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
+    mediaSourceFactory: asClass(MediaSourceFactory).singleton(),
     identityJobFactory: asClass(IdentityJobFactory).singleton(),
     enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
     systemTaskRunner: asClass(SystemTaskRunner).singleton(),

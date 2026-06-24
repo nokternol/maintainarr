@@ -11,8 +11,8 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -35,7 +35,7 @@ const testConfig: AppConfig = {
 async function seedFixtures() {
   const db = getDb();
   const providerService = new ProviderSettingsService({ db });
-  const savedQueryService = new SavedQueryService({ db });
+  const mediaQueryService = new MediaQueryService({ db });
   const automationService = new AutomationService({ db });
 
   const provider = await providerService.create({
@@ -43,8 +43,9 @@ async function seedFixtures() {
     name: 'Test Radarr',
     url: 'http://localhost:7878/api/v3',
     apiKey: 'test-key',
+    settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
   });
-  const query = await savedQueryService.create({
+  const query = await mediaQueryService.create({
     name: 'All Movies',
     contentType: 'movie',
     filterValues: [],
@@ -148,7 +149,7 @@ describe('AutomationRunService', () => {
     it('filters runs by automationId', async () => {
       const db = getDb();
       const providerService = new ProviderSettingsService({ db });
-      const savedQueryService = new SavedQueryService({ db });
+      const mediaQueryService = new MediaQueryService({ db });
       const automationService = new AutomationService({ db });
 
       const provider = await providerService.create({
@@ -156,8 +157,9 @@ describe('AutomationRunService', () => {
         name: 'Radarr',
         url: 'http://localhost:7878/api/v3',
         apiKey: 'key',
+        settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
       });
-      const query = await savedQueryService.create({
+      const query = await mediaQueryService.create({
         name: 'Q',
         contentType: 'movie',
         filterValues: [],

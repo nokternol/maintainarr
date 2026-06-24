@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import {
   type MetadataProviderType,
+  mediaQueries,
+  mediaQueryFilterValues,
   metadataProviders,
-  savedQueries,
-  savedQueryFilterValues,
 } from '../database/schema';
 import { NotFoundError, ValidationError } from '../errors';
 import type { ContentType, FilterValue } from '../utils/filterRegistry';
@@ -17,7 +17,7 @@ export interface FilterValueEntry {
   value: FilterValue;
 }
 
-export interface SavedQueryDraft {
+export interface MediaQueryValue {
   name: string;
   contentType: ContentType;
   filterValues: FilterValueEntry[];
@@ -35,7 +35,14 @@ export interface QueryHealth {
   providerStatus: ProviderStatus[];
 }
 
-export interface SavedQueryDto {
+/**
+ * A persisted query: a `MediaQuerySpec` (contentType + sources) given a database
+ * identity and presentation metadata. The persisted form carries its single
+ * include source as the `filterValues` convenience accessor
+ * (`sources: [{ filterValues, role: 'include' }]`); the full multi-source
+ * projection is reserved for the client phase.
+ */
+export interface MediaQueryRecord {
   id: number;
   name: string;
   contentType: ContentType;
@@ -97,16 +104,16 @@ function computeHealth(
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-export class SavedQueryService {
+export class MediaQueryService {
   private readonly db: DrizzleDb;
 
   constructor({ db }: { db: DrizzleDb }) {
     this.db = db;
   }
 
-  async list(): Promise<SavedQueryDto[]> {
-    const rows = await this.db.select().from(savedQueries).orderBy(savedQueries.createdAt);
-    const fvRows = await this.db.select().from(savedQueryFilterValues);
+  async list(): Promise<MediaQueryRecord[]> {
+    const rows = await this.db.select().from(mediaQueries).orderBy(mediaQueries.createdAt);
+    const fvRows = await this.db.select().from(mediaQueryFilterValues);
 
     const activeRows = await this.db
       .select({ type: metadataProviders.type })
@@ -114,15 +121,15 @@ export class SavedQueryService {
       .where(eq(metadataProviders.isActive, true));
     const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
 
-    // Group filter value rows by savedQueryId
+    // Group filter value rows by mediaQueryId
     const fvByQueryId = new Map<number, FilterValueEntry[]>();
     for (const fv of fvRows) {
       const def = FILTER_REGISTRY.find((d) => d.key === fv.filterKey);
       const dataType = def?.dataType ?? 'string';
       const entry: FilterValueEntry = { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
-      const arr = fvByQueryId.get(fv.savedQueryId) ?? [];
+      const arr = fvByQueryId.get(fv.mediaQueryId) ?? [];
       arr.push(entry);
-      fvByQueryId.set(fv.savedQueryId, arr);
+      fvByQueryId.set(fv.mediaQueryId, arr);
     }
 
     return rows.map((row) => {
@@ -143,7 +150,7 @@ export class SavedQueryService {
     });
   }
 
-  async create(draft: SavedQueryDraft): Promise<SavedQueryDto> {
+  async create(draft: MediaQueryValue): Promise<MediaQueryRecord> {
     // Validate all filter keys exist in the registry for this contentType
     for (const { key } of draft.filterValues) {
       const def = getFilterDef(key, draft.contentType);
@@ -155,14 +162,14 @@ export class SavedQueryService {
     }
 
     const [row] = await this.db
-      .insert(savedQueries)
+      .insert(mediaQueries)
       .values({ name: draft.name.trim(), contentType: draft.contentType })
       .returning();
 
     if (draft.filterValues.length > 0) {
-      await this.db.insert(savedQueryFilterValues).values(
+      await this.db.insert(mediaQueryFilterValues).values(
         draft.filterValues.map(({ key, value }) => ({
-          savedQueryId: row.id,
+          mediaQueryId: row.id,
           filterKey: key,
           value: String(value),
         }))
@@ -187,14 +194,14 @@ export class SavedQueryService {
     };
   }
 
-  async getById(id: number): Promise<SavedQueryDto> {
-    const [row] = await this.db.select().from(savedQueries).where(eq(savedQueries.id, id));
+  async getById(id: number): Promise<MediaQueryRecord> {
+    const [row] = await this.db.select().from(mediaQueries).where(eq(mediaQueries.id, id));
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
 
     const fvRows = await this.db
       .select()
-      .from(savedQueryFilterValues)
-      .where(eq(savedQueryFilterValues.savedQueryId, id));
+      .from(mediaQueryFilterValues)
+      .where(eq(mediaQueryFilterValues.mediaQueryId, id));
 
     const activeRows = await this.db
       .select({ type: metadataProviders.type })
@@ -221,7 +228,7 @@ export class SavedQueryService {
   }
 
   async delete(id: number): Promise<void> {
-    const [row] = await this.db.delete(savedQueries).where(eq(savedQueries.id, id)).returning();
+    const [row] = await this.db.delete(mediaQueries).where(eq(mediaQueries.id, id)).returning();
     if (!row) throw new NotFoundError(`Saved query ${id} not found`);
   }
 }

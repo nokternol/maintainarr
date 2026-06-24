@@ -1,4 +1,10 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { MetadataProviderType } from '../database/schema';
+import type { NormalizedMovie } from '../domain/movie';
+import type { NormalizedShow } from '../domain/show';
+import { BaseProviderConnection } from './baseProviderConnection';
+import type { MediaItemSet, MediaSource } from './mediaSource';
+import { normalizeSonarrSeries } from './normalizeMedia';
+import { type ActuatorTask, type MediaActuator, modelledRun } from './roles';
 
 export interface SonarrSeason {
   seasonNumber: number;
@@ -62,9 +68,61 @@ export interface SonarrTag {
   label: string;
 }
 
-export class SonarrProvider extends BaseMetadataProvider {
+export class SonarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
+  public readonly enrichmentSourceType = 'SONARR' as const;
+  public readonly actuatorType = MetadataProviderType.SONARR;
+
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
+  }
+
+  public async getMediaItems(): Promise<MediaItemSet> {
+    return (await this.getSeries()).map(normalizeSonarrSeries);
+  }
+
+  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
+    return (item as NormalizedShow)._sourceIds.sonarr;
+  }
+
+  public tasks(): ActuatorTask[] {
+    return [
+      {
+        id: 'unmonitorSeries',
+        label: 'Unmonitor series',
+        destructive: false,
+        affects: 'media',
+        run: (ids) => this.unmonitorSeries(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger episode search',
+        destructive: false,
+        run: (ids) => this.triggerSeriesSearch(ids),
+      },
+      {
+        id: 'deleteSeriesWithFiles',
+        label: 'Delete series + files',
+        destructive: true,
+        affects: 'media',
+        run: (ids) => this.deleteSeries(ids),
+      },
+      {
+        id: 'deleteSeriesKeepFiles',
+        label: 'Delete series (keep files)',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('deleteSeriesKeepFiles'),
+      },
+      {
+        id: 'changeQualityProfile',
+        label: 'Change quality profile',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('changeQualityProfile'),
+      },
+      { id: 'addTag', label: 'Add tag', destructive: false, run: modelledRun('addTag') },
+      { id: 'removeTag', label: 'Remove tag', destructive: false, run: modelledRun('removeTag') },
+    ];
   }
 
   public async getSeries(): Promise<SonarrSeries[]> {
@@ -115,6 +173,22 @@ export class SonarrProvider extends BaseMetadataProvider {
           .post('command', {
             searchParams: this.apiParams,
             json: { name: 'SeriesSearch', seriesId: id },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async deleteSeries(seriesIds: number[]): Promise<void> {
+    await Promise.all(
+      seriesIds.map((id) =>
+        this.client
+          .delete(`series/${id}`, {
+            searchParams: {
+              ...this.apiParams,
+              deleteFiles: 'true',
+              addImportListExclusion: 'false',
+            },
           })
           .json()
       )

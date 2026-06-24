@@ -50,13 +50,13 @@ export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow
     if (id === undefined) continue;
     const enr = enrichBySourceId.get(id);
     if (!enr) continue;
-    const rawPlay = enr.tautulliPlayCount ?? enr.plexViewCount ?? null;
-    item.playCount = rawPlay !== null ? rawPlay : undefined;
-    const rawTs = enr.tautulliLastPlayed ?? enr.plexLastViewedAt ?? null;
-    item.lastWatchedAt = rawTs !== null ? new Date(rawTs * 1000).toISOString() : undefined;
+    // Storage already holds write-time-resolved canonical values, so the read is a
+    // straight copy: null means "unknown", which leaves the item field undefined.
+    if (enr.playCount !== null) item.playCount = enr.playCount;
+    if (enr.lastWatchedAt !== null) item.lastWatchedAt = enr.lastWatchedAt;
     if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue;
     if (enr.overseerrRequestStatus !== null)
       item.overseerrRequestStatus = enr.overseerrRequestStatus;
-    if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus ?? undefined;
+    if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus;
   }
 }

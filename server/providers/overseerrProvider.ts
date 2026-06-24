@@ -1,4 +1,8 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { MetadataProviderType } from '../database/schema';
+import { decorate } from '../jobs/enrichment/decorate';
+import { mapOverseerr } from '../jobs/enrichment/mappers';
+import { BaseProviderConnection } from './baseProviderConnection';
+import type { EnrichmentResult, MediaEnricher, MediaItem } from './roles';
 
 export interface OverseerrRequestedBy {
   id: number;
@@ -52,7 +56,16 @@ interface OverseerrSearchResponse {
   totalResults: number;
 }
 
-export class OverseerrProvider extends BaseMetadataProvider {
+export class OverseerrProvider extends BaseProviderConnection implements MediaEnricher {
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+    const [requests, issues] = await Promise.all([this.getRequests(), this.getIssues()]);
+    const fieldsByKey = mapOverseerr(requests, issues);
+    return {
+      provider: MetadataProviderType.OVERSEERR,
+      items: decorate(items, (i) => i._sourceIds.tmdb, fieldsByKey),
+    };
+  }
+
   private get authHeader() {
     return { 'X-Api-Key': this.provider.apiKey ?? '' };
   }

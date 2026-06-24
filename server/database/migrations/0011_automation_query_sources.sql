@@ -2,7 +2,7 @@
 CREATE TABLE `automation_query_sources` (
   `id`           INTEGER PRIMARY KEY AUTOINCREMENT,
   `automationId` INTEGER NOT NULL REFERENCES `automations`(`id`) ON DELETE CASCADE,
-  `queryId`      INTEGER NOT NULL REFERENCES `saved_queries`(`id`) ON DELETE CASCADE,
+  `queryId`      INTEGER NOT NULL REFERENCES `media_queries`(`id`) ON DELETE CASCADE,
   `role`         TEXT NOT NULL CHECK(`role` IN ('include', 'exclude')),
   `sortOrder`    INTEGER NOT NULL DEFAULT 0
 );

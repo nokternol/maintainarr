@@ -17,7 +17,7 @@ function history(rating_key: string, played_at?: number): TautulliHistoryItem {
 }
 
 describe('mapTautulliHistory', () => {
-  it('emits one contribution per rating_key with play count and most-recent played_at', () => {
+  it('maps canonical play count and ISO most-recent watch per rating_key', () => {
     const older = 1000;
     const newer = 2000;
     const result = mapTautulliHistory([
@@ -26,29 +26,28 @@ describe('mapTautulliHistory', () => {
       history('other', 3000),
     ]);
 
-    const abc = result.find((c) => c.key.plexRatingKey === 'abc123');
-    expect(abc?.values.tautulliPlayCount).toBe(2);
-    expect(abc?.values.tautulliLastPlayed).toBe(newer);
+    expect(result.get('abc123')).toEqual({
+      playCount: 2,
+      lastWatchedAt: new Date(newer * 1000).toISOString(),
+    });
   });
 });
 
 describe('mapPlexItems', () => {
-  it('emits a contribution per ratingKey with view count and last-viewed', () => {
+  it('maps canonical play count and ISO last-viewed per ratingKey', () => {
     const items: PlexMediaItem[] = [
       { ratingKey: 'plex-101', title: 'M', type: 'movie', viewCount: 5, lastViewedAt: 1700000000 },
-      { ratingKey: 'plex-999', title: 'O', type: 'movie', viewCount: 2, lastViewedAt: 1600000000 },
     ];
 
-    const result = mapPlexItems(items);
-
-    const item = result.find((c) => c.key.plexRatingKey === 'plex-101');
-    expect(item?.values.plexViewCount).toBe(5);
-    expect(item?.values.plexLastViewedAt).toBe(1700000000);
+    expect(mapPlexItems(items).get('plex-101')).toEqual({
+      playCount: 5,
+      lastWatchedAt: new Date(1700000000 * 1000).toISOString(),
+    });
   });
 });
 
 describe('mapOverseerr', () => {
-  it('keys request status and issue presence by tmdbId', () => {
+  it('maps request status and issue presence by tmdbId', () => {
     const requests: OverseerrRequest[] = [
       {
         id: 1,
@@ -71,9 +70,7 @@ describe('mapOverseerr', () => {
 
     const result = mapOverseerr(requests, issues);
 
-    const c100 = result.find((c) => c.key.tmdbId === 100);
-    expect(c100?.values.overseerrRequestStatus).toBe(2);
-    expect(c100?.values.overseerrHasIssue).toBe(true);
-    expect(result.find((c) => c.key.tmdbId === 999)?.values.overseerrRequestStatus).toBe(3);
+    expect(result.get(100)).toEqual({ overseerrRequestStatus: 2, overseerrHasIssue: true });
+    expect(result.get(999)).toEqual({ overseerrRequestStatus: 3 });
   });
 });

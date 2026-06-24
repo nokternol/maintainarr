@@ -1,70 +1,157 @@
-# Phase 4 — Client query/filter alignment
+# Phase 4 — Client derives the rule vocabulary (server-first)
 
-**Status:** IN PROGRESS — **Phase 4** of the System-Roles & MediaQueryEngine Heal (see `README.md`).
-TDD (client hooks) + `impeccable` (filter view visual). **Depends on:** Phase 1 (engine + honest
-`/preview`).
+**Status:** IN PROGRESS — supersedes the earlier "client query alignment" framing. TDD (server naming +
+projection, then client hooks) + `impeccable` (filter view visual). **Depends on:** Phase 1 (engine +
+honest `/preview`).
 
-## Observable value
+## The one thing not to get wrong
 
-The client speaks the engine's vocabulary, so what the UI shows equals what an automation will act on:
+This is a **replacement, not a mapping.** The client's `FILTER_FIELDS` catalogue
+(`src/hooks/useMediaFilters.ts`) is a *second vocabulary* for the server's rule catalogue — the same
+two-designs-for-one-process fracture Phase 3 closed for tasks. The fix is to make the server rule catalogue
+the single authority and have the client **derive** from it, exactly as Phase 3b made the client derive
+its tasks. Do **not** build a `FilterState → MediaQuery source` translation between the two vocabularies —
+that translator *is* the fracture (it is the analogue of the type-keyed `taskManifest` table Phase 3
+deleted). If a step makes you map one key set onto another, the design is wrong — stop.
 
-- **Honest count surfaced:** a preview hook returns the engine-backed `{ count }` for a saved query, and
-  the builder/query UI displays it — no more implicit `0`.
-- **One query vocabulary:** the client maps its filter state to the `MediaQuery` source shape
-  (`filterValues` + `role`) that the server persists and the engine evaluates — asserted by the mapping.
-- **Role parity:** a query row's include/exclude maps to `MediaQuery` `source.role`.
-- **Grid parity:** the browse grid reflects engine-resolved results (regression-guarded; the handler
-  changed in Phase 1, the client contract did not).
+## The fracture (a renamed vocabulary duplicated in three live places)
 
-## Problem
+The **match contract** is already single-authority: `FILTER_REGISTRY` (`server/utils/filterRegistry.ts`)
+owns the predicates, keyed by `(key, contentType)` via `getFilterDef`; the engine matches via
+`getFilterDef().apply`; persisted `filterValues` are `{ key, value }` under **registry keys**. There is no
+parallel *predicate* table.
 
-The filter view (`useMediaFilters`, `MediaFilterBar`, `QueryRow`) and the saved-query preview grew their
-own shapes. With the engine now the single resolver and `/preview` honest, the client must (a) show the
-real count and (b) express "a query" as the same `MediaQuery` sources the server stores — otherwise the
-preview a user sees and the set an automation acts on can still diverge in the client layer.
+But a **renamed key vocabulary** for those same rules is duplicated across the boundary — and not only on
+the client. The same rename lives in:
 
-## Scope
+1. **Client** — `FILTER_FIELDS` (`src/hooks/useMediaFilters.ts`) declares the renamed keys and re-hardcodes
+   each rule's `dataType`/content-type scope, minus `sourceProviders` (so no provider-gating client-side).
+2. **Server browse handler** — `MOVIE_PARAM_TO_KEY` / `SERIES_PARAM_TO_KEY` + `toFilterValues`
+   (`server/modules/media/media.handler.ts:90–156`) translate the renamed URL params back to registry keys
+   before evaluation. This is the literal `taskManifest`-analogue: a translator bridging two designs for
+   one process, living server-side.
+3. **Migration** — `0007_query_model_rewrite.sql` rewrote already-persisted saved-query keys to registry
+   keys (historical; leave it).
 
-- **In:** the preview-count hook + its display; the `FilterState → MediaQuery source` mapping;
-  include/exclude role parity.
-- **Out / noted:** a **live count for an unsaved (draft) query** needs a preview-by-spec server endpoint
-  (the engine accepting an inline `MediaQuery`). It is a small, separate server addition — flagged here,
-  not built in this phase. `/search/metadata` (the metadata title-search view) stays as-is, to be
-  re-scoped or retired separately.
+Phase 4 deletes #1 **and** #2: the client emits registry keys directly (per-page `contentType`
+disambiguates what the `movie*`/`series*` prefixes worked around), so `toFilterValues` collapses to identity
+and the `PARAM_TO_KEY` maps are removed. The renamed keys retired:
 
-## Mocking
+| Server `FILTER_REGISTRY` key | Client `FILTER_FIELDS` key |
+|---|---|
+| `watched` | `tautulliWatched` |
+| `imdbRatingGte` / `imdbRatingLte` | `radarrImdbRatingGte` / `radarrImdbRatingLte` |
+| `communityRatingGte` / `communityRatingLte` | `sonarrRatingGte` / `sonarrRatingLte` |
+| `ended` | `sonarrEnded` |
+| `lastAiredDaysAgoGte` / `lastAiredDaysAgoLte` | `sonarrLastAiredDaysAgoGte` / `…Lte` |
+| `episodePercentageGte` / `episodePercentageLte` | `sonarrPercentEpisodesGte` / `…Lte` |
+| `tagIds` / `genres` / `qualityProfileIds` | `movie*` / `series*` variants |
 
-| Mock target | Boundary / Internal | Justification |
+## Ubiquitous language (named here, applied across server + client + graph)
+
+"Filter" is a UI word only — the `MediaFilterBar` composes inputs; the server and wire never "filter."
+The server vocabulary is **rules** and **predicates**, mirroring Phase 3's task/run split:
+
+| Concept | Type | Phase 3 analogue |
 |---|---|---|
-| `/saved-queries/:id/preview` `fetch` (MSW) | Boundary | network; drive count from fixed responses |
-| `/api/media/*` `fetch` (MSW) | Boundary | grid data; existing pattern |
-| `useMediaFilters` mapping | Internal | the mapping under test; exercised, not mocked |
+| The boolean logic that applies one value to one item | `Predicate<T> = (item: T, value: FilterValue) => boolean` | — |
+| A declared, content-typed unit media can be constrained by | `MediaRule extends MediaRuleDescriptor { predicate: Predicate }` | `ActuatorTask` |
+| Its JSON-honest transport projection (no `predicate`) | `MediaRuleDescriptor { key, label, contentTypes, dataType, sourceProviders, required }` | `ActuatorTaskDescriptor` |
+| The catalogue — the single authority | `MEDIA_RULES: MediaRule[]` (renamed `FILTER_REGISTRY`) | `MediaActuator.tasks()` |
 
-## TDD cycles
+`predicate` is the analogue of `run`: behaviour that stays server-side. `MediaRuleDescriptor` serializes
+complete and is what crosses the boundary. `FilterDefinition → MediaRule`, `getFilterDef → getRule`. The
+UI layer keeps the word "filter" (`MediaFilterBar`, `useMediaFilters`) as the input-composition surface
+that produces a `MediaQuerySource`'s `filterValues` — rule-keyed values.
 
-1. **Tracer — preview hook returns the count.** RED: `useQueryPreview(savedQueryId)` (MSW-mocked
-   honest `/preview`) exposes `{ count }`. Hook absent → fails. GREEN: SWR fetch. REFACTOR.
-2. **Builder displays the saved-source count.** RED: a query row bound to a saved query renders its
-   preview count. GREEN: wire the hook into the row. REFACTOR.
-3. **Filter state maps to the `MediaQuery` source shape.** RED: a populated `FilterState` maps to a
-   `filterValues` array matching what the saved query persists (same keys/values the server expects).
-   GREEN: a mapping function. REFACTOR: share the shape type with the server contract.
-4. **Include/exclude role parity.** RED: a `QueryRow` set to "exclude" maps to `source.role: 'exclude'`.
-   GREEN: thread the role. REFACTOR.
+## How rules thread to enrichers and queries (not one-to-one)
 
-## Visual pass (impeccable, not TDD)
+The join between a rule and an enricher is the **field**, and it is many-to-many:
 
-After hook/mapping logic is green, run the filter view and preview-count display through `impeccable`
-(Ladle story first per `CLAUDE.md`): the `MediaFilterBar`, the per-row count, and include/exclude.
+- A `MediaRule.predicate` reads one item field. Some fields are owned by the source (`hasFile`,
+  `monitored`, `sizeOnDiskBytes`); some are contributed by an enricher (`tmdbStatus`, `overseerrHasIssue`,
+  `imdbRating`, `playCount`). The item does not rank them — see `docs/intent/media-item-shape.md`.
+- One enricher feeds many rules (TMDB → `tmdbStatus`, `genres`, `certification`, `communityRating`); one
+  rule accepts many providers (`certification` ← Radarr | Sonarr | TMDB | OMDB).
+- `sourceProviders` is the existing encoding of "who can supply this rule's field." Provider-gating the UI
+  *is* "offer a rule only when one of its `sourceProviders` is configured."
+
+## Range rules — one control, one predicate, one value
+
+Today every bounded field is **two** rules — `yearMin`/`yearMax`, `addedDaysAgoGte`/`Lte`,
+`sizeOnDiskGbGte`/`Lte`, `imdbRatingGte`/`Lte`, `communityRatingGte`/`Lte`, `lastAiredDaysAgoGte`/`Lte`,
+`episodePercentageGte`/`Lte`, `lastWatchedDaysAgoGte`/`Lte` — read by two predicates against one item field.
+That is the only place the rule→control mapping is not 1:1 (two keys, one UI intent).
+
+**Collapse each pair into a single range rule:** `dataType: 'range'`, value `{ min?: number; max?: number }`,
+one `predicate` testing the item's field against both bounds. The control is one range input. This keeps
+the invariant **one rule = one control = one value shape**, so the single-authority claim is structural,
+not asserted — there is no pair-grouping metadata for the client to hold.
+
+Safe because every existing `*Gte`/`*Lte` pair already shares identical `sourceProviders` (verified across
+the registry): both bounds come from the same provider, so a range is never half-available, and gating
+stays coherent. Cost: `FilterValue` widens from `string | number | boolean` to include the range object,
+and persisted `filterValues` carry a structured value for range rules (coerced by `dataType` as today).
+
+## Stage 1 — the server names the rule and projects its descriptor
+
+- Rename `FilterDefinition → MediaRule`, `apply → predicate` (typed `Predicate`), `FILTER_REGISTRY →
+  MEDIA_RULES`, `getFilterDef → getRule`. Behaviour-preserving — guarded by the existing engine /
+  `matchItems` / `combinationEvaluator` tests staying green.
+- Add `MediaRuleDescriptor` = `MediaRule` minus `predicate`, and a projection that strips the predicate.
+- Collapse each `*Gte`/`*Lte` pair into one `dataType: 'range'` rule with a `{ min?, max? }` value and a
+  single predicate (see "Range rules"); widen `FilterValue` to include the range object. This is a
+  behaviour-preserving remodel guarded by the engine/`matchItems` tests.
+- Expose a provider-gated descriptors endpoint mirroring `GET /api/providers/tasks`: returns the
+  `MediaRuleDescriptor`s whose `sourceProviders` intersect the configured providers (needs
+  `providerSettingsService`). This is the single source the client reads.
+- Delete the server-side rename translator: `MOVIE_PARAM_TO_KEY`/`SERIES_PARAM_TO_KEY` and `toFilterValues`
+  (`media.handler.ts`) collapse to identity once the client emits registry keys (Stage 2).
+
+## Accepted edge case — the engine does not enforce provider-gating
+
+Gating answers "which rules are *offered*" at compose time, against the providers configured **then**. A
+saved `MediaQuery` is a snapshot from that moment. The engine deliberately does **not** re-check gating at
+evaluate time, and that is correct, not a gap: enriched fields are **not** cleared when a provider later
+goes unavailable, so a saved rule's field is usually still present and still matches. A genuinely missing
+field simply fails its predicate (`=== undefined → false`) — no error, no false match. The residual case (a
+provider removed *and* its enrichment purged) is small and self-correcting. Gating is a compose-time
+affordance by design; the engine's contract is "match what the item carries."
+
+## Stage 2 — the client derives (delete the second vocabulary)
+
+Only after Stage 1. The *goal* the earlier Phase 4 had right, the *mechanism* it had wrong:
+
+- `useMediaRules` (SWR, MSW-mocked) fetches the provider-gated `MediaRuleDescriptor`s.
+- `MediaFilterBar` / `QueryRow` render **data-driven** from the descriptors: the control set, its
+  `dataType`, and its gating all come from the server. This collapses the ~33 explicit `setX` props
+  (`MediaFilterBarProps`) to a single `onRuleChange(key, value)` and gates controls by configured
+  provider — closing both problems in `docs/intent/filter-ui.md` (retired into this phase).
+- **Delete** `FILTER_FIELDS` and its renamed keys; nothing client-side declares what rules exist. The
+  client speaks the server's rule keys, so `filterValues` need no translation to persist or preview.
+- Preview count (independent of the vocabulary fix, kept): `useQueryPreview(savedQueryId)` exposes the
+  engine-backed `{ count }`; a query row bound to a saved query renders it. Include/exclude maps to
+  `MediaQuerySource.role`.
+- Visual pass via `impeccable` (Ladle story first, per `CLAUDE.md`) **after** the hook logic is green:
+  the rule-driven `MediaFilterBar`, per-row preview count, include/exclude, provider-gated empty states.
+
+## Out of scope (noted, not built here)
+
+- **MediaItem shape** — identity + open provider-contingent field set (`docs/intent/media-item-shape.md`,
+  Phase 5). Phase 4 closes the *vocabulary* fracture; it reads fields by today's keys regardless of shape.
+- **Live count for an unsaved (draft) query** — needs a preview-by-spec server endpoint (engine accepting
+  an inline `MediaQuery`). Small separate server addition.
+- `/search/metadata` stays as-is, re-scoped or retired separately.
 
 ## Gates
 
-- `yarn test` (vitest) — `useMediaFilters`, builder, and media-grid tests green; new hook tests green.
-- `yarn typecheck:client`, `yarn lint`.
+`yarn test` (server + client), `yarn typecheck:server`, `yarn typecheck:client`, `yarn lint`. Unit-test at
+boundaries (descriptors endpoint, MSW for the client hook); never mock internal domain (`MEDIA_RULES`,
+`matchItems`, the engine).
 
 ## Done when
 
-The client shows the engine-backed preview count and expresses queries as `MediaQuery` sources matching
-the server, so preview and execution agree across the boundary. Draft (unsaved) live-count is documented
-as the next, optional server addition.
-</content>
+The rule catalogue is the single authority; its `MediaRuleDescriptor`s are projected and provider-gated;
+the client derives its filter controls from them and holds no rule catalogue of its own; `FILTER_FIELDS`
+and the cross-vocabulary mapping are gone; the UI shows the engine-backed preview count. The server half is
+recorded in `docs/architecture/` when shipped; this plan is retired when Stage 2 lands.

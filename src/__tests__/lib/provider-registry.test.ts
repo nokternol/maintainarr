@@ -2,23 +2,13 @@ import { getProviderEntry, getProviderOrder, getProviderTypes } from '@app/lib/p
 import { describe, expect, it } from 'vitest';
 
 describe('getProviderEntry', () => {
-  it('returns RADARR entry with correct apiSuffix, order, filterCapabilities, and first task id', () => {
+  it('returns RADARR entry with correct apiSuffix, order, and filterCapabilities', () => {
     const entry = getProviderEntry('RADARR');
 
     expect(entry).toBeDefined();
     expect(entry!.apiSuffix).toBe('/api/v3');
     expect(entry!.order).toBe(2);
     expect(entry!.filterCapabilities).toContain('Movie library');
-    expect(entry!.tasks[0].id).toBe('deleteMovieWithFiles');
-  });
-
-  it('returns SONARR entry with deleteSeriesWithFiles task marked destructive', () => {
-    const entry = getProviderEntry('SONARR');
-
-    expect(entry).toBeDefined();
-    const task = entry!.tasks.find((t) => t.id === 'deleteSeriesWithFiles');
-    expect(task).toBeDefined();
-    expect(task!.destructive).toBe(true);
   });
 
   it('returns TMDB entry with correct defaultUrl and empty apiSuffix', () => {
@@ -83,15 +73,5 @@ describe('getProviderEntry — unknown type', () => {
     const entry = getProviderEntry('UNKNOWN');
 
     expect(entry).toBeUndefined();
-  });
-});
-
-describe('PROVIDER_TASKS backward compat (tasks.ts re-export)', () => {
-  it('PROVIDER_TASKS["RADARR"] still returns the same tasks as the registry', async () => {
-    const { PROVIDER_TASKS } = await import('@app/lib/tasks');
-    const registryEntry = getProviderEntry('RADARR');
-
-    expect(PROVIDER_TASKS.RADARR).toBeDefined();
-    expect(PROVIDER_TASKS.RADARR).toEqual(registryEntry!.tasks);
   });
 });

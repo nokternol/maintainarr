@@ -37,14 +37,14 @@ describe('media_enrichment table', () => {
       .insert(mediaEnrichment)
       .values({
         mediaIdentityId: identity.id,
-        tautulliPlayCount: 7,
-        tautulliLastPlayed: now - 3600,
+        playCount: 7,
+        lastWatchedAt: new Date((now - 3600) * 1000).toISOString(),
         enrichedAt: now,
       })
       .returning();
 
     expect(enr.mediaIdentityId).toBe(identity.id);
-    expect(enr.tautulliPlayCount).toBe(7);
+    expect(enr.playCount).toBe(7);
     expect(enr.enrichedAt).toBe(now);
   });
 

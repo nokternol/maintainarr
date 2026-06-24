@@ -1,17 +1,17 @@
-ALTER TABLE `saved_queries` RENAME COLUMN `mediaType` TO `contentType`;
+ALTER TABLE `media_queries` RENAME COLUMN `mediaType` TO `contentType`;
 --> statement-breakpoint
-UPDATE `saved_queries` SET `contentType` = 'show' WHERE `contentType` = 'series';
+UPDATE `media_queries` SET `contentType` = 'show' WHERE `contentType` = 'series';
 --> statement-breakpoint
-CREATE TABLE `saved_query_filter_values` (
+CREATE TABLE `media_query_filter_values` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `savedQueryId` INTEGER NOT NULL REFERENCES `saved_queries`(`id`) ON DELETE CASCADE,
+  `mediaQueryId` INTEGER NOT NULL REFERENCES `media_queries`(`id`) ON DELETE CASCADE,
   `filterKey` TEXT NOT NULL,
   `value` TEXT NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX `IDX_sqfv_queryId` ON `saved_query_filter_values`(`savedQueryId`);
+CREATE INDEX `IDX_mqfv_queryId` ON `media_query_filter_values`(`mediaQueryId`);
 --> statement-breakpoint
-INSERT INTO `saved_query_filter_values` (`savedQueryId`, `filterKey`, `value`)
+INSERT INTO `media_query_filter_values` (`mediaQueryId`, `filterKey`, `value`)
 SELECT
   sq.`id`,
   CASE kv.`key`
@@ -34,10 +34,10 @@ SELECT
     ELSE kv.`key`
   END,
   kv.`value`
-FROM `saved_queries` sq,
+FROM `media_queries` sq,
   json_each(sq.`filters`) AS kv
 WHERE sq.`filters` IS NOT NULL
   AND sq.`filters` != ''
   AND sq.`filters` != '{}';
 --> statement-breakpoint
-ALTER TABLE `saved_queries` DROP COLUMN `filters`;
+ALTER TABLE `media_queries` DROP COLUMN `filters`;

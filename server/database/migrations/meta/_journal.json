@@ -85,6 +85,13 @@
       "when": 1780927000000,
       "tag": "0011_automation_query_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1780928000000,
+      "tag": "0012_media_enrichment_canonical",
+      "breakpoints": true
     }
   ]
 }

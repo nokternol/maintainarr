@@ -1,9 +1,8 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import { EnrichmentJob } from '@server/jobs/enrichmentJob';
-import type { OverseerrIssue, OverseerrRequest } from '@server/providers/overseerrProvider';
-import type { PlexMediaItem } from '@server/providers/plexProvider';
+import type { MediaEnricher, MediaItem } from '@server/providers/roles';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -23,6 +22,24 @@ const NOW = Math.floor(Date.now() / 1000);
 const FRESH = NOW - 3600; // 1h ago — within 24h window
 const STALE = NOW - 86400 - 1; // just past 24h — needs re-enrichment
 
+/** A MediaEnricher that decorates whatever items it is handed with fixed fields. */
+function fakeEnricher(
+  provider: MetadataProviderType,
+  decorate: (item: MediaItem) => Partial<MediaItem> | undefined
+): MediaEnricher {
+  return {
+    enrich: vi.fn(async (items: MediaItem[]) => ({
+      provider,
+      items: items
+        .map((item) => {
+          const fields = decorate(item);
+          return fields ? ({ ...item, ...fields } as MediaItem) : undefined;
+        })
+        .filter((i): i is MediaItem => i !== undefined),
+    })),
+  };
+}
+
 describe('EnrichmentJob', () => {
   beforeEach(async () => {
     await initializeDatabase(testConfig);
@@ -32,22 +49,21 @@ describe('EnrichmentJob', () => {
     await _resetDatabase();
   });
 
-  it('skips identity rows where enrichedAt is within 24h', async () => {
+  it('skips identity rows enriched within 24h — no enricher is queried', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'fresh-key' })
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'fresh' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: FRESH });
 
-    const tautulliProvider = { getHistory: vi.fn().mockResolvedValue([]) };
-    const job = new EnrichmentJob({ db, tautulliProvider });
-    await job.run();
+    const enricher = fakeEnricher(MetadataProviderType.PLEX, () => undefined);
+    await new EnrichmentJob({ db, enrichers: [enricher] }).run();
 
-    expect(tautulliProvider.getHistory).not.toHaveBeenCalled();
+    expect(enricher.enrich).not.toHaveBeenCalled();
   });
 
-  it('upserts tautulliLastPlayed with the most-recent played_at from history', async () => {
+  it('persists the resolved canonical play count for a stale identity', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
@@ -55,166 +71,88 @@ describe('EnrichmentJob', () => {
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
-    const olderPlay = NOW - 7 * 86400; // 7 days ago
-    const newerPlay = NOW - 2 * 86400; // 2 days ago
-
-    const tautulliProvider = {
-      getHistory: vi.fn().mockResolvedValue([
-        {
-          rating_key: 'abc123',
-          title: 'Test',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u1',
-          played_at: olderPlay,
-        },
-        {
-          rating_key: 'abc123',
-          title: 'Test',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u2',
-          played_at: newerPlay,
-        },
-        {
-          rating_key: 'other',
-          title: 'Other',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u1',
-          played_at: NOW,
-        },
-      ]),
-    };
-
-    const job = new EnrichmentJob({ db, tautulliProvider });
-    await job.run();
+    const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, (item) =>
+      item._sourceIds.plex === 'abc123' ? { playCount: 2 } : undefined
+    );
+    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
 
     const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.tautulliLastPlayed).toBe(newerPlay);
+    expect(enr.playCount).toBe(2);
+    expect(enr.enrichedAt).toBeGreaterThan(STALE);
   });
 
-  it('writes overseerrRequestStatus matched by tmdbId', async () => {
+  it('resolves a field per precedence across enrichers (Tautulli over Plex for playCount)', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'abc123' })
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'k' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
-    const requests: OverseerrRequest[] = [
-      {
-        id: 1,
-        status: 2,
-        type: 'movie',
-        requestedBy: { id: 1, displayName: 'u', email: 'u@u.com' },
-        media: { tmdbId: 100, title: 'Test' },
-        createdAt: '',
-      },
-      {
-        id: 2,
-        status: 3,
-        type: 'movie',
-        requestedBy: { id: 1, displayName: 'u', email: 'u@u.com' },
-        media: { tmdbId: 999, title: 'Other' },
-        createdAt: '',
-      },
-    ];
-
-    const job = new EnrichmentJob({
-      db,
-      overseerrProvider: {
-        getRequests: vi.fn().mockResolvedValue(requests),
-        getIssues: vi.fn().mockResolvedValue([]),
-      },
-    });
-    await job.run();
+    const plex = fakeEnricher(MetadataProviderType.PLEX, () => ({ playCount: 2 }));
+    const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ playCount: 5 }));
+    await new EnrichmentJob({ db, enrichers: [plex, tautulli] }).run();
 
     const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.overseerrRequestStatus).toBe(2);
+    expect(enr.playCount).toBe(5);
   });
 
-  it('writes overseerrHasIssue=true when open issues exist for a tmdbId, null (unknown) when none', async () => {
-    const db = getDb();
-    const [id100] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'k1' })
-      .returning();
-    const [id200] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 200, plexRatingKey: 'k2' })
-      .returning();
-    await db.insert(mediaEnrichment).values([
-      { mediaIdentityId: id100.id, enrichedAt: STALE },
-      { mediaIdentityId: id200.id, enrichedAt: STALE },
-    ]);
-
-    const issues: OverseerrIssue[] = [{ id: 1, status: 1, media: { tmdbId: 100 } }];
-
-    const job = new EnrichmentJob({
-      db,
-      overseerrProvider: {
-        getRequests: vi.fn().mockResolvedValue([]),
-        getIssues: vi.fn().mockResolvedValue(issues),
-      },
-    });
-    await job.run();
-
-    const rows = await db.select().from(mediaEnrichment).orderBy(mediaEnrichment.mediaIdentityId);
-    expect(rows[0].overseerrHasIssue).toBe(true);
-    // Data stores truth: Overseerr reported no issue for this tmdbId, so the field is
-    // unknown (null), not a fabricated false. The filter layer decides how to read null.
-    expect(rows[1].overseerrHasIssue).toBeNull();
-  });
-
-  it('writes plexViewCount and plexLastViewedAt matched by plexRatingKey', async () => {
+  it('persists an ISO last-watched value resolved from an enricher', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'plex-101' })
+      .values({ sourceType: 'RADARR', sourceId: 1, plexRatingKey: 'k' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
-    const plexItems: PlexMediaItem[] = [
-      {
-        ratingKey: 'plex-101',
-        title: 'The Matrix',
-        type: 'movie',
-        viewCount: 5,
-        lastViewedAt: 1700000000,
-      },
-      {
-        ratingKey: 'plex-999',
-        title: 'Other',
-        type: 'movie',
-        viewCount: 2,
-        lastViewedAt: 1600000000,
-      },
-    ];
-
-    const job = new EnrichmentJob({
-      db,
-      plexProvider: { getAllItems: vi.fn().mockResolvedValue(plexItems) },
-    });
-    await job.run();
+    const iso = new Date(1_700_000_000 * 1000).toISOString();
+    const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ lastWatchedAt: iso }));
+    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
 
     const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.plexViewCount).toBe(5);
-    expect(enr.plexLastViewedAt).toBe(1700000000);
+    expect(enr.lastWatchedAt).toBe(iso);
+  });
+
+  it('leaves canonical columns null for an identity no enricher touched', async () => {
+    const db = getDb();
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 })
+      .returning();
+    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
+
+    const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => undefined);
+    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+
+    const [enr] = await db.select().from(mediaEnrichment);
+    expect(enr.playCount).toBeNull();
+    expect(enr.enrichedAt).toBeGreaterThan(STALE);
+  });
+
+  it('inserts an enrichment row when the stale identity has none yet', async () => {
+    const db = getDb();
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ sourceType: 'RADARR', sourceId: 1, plexRatingKey: 'k' })
+      .returning();
+
+    const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ playCount: 7 }));
+    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+
+    const [enr] = await db.select().from(mediaEnrichment);
+    expect(enr.mediaIdentityId).toBe(identity.id);
+    expect(enr.playCount).toBe(7);
   });
 
   it('returns the number of identity rows it enriched', async () => {
     const db = getDb();
     const [id100] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'k1' })
+      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 })
       .returning();
     const [id200] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 200, plexRatingKey: 'k2' })
+      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 200 })
       .returning();
     await db.insert(mediaEnrichment).values([
       { mediaIdentityId: id100.id, enrichedAt: STALE },
@@ -223,55 +161,9 @@ describe('EnrichmentJob', () => {
 
     const job = new EnrichmentJob({
       db,
-      tautulliProvider: { getHistory: vi.fn().mockResolvedValue([]) },
+      enrichers: [fakeEnricher(MetadataProviderType.TAUTULLI, () => undefined)],
     });
 
     expect(await job.run()).toBe(2);
-  });
-
-  it('upserts tautulliPlayCount from history for a stale identity row', async () => {
-    const db = getDb();
-    const [identity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'abc123' })
-      .returning();
-    // stale enrichment row — older than 24h
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
-
-    const tautulliProvider = {
-      getHistory: vi.fn().mockResolvedValue([
-        {
-          rating_key: 'abc123',
-          title: 'Test',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u1',
-        },
-        {
-          rating_key: 'abc123',
-          title: 'Test',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u2',
-        },
-        {
-          rating_key: 'other',
-          title: 'Other',
-          watched_status: 1,
-          duration: 3600,
-          play_duration: 3600,
-          user: 'u1',
-        },
-      ]),
-    };
-
-    const job = new EnrichmentJob({ db, tautulliProvider });
-    await job.run();
-
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.tautulliPlayCount).toBe(2);
-    expect(enr.enrichedAt).toBeGreaterThan(STALE);
   });
 });

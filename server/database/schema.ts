@@ -107,9 +107,9 @@ export type MetadataProvider = {
 };
 
 // ---------------------------------------------------------------------------
-// savedQueries
+// mediaQueries — persisted MediaQueryRecord rows
 // ---------------------------------------------------------------------------
-export const savedQueries = sqliteTable('saved_queries', {
+export const mediaQueries = sqliteTable('media_queries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   contentType: text('contentType').notNull().default('movie'), // 'movie' | 'show'
@@ -117,19 +117,19 @@ export const savedQueries = sqliteTable('saved_queries', {
 });
 
 // ---------------------------------------------------------------------------
-// savedQueryFilterValues
+// mediaQueryFilterValues
 // ---------------------------------------------------------------------------
-export const savedQueryFilterValues = sqliteTable(
-  'saved_query_filter_values',
+export const mediaQueryFilterValues = sqliteTable(
+  'media_query_filter_values',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    savedQueryId: integer('savedQueryId')
+    mediaQueryId: integer('mediaQueryId')
       .notNull()
-      .references(() => savedQueries.id, { onDelete: 'cascade' }),
+      .references(() => mediaQueries.id, { onDelete: 'cascade' }),
     filterKey: text('filterKey').notNull(),
     value: text('value').notNull(),
   },
-  (table) => [index('IDX_sqfv_queryId').on(table.savedQueryId)]
+  (table) => [index('IDX_mqfv_queryId').on(table.mediaQueryId)]
 );
 
 // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ export const automationQuerySources = sqliteTable(
       .references(() => automations.id, { onDelete: 'cascade' }),
     queryId: integer('queryId')
       .notNull()
-      .references(() => savedQueries.id, { onDelete: 'cascade' }),
+      .references(() => mediaQueries.id, { onDelete: 'cascade' }),
     role: text('role').notNull(), // 'include' | 'exclude'
     sortOrder: integer('sortOrder').notNull().default(0),
   },
@@ -179,10 +179,10 @@ export const automationQuerySources = sqliteTable(
 export type AutomationQuerySource = typeof automationQuerySources.$inferSelect;
 export type NewAutomationQuerySource = typeof automationQuerySources.$inferInsert;
 
-export type SavedQuery = typeof savedQueries.$inferSelect;
-export type NewSavedQuery = typeof savedQueries.$inferInsert;
-export type SavedQueryFilterValue = typeof savedQueryFilterValues.$inferSelect;
-export type NewSavedQueryFilterValue = typeof savedQueryFilterValues.$inferInsert;
+export type MediaQueryRow = typeof mediaQueries.$inferSelect;
+export type NewMediaQueryRow = typeof mediaQueries.$inferInsert;
+export type MediaQueryFilterValueRow = typeof mediaQueryFilterValues.$inferSelect;
+export type NewMediaQueryFilterValueRow = typeof mediaQueryFilterValues.$inferInsert;
 
 export type Automation = typeof automations.$inferSelect;
 export type NewAutomation = typeof automations.$inferInsert;
@@ -247,10 +247,8 @@ export const mediaEnrichment = sqliteTable(
     mediaIdentityId: integer('mediaIdentityId')
       .notNull()
       .references(() => mediaIdentity.id, { onDelete: 'cascade' }),
-    tautulliPlayCount: integer('tautulliPlayCount'),
-    tautulliLastPlayed: integer('tautulliLastPlayed'),
-    plexViewCount: integer('plexViewCount'),
-    plexLastViewedAt: integer('plexLastViewedAt'),
+    playCount: integer('playCount'),
+    lastWatchedAt: text('lastWatchedAt'),
     overseerrRequestStatus: integer('overseerrRequestStatus'),
     overseerrHasIssue: bit('overseerrHasIssue'),
     tmdbStatus: text('tmdbStatus'),

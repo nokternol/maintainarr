@@ -1,10 +1,10 @@
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import QueryRow from '../index';
 
-const mockQuery: SavedQuery = {
+const mockQuery: MediaQueryRecord = {
   id: 1,
   name: 'Stale Movies',
   contentType: 'movie',

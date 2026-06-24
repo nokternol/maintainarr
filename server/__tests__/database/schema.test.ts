@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-describe('savedQueries schema', () => {
+describe('mediaQueries schema', () => {
   it('has contentType column (not mediaType, not filters)', async () => {
     const schema = await import('../../database/schema');
-    const cols = Object.keys(schema.savedQueries);
+    const cols = Object.keys(schema.mediaQueries);
     expect(cols).toContain('contentType');
     expect(cols).not.toContain('mediaType');
     expect(cols).not.toContain('filters');
   });
 });
 
-describe('savedQueryFilterValues schema', () => {
-  it('is exported and has savedQueryId, filterKey, value columns', async () => {
+describe('mediaQueryFilterValues schema', () => {
+  it('is exported and has mediaQueryId, filterKey, value columns', async () => {
     const schema = await import('../../database/schema');
-    expect((schema as Record<string, unknown>).savedQueryFilterValues).toBeDefined();
-    const cols = Object.keys((schema as Record<string, unknown>).savedQueryFilterValues as object);
-    expect(cols).toContain('savedQueryId');
+    expect((schema as Record<string, unknown>).mediaQueryFilterValues).toBeDefined();
+    const cols = Object.keys((schema as Record<string, unknown>).mediaQueryFilterValues as object);
+    expect(cols).toContain('mediaQueryId');
     expect(cols).toContain('filterKey');
     expect(cols).toContain('value');
   });

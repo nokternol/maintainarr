@@ -15,8 +15,8 @@ import { requestIdMiddleware } from '@server/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
 import type { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';
 import express, { type Express } from 'express';
@@ -46,7 +46,7 @@ describe('GET /api/automations/runs', () => {
 
     // Seed fixtures
     const providerService = new ProviderSettingsService({ db });
-    const savedQueryService = new SavedQueryService({ db });
+    const mediaQueryService = new MediaQueryService({ db });
     const automationService = new AutomationService({ db });
 
     const provider = await providerService.create({
@@ -54,8 +54,9 @@ describe('GET /api/automations/runs', () => {
       name: 'Test Radarr',
       url: 'http://localhost:7878/api/v3',
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Test Query',
       contentType: 'movie',
       filterValues: [],

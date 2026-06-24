@@ -1,4 +1,15 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { MetadataProviderType } from '../database/schema';
+import { decorate } from '../jobs/enrichment/decorate';
+import { mapTautulliHistory } from '../jobs/enrichment/mappers';
+import { BaseProviderConnection } from './baseProviderConnection';
+import {
+  type ActuatorTask,
+  type EnrichmentResult,
+  type MediaActuator,
+  type MediaEnricher,
+  type MediaItem,
+  modelledRun,
+} from './roles';
 
 export interface TautulliLibraryStat {
   section_id: number;
@@ -34,7 +45,44 @@ interface TautulliResponse<T> {
   };
 }
 
-export class TautulliProvider extends BaseMetadataProvider {
+export class TautulliProvider
+  extends BaseProviderConnection
+  implements MediaEnricher, MediaActuator
+{
+  public readonly actuatorType = MetadataProviderType.TAUTULLI;
+
+  public tasks(): ActuatorTask[] {
+    return [
+      {
+        id: 'deleteWatchHistory',
+        label: 'Delete watch history',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('deleteWatchHistory'),
+      },
+      {
+        id: 'sendNotification',
+        label: 'Send notification',
+        destructive: false,
+        run: modelledRun('sendNotification'),
+      },
+      {
+        id: 'terminateStream',
+        label: 'Terminate active stream',
+        destructive: true,
+        run: modelledRun('terminateStream'),
+      },
+    ];
+  }
+
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+    const fieldsByKey = mapTautulliHistory(await this.getHistory());
+    return {
+      provider: MetadataProviderType.TAUTULLI,
+      items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
+    };
+  }
+
   private get baseParams() {
     return { apikey: this.provider.apiKey || '' };
   }

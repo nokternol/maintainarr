@@ -37,7 +37,7 @@ export const QueryHealthSchema = z
   })
   .strict();
 
-export const SavedQuerySchema = z
+export const MediaQueryRecordSchema = z
   .object({
     id: z.number(),
     name: z.string(),
@@ -103,7 +103,7 @@ export const AutomationSchema = z
 
 // ─── Input schemas (request bodies) ─────────────────────────────────────────
 
-export const CreateSavedQueryInputSchema = z.object({
+export const MediaQueryValueSchema = z.object({
   name: z.string().min(1).max(200),
   contentType: ContentTypeSchema,
   filterValues: z.array(FilterValueEntrySchema),

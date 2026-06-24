@@ -1,6 +1,6 @@
-ALTER TABLE `saved_queries` ADD `mediaType` text NOT NULL DEFAULT 'movie';
+ALTER TABLE `media_queries` ADD `mediaType` text NOT NULL DEFAULT 'movie';
 --> statement-breakpoint
-UPDATE `saved_queries`
+UPDATE `media_queries`
 SET `mediaType` = 'series'
 WHERE `id` IN (
   SELECT `queryId` FROM `automations`

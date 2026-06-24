@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface OmdbRatings {
   Source: string;
@@ -39,7 +39,7 @@ export interface OmdbRating {
   boxOffice?: number;
 }
 
-export class OmdbProvider extends BaseMetadataProvider {
+export class OmdbProvider extends BaseProviderConnection {
   public async getRatings(title: string, year?: number): Promise<OmdbRating> {
     try {
       const params: Record<string, string> = {

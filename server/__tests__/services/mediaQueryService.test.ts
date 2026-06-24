@@ -1,6 +1,6 @@
 import type { AppConfig } from '@server/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { SavedQueryService } from '@server/services/savedQueryService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -18,12 +18,12 @@ const testConfig: AppConfig = {
   SESSION_SECRET: 'test-secret',
 };
 
-describe('SavedQueryService', () => {
-  let service: SavedQueryService;
+describe('MediaQueryService', () => {
+  let service: MediaQueryService;
 
   beforeEach(async () => {
     await initializeDatabase(testConfig);
-    service = new SavedQueryService({ db: getDb() });
+    service = new MediaQueryService({ db: getDb() });
   });
 
   afterEach(async () => {

@@ -1,4 +1,4 @@
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import { summarizeFilters } from '@app/lib/utils/filterSummary';
 import { Clapperboard, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -8,7 +8,7 @@ export default function QueryRow({
   onLoad,
   onDelete,
 }: {
-  query: SavedQuery;
+  query: MediaQueryRecord;
   onLoad: () => void;
   onDelete: () => void;
 }) {

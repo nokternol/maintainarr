@@ -1,4 +1,4 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface TvMazeSearchResult {
   score: number;
@@ -36,7 +36,7 @@ export interface TvMazeRating {
   found: boolean;
 }
 
-export class TvMazeProvider extends BaseMetadataProvider {
+export class TvMazeProvider extends BaseProviderConnection {
   public async search(query: string): Promise<TvMazeSearchResult[]> {
     const response = await this.client.get('search/shows', {
       searchParams: { q: query },

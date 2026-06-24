@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import type { Cradle } from '../../container';
-import { createSavedQueryHandlers } from './savedQueries.handler';
+import { createMediaQueryHandlers } from './mediaQueries.handler';
 
-export function createSavedQueryRoutes(cradle: Cradle) {
+export function createMediaQueryRoutes(cradle: Cradle) {
   const router = Router();
-  const { list, create, delete: del, preview } = createSavedQueryHandlers(cradle);
+  const { list, create, delete: del, preview } = createMediaQueryHandlers(cradle);
 
   router.get('/', ...list);
   router.post('/', ...create);

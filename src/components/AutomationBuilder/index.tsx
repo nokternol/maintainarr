@@ -1,10 +1,10 @@
+import Badge from '@app/components/Badge';
 import QuerySourceList from '@app/components/QuerySourceList';
 import type { QuerySource } from '@app/components/QuerySourceList';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
+import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
-import type { SavedQuery } from '@app/hooks/useSavedQueries';
-import { getEnabledTasksForProvider } from '@app/lib/tasks';
-import type { TaskDef } from '@app/lib/tasks';
+import { useProviderTasks } from '@app/hooks/useProviderTasks';
 import { cn } from '@app/lib/utils/cn';
 import { Cron } from 'croner';
 import cronstrue from 'cronstrue';
@@ -62,10 +62,22 @@ function relativeTime(isoOrDate: string | Date): string {
 
 interface BuilderTask {
   taskId: string;
-  taskDef: TaskDef;
+  label: string;
+  destructive: boolean;
   providerId: number;
   providerName: string;
   providerType: string;
+}
+
+function SettingsLink() {
+  return (
+    <a
+      href="/settings"
+      className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
+    >
+      Settings
+    </a>
+  );
 }
 
 // ─── AutomationBuilder ────────────────────────────────────────────────────────
@@ -76,30 +88,35 @@ export default function AutomationBuilder({
   onCancel,
   isSubmitting,
 }: {
-  queries: SavedQuery[];
+  queries: MediaQueryRecord[];
   onSubmit: (input: CreateAutomationInput) => void;
   onCancel: () => void;
   isSubmitting: boolean;
 }) {
   const { providers } = useProviderSettings();
+  const { availability } = useProviderTasks();
 
+  // The server owns the task catalogue: each configured actuator instance
+  // declares its tasks with a per-instance `enabled` flag. The builder offers
+  // only enabled tasks of active providers, joining the instance's display name
+  // from settings (the availability endpoint is keyed by id + type only).
   const availableTasks = useMemo<BuilderTask[]>(() => {
-    if (!providers) return [];
-    return providers.flatMap((p) => {
-      if (!p.isActive) return [];
-      const enabledIds = Array.isArray(p.settings?.enabledTasks)
-        ? (p.settings!.enabledTasks as string[])
-        : [];
-      const tasks = getEnabledTasksForProvider(p.type, enabledIds);
-      return tasks.map((t) => ({
-        taskId: t.id,
-        taskDef: t,
-        providerId: p.id,
-        providerName: p.name,
-        providerType: p.type,
-      }));
+    if (!providers || !availability) return [];
+    return availability.flatMap((instance) => {
+      const provider = providers.find((p) => p.id === instance.providerId);
+      if (!provider || !provider.isActive) return [];
+      return instance.tasks
+        .filter((t) => t.enabled)
+        .map((t) => ({
+          taskId: t.id,
+          label: t.label,
+          destructive: t.destructive,
+          providerId: provider.id,
+          providerName: provider.name,
+          providerType: provider.type,
+        }));
     });
-  }, [providers]);
+  }, [providers, availability]);
 
   const tasksByProvider = useMemo(() => {
     const groups = new Map<
@@ -215,15 +232,12 @@ export default function AutomationBuilder({
           <p className="text-xs font-medium text-text-secondary mb-1">Task</p>
           <p className="text-xs text-text-muted mb-3">What to do with matched items.</p>
           {tasksByProvider.length === 0 ? (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded bg-surface-bg/60 border border-border text-xs text-text-muted">
-              <Zap size={13} strokeWidth={1.75} className="flex-shrink-0" aria-hidden="true" />
-              <span>
-                No enabled tasks found. Enable tasks on your providers in{' '}
-                <a href="/settings" className="text-primary hover:underline">
-                  Settings
-                </a>
-                .
-              </span>
+            <div className="flex flex-col items-center gap-1.5 px-4 py-6 rounded border border-dashed border-border bg-surface-bg/40 text-center">
+              <Zap size={18} strokeWidth={1.5} className="text-text-muted" aria-hidden="true" />
+              <p className="text-sm font-medium text-text-secondary">No tasks are enabled yet</p>
+              <p className="max-w-xs text-xs text-text-muted">
+                Enable tasks on a connected provider in <SettingsLink /> to use them here.
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -246,8 +260,8 @@ export default function AutomationBuilder({
                         <label
                           key={`${bt.providerId}-${bt.taskId}`}
                           className={cn(
-                            'flex items-start gap-3 px-3.5 py-2.5 cursor-pointer transition-colors',
-                            selected ? 'bg-primary/8' : 'bg-surface-panel hover:bg-surface-bg/40'
+                            'flex items-center gap-3 px-3.5 py-2.5 cursor-pointer transition-colors',
+                            selected ? 'bg-primary/15' : 'bg-surface-panel hover:bg-surface-bg/40'
                           )}
                         >
                           <input
@@ -255,30 +269,28 @@ export default function AutomationBuilder({
                             name="task"
                             checked={selected}
                             onChange={() => setSelectedTask(bt)}
-                            className="mt-0.5 accent-primary flex-shrink-0"
+                            className="flex-shrink-0 text-primary focus:ring-primary focus:ring-offset-0"
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={cn(
-                                  'text-sm font-medium',
-                                  selected ? 'text-primary' : 'text-text-primary'
-                                )}
-                              >
-                                {bt.taskDef.label}
-                              </span>
-                              {bt.taskDef.destructive && (
-                                <TriangleAlert
-                                  size={12}
-                                  strokeWidth={1.75}
-                                  className="text-warning flex-shrink-0"
-                                  aria-label="Destructive action"
-                                />
+                          <div className="flex flex-1 min-w-0 items-center gap-2">
+                            <span
+                              className={cn(
+                                'text-sm font-medium truncate',
+                                selected ? 'text-primary' : 'text-text-primary'
                               )}
-                            </div>
-                            <p className="text-xs text-text-muted mt-0.5">
-                              {bt.taskDef.description}
-                            </p>
+                            >
+                              {bt.label}
+                            </span>
+                            {bt.destructive && (
+                              <Badge
+                                variant="warning"
+                                size="sm"
+                                className="gap-1 shrink-0"
+                                aria-label="Destructive action"
+                              >
+                                <TriangleAlert size={11} strokeWidth={2} aria-hidden="true" />
+                                Destructive
+                              </Badge>
+                            )}
                           </div>
                         </label>
                       );

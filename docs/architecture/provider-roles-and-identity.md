@@ -4,9 +4,11 @@
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 
-**Scope:** this covers the **MediaSource** and **MetadataEnricher** roles as built. The third role a
-system can play — **MediaActuator** (tasks/actions) — and its as-built gap are in
-`docs/architecture/task-execution-and-actuator-gap.md`. The unifying three-role model is
+**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher role is the
+`MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
+`docs/architecture/media-enricher-role.md`.) The third role a
+system can play — **MediaActuator** (tasks/actions) — is the role-owned task model in
+`docs/architecture/actuator-task-ownership.md`. The unifying three-role model is
 `docs/intent/system-roles-and-capabilities.md`.
 
 ## Why this is recorded as architecture, not intent
@@ -38,6 +40,35 @@ calling `getMovies()` / `getSeries()` per instance, concatenating results
 derive from the same two types. Enrichment is then merged *onto* those owner rows
 (`mergeEnrichment(db, normalized, 'RADARR'|'SONARR', …)`).
 
+## The MediaSource read contract
+
+The source role is a typed read contract (`server/providers/mediaSource.ts`), not duck-typed access to
+`getMovies`/`getSeries`:
+
+```ts
+interface MediaSource {
+  getMediaItems(): Promise<MediaItemSet>;          // already normalized
+  idOf(item: NormalizedMovie | NormalizedShow): number | undefined;
+  readonly enrichmentSourceType: 'RADARR' | 'SONARR';
+}
+```
+
+The method names are role-named — a source advertises *media items*, not movies or series. Radarr serves
+movies and Sonarr serves shows, but `MediaQueryEngine.evaluate` never branches on that: it reads
+`source.getMediaItems()`, merges enrichment by `source.enrichmentSourceType`, and projects ids by
+`source.idOf` on a single path. `idOf` is the polymorphic answer that removed the per-variant
+`MediaItemSet` id-projection casts.
+
+`MediaSourceFactory.forContentType(contentType)` (`server/providers/mediaSourceFactory.ts`) resolves a
+`ContentType` to its active owner provider bound as a `MediaSource` — used by `/preview` and browse. The
+executor instead binds a specific provider by `automation.provider.id`, since it needs the actuator role
+on the same instance for `task.run`.
+
+**Browse nuance:** `media.handler.ts` still fetches raw `RadarrMovie[]`/`SonarrSeries[]` via
+`getMovies()`/`getSeries()` and keeps them for `yearRange`, sort, and pagination; it then wraps that
+cached raw list in an inline `MediaSource` (`getMediaItems` maps through `normalize*`, `idOf` projects
+back to the raw `.id`) so the engine evaluates the same list browse paginates.
+
 ## The identity model
 
 `media_identity` (`schema.ts:216`, migration `0009`) is the spine:
@@ -50,9 +81,10 @@ derive from the same two types. Enrichment is then merged *onto* those owner row
   (`'RADARR'`/`'SONARR'`) and `sourceId` is that app's internal id. Cross-provider ids
   (`tmdbId`, `tvdbId`, `imdbId`, `plexRatingKey`, …) are resolved onto the same row.
 - **Enrichment hangs off identities.** `EnrichmentJob.run` selects `FROM media_identity LEFT JOIN
-  media_enrichment` and enriches stale rows from Tautulli/Plex/Overseerr contributions matched by
-  `tmdb:`/`plex:` tokens (`enrichmentJob.ts:55`). An empty identity table means the enrichers are
-  never even queried.
+  media_enrichment`, hydrates each stale row into a canonical `MediaItem`, and hands the batch to every
+  `MediaEnricher` (Tautulli/Plex/Overseerr/TMDB); each matches by the logical key it speaks
+  (`_sourceIds.plex`/`.tmdb`) and `resolvePrecedence` resolves per field at write time. An empty identity
+  table means the enrichers are never even queried. See `docs/architecture/media-enricher-role.md`.
 
 ## Known as-built limitations (the corrective targets)
 

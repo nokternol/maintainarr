@@ -102,7 +102,7 @@ const service = new ExampleService(mockDataSource);
 await expect(service.getById(999)).rejects.toThrow(NotFoundError);
 ```
 
-### External Services (extending `BaseMetadataProvider`)
+### Provider connections (extending `BaseProviderConnection`)
 
 External service tests use **MSW** to mock the network layer — not the `ky` client itself. This tests actual URL construction, headers, and response parsing against a real HTTP shape.
 
@@ -134,9 +134,9 @@ Services registered in Awilix can be:
 
 ## External Service Integrations
 
-Media server integrations (Radarr, Sonarr, Tautulli, Jellyfin, Overseerr, Seerr) extend `BaseMetadataProvider` rather than the standard pattern above.
+Media system integrations (Radarr, Sonarr, Tautulli, Jellyfin, Overseerr, Seerr) live in `server/providers/` and extend `BaseProviderConnection` rather than the standard service pattern above. The capability roles a provider holds are declared by the role interfaces it `implements` (`server/providers/roles.ts`), never by extending this base.
 
-- **`BaseMetadataProvider`** (`server/services/baseMetadataProvider.ts`) — abstract base class providing a pre-configured [`ky`](https://github.com/sindresorhus/ky) instance (Node 24 native `fetch` wrapper). Handles `prefixUrl` construction from the stored URL + optional `urlBase` setting, 10s timeout, JSON `Accept` header, and error logging hooks.
+- **`BaseProviderConnection`** (`server/providers/baseProviderConnection.ts`) — abstract HTTP/config base providing a pre-configured [`ky`](https://github.com/sindresorhus/ky) instance (Node 24 native `fetch` wrapper). Handles `prefixUrl` construction from the stored URL + optional `urlBase` setting, 10s timeout, JSON `Accept` header, and error logging hooks. It is a connection base, not a metadata or role contract.
 - Individual services extend it and call `this.client.get('endpoint').json<T>()` — no auth boilerplate needed per-method.
 - **Auth patterns**:
   - Radarr/Sonarr/Tautulli: API key as `?apikey=` query param

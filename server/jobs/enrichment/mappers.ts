@@ -1,13 +1,18 @@
+import type { MediaItem } from '../../providers/mediaSource';
 import type { OverseerrIssue, OverseerrRequest } from '../../providers/overseerrProvider';
 import type { PlexMediaItem } from '../../providers/plexProvider';
 import type { TautulliHistoryItem } from '../../providers/tautulliProvider';
-import type { EnrichmentContribution } from './types';
+
+const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
 
 /**
- * Pure mapping: Tautulli history rows → one contribution per plexRatingKey,
- * with play count (row count) and the most-recent played_at.
+ * Pure: Tautulli history rows → canonical fields keyed by plexRatingKey — play
+ * count (row count) and the ISO timestamp of the most-recent play. The functional
+ * core of `TautulliProvider.enrich`, ready for `decorate`.
  */
-export function mapTautulliHistory(history: TautulliHistoryItem[]): EnrichmentContribution[] {
+export function mapTautulliHistory(
+  history: TautulliHistoryItem[]
+): Map<string, Partial<MediaItem>> {
   const playCount = new Map<string, number>();
   const lastPlayed = new Map<string, number>();
   for (const item of history) {
@@ -17,48 +22,51 @@ export function mapTautulliHistory(history: TautulliHistoryItem[]): EnrichmentCo
       if (item.played_at > current) lastPlayed.set(item.rating_key, item.played_at);
     }
   }
-  return [...playCount.keys()].map((plexRatingKey) => ({
-    key: { plexRatingKey },
-    values: {
-      tautulliPlayCount: playCount.get(plexRatingKey) ?? 0,
-      tautulliLastPlayed: lastPlayed.get(plexRatingKey) ?? null,
-    },
-  }));
+  const fields = new Map<string, Partial<MediaItem>>();
+  for (const [plexRatingKey, count] of playCount) {
+    const last = lastPlayed.get(plexRatingKey);
+    fields.set(plexRatingKey, {
+      playCount: count,
+      lastWatchedAt: last !== undefined ? toIso(last) : undefined,
+    });
+  }
+  return fields;
 }
 
 /**
- * Pure mapping: Plex library items → one contribution per ratingKey,
- * with view count and last-viewed timestamp.
+ * Pure: Plex library items → canonical fields keyed by ratingKey — view count and
+ * the ISO timestamp it was last viewed.
  */
-export function mapPlexItems(items: PlexMediaItem[]): EnrichmentContribution[] {
-  return items.map((item) => ({
-    key: { plexRatingKey: item.ratingKey },
-    values: {
-      plexViewCount: item.viewCount ?? null,
-      plexLastViewedAt: item.lastViewedAt ?? null,
-    },
-  }));
+export function mapPlexItems(items: PlexMediaItem[]): Map<string, Partial<MediaItem>> {
+  const fields = new Map<string, Partial<MediaItem>>();
+  for (const item of items) {
+    fields.set(item.ratingKey, {
+      playCount: item.viewCount,
+      lastWatchedAt: item.lastViewedAt !== undefined ? toIso(item.lastViewedAt) : undefined,
+    });
+  }
+  return fields;
 }
 
 /**
- * Pure mapping: Overseerr requests + issues → contributions keyed by tmdbId.
- * Emits only positive knowledge — request status where a request exists, and
- * overseerrHasIssue=true where an open issue exists.
+ * Pure: Overseerr requests + issues → canonical fields keyed by tmdbId. Emits only
+ * positive knowledge — request status where a request exists, and an issue flag
+ * where an open issue exists.
  */
 export function mapOverseerr(
   requests: OverseerrRequest[],
   issues: OverseerrIssue[]
-): EnrichmentContribution[] {
-  const byTmdbId = new Map<number, EnrichmentContribution>();
-  const get = (tmdbId: number): EnrichmentContribution => {
-    let c = byTmdbId.get(tmdbId);
-    if (!c) {
-      c = { key: { tmdbId }, values: {} };
-      byTmdbId.set(tmdbId, c);
+): Map<number, Partial<MediaItem>> {
+  const fields = new Map<number, Partial<MediaItem>>();
+  const get = (tmdbId: number): Partial<MediaItem> => {
+    let f = fields.get(tmdbId);
+    if (!f) {
+      f = {};
+      fields.set(tmdbId, f);
     }
-    return c;
+    return f;
   };
-  for (const req of requests) get(req.media.tmdbId).values.overseerrRequestStatus = req.status;
-  for (const issue of issues) get(issue.media.tmdbId).values.overseerrHasIssue = true;
-  return [...byTmdbId.values()];
+  for (const req of requests) get(req.media.tmdbId).overseerrRequestStatus = req.status;
+  for (const issue of issues) get(issue.media.tmdbId).overseerrHasIssue = true;
+  return fields;
 }

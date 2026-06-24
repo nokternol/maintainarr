@@ -62,8 +62,8 @@ describe('ProviderFactory.create', () => {
   });
 
   it('throws an error for an unsupported provider type', () => {
-    const unsupported = makeProvider(MetadataProviderType.TMDB);
-    expect(() => factory.create(unsupported, log)).toThrow('Unsupported provider type: TMDB');
+    const unsupported = makeProvider(MetadataProviderType.SEERR);
+    expect(() => factory.create(unsupported, log)).toThrow('Unsupported provider type: SEERR');
   });
 });
 

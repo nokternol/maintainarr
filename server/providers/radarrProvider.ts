@@ -1,4 +1,10 @@
-import { BaseMetadataProvider } from './baseMetadataProvider';
+import { MetadataProviderType } from '../database/schema';
+import type { NormalizedMovie } from '../domain/movie';
+import type { NormalizedShow } from '../domain/show';
+import { BaseProviderConnection } from './baseProviderConnection';
+import type { MediaItemSet, MediaSource } from './mediaSource';
+import { normalizeRadarrMovie } from './normalizeMedia';
+import { type ActuatorTask, type MediaActuator, modelledRun } from './roles';
 
 export interface RadarrImage {
   coverType: string;
@@ -53,9 +59,61 @@ export interface RadarrTag {
   label: string;
 }
 
-export class RadarrProvider extends BaseMetadataProvider {
+export class RadarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
+  public readonly enrichmentSourceType = 'RADARR' as const;
+  public readonly actuatorType = MetadataProviderType.RADARR;
+
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
+  }
+
+  public async getMediaItems(): Promise<MediaItemSet> {
+    return (await this.getMovies()).map(normalizeRadarrMovie);
+  }
+
+  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
+    return (item as NormalizedMovie)._sourceIds.radarr;
+  }
+
+  public tasks(): ActuatorTask[] {
+    return [
+      {
+        id: 'unmonitorMovie',
+        label: 'Unmonitor movie',
+        destructive: false,
+        affects: 'media',
+        run: (ids) => this.unmonitorMovies(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger download search',
+        destructive: false,
+        run: (ids) => this.triggerMoviesSearch(ids),
+      },
+      {
+        id: 'deleteMovieWithFiles',
+        label: 'Delete movie + files',
+        destructive: true,
+        affects: 'media',
+        run: (ids) => this.deleteMovies(ids),
+      },
+      {
+        id: 'deleteMovieKeepFiles',
+        label: 'Delete movie (keep files)',
+        destructive: true,
+        affects: 'media',
+        run: modelledRun('deleteMovieKeepFiles'),
+      },
+      {
+        id: 'changeQualityProfile',
+        label: 'Change quality profile',
+        destructive: false,
+        affects: 'media',
+        run: modelledRun('changeQualityProfile'),
+      },
+      { id: 'addTag', label: 'Add tag', destructive: false, run: modelledRun('addTag') },
+      { id: 'removeTag', label: 'Remove tag', destructive: false, run: modelledRun('removeTag') },
+    ];
   }
 
   public async getMovies(): Promise<RadarrMovie[]> {
@@ -107,5 +165,17 @@ export class RadarrProvider extends BaseMetadataProvider {
         json: { name: 'MoviesSearch', movieIds },
       })
       .json();
+  }
+
+  public async deleteMovies(movieIds: number[]): Promise<void> {
+    await Promise.all(
+      movieIds.map((id) =>
+        this.client
+          .delete(`movie/${id}`, {
+            searchParams: { ...this.apiParams, deleteFiles: 'true', addImportExclusion: 'false' },
+          })
+          .json()
+      )
+    );
   }
 }

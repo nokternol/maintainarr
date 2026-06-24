@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -17,6 +17,19 @@ const mockConfig: ProviderConfig = {
 };
 
 afterEach(() => server.resetHandlers());
+
+describe('SonarrProvider — MediaSource read role', () => {
+  const provider = new SonarrProvider(mockConfig, logger);
+
+  it('serves normalized media items whose ids project back via idOf', async () => {
+    const items = await provider.getMediaItems();
+
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe('Breaking Bad');
+    expect(provider.idOf(items[0])).toBe(1);
+    expect(provider.enrichmentSourceType).toBe('SONARR');
+  });
+});
 
 describe('SonarrProvider', () => {
   const provider = new SonarrProvider(mockConfig, logger);
@@ -68,6 +81,22 @@ describe('SonarrProvider — task methods', () => {
         { name: 'SeriesSearch', seriesId: 2 },
       ])
     );
+  });
+
+  it('deleteSeries sends DELETE /series/{id} with deleteFiles=true for each ID', async () => {
+    const deleted: Array<{ id: number; deleteFiles: string | null }> = [];
+    server.use(
+      http.delete(`${SONARR_BASE}/series/:id`, ({ params, request }) => {
+        const url = new URL(request.url);
+        deleted.push({ id: Number(params.id), deleteFiles: url.searchParams.get('deleteFiles') });
+        return HttpResponse.json({});
+      })
+    );
+
+    await provider.deleteSeries([7, 8]);
+
+    expect(deleted.map((d) => d.id)).toEqual(expect.arrayContaining([7, 8]));
+    expect(deleted.every((d) => d.deleteFiles === 'true')).toBe(true);
   });
 
   it('unmonitorSeries sends PUT /series/{id} with monitored:false for each ID', async () => {

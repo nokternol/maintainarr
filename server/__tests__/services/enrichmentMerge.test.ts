@@ -45,7 +45,7 @@ describe('mergeEnrichment', () => {
       .returning();
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
-      tautulliPlayCount: 3,
+      playCount: 3,
       overseerrRequestStatus: 2,
       overseerrHasIssue: true,
       tmdbStatus: 'Released',
@@ -74,7 +74,7 @@ describe('mergeEnrichment', () => {
       .returning();
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
-      tautulliPlayCount: null,
+      playCount: null,
       overseerrRequestStatus: null,
       tmdbStatus: null,
       enrichedAt: Math.floor(Date.now() / 1000),

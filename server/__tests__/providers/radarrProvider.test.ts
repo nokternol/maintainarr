@@ -1,5 +1,5 @@
 import { getChildLogger } from '@server/logger';
-import type { ProviderConfig } from '@server/providers/baseMetadataProvider';
+import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { RadarrProvider } from '@server/providers/radarrProvider';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -47,6 +47,19 @@ describe('RadarrProvider', () => {
   });
 });
 
+describe('RadarrProvider — MediaSource read role', () => {
+  const provider = new RadarrProvider(mockConfig, mockLogger);
+
+  it('serves normalized media items whose ids project back via idOf', async () => {
+    const items = await provider.getMediaItems();
+
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe('The Matrix');
+    expect(provider.idOf(items[0])).toBe(1);
+    expect(provider.enrichmentSourceType).toBe('RADARR');
+  });
+});
+
 describe('RadarrProvider — task methods', () => {
   const provider = new RadarrProvider(mockConfig, mockLogger);
 
@@ -62,6 +75,22 @@ describe('RadarrProvider — task methods', () => {
     await provider.triggerMoviesSearch([1, 2, 3]);
 
     expect(commandBody).toEqual({ name: 'MoviesSearch', movieIds: [1, 2, 3] });
+  });
+
+  it('deleteMovies sends DELETE /movie/{id} with deleteFiles=true for each ID', async () => {
+    const deleted: Array<{ id: number; deleteFiles: string | null }> = [];
+    server.use(
+      http.delete(`${RADARR_BASE}/movie/:id`, ({ params, request }) => {
+        const url = new URL(request.url);
+        deleted.push({ id: Number(params.id), deleteFiles: url.searchParams.get('deleteFiles') });
+        return HttpResponse.json({});
+      })
+    );
+
+    await provider.deleteMovies([4, 5]);
+
+    expect(deleted.map((d) => d.id)).toEqual(expect.arrayContaining([4, 5]));
+    expect(deleted.every((d) => d.deleteFiles === 'true')).toBe(true);
   });
 
   it('unmonitorMovies sends PUT /movie/{id} with monitored:false for each ID', async () => {

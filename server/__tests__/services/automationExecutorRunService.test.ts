@@ -12,8 +12,8 @@ import { MetadataProviderType } from '@server/database/schema';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
+import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRadarrMovie } from '../../../tests/factories';
@@ -38,7 +38,7 @@ describe('AutomationExecutor writes to automation_runs', () => {
   let automationService: AutomationService;
   let automationRunService: AutomationRunService;
   let providerSettingsService: ProviderSettingsService;
-  let savedQueryService: SavedQueryService;
+  let mediaQueryService: MediaQueryService;
   let executor: AutomationExecutor;
 
   beforeEach(async () => {
@@ -47,12 +47,12 @@ describe('AutomationExecutor writes to automation_runs', () => {
     automationService = new AutomationService({ db });
     automationRunService = new AutomationRunService({ db });
     providerSettingsService = new ProviderSettingsService({ db });
-    savedQueryService = new SavedQueryService({ db });
+    mediaQueryService = new MediaQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
       automationRunService,
       providerSettingsService,
-      savedQueryService,
+      mediaQueryService,
     });
   });
 
@@ -75,8 +75,9 @@ describe('AutomationExecutor writes to automation_runs', () => {
       name: 'Test Radarr',
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],
@@ -108,8 +109,9 @@ describe('AutomationExecutor writes to automation_runs', () => {
       name: 'Test Radarr',
       url: `${RADARR_URL}/api/v3`,
       apiKey: 'test-key',
+      settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
     });
-    const query = await savedQueryService.create({
+    const query = await mediaQueryService.create({
       name: 'Q',
       contentType: 'movie',
       filterValues: [],

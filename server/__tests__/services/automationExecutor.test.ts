@@ -7,20 +7,20 @@ import {
   mediaEnrichment,
   mediaIdentity,
 } from '@server/database/schema';
+import type { NormalizedMovie } from '@server/domain/movie';
+import type { NormalizedShow } from '@server/domain/show';
+import { getChildLogger } from '@server/logger';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import type { IProviderFactory } from '@server/providers/providerFactory';
-import type { RadarrProvider } from '@server/providers/radarrProvider';
-import type { SonarrProvider } from '@server/providers/sonarrProvider';
-import {
-  AutomationExecutor,
-  RADARR_TASKS,
-  SONARR_TASKS,
-} from '@server/services/automationExecutor';
+import { type RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
+import { SonarrProvider, type SonarrSeries } from '@server/providers/sonarrProvider';
+import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { DomainEventBus, type DomainEvents } from '@server/services/eventBus';
+import { MediaQueryService } from '@server/services/mediaQueryService';
+import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { SavedQueryService } from '@server/services/savedQueryService';
-import type { FilterValueEntry } from '@server/services/savedQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
@@ -42,6 +42,64 @@ const testConfig: AppConfig = {
 const RADARR_URL = 'http://localhost:7878';
 const SONARR_URL = 'http://localhost:8989';
 
+/**
+ * The `MediaSource` + `MediaActuator` roles the executor consumes, over a raw
+ * provider list. `tasks()` binds each runner to `this`, so a mock built by
+ * spreading this helper plus its action methods dispatches through the instance
+ * exactly as a real provider does.
+ */
+const radarrSource = (movies: RadarrMovie[]) => ({
+  getMediaItems: async () => movies.map(normalizeRadarrMovie),
+  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedMovie)._sourceIds.radarr,
+  enrichmentSourceType: 'RADARR' as const,
+  tasks(this: {
+    unmonitorMovies(ids: number[]): Promise<void>;
+    triggerMoviesSearch(ids: number[]): Promise<void>;
+  }) {
+    return [
+      {
+        id: 'unmonitorMovie',
+        label: 'Unmonitor movie',
+        destructive: false,
+        affects: 'media' as const,
+        run: (ids: number[]) => this.unmonitorMovies(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger download search',
+        destructive: false,
+        run: (ids: number[]) => this.triggerMoviesSearch(ids),
+      },
+    ];
+  },
+});
+
+const sonarrSource = (series: SonarrSeries[]) => ({
+  getMediaItems: async () => series.map(normalizeSonarrSeries),
+  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedShow)._sourceIds.sonarr,
+  enrichmentSourceType: 'SONARR' as const,
+  tasks(this: {
+    unmonitorSeries(ids: number[]): Promise<void>;
+    triggerSeriesSearch(ids: number[]): Promise<void>;
+  }) {
+    return [
+      {
+        id: 'unmonitorSeries',
+        label: 'Unmonitor series',
+        destructive: false,
+        affects: 'media' as const,
+        run: (ids: number[]) => this.unmonitorSeries(ids),
+      },
+      {
+        id: 'triggerSearch',
+        label: 'Trigger episode search',
+        destructive: false,
+        run: (ids: number[]) => this.triggerSeriesSearch(ids),
+      },
+    ];
+  },
+});
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 async function seedRadarrProvider(providerSettingsService: ProviderSettingsService) {
@@ -50,6 +108,7 @@ async function seedRadarrProvider(providerSettingsService: ProviderSettingsServi
     name: 'Test Radarr',
     url: `${RADARR_URL}/api/v3`,
     apiKey: 'test-api-key',
+    settings: { enabledTasks: ['unmonitorMovie', 'triggerSearch', 'deleteMovieWithFiles'] },
   });
 }
 
@@ -59,15 +118,16 @@ async function seedSonarrProvider(providerSettingsService: ProviderSettingsServi
     name: 'Test Sonarr',
     url: `${SONARR_URL}/api/v3`,
     apiKey: 'test-api-key',
+    settings: { enabledTasks: ['unmonitorSeries', 'triggerSearch', 'deleteSeriesWithFiles'] },
   });
 }
 
-async function seedSavedQuery(
-  savedQueryService: SavedQueryService,
+async function seedMediaQuery(
+  mediaQueryService: MediaQueryService,
   filterValues: FilterValueEntry[] = [],
   contentType: 'movie' | 'show' = 'movie'
 ) {
-  return savedQueryService.create({ name: 'Test Query', contentType, filterValues });
+  return mediaQueryService.create({ name: 'Test Query', contentType, filterValues });
 }
 
 async function seedAutomation(
@@ -97,7 +157,7 @@ async function seedSystemTask(taskId: string): Promise<number> {
 describe('AutomationExecutor', () => {
   let automationService: AutomationService;
   let providerSettingsService: ProviderSettingsService;
-  let savedQueryService: SavedQueryService;
+  let mediaQueryService: MediaQueryService;
   let executor: AutomationExecutor;
 
   beforeEach(async () => {
@@ -105,12 +165,12 @@ describe('AutomationExecutor', () => {
     const db = getDb();
     automationService = new AutomationService({ db });
     providerSettingsService = new ProviderSettingsService({ db });
-    savedQueryService = new SavedQueryService({ db });
+    mediaQueryService = new MediaQueryService({ db });
     executor = new AutomationExecutor({
       automationService,
       automationRunService: new AutomationRunService({ db }),
       providerSettingsService,
-      savedQueryService,
+      mediaQueryService,
     });
   });
 
@@ -138,7 +198,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run },
       });
       const id = await seedSystemAutomation('system:identity-resolution');
@@ -159,7 +219,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run },
       });
       const id = await seedSystemAutomation('system:enrichment');
@@ -185,7 +245,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run },
       });
       const id = await seedSystemAutomation('system:identity-resolution');
@@ -221,7 +281,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -250,7 +310,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: true }]);
+      const query = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: true }]);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -278,7 +338,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: true }]);
+      const query = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: true }]);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -301,7 +361,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -323,7 +383,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -336,6 +396,41 @@ describe('AutomationExecutor', () => {
       const dto = updated.find((a) => a.id === automation.id)!;
       expect(dto.lastRun).toBeDefined();
       expect(dto.lastRun!.status).toBe('error');
+    });
+  });
+
+  // ─── Enablement enforcement at run time ───────────────────────────────────
+
+  describe('per-instance enablement enforcement', () => {
+    it('records an error run for a task no longer enabled on the instance, without calling the provider', async () => {
+      let movieEndpointHit = false;
+      server.use(
+        http.get(`${RADARR_URL}/api/v3/movie`, () => {
+          movieEndpointHit = true;
+          return HttpResponse.json([createRadarrMovie({ id: 1, title: 'A', hasFile: true })]);
+        }),
+        http.put(`${RADARR_URL}/api/v3/movie/:id`, () =>
+          HttpResponse.json({ id: 1, monitored: false })
+        )
+      );
+
+      const provider = await seedRadarrProvider(providerSettingsService);
+      const query = await seedMediaQuery(mediaQueryService, []);
+      const automation = await seedAutomation(automationService, {
+        queryId: query.id,
+        providerId: provider.id,
+        taskId: 'unmonitorMovie',
+      });
+
+      // The task was enabled at create time; the operator later disables it.
+      await providerSettingsService.update(provider.id, { settings: { enabledTasks: [] } });
+
+      await executor.execute(automation.id);
+
+      const [dto] = await automationService.list();
+      expect(dto.lastRun!.status).toBe('error');
+      expect(dto.lastRun!.error).toMatch(/not enabled/i);
+      expect(movieEndpointHit).toBe(false);
     });
   });
 
@@ -358,7 +453,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -379,7 +474,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -414,7 +509,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [], 'show');
+      const query = await seedMediaQuery(mediaQueryService, [], 'show');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -443,8 +538,8 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(
-        savedQueryService,
+      const query = await seedMediaQuery(
+        mediaQueryService,
         [{ key: 'seriesStatus', value: 'ended' }],
         'show'
       );
@@ -475,8 +570,8 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(
-        savedQueryService,
+      const query = await seedMediaQuery(
+        mediaQueryService,
         [{ key: 'monitored', value: false }],
         'show'
       );
@@ -504,7 +599,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [], 'show');
+      const query = await seedMediaQuery(mediaQueryService, [], 'show');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -538,7 +633,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [], 'show');
+      const query = await seedMediaQuery(mediaQueryService, [], 'show');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -567,7 +662,7 @@ describe('AutomationExecutor', () => {
       );
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [], 'show');
+      const query = await seedMediaQuery(mediaQueryService, [], 'show');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -582,27 +677,6 @@ describe('AutomationExecutor', () => {
     });
   });
 
-  // ─── Unimplemented tasks ──────────────────────────────────────────────────
-
-  describe('unimplemented tasks', () => {
-    it('records an error run for a destructive task that is not yet implemented', async () => {
-      const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
-      const automation = await seedAutomation(automationService, {
-        queryId: query.id,
-        providerId: provider.id,
-        taskId: 'deleteMovieWithFiles',
-      });
-
-      await executor.execute(automation.id);
-
-      const [dto] = await automationService.list();
-      expect(dto.lastRun).toBeDefined();
-      expect(dto.lastRun!.status).toBe('error');
-      expect(dto.lastRun!.error).toMatch(/not yet implemented/i);
-    });
-  });
-
   // ─── Injected factory ────────────────────────────────────────────────────
 
   describe('injected ProviderFactory', () => {
@@ -611,7 +685,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -621,7 +695,7 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -631,7 +705,7 @@ describe('AutomationExecutor', () => {
       const executorWithFactory = new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -646,7 +720,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockSonarr = {
-        getSeries: async () => seriesList,
+        ...sonarrSource(seriesList),
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -656,7 +730,7 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: () => mockSonarr };
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [], 'show');
+      const query = await seedMediaQuery(mediaQueryService, [], 'show');
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -666,7 +740,7 @@ describe('AutomationExecutor', () => {
       const executorWithFactory = new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -683,7 +757,7 @@ describe('AutomationExecutor', () => {
     it('records error when querySources is empty even if a legacy query field is defined', async () => {
       const movies = [createRadarrMovie({ id: 7, title: 'Dune', year: 2021 })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (_: number[]) => {},
       } as unknown as RadarrProvider;
 
@@ -705,7 +779,7 @@ describe('AutomationExecutor', () => {
         recordRun,
       };
 
-      const mockSavedQueryService = {
+      const mockMediaQueryService = {
         getById: async () => ({
           id: 1,
           name: 'Q',
@@ -723,7 +797,7 @@ describe('AutomationExecutor', () => {
           name: 'Radarr',
           url: 'http://localhost:7878',
           apiKey: null,
-          settings: null,
+          settings: { enabledTasks: ['unmonitorMovie'] },
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -732,7 +806,7 @@ describe('AutomationExecutor', () => {
 
       const legacyExecutor = new AutomationExecutor({
         automationService: mockAutomationService as unknown as AutomationService,
-        savedQueryService: mockSavedQueryService as unknown as SavedQueryService,
+        mediaQueryService: mockMediaQueryService as unknown as MediaQueryService,
         providerSettingsService: mockProviderSettingsService as unknown as ProviderSettingsService,
         providerFactory: { create: () => mockRadarr },
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
@@ -758,7 +832,7 @@ describe('AutomationExecutor', () => {
       const unmonitored: number[] = [];
 
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -784,7 +858,7 @@ describe('AutomationExecutor', () => {
         recordRun: vi.fn(),
       };
 
-      const mockSavedQueryService = {
+      const mockMediaQueryService = {
         getById: async () => ({
           id: 1,
           name: 'Q',
@@ -802,7 +876,7 @@ describe('AutomationExecutor', () => {
           name: 'Radarr',
           url: 'http://localhost:7878',
           apiKey: null,
-          settings: null,
+          settings: { enabledTasks: ['unmonitorMovie'] },
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -811,7 +885,7 @@ describe('AutomationExecutor', () => {
 
       const executorWithMocks = new AutomationExecutor({
         automationService: mockAutomationService as unknown as AutomationService,
-        savedQueryService: mockSavedQueryService as unknown as SavedQueryService,
+        mediaQueryService: mockMediaQueryService as unknown as MediaQueryService,
         providerSettingsService: mockProviderSettingsService as unknown as ProviderSettingsService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
@@ -834,20 +908,20 @@ describe('AutomationExecutor', () => {
         createRadarrMovie({ id: 2, title: 'Unwatched Movie', hasFile: true }),
       ];
 
-      // Seed media_identity + enrichment for movie 1 only (tautulliPlayCount=3)
+      // Seed media_identity + enrichment for movie 1 only (playCount=3)
       const [identity] = await db
         .insert(mediaIdentity)
         .values({ sourceType: 'RADARR', sourceId: 1 })
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
-        tautulliPlayCount: 3,
+        playCount: 3,
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -856,7 +930,7 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [{ key: 'watched', value: true }]);
+      const query = await seedMediaQuery(mediaQueryService, [{ key: 'watched', value: true }]);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -867,7 +941,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         db,
       });
@@ -878,7 +952,7 @@ describe('AutomationExecutor', () => {
     });
   });
 
-  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses tautulliLastPlayed from DB', () => {
+  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses lastWatchedAt from DB', () => {
     it('only executes task on movies whose enrichment row shows lastPlayed >= N days ago', async () => {
       const db = getDb();
       const tenDaysAgoUnix = Math.floor((Date.now() - 10 * 86_400_000) / 1000);
@@ -895,7 +969,7 @@ describe('AutomationExecutor', () => {
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id10.id,
-        tautulliLastPlayed: tenDaysAgoUnix,
+        lastWatchedAt: new Date(tenDaysAgoUnix * 1000).toISOString(),
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
@@ -906,13 +980,13 @@ describe('AutomationExecutor', () => {
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id11.id,
-        tautulliLastPlayed: twoDaysAgoUnix,
+        lastWatchedAt: new Date(twoDaysAgoUnix * 1000).toISOString(),
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -921,7 +995,7 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, [
+      const query = await seedMediaQuery(mediaQueryService, [
         { key: 'lastWatchedDaysAgoGte', value: 7 },
       ]);
       const automation = await seedAutomation(automationService, {
@@ -934,7 +1008,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         db,
       });
@@ -956,20 +1030,20 @@ describe('AutomationExecutor', () => {
         createSonarrSeries({ id: 2, title: 'Unwatched Show', status: 'ended' }),
       ];
 
-      // Seed media_identity + enrichment for series 1 only (tautulliPlayCount=5)
+      // Seed media_identity + enrichment for series 1 only (playCount=5)
       const [identity] = await db
         .insert(mediaIdentity)
         .values({ sourceType: 'SONARR', sourceId: 1 })
         .returning();
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
-        tautulliPlayCount: 5,
+        playCount: 5,
         enrichedAt: Math.floor(Date.now() / 1000),
       });
 
       const unmonitored: number[] = [];
       const mockSonarr = {
-        getSeries: async () => seriesList,
+        ...sonarrSource(seriesList),
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -978,8 +1052,8 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: () => mockSonarr };
 
       const provider = await seedSonarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(
-        savedQueryService,
+      const query = await seedMediaQuery(
+        mediaQueryService,
         [{ key: 'watched', value: true }],
         'show'
       );
@@ -993,7 +1067,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         db,
       });
@@ -1020,7 +1094,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1030,11 +1104,11 @@ describe('AutomationExecutor', () => {
 
       const provider = await seedRadarrProvider(providerSettingsService);
       // include: all hasFile:true movies → [1, 3]
-      const includeQuery = await seedSavedQuery(savedQueryService, [
+      const includeQuery = await seedMediaQuery(mediaQueryService, [
         { key: 'hasFile', value: true },
       ]);
       // exclude: qualityProfileId 20 → [3]
-      const excludeQuery = await seedSavedQuery(savedQueryService, [
+      const excludeQuery = await seedMediaQuery(mediaQueryService, [
         { key: 'qualityProfileIds', value: '20' },
       ]);
 
@@ -1052,7 +1126,7 @@ describe('AutomationExecutor', () => {
       const executorWithFactory = new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -1071,7 +1145,7 @@ describe('AutomationExecutor', () => {
 
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1081,9 +1155,9 @@ describe('AutomationExecutor', () => {
 
       const provider = await seedRadarrProvider(providerSettingsService);
       // Query A: only hasFile:true → movies 1 and 3
-      const queryA = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: true }]);
+      const queryA = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: true }]);
       // Query B: only hasFile:false → movie 2
-      const queryB = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: false }]);
+      const queryB = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: false }]);
 
       const automation = await automationService.create({
         name: 'Multi-include',
@@ -1099,7 +1173,7 @@ describe('AutomationExecutor', () => {
       const executorWithFactory = new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -1120,7 +1194,7 @@ describe('AutomationExecutor', () => {
       ];
       const unmonitored: number[] = [];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
@@ -1131,8 +1205,8 @@ describe('AutomationExecutor', () => {
       const mockFactory: IProviderFactory = { create: createSpy };
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const queryA = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: true }]);
-      const queryB = await seedSavedQuery(savedQueryService, [{ key: 'hasFile', value: false }]);
+      const queryA = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: true }]);
+      const queryB = await seedMediaQuery(mediaQueryService, [{ key: 'hasFile', value: false }]);
 
       const automation = await automationService.create({
         name: 'Hoist Test',
@@ -1148,7 +1222,7 @@ describe('AutomationExecutor', () => {
       const hoistExecutor = new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: mockFactory,
         automationRunService: { createRun: vi.fn() } as unknown as AutomationRunService,
       });
@@ -1178,7 +1252,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run },
         eventBus: bus,
       });
@@ -1210,7 +1284,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run: vi.fn(async () => 3) },
         eventBus: bus,
       });
@@ -1245,7 +1319,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: {
           run: vi.fn(async () => {
             throw new Error('runner boom');
@@ -1275,7 +1349,7 @@ describe('AutomationExecutor', () => {
       return new AutomationExecutor({
         automationService,
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         providerFactory: { create: () => provider },
         automationRunService: new AutomationRunService({ db: getDb() }),
         eventBus: bus,
@@ -1289,13 +1363,13 @@ describe('AutomationExecutor', () => {
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: true })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -1313,13 +1387,13 @@ describe('AutomationExecutor', () => {
       bus.on('media:changed', (p) => changes.push(p));
 
       const mockRadarr = {
-        getMovies: async () => [],
+        ...radarrSource([]),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -1338,13 +1412,13 @@ describe('AutomationExecutor', () => {
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: false })];
       const mockRadarr = {
-        getMovies: async () => movies,
+        ...radarrSource(movies),
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
       } as unknown as RadarrProvider;
 
       const provider = await seedRadarrProvider(providerSettingsService);
-      const query = await seedSavedQuery(savedQueryService, []);
+      const query = await seedMediaQuery(mediaQueryService, []);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
         providerId: provider.id,
@@ -1366,7 +1440,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run: vi.fn(async () => 4) },
         eventBus: bus,
       });
@@ -1387,7 +1461,7 @@ describe('AutomationExecutor', () => {
         automationService,
         automationRunService: new AutomationRunService({ db }),
         providerSettingsService,
-        savedQueryService,
+        mediaQueryService,
         systemTaskRunner: { run: vi.fn(async () => 0) },
         eventBus: bus,
       });
@@ -1425,9 +1499,12 @@ describe('AutomationExecutor', () => {
 
 describe('dispatch scope declaration', () => {
   it('declares media scope on unmonitor tasks and none on triggerSearch', () => {
-    expect(RADARR_TASKS.unmonitorMovie.affects).toBe('media');
-    expect(RADARR_TASKS.triggerSearch.affects).toBeUndefined();
-    expect(SONARR_TASKS.unmonitorSeries.affects).toBe('media');
-    expect(SONARR_TASKS.triggerSearch.affects).toBeUndefined();
+    const cfg = { name: 'x', url: 'http://localhost/api/v3', apiKey: 'k', settings: null };
+    const radarr = new RadarrProvider(cfg, getChildLogger('scope-test')).tasks();
+    const sonarr = new SonarrProvider(cfg, getChildLogger('scope-test')).tasks();
+    expect(radarr.find((t) => t.id === 'unmonitorMovie')?.affects).toBe('media');
+    expect(radarr.find((t) => t.id === 'triggerSearch')?.affects).toBeUndefined();
+    expect(sonarr.find((t) => t.id === 'unmonitorSeries')?.affects).toBe('media');
+    expect(sonarr.find((t) => t.id === 'triggerSearch')?.affects).toBeUndefined();
   });
 });

@@ -13,10 +13,10 @@ import { useMediaFilters } from '@app/hooks/useMediaFilters';
 import type { FilterState } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
+import { useMediaQueries } from '@app/hooks/useMediaQueries';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
-import { useSavedQueries } from '@app/hooks/useSavedQueries';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import { NAV_ITEMS } from '@app/lib/navigation';
@@ -846,7 +846,7 @@ export default function MediaPage() {
     [providers]
   );
 
-  const { save: saveQuery } = useSavedQueries();
+  const { save: saveQuery } = useMediaQueries();
   const [density, setDensity] = useCardDensity();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
