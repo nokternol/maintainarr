@@ -107,9 +107,13 @@ acting on media it does not own requires resolving ids across the identity graph
 is therefore out of scope while modelled tasks default disabled; this conflation must be resolved before
 any non-source actuator can run.
 
-## Outstanding (client derivation, not yet built)
+## The client derives, holds no catalogue
 
-The server is the whole task truth. The client has not yet been inverted onto it: `useProviderTasks` still
-reads a type-keyed shape and `src/lib/provider-registry.ts` / `src/lib/tasks.ts` still hold a
-hand-maintained catalogue. Until that catalogue is replaced by a projection of the instance-keyed API it is
-a known stale duplicate, not a second authority. Plan: `docs/in_progress/`.
+The client reads the instance-keyed `GET /api/providers/tasks` and holds no task catalogue of its own.
+`useProviderTasks` (`src/hooks/useProviderTasks.ts`) fetches the instance-keyed availability; the builder
+(`src/components/AutomationBuilder`) offers each configured instance's **enabled** tasks, joining the
+instance name from settings; `ProviderCard` lists an instance's tasks with their server `enabled` state to
+toggle (default off — the old client default-on heuristic is gone). The hand-maintained catalogue is
+retired: `src/lib/tasks.ts` is deleted and the `tasks` surface removed from `src/lib/provider-registry.ts`,
+so nothing client-side declares what tasks exist. The JSON-honest descriptor carries no `description`, so
+the UI does not show one.
