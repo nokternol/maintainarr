@@ -6,13 +6,16 @@ and does that translate into a better implementation plan? Two trials were run: 
 blind (required wide discovery, no attempt to favor either method); the second was deliberately picked to
 sit inside the graph's own flagged strong structure, to give the tool its best plausible shot.
 
-**Bottom line up front:** Across both trials, the docs-only agent matched or beat the graph-assisted agent
-on cost, and matched or beat it on plan quality. In Trial 1, graphify's imprecise concept-matching
-actively misdirected the agent. In Trial 2 — a task deliberately chosen around one of the graph's own
-cleanest, highest-degree nodes — the graph tool worked precisely exactly where it was pointed at an
-unambiguous symbol name, but that one precise result still didn't translate into a cheaper or better plan
-than plain grep/read: the docs-only agent got equivalent (in some ways deeper) understanding at lower
-cost. Neither trial found a case where the graph paid for itself.
+**Bottom line up front:** Trial 1 was decisive against the graph — its imprecise concept-matching actively
+misdirected the agent into a materially worse plan, on comparable cost. Trial 2 — a task deliberately
+chosen around one of the graph's own cleanest, highest-degree nodes, to give the tool its best plausible
+shot — is **not** a repeat of that result: it was close and mixed. The graph tool resolved cleanly, once,
+exactly where it was pointed at an unambiguous symbol name; the graph-assisted plan there is the only one
+that included a required fix the docs-only plan silently dropped after reading it; and the graph-assisted
+agent made fewer tool calls, not more. The docs-only agent was cheaper on tokens/time and more explicit
+about one specific technical uncertainty. Neither trial shows the graph paying for itself decisively, but
+only Trial 1 shows it actively costing the plan quality — Trial 2 is a genuine split, not a second win for
+docs-only, and should not be read as reinforcing Trial 1's result.
 
 ---
 
@@ -122,8 +125,11 @@ easy-to-miss) downstream corruption risk in `enrichmentJob.ts`'s `hydrate()`, pl
 | Judge: efficiency | 6/10 | 8/10 |
 | Judge: plan quality | 7/10 | 9/10 |
 
-The docs-only agent was cheaper on every raw metric this time too, and the judge scored it higher across
-the board.
+Cost was split, not a clean win either way: the docs-only agent used fewer tokens and finished faster, but
+the graph-assisted agent made *fewer tool calls* (21 vs. 22) — the opposite of what an earlier draft of
+this report claimed ("cheaper on every raw metric"), which was simply wrong against the table above and
+is corrected here. The judge's raw scores favored docs-only on all three judged axes, but see the
+correction below before taking that at face value.
 
 ### The judge over-sold Plan D's completeness — caught and corrected
 
@@ -140,10 +146,24 @@ contrast, lists the doc fix as file #3 of its plan and quotes the exact stale li
 The judge appears to have conflated "the log shows it read the file and drew the right conclusion" with
 "the plan includes fixing it" — those are different things, and the gap between them is exactly the kind
 of silent omission this whole experiment exists to catch. Corrected picture: each plan had one distinct
-completeness gap the other didn't (Plan C under-argued the downstream corruption risk in
-`enrichmentJob.ts`, a file it never opened; Plan D opened that exact file but dropped the doc-update
-action item entirely), which pulls completeness closer to a tie than the judge's 7-vs-9 gap suggests. The
-cost and quality gaps in the docs-only agent's favor hold up independently of this correction.
+completeness gap, but they are not equally severe. Plan C under-argued the downstream corruption risk in
+`enrichmentJob.ts` (a file it never opened) — weak coverage of a real point, not an absent one. Plan D
+opened that exact file and covered it well, but then dropped a ground-truth item explicitly called "not
+optional" (the doc fix) **entirely** from its deliverable, despite having read and understood it. On a
+strict "does the plan a reviewer would act on cover every required item" reading, that's arguably a more
+severe miss than Plan C's, which pulls completeness *at least* to a tie and arguably toward Plan C, not
+"closer to a tie in Plan D's favor" as an earlier draft of this section put it.
+
+What holds up independent of this correction is narrower than "cost and quality both favor docs-only": the
+docs-only agent used fewer tokens/time (though not fewer tool calls, see above), and the judge's specific,
+checkable observation on the quality axis — that Plan D explicitly flags the `drizzle` `eq()` union-typing
+question as unresolved with a concrete fallback, while Plan C asserts it "still type-checks" without
+flagging the same risk, despite the brief explicitly asking for exactly this kind of uncertainty — is a
+real, verifiable difference in Plan D's favor on that one point. Trial 2's honest summary is: **close and
+mixed**, not a docs-only win. The graph made fewer tool calls, correctly resolved one exact symbol
+cleanly, and its plan alone included a required fix the docs-only plan silently dropped; the docs-only
+plan was cheaper on tokens/time and more explicit about one specific technical uncertainty. Neither method
+was decisively better here — Trial 1 is where the two methods clearly diverged, not Trial 2.
 
 ### Why: the graph worked precisely, once — and it still didn't win
 
@@ -181,24 +201,31 @@ already found the exact symbol name via grep first, not via the graph.
 
 ## Overall conclusion, across both trials
 
-1. **Cost**: docs-only was cheaper or tied in both trials. The graph tool never produced a net token/time
-   saving in either trial run here.
+1. **Cost**: docs-only never produced a net token/time saving in either trial — it was cheaper on tokens
+   and wall-clock time in both. It was **not** cheaper on every dimension in every trial: in Trial 1, tool
+   calls tied (33/33); in Trial 2, the graph-assisted agent made *fewer* tool calls (21 vs. 22). Don't
+   read "docs-only was cheaper" as "docs-only used fewer actions" — it didn't, consistently.
 2. **"Richer connections"**: only sometimes, and narrowly. The graph produced clean, correct,
    unambiguous answers exactly twice across both trials — both times when queried with an exact,
    unambiguous symbol name (`Cradle`, `mediaIdentity`/`IdentityResolutionJob`) rather than a natural-
    language description or an ambiguous common noun (`genres`, "canonical," "identity linking"). Every
    natural-language or ambiguous-noun query across both trials either returned noise or resolved to the
    wrong node.
-3. **Plan quality**: docs-only was equal-or-better in both trials, including in the trial deliberately
-   designed to favor the graph.
+3. **Plan quality**: **Trial 1 was decisive** — docs-only caught a dynamic-vs-static trap the
+   graph-assisted plan missed entirely, and would have shipped a materially worse design. **Trial 2 was
+   close and mixed**, not a repeat of Trial 1's clean win: the graph-assisted plan is the only one whose
+   deliverable included a required doc fix the docs-only plan silently dropped after reading it; the
+   docs-only plan was more explicit about one specific technical uncertainty (a typing question) and
+   cheaper on tokens/time. Don't generalize Trial 1's decisive result onto Trial 2 — they came out
+   differently, and only Trial 1 supports a strong claim either way.
 
-**What actually predicted plan quality, in both trials, was not which tool was used but where the
-agent's reading effort landed** — specifically, whether it did a full directory/file sweep of the small
-number of directly relevant files rather than relying on a query result to tell it where to look next.
-The docs-only agent did this consistently (reading `useMediaLookups.ts` "on the way" in Trial 1;
-reading `enrichmentJob.ts` in full in Trial 2) without being told to. The graph-assisted agent, both
-times, spent part of its budget on queries that came back empty or wrong before falling back to the same
-grep/read approach — meaning its net advantage, when it had one, was thin and inconsistent.
+**What predicted plan quality in Trial 1, and partially in Trial 2, was not which tool was used but where
+the agent's reading effort landed** — specifically, whether it did a full directory/file sweep of the
+small number of directly relevant files rather than relying on a query result to tell it where to look
+next. The docs-only agent did this consistently (reading `useMediaLookups.ts` "on the way" in Trial 1;
+reading `enrichmentJob.ts` in full in Trial 2) without being told to, and it's the clearer explanation for
+Trial 1's gap. Trial 2 is murkier: both agents did solid, comparable work, and the differences that
+remain are closer to a wash than a demonstration of one method's superiority.
 
 **On task-type dependence**: this doesn't establish that no task ever favors a graph tool. Both trials
 were on the same repo (~500 files, mostly consistent naming, current and accurate docs). The one
