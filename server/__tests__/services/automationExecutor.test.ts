@@ -952,7 +952,7 @@ describe('AutomationExecutor', () => {
     });
   });
 
-  describe('Tier 2 enrichment — lastWatchedDaysAgoGte filter uses lastWatchedAt from DB', () => {
+  describe('Tier 2 enrichment — lastWatchedDaysAgo filter uses lastWatchedAt from DB', () => {
     it('only executes task on movies whose enrichment row shows lastPlayed >= N days ago', async () => {
       const db = getDb();
       const tenDaysAgoUnix = Math.floor((Date.now() - 10 * 86_400_000) / 1000);
@@ -996,7 +996,7 @@ describe('AutomationExecutor', () => {
 
       const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, [
-        { key: 'lastWatchedDaysAgoGte', value: 7 },
+        { key: 'lastWatchedDaysAgo', value: { min: 7 } },
       ]);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,

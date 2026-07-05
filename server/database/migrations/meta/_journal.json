@@ -92,6 +92,13 @@
       "when": 1780928000000,
       "tag": "0012_media_enrichment_canonical",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1783420000000,
+      "tag": "0013_media_rule_range_collapse",
+      "breakpoints": true
     }
   ]
 }

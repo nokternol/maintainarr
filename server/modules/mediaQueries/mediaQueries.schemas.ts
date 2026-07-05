@@ -1,3 +1,4 @@
+import { FilterValueEntrySchema } from '@app/lib/api/schemas';
 import { z } from 'zod';
 
 const idParams = z.object({
@@ -7,17 +8,12 @@ const idParams = z.object({
     .transform((v) => Number.parseInt(v, 10)),
 });
 
-const filterValueEntry = z.object({
-  key: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()]),
-});
-
 export const mediaQuerySchemas = {
   create: {
     body: z.object({
       name: z.string().min(1).max(200),
       contentType: z.enum(['movie', 'show']),
-      filterValues: z.array(filterValueEntry),
+      filterValues: z.array(FilterValueEntrySchema),
     }),
   },
   delete: {

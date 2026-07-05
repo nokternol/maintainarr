@@ -2,7 +2,7 @@ import type { DrizzleDb } from '../database';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
 import type { MediaItemSet, MediaSource } from '../providers/mediaSource';
-import { getFilterDef } from '../utils/filterRegistry';
+import { getRule } from '../utils/filterRegistry';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
 import type { FilterValueEntry } from './mediaQueryService';
@@ -47,9 +47,9 @@ export function matchItems<T extends NormalizedMovie | NormalizedShow>(
 ): T[] {
   return items.filter((item) =>
     filterValues.every(({ key, value }) => {
-      const def = getFilterDef(key, contentType);
-      if (!def) return true;
-      return def.apply(item, value);
+      const rule = getRule(key, contentType);
+      if (!rule) return true;
+      return rule.predicate(item, value);
     })
   );
 }

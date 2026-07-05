@@ -8,7 +8,7 @@ import {
 } from '../database/schema';
 import { NotFoundError, ValidationError } from '../errors';
 import type { ContentType, FilterValue } from '../utils/filterRegistry';
-import { FILTER_REGISTRY, getFilterDef } from '../utils/filterRegistry';
+import { getRule } from '../utils/filterRegistry';
 
 export type { ContentType, FilterValue };
 
@@ -56,7 +56,16 @@ export interface MediaQueryRecord {
 function coerceValue(raw: string, dataType: string): FilterValue {
   if (dataType === 'boolean') return raw === 'true' || raw === '1';
   if (dataType === 'number') return Number(raw);
+  if (dataType === 'range') return JSON.parse(raw) as FilterValue;
   return raw;
+}
+
+function serializeValue(value: FilterValue): string {
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+}
+
+function isRangeShaped(value: FilterValue): boolean {
+  return typeof value === 'object' && value !== null;
 }
 
 function computeHealth(
@@ -72,15 +81,15 @@ function computeHealth(
   const providerMap = new Map<MetadataProviderType, { required: boolean; keys: string[] }>();
 
   for (const { key } of filterEntries) {
-    const def = getFilterDef(key, contentType);
-    if (!def) continue;
-    for (const pt of def.sourceProviders) {
+    const rule = getRule(key, contentType);
+    if (!rule) continue;
+    for (const pt of rule.sourceProviders) {
       const existing = providerMap.get(pt);
       if (existing) {
         existing.keys.push(key);
-        if (def.required) existing.required = true;
+        if (rule.required) existing.required = true;
       } else {
-        providerMap.set(pt, { required: def.required, keys: [key] });
+        providerMap.set(pt, { required: rule.required, keys: [key] });
       }
     }
   }
@@ -121,11 +130,16 @@ export class MediaQueryService {
       .where(eq(metadataProviders.isActive, true));
     const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
 
+    const contentTypeByQueryId = new Map<number, ContentType>(
+      rows.map((row) => [row.id, row.contentType as ContentType])
+    );
+
     // Group filter value rows by mediaQueryId
     const fvByQueryId = new Map<number, FilterValueEntry[]>();
     for (const fv of fvRows) {
-      const def = FILTER_REGISTRY.find((d) => d.key === fv.filterKey);
-      const dataType = def?.dataType ?? 'string';
+      const contentType = contentTypeByQueryId.get(fv.mediaQueryId);
+      const rule = contentType ? getRule(fv.filterKey, contentType) : undefined;
+      const dataType = rule?.dataType ?? 'string';
       const entry: FilterValueEntry = { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
       const arr = fvByQueryId.get(fv.mediaQueryId) ?? [];
       arr.push(entry);
@@ -151,13 +165,23 @@ export class MediaQueryService {
   }
 
   async create(draft: MediaQueryValue): Promise<MediaQueryRecord> {
-    // Validate all filter keys exist in the registry for this contentType
-    for (const { key } of draft.filterValues) {
-      const def = getFilterDef(key, draft.contentType);
-      if (!def) {
+    // Validate all filter keys exist in the registry for this contentType, and that
+    // each value's shape matches the rule's dataType (a bare scalar destructures to
+    // `{ min: undefined, max: undefined }` for a range rule, so `inRange` would
+    // silently match every item instead of rejecting or filtering correctly).
+    for (const { key, value } of draft.filterValues) {
+      const rule = getRule(key, draft.contentType);
+      if (!rule) {
         throw new ValidationError(
           `Filter key '${key}' is not valid for contentType '${draft.contentType}'`
         );
+      }
+      const rangeShaped = isRangeShaped(value);
+      if (rule.dataType === 'range' && !rangeShaped) {
+        throw new ValidationError(`Filter key '${key}' expects a { min?, max? } range value`);
+      }
+      if (rule.dataType !== 'range' && rangeShaped) {
+        throw new ValidationError(`Filter key '${key}' does not accept a range value`);
       }
     }
 
@@ -171,7 +195,7 @@ export class MediaQueryService {
         draft.filterValues.map(({ key, value }) => ({
           mediaQueryId: row.id,
           filterKey: key,
-          value: String(value),
+          value: serializeValue(value),
         }))
       );
     }
@@ -210,8 +234,8 @@ export class MediaQueryService {
     const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
 
     const filterValues: FilterValueEntry[] = fvRows.map((fv) => {
-      const def = FILTER_REGISTRY.find((d) => d.key === fv.filterKey);
-      const dataType = def?.dataType ?? 'string';
+      const rule = getRule(fv.filterKey, row.contentType as ContentType);
+      const dataType = rule?.dataType ?? 'string';
       return { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
     });
 

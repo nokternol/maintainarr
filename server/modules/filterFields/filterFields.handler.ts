@@ -1,31 +1,40 @@
-import type { Request, Response } from 'express';
-import { FILTER_REGISTRY } from '../../utils/filterRegistry';
-import type { ContentType } from '../../utils/filterRegistry';
+import type { NextFunction, Request, Response } from 'express';
+import type { ProviderSettingsService } from '../../services/providerSettingsService';
+import { MEDIA_RULES, toDescriptor } from '../../utils/filterRegistry';
+import type { ContentType, MediaRuleDescriptor } from '../../utils/filterRegistry';
 
-export function getFilterFields(req: Request, res: Response): void {
-  const { contentType } = req.query;
+interface FilterFieldsCradle {
+  providerSettingsService: ProviderSettingsService;
+}
 
-  if (contentType !== undefined) {
-    if (contentType !== 'movie' && contentType !== 'show') {
-      res.status(400).json({ error: `Invalid contentType: must be 'movie' or 'show'` });
-      return;
-    }
-    const ct = contentType as ContentType;
-    const fields = FILTER_REGISTRY.filter((d) => d.contentTypes.includes(ct)).map((d) => ({
-      key: d.key,
-      label: d.label,
-      dataType: d.dataType,
-      contentTypes: d.contentTypes,
-    }));
-    res.json(fields);
-    return;
+export function createFilterFieldsHandlers(cradle: FilterFieldsCradle) {
+  const { providerSettingsService } = cradle;
+
+  async function gatedDescriptors(contentType?: ContentType): Promise<MediaRuleDescriptor[]> {
+    const providers = await providerSettingsService.list();
+    const configuredTypes = new Set(providers.filter((p) => p.isActive).map((p) => p.type));
+
+    return MEDIA_RULES.filter(
+      (rule) => contentType === undefined || rule.contentTypes.includes(contentType)
+    )
+      .filter((rule) => rule.sourceProviders.some((sp) => configuredTypes.has(sp)))
+      .map(toDescriptor);
   }
 
-  const fields = FILTER_REGISTRY.map((d) => ({
-    key: d.key,
-    label: d.label,
-    dataType: d.dataType,
-    contentTypes: d.contentTypes,
-  }));
-  res.json(fields);
+  return {
+    async getFilterFields(req: Request, res: Response, next: NextFunction): Promise<void> {
+      const { contentType } = req.query;
+
+      if (contentType !== undefined && contentType !== 'movie' && contentType !== 'show') {
+        res.status(400).json({ error: `Invalid contentType: must be 'movie' or 'show'` });
+        return;
+      }
+
+      try {
+        res.json(await gatedDescriptors(contentType as ContentType | undefined));
+      } catch (err) {
+        next(err);
+      }
+    },
+  };
 }

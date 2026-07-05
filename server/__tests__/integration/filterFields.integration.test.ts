@@ -1,7 +1,9 @@
 import type { AppConfig } from '@server/config';
 import { buildContainer } from '@server/container';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
+import { MetadataProviderType } from '@server/database/schema';
 import { createApiRouter } from '@server/modules';
+import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import express from 'express';
 import supertest from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -21,10 +23,12 @@ const testConfig: AppConfig = {
 
 describe('GET /api/filter-fields', () => {
   let app: express.Express;
+  let providerSettingsService: ProviderSettingsService;
 
   beforeEach(async () => {
     await initializeDatabase(testConfig);
     const container = buildContainer({ config: testConfig, db: getDb() });
+    providerSettingsService = container.cradle.providerSettingsService;
     app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
@@ -38,14 +42,58 @@ describe('GET /api/filter-fields', () => {
     await _resetDatabase();
   });
 
-  it('returns 200 with all filter fields when no contentType given', async () => {
+  it('returns 200 with an empty array when no providers are configured', async () => {
     const res = await supertest(app).get('/api/filter-fields');
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body).toEqual([]);
+  });
+
+  it('returns only rules gated by a configured, active provider', async () => {
+    await providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Test Radarr',
+      url: 'http://localhost:7878/api/v3',
+      apiKey: 'test-api-key',
+    });
+
+    const res = await supertest(app).get('/api/filter-fields');
+    expect(res.status).toBe(200);
+    const keys: string[] = res.body.map((f: { key: string }) => f.key);
+    // Radarr-sourced rule present
+    expect(keys).toContain('title');
+    expect(keys).toContain('tagIds');
+    // Sonarr-only rule absent — no Sonarr provider configured
+    expect(keys).not.toContain('monitored');
+  });
+
+  it('excludes rules whose only provider is configured but inactive', async () => {
+    await providerSettingsService.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Inactive Sonarr',
+      url: 'http://localhost:8989/api/v3',
+      apiKey: 'test-api-key',
+      isActive: false,
+    });
+
+    const res = await supertest(app).get('/api/filter-fields');
+    const keys: string[] = res.body.map((f: { key: string }) => f.key);
+    expect(keys).not.toContain('monitored');
   });
 
   it('returns only movie-compatible fields when contentType=movie', async () => {
+    await providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Test Radarr',
+      url: 'http://localhost:7878/api/v3',
+      apiKey: 'test-api-key',
+    });
+    await providerSettingsService.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Test Sonarr',
+      url: 'http://localhost:8989/api/v3',
+      apiKey: 'test-api-key',
+    });
+
     const res = await supertest(app).get('/api/filter-fields?contentType=movie');
     expect(res.status).toBe(200);
     const keys: string[] = res.body.map((f: { key: string }) => f.key);
@@ -53,13 +101,26 @@ describe('GET /api/filter-fields', () => {
     expect(keys).toContain('title');
     expect(keys).toContain('hasFile');
     // movie-only present
-    expect(keys).toContain('imdbRatingGte');
+    expect(keys).toContain('imdbRating');
     // show-only absent
     expect(keys).not.toContain('monitored');
     expect(keys).not.toContain('seriesStatus');
   });
 
   it('returns only show-compatible fields when contentType=show', async () => {
+    await providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Test Radarr',
+      url: 'http://localhost:7878/api/v3',
+      apiKey: 'test-api-key',
+    });
+    await providerSettingsService.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Test Sonarr',
+      url: 'http://localhost:8989/api/v3',
+      apiKey: 'test-api-key',
+    });
+
     const res = await supertest(app).get('/api/filter-fields?contentType=show');
     expect(res.status).toBe(200);
     const keys: string[] = res.body.map((f: { key: string }) => f.key);
@@ -70,17 +131,29 @@ describe('GET /api/filter-fields', () => {
     expect(keys).toContain('monitored');
     expect(keys).toContain('seriesStatus');
     // movie-only absent
-    expect(keys).not.toContain('imdbRatingGte');
+    expect(keys).not.toContain('imdbRating');
   });
 
-  it('each field has key, label, dataType, and contentTypes', async () => {
+  it('each field is a full MediaRuleDescriptor', async () => {
+    await providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Test Radarr',
+      url: 'http://localhost:7878/api/v3',
+      apiKey: 'test-api-key',
+    });
+
     const res = await supertest(app).get('/api/filter-fields?contentType=movie');
     expect(res.status).toBe(200);
     for (const field of res.body) {
       expect(field.key).toBeTruthy();
       expect(field.label).toBeTruthy();
-      expect(['boolean', 'number', 'string', 'csv-ids', 'csv-strings']).toContain(field.dataType);
+      expect(['boolean', 'number', 'string', 'csv-ids', 'csv-strings', 'range']).toContain(
+        field.dataType
+      );
       expect(Array.isArray(field.contentTypes)).toBe(true);
+      expect(Array.isArray(field.sourceProviders)).toBe(true);
+      expect(typeof field.required).toBe('boolean');
+      expect(field.predicate).toBeUndefined();
     }
   });
 

@@ -1,8 +1,17 @@
 # Phase 4 — Client derives the rule vocabulary (server-first)
 
-**Status:** IN PROGRESS — supersedes the earlier "client query alignment" framing. TDD (server naming +
-projection, then client hooks) + `impeccable` (filter view visual). **Depends on:** Phase 1 (engine +
-honest `/preview`).
+**Status:** IN PROGRESS — Stage 1 (server) shipped 2026-07-05, Stage 2 (client) not started. Supersedes the
+earlier "client query alignment" framing. TDD (server naming + projection, then client hooks) +
+`impeccable` (filter view visual). **Depends on:** Phase 1 (engine + honest `/preview`).
+
+**Stage 1 is done; this is the handoff to whoever picks up Stage 2 next.** Read the "Stage 2" section below
+for what's left, and `docs/architecture/fracture-ledger.md`'s "Filter/rule vocabulary" entry for the as-built
+state Stage 1 left behind (what changed, what's still Open, and why). One constraint carries real urgency:
+**Stage 1 alone breaks saving any query with a bounded filter** — `useMediaQueries.ts`'s
+`KEY_RENAMES`/`toFilterValues()` still emit the 8 pre-collapse keys (`yearMin`, `imdbRatingGte`, etc.) as
+bare scalars, and the server no longer resolves them (`MediaQueryService.create()` now throws
+`ValidationError` for any of the eight). Do not consider Stage 1 shippable to production on its own; Stage 2
+needs to land before or together with it, not sometime after.
 
 ## The one thing not to get wrong
 
@@ -119,24 +128,34 @@ the registry): both bounds come from the same provider, so a range is never half
 stays coherent. Cost: `FilterValue` widens from `string | number | boolean` to include the range object,
 and persisted `filterValues` carry a structured value for range rules (coerced by `dataType` as today).
 
-## Stage 1 — the server names the rule and projects its descriptor
+## Stage 1 — the server names the rule and projects its descriptor (DONE — shipped 2026-07-05)
 
-- Rename `FilterDefinition → MediaRule`, `apply → predicate` (typed `Predicate`), `FILTER_REGISTRY →
-  MEDIA_RULES`, `getFilterDef → getRule`. Behaviour-preserving — guarded by the existing engine /
-  `matchItems` / `combinationEvaluator` tests staying green.
-- Add `MediaRuleDescriptor` = `MediaRule` minus `predicate`, and a projection that strips the predicate.
-- Collapse each `*Gte`/`*Lte` pair into one `dataType: 'range'` rule with a `{ min?, max? }` value and a
-  single predicate (see "Range rules"); widen `FilterValue` to include the range object. This is a
-  behaviour-preserving remodel guarded by the engine/`matchItems` tests.
-- Extend the existing `GET /api/filter-fields` endpoint (`filterFields.handler.ts` /
-  `filterFields.routes.ts`, shipped Phase 2c, currently unconsumed by any client) **in place** — do not add
-  a parallel endpoint. Widen its projection to full `MediaRuleDescriptor`s (`sourceProviders`, `required`)
-  and provider-gate it, mirroring `GET /api/providers/tasks`: return only the descriptors whose
-  `sourceProviders` intersect the configured providers (needs `providerSettingsService`). This becomes the
-  single source the client reads. Update `filterFields.integration.test.ts`'s key-based assertions for the
-  range collapse and add gating/`sourceProviders` coverage.
-- Delete the server-side rename translator: `MOVIE_PARAM_TO_KEY`/`SERIES_PARAM_TO_KEY` and `toFilterValues`
-  (`media.handler.ts`) collapse to identity once the client emits registry keys (Stage 2).
+- ✅ Renamed `FilterDefinition → MediaRule`, `apply → predicate` (typed `Predicate`), `FILTER_REGISTRY →
+  MEDIA_RULES`, `getFilterDef → getRule` in `server/utils/filterRegistry.ts`. Behaviour-preserving —
+  engine/`matchItems`/`combinationEvaluator` tests stayed green throughout.
+- ✅ Added `MediaRuleDescriptor` = `MediaRule` minus `predicate`, and `toDescriptor()` projecting it.
+- ✅ Collapsed each `*Gte`/`*Lte` pair (plus `yearMin`/`yearMax`) into one `dataType: 'range'` rule with a
+  `{ min?, max? }` value and a single predicate — 34 entries became 26. `FilterValue` widened to include the
+  range object, both in the server registry and the shared wire schema (`src/lib/api/schemas.ts`).
+  Migration `0013_media_rule_range_collapse.sql` rewrites already-persisted `media_query_filter_values` rows
+  from the eight old keys to their collapsed range keys, with its own regression suite
+  (`server/__tests__/database/mediaRuleRangeCollapse.test.ts`) — this is the equivalent of what
+  `0007_query_model_rewrite.sql` did for the earlier rename, and was *not* in the original plan; it was
+  added after review flagged the gap (see the fracture ledger for why it mattered).
+  `MediaQueryService.create()` also now validates a filter value's shape against its rule's `dataType`
+  (a bare scalar previously destructured to `{ min: undefined, max: undefined }` for a range rule and
+  silently matched every item).
+- ✅ Extended the existing `GET /api/filter-fields` endpoint (`filterFields.handler.ts` /
+  `filterFields.routes.ts`) **in place** — no parallel endpoint added. Now `createFilterFieldsHandlers(cradle)`,
+  projects full `MediaRuleDescriptor`s (`sourceProviders`, `required`), and provider-gates its output the
+  same way `GET /api/providers/tasks` gates actuator tasks. `filterFields.integration.test.ts` rewritten for
+  the range-collapsed keys plus gating coverage. This is the single source Stage 2's `useMediaRules` reads
+  from — it has **zero client consumers today**, that wiring is Stage 2's job.
+- **Deferred to Stage 2, not done:** `MOVIE_PARAM_TO_KEY`/`SERIES_PARAM_TO_KEY` and `toFilterValues`
+  (`media.handler.ts`) are still live — Stage 1 only updated their internals (each mapping entry now carries
+  an optional `bound: 'min' | 'max'`, merging paired Gte/Lte URL params into one range value) so the browse
+  path keeps working against the collapsed registry keys. Deleting the translator entirely still needs the
+  client to emit registry keys directly, per Stage 2 below.
 
 ## Accepted edge case — the engine does not enforce provider-gating
 
