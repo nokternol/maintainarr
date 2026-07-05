@@ -121,3 +121,20 @@ except Exception as exc:
 " >> "$_GRAPHIFY_LOG" 2>&1 < /dev/null &
 disown 2>/dev/null || true
 # graphify-hook-end
+
+# plan-with-graph-linker-start
+# Re-applies deliberate ref:label:/ref:path: doc-to-code edges for any markdown
+# doc this commit touched. Independent of the graphify block above: doesn't
+# need graphify's own rebuild to finish first (it only reads the *code* side
+# of graph.json, which a doc-only commit doesn't change), and doesn't need the
+# graphify package at all (pure stdlib). Owned by plan-with-graph, not by
+# graphify's hook installer - safe to keep here even if graphify's own hook is
+# ever reinstalled/uninstalled.
+_LINKER=".agent/skills/plan-with-graph/link_doc_to_code.py"
+if [ -f "$_LINKER" ] && [ -f "graphify-out/graph.json" ]; then
+    echo "$CHANGED" | grep '\.md$' | grep -v '^docs/experiments/' | while IFS= read -r _doc; do
+        [ -f "$_doc" ] || continue
+        python3 "$_LINKER" "$_doc" --apply 2>&1 | sed "s|^|[plan-with-graph linker] |"
+    done
+fi
+# plan-with-graph-linker-end

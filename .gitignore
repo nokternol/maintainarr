@@ -73,3 +73,9 @@ build
 .playwright-cli
 graphify-out/cost.json
 graphify-out/
+
+# Scratch/throwaway experiment write-ups - never tracked, and already excluded from the
+# graphify corpus via .graphifyignore (belt and suspenders: this stops it reaching git at
+# all, .graphifyignore stops it reaching the graph even if it somehow gets committed anyway).
+docs/experiments/*
+!docs/experiments/README.md
