@@ -12,7 +12,12 @@ export const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
 
 export const ContentTypeSchema = z.enum(['movie', 'show']);
 
-export const FilterValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+export const FilterValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.object({ min: z.number().optional(), max: z.number().optional() }).strict(),
+]);
 
 export const FilterValueEntrySchema = z
   .object({

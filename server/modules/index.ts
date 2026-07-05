@@ -39,7 +39,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/settings', createSettingsRoutes(cradle, invalidateMediaCaches));
   router.use('/media', createMediaRoutes(cradle, mediaHandlers));
   router.use('/search', createSearchRoutes(cradle));
-  router.use('/filter-fields', createFilterFieldsRoutes());
+  router.use('/filter-fields', createFilterFieldsRoutes(cradle));
   const mediaQueryRoutes = createMediaQueryRoutes(cradle);
   router.use('/media-queries', mediaQueryRoutes);
   // Back-compat alias — the client still calls /saved-queries until the Phase 4

@@ -58,7 +58,7 @@ describe('MediaQueryService', () => {
       contentType: 'movie',
       filterValues: [
         { key: 'hasFile', value: true },
-        { key: 'yearMin', value: 2010 },
+        { key: 'year', value: { min: 2010 } },
         { key: 'title', value: 'Inception' },
       ],
     });
@@ -67,8 +67,8 @@ describe('MediaQueryService', () => {
     expect(dto.filterValues).toHaveLength(3);
     const hasFile = dto.filterValues.find((f) => f.key === 'hasFile');
     expect(hasFile?.value).toBe(true);
-    const yearMin = dto.filterValues.find((f) => f.key === 'yearMin');
-    expect(yearMin?.value).toBe(2010);
+    const year = dto.filterValues.find((f) => f.key === 'year');
+    expect(year?.value).toEqual({ min: 2010 });
     const title = dto.filterValues.find((f) => f.key === 'title');
     expect(title?.value).toBe('Inception');
   });
@@ -106,14 +106,14 @@ describe('MediaQueryService', () => {
     const dto = await service.create({
       name: 'My Query',
       contentType: 'movie',
-      filterValues: [{ key: 'yearMin', value: 2015 }],
+      filterValues: [{ key: 'year', value: { min: 2015 } }],
     });
 
     expect(dto.id).toBeGreaterThan(0);
     expect(dto.name).toBe('My Query');
     expect(dto.contentType).toBe('movie');
     expect(dto.filterValues).toHaveLength(1);
-    expect(dto.filterValues[0]).toEqual({ key: 'yearMin', value: 2015 });
+    expect(dto.filterValues[0]).toEqual({ key: 'year', value: { min: 2015 } });
     expect(dto.createdAt).toMatch(ISO_REGEX);
   });
 
@@ -144,6 +144,26 @@ describe('MediaQueryService', () => {
         filterValues: [{ key: 'seriesStatus', value: 'ended' }],
       })
     ).rejects.toThrow('seriesStatus');
+  });
+
+  it('throws ValidationError when a range rule is given a bare scalar value', async () => {
+    await expect(
+      service.create({
+        name: 'Bad range',
+        contentType: 'movie',
+        filterValues: [{ key: 'imdbRating', value: 8 }],
+      })
+    ).rejects.toThrow('imdbRating');
+  });
+
+  it('throws ValidationError when a non-range rule is given a range-shaped value', async () => {
+    await expect(
+      service.create({
+        name: 'Unexpected range',
+        contentType: 'movie',
+        filterValues: [{ key: 'hasFile', value: { min: 1 } }],
+      })
+    ).rejects.toThrow('hasFile');
   });
 
   // ── delete ────────────────────────────────────────────────────────────────

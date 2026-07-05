@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { getFilterFields } from './filterFields.handler';
+import type { Cradle } from '../../container';
+import { createFilterFieldsHandlers } from './filterFields.handler';
 
-export function createFilterFieldsRoutes() {
+export function createFilterFieldsRoutes(cradle: Cradle) {
   const router = Router();
+  const { getFilterFields } = createFilterFieldsHandlers(cradle);
   router.get('/', getFilterFields);
   return router;
 }

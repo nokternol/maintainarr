@@ -6,18 +6,31 @@ export type { NormalizedMovie } from '../domain/movie';
 export type { NormalizedShow } from '../domain/show';
 
 export type ContentType = 'movie' | 'show';
-export type FilterValue = string | number | boolean;
+export type RangeValue = { min?: number; max?: number };
+export type FilterValue = string | number | boolean | RangeValue;
 
-export interface FilterDefinition<
+export type Predicate<
+  T extends NormalizedMovie | NormalizedShow = NormalizedMovie | NormalizedShow,
+> = (item: T, value: FilterValue) => boolean;
+
+export interface MediaRule<
   T extends NormalizedMovie | NormalizedShow = NormalizedMovie | NormalizedShow,
 > {
   key: string;
   label: string;
   contentTypes: ContentType[];
-  dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings';
+  dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings' | 'range';
   sourceProviders: MetadataProviderType[];
   required: boolean;
-  apply: (item: T, value: FilterValue) => boolean;
+  predicate: Predicate<T>;
+}
+
+/** `MediaRule`'s JSON-honest transport projection — no `predicate`. */
+export type MediaRuleDescriptor = Omit<MediaRule, 'predicate'>;
+
+export function toDescriptor(rule: MediaRule): MediaRuleDescriptor {
+  const { predicate: _predicate, ...descriptor } = rule;
+  return descriptor;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -46,9 +59,17 @@ function asBool(value: FilterValue): boolean {
   return String(value).toLowerCase() === 'true';
 }
 
+/** Tests `actual` against a `{ min?, max? }` range value — either bound may be omitted. */
+function inRange(actual: number, value: FilterValue): boolean {
+  const { min, max } = value as RangeValue;
+  if (min !== undefined && actual < min) return false;
+  if (max !== undefined && actual > max) return false;
+  return true;
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
-export const FILTER_REGISTRY: FilterDefinition[] = [
+export const MEDIA_RULES: MediaRule[] = [
   // ── Shared: both content types ─────────────────────────────────────────────
   {
     key: 'title',
@@ -61,13 +82,13 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
       MetadataProviderType.PLEX,
     ],
     required: false,
-    apply: (item, value) => item.title.toLowerCase().includes(String(value).toLowerCase()),
+    predicate: (item, value) => item.title.toLowerCase().includes(String(value).toLowerCase()),
   },
   {
-    key: 'yearMin',
-    label: 'Year (min)',
+    key: 'year',
+    label: 'Year',
     contentTypes: ['movie', 'show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [
       MetadataProviderType.RADARR,
       MetadataProviderType.SONARR,
@@ -75,21 +96,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
       MetadataProviderType.TMDB,
     ],
     required: false,
-    apply: (item, value) => item.year !== undefined && item.year >= Number(value),
-  },
-  {
-    key: 'yearMax',
-    label: 'Year (max)',
-    contentTypes: ['movie', 'show'],
-    dataType: 'number',
-    sourceProviders: [
-      MetadataProviderType.RADARR,
-      MetadataProviderType.SONARR,
-      MetadataProviderType.PLEX,
-      MetadataProviderType.TMDB,
-    ],
-    required: false,
-    apply: (item, value) => item.year !== undefined && item.year <= Number(value),
+    predicate: (item, value) => item.year !== undefined && inRange(item.year, value),
   },
   {
     key: 'watched',
@@ -98,65 +105,37 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'boolean',
     sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const watched = (item.playCount ?? 0) > 0;
       return watched === asBool(value);
     },
   },
   {
-    key: 'addedDaysAgoGte',
-    label: 'Added (days ago, min)',
+    key: 'addedDaysAgo',
+    label: 'Added (days ago)',
     contentTypes: ['movie', 'show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [
       MetadataProviderType.RADARR,
       MetadataProviderType.SONARR,
       MetadataProviderType.PLEX,
     ],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (!item.addedDate) return false;
-      return daysElapsed(item.addedDate) >= Number(value);
+      return inRange(daysElapsed(item.addedDate), value);
     },
   },
   {
-    key: 'addedDaysAgoLte',
-    label: 'Added (days ago, max)',
+    key: 'sizeOnDiskGb',
+    label: 'Size on disk (GB)',
     contentTypes: ['movie', 'show'],
-    dataType: 'number',
-    sourceProviders: [
-      MetadataProviderType.RADARR,
-      MetadataProviderType.SONARR,
-      MetadataProviderType.PLEX,
-    ],
-    required: false,
-    apply: (item, value) => {
-      if (!item.addedDate) return false;
-      return daysElapsed(item.addedDate) <= Number(value);
-    },
-  },
-  {
-    key: 'sizeOnDiskGbGte',
-    label: 'Size on disk (GB, min)',
-    contentTypes: ['movie', 'show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (item.sizeOnDiskBytes === undefined) return false;
-      return item.sizeOnDiskBytes / 1_073_741_824 >= Number(value);
-    },
-  },
-  {
-    key: 'sizeOnDiskGbLte',
-    label: 'Size on disk (GB, max)',
-    contentTypes: ['movie', 'show'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.SONARR],
-    required: false,
-    apply: (item, value) => {
-      if (item.sizeOnDiskBytes === undefined) return false;
-      return item.sizeOnDiskBytes / 1_073_741_824 <= Number(value);
+      return inRange(item.sizeOnDiskBytes / 1_073_741_824, value);
     },
   },
   {
@@ -171,7 +150,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
       MetadataProviderType.OMDB,
     ],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (!item.certification) return false;
       const certs = parseCsvStrings(value).map((c) => c.toLowerCase());
       return certs.includes(item.certification.toLowerCase());
@@ -188,7 +167,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
       MetadataProviderType.PLEX,
     ],
     required: false,
-    apply: (item, value) => item.hasFile === asBool(value),
+    predicate: (item, value) => item.hasFile === asBool(value),
   },
 
   // ── Movie-only ─────────────────────────────────────────────────────────────
@@ -199,7 +178,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.RADARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return ids.some((id) => (item.tags ?? []).includes(id));
     },
@@ -211,7 +190,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.RADARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return item.qualityProfileId !== undefined && ids.includes(item.qualityProfileId);
     },
@@ -223,35 +202,22 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.TMDB],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const genres = parseCsvStrings(value);
       return (item.genres ?? []).some((g) => genres.includes(g));
     },
   },
   {
-    key: 'imdbRatingGte',
-    label: 'IMDB rating (min)',
+    key: 'imdbRating',
+    label: 'IMDB rating',
     contentTypes: ['movie'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.OMDB],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const movie = item as NormalizedMovie;
       if (movie.imdbRating === undefined) return false;
-      return movie.imdbRating >= Number(value);
-    },
-  },
-  {
-    key: 'imdbRatingLte',
-    label: 'IMDB rating (max)',
-    contentTypes: ['movie'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.OMDB],
-    required: false,
-    apply: (item, value) => {
-      const movie = item as NormalizedMovie;
-      if (movie.imdbRating === undefined) return false;
-      return movie.imdbRating <= Number(value);
+      return inRange(movie.imdbRating, value);
     },
   },
 
@@ -263,7 +229,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'boolean',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => item.monitored === asBool(value),
+    predicate: (item, value) => item.monitored === asBool(value),
   },
   {
     key: 'seriesStatus',
@@ -272,7 +238,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'string',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       return show.status === String(value);
     },
@@ -284,7 +250,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return ids.some((id) => (item.tags ?? []).includes(id));
     },
@@ -296,7 +262,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return item.qualityProfileId !== undefined && ids.includes(item.qualityProfileId);
     },
@@ -308,7 +274,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TMDB],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const genres = parseCsvStrings(value);
       return (item.genres ?? []).some((g) => genres.includes(g));
     },
@@ -320,7 +286,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'string',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       return show.seriesType === String(value);
     },
@@ -332,36 +298,23 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'csv-strings',
     sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TVMAZE],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       if (!show.network) return false;
       return parseCsvStrings(value).includes(show.network);
     },
   },
   {
-    key: 'communityRatingGte',
-    label: 'Community rating (min)',
+    key: 'communityRating',
+    label: 'Community rating',
     contentTypes: ['show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TMDB],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       if (show.communityRating === undefined) return false;
-      return show.communityRating >= Number(value);
-    },
-  },
-  {
-    key: 'communityRatingLte',
-    label: 'Community rating (max)',
-    contentTypes: ['show'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TMDB],
-    required: false,
-    apply: (item, value) => {
-      const show = item as NormalizedShow;
-      if (show.communityRating === undefined) return false;
-      return show.communityRating <= Number(value);
+      return inRange(show.communityRating, value);
     },
   },
   {
@@ -371,61 +324,35 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'boolean',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       return show.ended === asBool(value);
     },
   },
   {
-    key: 'lastAiredDaysAgoGte',
-    label: 'Last aired (days ago, min)',
+    key: 'lastAiredDaysAgo',
+    label: 'Last aired (days ago)',
     contentTypes: ['show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       if (!show.lastAiredAt) return false;
-      return daysElapsed(show.lastAiredAt) >= Number(value);
+      return inRange(daysElapsed(show.lastAiredAt), value);
     },
   },
   {
-    key: 'lastAiredDaysAgoLte',
-    label: 'Last aired (days ago, max)',
+    key: 'episodePercentage',
+    label: 'Episode completion (%)',
     contentTypes: ['show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
-    apply: (item, value) => {
-      const show = item as NormalizedShow;
-      if (!show.lastAiredAt) return false;
-      return daysElapsed(show.lastAiredAt) <= Number(value);
-    },
-  },
-  {
-    key: 'episodePercentageGte',
-    label: 'Episode completion (%, min)',
-    contentTypes: ['show'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.SONARR],
-    required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       const show = item as NormalizedShow;
       if (show.episodePercentage === undefined) return false;
-      return show.episodePercentage >= Number(value);
-    },
-  },
-  {
-    key: 'episodePercentageLte',
-    label: 'Episode completion (%, max)',
-    contentTypes: ['show'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.SONARR],
-    required: false,
-    apply: (item, value) => {
-      const show = item as NormalizedShow;
-      if (show.episodePercentage === undefined) return false;
-      return show.episodePercentage <= Number(value);
+      return inRange(show.episodePercentage, value);
     },
   },
   {
@@ -435,7 +362,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'string',
     sourceProviders: [MetadataProviderType.TMDB],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (!item.tmdbStatus) return false;
       return item.tmdbStatus === String(value);
     },
@@ -447,7 +374,7 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     dataType: 'number',
     sourceProviders: [MetadataProviderType.OVERSEERR],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (item.overseerrRequestStatus === undefined) return false;
       return item.overseerrRequestStatus === Number(value);
     },
@@ -460,36 +387,24 @@ export const FILTER_REGISTRY: FilterDefinition[] = [
     sourceProviders: [MetadataProviderType.OVERSEERR],
     required: false,
     // Truthy/falsy: "has issue" treats unknown (null/undefined) and false alike as "no issue".
-    apply: (item, value) => Boolean(item.overseerrHasIssue) === asBool(value),
+    predicate: (item, value) => Boolean(item.overseerrHasIssue) === asBool(value),
   },
   {
-    key: 'lastWatchedDaysAgoGte',
-    label: 'Last watched (days ago, min)',
+    key: 'lastWatchedDaysAgo',
+    label: 'Last watched (days ago)',
     contentTypes: ['movie', 'show'],
-    dataType: 'number',
+    dataType: 'range',
     sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
     required: false,
-    apply: (item, value) => {
+    predicate: (item, value) => {
       if (!item.lastWatchedAt) return false;
-      return daysElapsed(item.lastWatchedAt) >= Number(value);
-    },
-  },
-  {
-    key: 'lastWatchedDaysAgoLte',
-    label: 'Last watched (days ago, max)',
-    contentTypes: ['movie', 'show'],
-    dataType: 'number',
-    sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
-    required: false,
-    apply: (item, value) => {
-      if (!item.lastWatchedAt) return false;
-      return daysElapsed(item.lastWatchedAt) <= Number(value);
+      return inRange(daysElapsed(item.lastWatchedAt), value);
     },
   },
 ];
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────
 
-export function getFilterDef(key: string, contentType: ContentType): FilterDefinition | undefined {
-  return FILTER_REGISTRY.find((d) => d.key === key && d.contentTypes.includes(contentType));
+export function getRule(key: string, contentType: ContentType): MediaRule | undefined {
+  return MEDIA_RULES.find((d) => d.key === key && d.contentTypes.includes(contentType));
 }

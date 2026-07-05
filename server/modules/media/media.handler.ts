@@ -15,7 +15,12 @@ import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { defineRoute } from '@server/utils/defineRoute';
-import type { FilterValue, NormalizedMovie, NormalizedShow } from '@server/utils/filterRegistry';
+import type {
+  FilterValue,
+  NormalizedMovie,
+  NormalizedShow,
+  RangeValue,
+} from '@server/utils/filterRegistry';
 import { z } from 'zod';
 
 const log = getChildLogger('MediaHandler');
@@ -90,69 +95,92 @@ const seriesQuerySchema = paginationQuerySchema.extend({
 // keys. These maps bridge URL param → registry key so a single engine
 // (filterRegistry) backs both the browse path and the automation executor.
 
-const MOVIE_PARAM_TO_KEY: Record<string, string> = {
-  title: 'title',
-  yearMin: 'yearMin',
-  yearMax: 'yearMax',
-  hasFile: 'hasFile',
-  movieTagIds: 'tagIds',
-  movieQualityProfileIds: 'qualityProfileIds',
-  movieGenres: 'genres',
-  tautulliWatched: 'watched',
-  certification: 'certification',
-  addedDaysAgoGte: 'addedDaysAgoGte',
-  addedDaysAgoLte: 'addedDaysAgoLte',
-  sizeOnDiskGbGte: 'sizeOnDiskGbGte',
-  sizeOnDiskGbLte: 'sizeOnDiskGbLte',
-  radarrImdbRatingGte: 'imdbRatingGte',
-  radarrImdbRatingLte: 'imdbRatingLte',
-  overseerrRequestStatus: 'overseerrRequestStatus',
-  overseerrHasIssue: 'overseerrHasIssue',
-  tmdbStatus: 'tmdbStatus',
-  lastWatchedDaysAgoGte: 'lastWatchedDaysAgoGte',
-  lastWatchedDaysAgoLte: 'lastWatchedDaysAgoLte',
+// A URL param maps onto a registry key directly, or (for a range rule) contributes
+// one bound (`min`/`max`) of that key's `{ min?, max? }` value.
+interface ParamMapping {
+  key: string;
+  bound?: 'min' | 'max';
+}
+
+const MOVIE_PARAM_TO_KEY: Record<string, ParamMapping> = {
+  title: { key: 'title' },
+  yearMin: { key: 'year', bound: 'min' },
+  yearMax: { key: 'year', bound: 'max' },
+  hasFile: { key: 'hasFile' },
+  movieTagIds: { key: 'tagIds' },
+  movieQualityProfileIds: { key: 'qualityProfileIds' },
+  movieGenres: { key: 'genres' },
+  tautulliWatched: { key: 'watched' },
+  certification: { key: 'certification' },
+  addedDaysAgoGte: { key: 'addedDaysAgo', bound: 'min' },
+  addedDaysAgoLte: { key: 'addedDaysAgo', bound: 'max' },
+  sizeOnDiskGbGte: { key: 'sizeOnDiskGb', bound: 'min' },
+  sizeOnDiskGbLte: { key: 'sizeOnDiskGb', bound: 'max' },
+  radarrImdbRatingGte: { key: 'imdbRating', bound: 'min' },
+  radarrImdbRatingLte: { key: 'imdbRating', bound: 'max' },
+  overseerrRequestStatus: { key: 'overseerrRequestStatus' },
+  overseerrHasIssue: { key: 'overseerrHasIssue' },
+  tmdbStatus: { key: 'tmdbStatus' },
+  lastWatchedDaysAgoGte: { key: 'lastWatchedDaysAgo', bound: 'min' },
+  lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
 };
 
-const SERIES_PARAM_TO_KEY: Record<string, string> = {
-  title: 'title',
-  yearMin: 'yearMin',
-  yearMax: 'yearMax',
-  monitored: 'monitored',
-  seriesStatus: 'seriesStatus',
-  seriesTagIds: 'tagIds',
-  seriesQualityProfileIds: 'qualityProfileIds',
-  seriesGenres: 'genres',
-  seriesType: 'seriesType',
-  network: 'network',
-  tautulliWatched: 'watched',
-  certification: 'certification',
-  addedDaysAgoGte: 'addedDaysAgoGte',
-  addedDaysAgoLte: 'addedDaysAgoLte',
-  sizeOnDiskGbGte: 'sizeOnDiskGbGte',
-  sizeOnDiskGbLte: 'sizeOnDiskGbLte',
-  sonarrRatingGte: 'communityRatingGte',
-  sonarrRatingLte: 'communityRatingLte',
-  sonarrEnded: 'ended',
-  sonarrLastAiredDaysAgoGte: 'lastAiredDaysAgoGte',
-  sonarrLastAiredDaysAgoLte: 'lastAiredDaysAgoLte',
-  sonarrPercentEpisodesGte: 'episodePercentageGte',
-  sonarrPercentEpisodesLte: 'episodePercentageLte',
-  overseerrRequestStatus: 'overseerrRequestStatus',
-  overseerrHasIssue: 'overseerrHasIssue',
-  tmdbStatus: 'tmdbStatus',
-  lastWatchedDaysAgoGte: 'lastWatchedDaysAgoGte',
-  lastWatchedDaysAgoLte: 'lastWatchedDaysAgoLte',
+const SERIES_PARAM_TO_KEY: Record<string, ParamMapping> = {
+  title: { key: 'title' },
+  yearMin: { key: 'year', bound: 'min' },
+  yearMax: { key: 'year', bound: 'max' },
+  monitored: { key: 'monitored' },
+  seriesStatus: { key: 'seriesStatus' },
+  seriesTagIds: { key: 'tagIds' },
+  seriesQualityProfileIds: { key: 'qualityProfileIds' },
+  seriesGenres: { key: 'genres' },
+  seriesType: { key: 'seriesType' },
+  network: { key: 'network' },
+  tautulliWatched: { key: 'watched' },
+  certification: { key: 'certification' },
+  addedDaysAgoGte: { key: 'addedDaysAgo', bound: 'min' },
+  addedDaysAgoLte: { key: 'addedDaysAgo', bound: 'max' },
+  sizeOnDiskGbGte: { key: 'sizeOnDiskGb', bound: 'min' },
+  sizeOnDiskGbLte: { key: 'sizeOnDiskGb', bound: 'max' },
+  sonarrRatingGte: { key: 'communityRating', bound: 'min' },
+  sonarrRatingLte: { key: 'communityRating', bound: 'max' },
+  sonarrEnded: { key: 'ended' },
+  sonarrLastAiredDaysAgoGte: { key: 'lastAiredDaysAgo', bound: 'min' },
+  sonarrLastAiredDaysAgoLte: { key: 'lastAiredDaysAgo', bound: 'max' },
+  sonarrPercentEpisodesGte: { key: 'episodePercentage', bound: 'min' },
+  sonarrPercentEpisodesLte: { key: 'episodePercentage', bound: 'max' },
+  overseerrRequestStatus: { key: 'overseerrRequestStatus' },
+  overseerrHasIssue: { key: 'overseerrHasIssue' },
+  tmdbStatus: { key: 'tmdbStatus' },
+  lastWatchedDaysAgoGte: { key: 'lastWatchedDaysAgo', bound: 'min' },
+  lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
 };
 
 // Project a browse query's content-prefixed params onto registry-keyed filter
 // values — the include source the MediaQueryEngine evaluates for the browse view.
+// Gte/Lte param pairs targeting the same range rule merge into one `{ min?, max? }` entry.
 function toFilterValues(
   query: Record<string, unknown>,
-  paramMap: Record<string, string>
+  paramMap: Record<string, ParamMapping>
 ): FilterValueEntry[] {
-  return Object.entries(paramMap)
-    .map(([param, key]) => ({ key, value: query[param] as FilterValue }))
-    .filter((e) => e.value !== undefined);
+  const entries: FilterValueEntry[] = [];
+  const ranges = new Map<string, RangeValue>();
+
+  for (const [param, { key, bound }] of Object.entries(paramMap)) {
+    const raw = query[param];
+    if (raw === undefined) continue;
+    if (bound) {
+      const range = ranges.get(key) ?? {};
+      range[bound] = Number(raw);
+      ranges.set(key, range);
+    } else {
+      entries.push({ key, value: raw as FilterValue });
+    }
+  }
+  for (const [key, value] of ranges) {
+    entries.push({ key, value });
+  }
+  return entries;
 }
 
 // ─── Handler-local helpers ────────────────────────────────────────────────────
