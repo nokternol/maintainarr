@@ -3,13 +3,20 @@
 # docs, and pollutes query/explain results with the tool's own self-referential
 # output when ingested as if it were part of the codebase.
 
-# This repo's own graphify-vs-docs experiment write-ups: natural-language prose
-# *about* graphify itself (queries run, plan comparisons, judged scores). When
-# ingested, terms like "Critical", "Judge's scores", "Results" surface as
-# false-positive matches for unrelated real-code queries. Real architectural
-# decisions from this work already live in docs/architecture/ and docs/plans/,
-# which are not excluded here.
-docs/experiments/
+# Per the docs/ convention in CLAUDE.md, only docs/architecture/ describes
+# what is actually built. docs/intent/ and docs/in_progress/ are unbuilt
+# aspiration (future state / active plans, not current fact), and
+# docs/experiments/, docs/plans/, docs/agent/ are process/tool write-ups, not
+# architecture. Ingesting any of these as if they were current-state facts
+# pollutes query/explain results with plans, prose, and self-referential
+# graphify commentary that hasn't been (or won't be) built. A query should
+# only ever reflect the current state of the system.
+#
+# `docs/*` (no trailing slash) matches only docs' direct children as a glob,
+# so it never excludes the `docs/` directory itself - traversal continues and
+# the negation below can still re-include one child's subtree.
+docs/*
+!docs/architecture/
 
 # The `impeccable` design-critique skill's own generated report output
 # (timestamped critique markdown files) — tool-generated artifacts, not

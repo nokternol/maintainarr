@@ -53,7 +53,7 @@ Discovery and enforcement are **instance-keyed**, not type-keyed, because two in
 legitimately differ — a 4K Radarr may enable `deleteMovieWithFiles` while a 1080p Radarr withholds it.
 
 - **Enablement is per instance**, held in `provider.settings.enabledTasks` and read by the single pure
-  authority `readEnabledTaskIds(settings)` (`server/providers/taskEnablement.ts`).
+  authority `readEnabledTaskIds(settings)` ([`server/providers/taskEnablement.ts`](ref:path:server/providers/taskEnablement.ts)).
 - **Default disabled.** A newly configured instance enables no tasks until chosen.
 - **Enforced at two boundaries, not the UI:** `automationService.create` rejects a `taskId` not enabled on
   *that instance*; `AutomationExecutor` refuses (before any provider HTTP call) a task not enabled on the
@@ -64,7 +64,7 @@ state to toggle; the builder offers the enabled subset.
 
 ## Discovery: `GET /api/providers/tasks` is instance-keyed
 
-`server/modules/providers/providers.handler.ts` returns, per configured provider instance that plays
+[`server/modules/providers/providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts) returns, per configured provider instance that plays
 `MediaActuator`:
 
 ```ts
@@ -87,16 +87,16 @@ not actuator tasks, and absent from the discovery surface.
 
 ## How it is wired
 
-- `server/providers/roles.ts` — `MediaActuator` / `ActuatorTask` / `ActuatorTaskDescriptor` contracts,
+- [`server/providers/roles.ts`](ref:path:server/providers/roles.ts) — `MediaActuator` / `ActuatorTask` / `ActuatorTaskDescriptor` contracts,
   `modelledRun`, `isMediaActuator`.
 - `RadarrProvider`, `SonarrProvider` — `tasks()` with real (instance-bound) + modelled tasks.
 - `PlexProvider`, `JellyfinProvider`, `TautulliProvider` — `implements MediaActuator`, modelled-only `tasks()`.
-- `server/providers/taskEnablement.ts` — `readEnabledTaskIds`, the one authority both create and the
+- [`server/providers/taskEnablement.ts`](ref:path:server/providers/taskEnablement.ts) — `readEnabledTaskIds`, the one authority both create and the
   executor consult.
-- `server/providers/providerFactory.ts` — constructs every configured type so discovery can ask any
+- [`server/providers/providerFactory.ts`](ref:path:server/providers/providerFactory.ts) — constructs every configured type so discovery can ask any
   instance for its role.
-- `server/services/automationService.ts`, `automationExecutor.ts` — create-time and run-time enablement.
-- `server/modules/providers/providers.handler.ts` — instance-keyed discovery.
+- [`server/services/automationService.ts`](ref:path:server/services/automationService.ts), [`automationExecutor.ts`](ref:path:server/services/automationExecutor.ts) — create-time and run-time enablement.
+- [`server/modules/providers/providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts) — instance-keyed discovery.
 
 ## The open issue this modelling unearthed
 
@@ -110,10 +110,10 @@ any non-source actuator can run.
 ## The client derives, holds no catalogue
 
 The client reads the instance-keyed `GET /api/providers/tasks` and holds no task catalogue of its own.
-`useProviderTasks` (`src/hooks/useProviderTasks.ts`) fetches the instance-keyed availability; the builder
-(`src/components/AutomationBuilder`) offers each configured instance's **enabled** tasks, joining the
-instance name from settings; `ProviderCard` lists an instance's tasks with their server `enabled` state to
+`useProviderTasks` ([`src/hooks/useProviderTasks.ts`](ref:path:src/hooks/useProviderTasks.ts)) fetches the instance-keyed availability; the builder
+([`src/components/AutomationBuilder`](ref:path:src/components/AutomationBuilder/index.tsx)) offers each configured instance's **enabled** tasks, joining the
+instance name from settings; [`ProviderCard`](ref:path:src/components/ProviderCard/index.tsx) lists an instance's tasks with their server `enabled` state to
 toggle (default off — the old client default-on heuristic is gone). The hand-maintained catalogue is
-retired: `src/lib/tasks.ts` is deleted and the `tasks` surface removed from `src/lib/provider-registry.ts`,
+retired: `src/lib/tasks.ts` is deleted and the `tasks` surface removed from [`src/lib/provider-registry.ts`](ref:path:src/lib/provider-registry.ts),
 so nothing client-side declares what tasks exist. The JSON-honest descriptor carries no `description`, so
 the UI does not show one.

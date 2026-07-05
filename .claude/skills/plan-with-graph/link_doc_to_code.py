@@ -6,8 +6,10 @@ markdown doc's prose to the code symbols/files it names, confirmed empirically
 by live testing. Fixing that inside graphify (its LLM subagent pass, or its
 build_merge dedup step) was tried and rejected: expensive, and the merge step
 silently drops exactly these edges on node-fold collisions. This script never
-touches graphify internals and never creates a new node — it only adds
-`references` edges between nodes that already exist.
+writes to graphify internals and never creates a new node — it only adds
+`references` edges between nodes that already exist (it does import
+graphify.detect read-only, to check .graphifyignore via the same matcher
+graphify itself uses, rather than a second hand-rolled copy of that policy).
 
 Deliberate, not implicit: this does NOT scan arbitrary backtick spans and
 guess whether they're a label, a filename, or a full path (that was tried,
@@ -47,6 +49,27 @@ from pathlib import Path
 REF_PATTERN = re.compile(r"\[([^\]]+)\]\(ref:(label|path):([^)]+)\)")
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.*)$")
 CONTRIBUTOR = "plan-with-graph-linker"
+
+
+def is_graphify_ignored(doc_path: Path, repo_root: Path) -> bool:
+    """True if .graphifyignore excludes this doc from the graph.
+
+    Imports graphify's own matcher rather than reimplementing gitignore
+    semantics (anchoring, negation, the parent-exclusion rule) a second time -
+    that duplication is exactly what let this script's notion of "should this
+    doc be linked" drift from .graphifyignore's actual policy before. This is
+    the single source of truth; nothing here re-decides which docs count.
+    """
+    try:
+        from graphify.detect import _is_ignored, _load_graphifyignore
+    except ImportError:
+        raise SystemExit(
+            "error: could not import graphify to check .graphifyignore. Run this "
+            "script with the Python graphify is installed in (see "
+            "graphify-out/.graphify_python for its path)."
+        )
+    patterns = _load_graphifyignore(repo_root)
+    return _is_ignored(doc_path.resolve(), repo_root, patterns)
 
 
 def load_graph(graph_path: Path) -> dict:
@@ -133,6 +156,11 @@ def main() -> None:
     args = ap.parse_args()
 
     doc_path_str = str(args.doc)
+    repo_root = Path.cwd()
+    if is_graphify_ignored(args.doc, repo_root):
+        print(f"{args.doc}: excluded by .graphifyignore - not graphed, nothing to link. Skipping.")
+        return
+
     graph = load_graph(args.graph)
     by_label, by_source_file = index_nodes(graph)
     section_ids = find_section_nodes(graph, doc_path_str)

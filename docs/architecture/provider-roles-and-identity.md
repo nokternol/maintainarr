@@ -34,7 +34,7 @@ resolution, and enrichment all short-circuit to nothing (see the pipeline below)
 
 ## The catalog is the union of the *arr libraries
 
-`media.handler.ts` serves browse lists by querying only active `RADARR` / `SONARR` providers and
+[`media.handler.ts`](ref:path:server/modules/media/media.handler.ts) serves browse lists by querying only active `RADARR` / `SONARR` providers and
 calling `getMovies()` / `getSeries()` per instance, concatenating results
 (`getMovies`/`getSeries`, `media.handler.ts:218-260`). Tags, quality profiles, genres, and networks
 derive from the same two types. Enrichment is then merged *onto* those owner rows
@@ -42,7 +42,7 @@ derive from the same two types. Enrichment is then merged *onto* those owner row
 
 ## The MediaSource read contract
 
-The source role is a typed read contract (`server/providers/mediaSource.ts`), not duck-typed access to
+The source role is a typed read contract ([`server/providers/mediaSource.ts`](ref:path:server/providers/mediaSource.ts)), not duck-typed access to
 `getMovies`/`getSeries`:
 
 ```ts
@@ -59,7 +59,7 @@ movies and Sonarr serves shows, but `MediaQueryEngine.evaluate` never branches o
 `source.idOf` on a single path. `idOf` is the polymorphic answer that removed the per-variant
 `MediaItemSet` id-projection casts.
 
-`MediaSourceFactory.forContentType(contentType)` (`server/providers/mediaSourceFactory.ts`) resolves a
+`MediaSourceFactory.forContentType(contentType)` ([`server/providers/mediaSourceFactory.ts`](ref:path:server/providers/mediaSourceFactory.ts)) resolves a
 `ContentType` to its active owner provider bound as a `MediaSource` — used by `/preview` and browse. The
 executor instead binds a specific provider by `automation.provider.id`, since it needs the actuator role
 on the same instance for `task.run`.
