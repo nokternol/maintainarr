@@ -66,7 +66,13 @@ tmp
 build
 
 #agents
-.claude
+# .claude is local/session state and most skills are installed, not authored here -
+# ignored by default. plan-with-graph is the one skill with tracked, load-bearing
+# content (the post-commit hook calls its script directly), so it's carved out.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/plan-with-graph/
 # Agent Context Files
 .agent/plans/
 # Browser automation files

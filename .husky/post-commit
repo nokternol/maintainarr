@@ -130,7 +130,7 @@ disown 2>/dev/null || true
 # graphify package at all (pure stdlib). Owned by plan-with-graph, not by
 # graphify's hook installer - safe to keep here even if graphify's own hook is
 # ever reinstalled/uninstalled.
-_LINKER=".agent/skills/plan-with-graph/link_doc_to_code.py"
+_LINKER=".claude/skills/plan-with-graph/link_doc_to_code.py"
 if [ -f "$_LINKER" ] && [ -f "graphify-out/graph.json" ]; then
     echo "$CHANGED" | grep '\.md$' | grep -v '^docs/experiments/' | while IFS= read -r _doc; do
         [ -f "$_doc" ] || continue
