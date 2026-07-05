@@ -28,7 +28,7 @@ infrastructure for what is fundamentally the same operation with different owner
 ## System automations
 
 System automations are invariants — they must always exist for Warden to function. The
-startup health check (`server/health/systemHealthCheck.ts`) upserts them on every boot.
+startup health check ([`server/health/systemHealthCheck.ts`](ref:path:server/health/systemHealthCheck.ts)) upserts them on every boot.
 If a container restarts and a system job is missing, it is restored automatically.
 
 Current system automations (added in Phase 2):
@@ -37,24 +37,22 @@ Current system automations (added in Phase 2):
 
 Both are prerequisites for Tier 2 filter predicates to return meaningful results.
 
-## Schema change required
+## Enforcement
 
-Add `kind TEXT NOT NULL DEFAULT 'user'` to the `automations` table.
-Add `kind TEXT NOT NULL DEFAULT 'user'` to the `automation_runs` table (or derive via join).
+`kind TEXT NOT NULL DEFAULT 'user'` is carried on both the `automations` and `automation_runs`
+tables (`server/database/schema.ts:153,204`).
 
-API routes must enforce:
-- `DELETE /api/automations/:id` — reject if `kind = 'system'`
-- `PATCH /api/automations/:id/status` — reject if `kind = 'system'`
-- `GET /api/automations` — filterable by `kind`
+- `DELETE /api/automations/:id` and `PATCH /api/automations/:id/status` both reject `kind = 'system'`
+  (`automationService.ts`'s `assertMutable` check).
+- `GET /api/automations` is filterable by `kind` (`automationService.list({ kind })`).
 
 ## UI placement
 
 - **Main dashboard / Automations** — user automations, fully configurable, run history,
   Run Now + Disable + Archive.
-- **System → Tasks** — system automations. Read-only **except Run Now** — schedule, last run,
-  next run, run history, plus on-demand execution. Makes system health observable and operable
-  without console access.
+- **System → Tasks** — system automations. Read-only **except Run Now** — the one operator action
+  permitted on a system task (schedule, last run, next run, run history, plus on-demand execution).
+  Makes system health observable and operable without console access.
 
-> The verb model (Run Now / Disable / Archive — not Play/Pause) and the rule that system tasks are
-> Run-Now-only are detailed in `automation-verbs-and-separation.md`. That supersedes the bare
-> "read-only" wording above: Run Now is the one operator action permitted on a system task.
+The verb model is Run Now / Disable / Archive — never Play/Pause, which would imply runtime control
+over an executing process.

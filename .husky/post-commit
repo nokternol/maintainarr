@@ -121,3 +121,26 @@ except Exception as exc:
 " >> "$_GRAPHIFY_LOG" 2>&1 < /dev/null &
 disown 2>/dev/null || true
 # graphify-hook-end
+
+# plan-with-graph-linker-start
+# Re-applies deliberate ref:label:/ref:path: doc-to-code edges for any markdown
+# doc this commit touched. Independent of the graphify block above except for
+# needing its resolved interpreter: doesn't need graphify's own rebuild to
+# finish first (it only reads the *code* side of graph.json, which a doc-only
+# commit doesn't change). Owned by plan-with-graph, not by graphify's hook
+# installer - safe to keep here even if graphify's own hook is ever
+# reinstalled/uninstalled.
+#
+# Which docs count is decided in exactly one place - .graphifyignore, via
+# graphify's own matcher - not duplicated here. The linker script itself
+# checks it (link_doc_to_code.py:is_graphify_ignored) and skips silently, so
+# every changed .md is simply handed to it; needs $GRAPHIFY_PYTHON (not bare
+# python3) so `import graphify.detect` for that check actually resolves.
+_LINKER=".claude/skills/plan-with-graph/link_doc_to_code.py"
+if [ -f "$_LINKER" ] && [ -f "graphify-out/graph.json" ] && [ -n "$GRAPHIFY_PYTHON" ]; then
+    echo "$CHANGED" | grep '\.md$' | while IFS= read -r _doc; do
+        [ -f "$_doc" ] || continue
+        "$GRAPHIFY_PYTHON" "$_LINKER" "$_doc" --apply 2>&1 | sed "s|^|[plan-with-graph linker] |"
+    done
+fi
+# plan-with-graph-linker-end

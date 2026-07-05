@@ -41,3 +41,4 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- `docs/architecture/` facts are edge-linked to the code they cite — querying a file/symbol can surface the doc explaining *why* it's built that way, which grep cannot. A truncated or code-only result doesn't mean no doc exists: before concluding, narrow the query (name the file/symbol directly, or `graphify explain "<concept>"`) rather than falling back to grep on the first pass.

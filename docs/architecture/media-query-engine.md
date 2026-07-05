@@ -1,6 +1,6 @@
 # MediaQueryEngine — the single owner of "what does this query match"
 
-**Status:** IMPLEMENTED. `server/services/mediaQueryEngine.ts`. Realised the model formerly in
+**Status:** IMPLEMENTED. [`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts). Realised the model formerly in
 `docs/intent/media-query-engine.md`.
 
 ## The three concepts
@@ -42,12 +42,12 @@ aggregation) while the engine owns normalize → enrich → match → combine.
 - **`combine`** (private) — maps each source through `matchItems`, projects source ids, runs
   `evaluateCombination` (include union minus exclude), and returns the surviving normalized items.
 - Unknown `contentType` resolves to an empty `MediaItemSet`.
-- Depends on `filterRegistry` (rule set) and `combinationEvaluator` (combination contract) — both
+- Depends on [`filterRegistry`](ref:label:filterRegistry) (rule set) and `combinationEvaluator` (combination contract) — both
   internal domain, never mocked. DB enrichment (`mergeEnrichment`) runs when a `db` is injected.
 
 ## Registration
 
-`mediaQueryEngine` is registered in the awilix container (`server/container.ts`) and injected into the
+`mediaQueryEngine` is registered in the awilix container ([`server/container.ts`](ref:path:server/container.ts)) and injected into the
 executor, the saved-query preview handler, and the media browse handler. The executor falls back to
 `new MediaQueryEngine({ db })` when no engine is injected (unit tests).
 

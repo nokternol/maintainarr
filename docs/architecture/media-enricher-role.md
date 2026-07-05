@@ -53,15 +53,15 @@ enricher owns its own match-and-decorate, so no central lingua franca has to car
 `EnrichmentResult` is internal to the enrichment job: it carries provenance (which provider produced the
 items) for write-time precedence resolution, and never persists nor crosses a read boundary.
 
-Each `enrich` is a **thin shell over a pure mapper** (`enrichment/mappers.ts`: `mapTautulliHistory` /
+Each `enrich` is a **thin shell over a pure mapper** ([`enrichment/mappers.ts`](ref:path:server/jobs/enrichment/mappers.ts): `mapTautulliHistory` /
 `mapPlexItems` / `mapOverseerr`): fetch in the shell, transform in the pure core, then
-`enrichment/decorate.ts` applies it — so the hard logic stays mock-free testable.
+[`enrichment/decorate.ts`](ref:path:server/jobs/enrichment/decorate.ts) applies it — so the hard logic stays mock-free testable.
 
 ## Cross-enricher precedence is a per-field policy, resolved at write time
 
 Two enrichers can speak to one canonical field (`playCount` from Tautulli **or** Plex). A single global
 enricher ordering cannot express this, because precedence can differ per field — so it is a small
-declarative map consumed by a **pure** `resolvePrecedence` (`enrichment/precedence.ts`):
+declarative map consumed by a **pure** [`resolvePrecedence`](ref:label:resolvePrecedence) ([`enrichment/precedence.ts`](ref:path:server/jobs/enrichment/precedence.ts)):
 
 ```ts
 const ENRICHMENT_POLICY = {
@@ -100,10 +100,10 @@ It is upstream of, and separate from, enrichment — an ownership/identity conce
 
 ## How it is wired
 
-- `server/providers/roles.ts` — `MediaEnricher` / `EnrichmentResult` contracts.
+- [`server/providers/roles.ts`](ref:path:server/providers/roles.ts) — `MediaEnricher` / `EnrichmentResult` contracts.
 - `PlexProvider`, `TautulliProvider`, `OverseerrProvider`, `TmdbProvider` — `implements MediaEnricher`,
   each a thin shell: fetch, run its pure mapper (`enrichment/mappers.ts`), then `enrichment/decorate.ts`.
-- `enrichment/precedence.ts` — `resolvePrecedence` + the per-field `ENRICHMENT_POLICY`.
+- [`enrichment/precedence.ts`](ref:path:server/jobs/enrichment/precedence.ts) — `resolvePrecedence` + the per-field `ENRICHMENT_POLICY`.
 - `EnrichmentJob` — hydrates stale identities into `MediaItem`s, runs every enricher, resolves per field,
   persists resolved canonical columns.
-- `services/enrichmentMerge.ts` — read-time copy of canonical columns onto browse/executor items.
+- [`services/enrichmentMerge.ts`](ref:path:server/services/enrichmentMerge.ts) — read-time copy of canonical columns onto browse/executor items.

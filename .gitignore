@@ -66,10 +66,22 @@ tmp
 build
 
 #agents
-.claude
+# .claude is local/session state and most skills are installed, not authored here -
+# ignored by default. plan-with-graph is the one skill with tracked, load-bearing
+# content (the post-commit hook calls its script directly), so it's carved out.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/plan-with-graph/
 # Agent Context Files
 .agent/plans/
 # Browser automation files
 .playwright-cli
 graphify-out/cost.json
 graphify-out/
+
+# Scratch/throwaway experiment write-ups - never tracked, and already excluded from the
+# graphify corpus via .graphifyignore (belt and suspenders: this stops it reaching git at
+# all, .graphifyignore stops it reaching the graph even if it somehow gets committed anyway).
+docs/experiments/*
+!docs/experiments/README.md

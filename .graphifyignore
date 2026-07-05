@@ -1,0 +1,24 @@
+# graphify-specific exclusions (gitignore syntax) — content that's tracked in
+# git (so .gitignore doesn't touch it) but isn't application code/architecture
+# docs, and pollutes query/explain results with the tool's own self-referential
+# output when ingested as if it were part of the codebase.
+
+# Per the docs/ convention in CLAUDE.md, only docs/architecture/ describes
+# what is actually built. docs/intent/ and docs/in_progress/ are unbuilt
+# aspiration (future state / active plans, not current fact), and
+# docs/experiments/, docs/plans/, docs/agent/ are process/tool write-ups, not
+# architecture. Ingesting any of these as if they were current-state facts
+# pollutes query/explain results with plans, prose, and self-referential
+# graphify commentary that hasn't been (or won't be) built. A query should
+# only ever reflect the current state of the system.
+#
+# `docs/*` (no trailing slash) matches only docs' direct children as a glob,
+# so it never excludes the `docs/` directory itself - traversal continues and
+# the negation below can still re-include one child's subtree.
+docs/*
+!docs/architecture/
+
+# The `impeccable` design-critique skill's own generated report output
+# (timestamped critique markdown files) — tool-generated artifacts, not
+# authored documentation, analogous to graphify's own graphify-out/.
+.impeccable/
