@@ -33,6 +33,32 @@ the client. The same rename lives in:
 3. **Migration** — `0007_query_model_rewrite.sql` rewrote already-persisted saved-query keys to registry
    keys (historical; leave it).
 
+**A fourth, previously undocumented surface exists and must not be duplicated by Stage 1.**
+`server/modules/filterFields/filterFields.handler.ts` (`getFilterFields`, routed at `GET /api/filter-fields`
+via `filterFields.routes.ts`, mounted in `server/modules/index.ts`) already projects `FILTER_REGISTRY` to a
+predicate-free shape (`{ key, label, dataType, contentTypes }`). It shipped in Phase 2c
+(`356dd3f feat(phase-2c): query model rewrite + schema-driven API contracts`) — it predates this plan and was
+missed when the table above was written, not built by an earlier Stage 1 attempt. It has its own integration
+suite (`server/__tests__/integration/filterFields.integration.test.ts`) asserting today's un-gated,
+un-collapsed shape (raw registry keys, e.g. `imdbRatingGte`), and **zero client consumers** — nothing calls
+`GET /api/filter-fields` today. Stage 1 must **extend this endpoint/handler in place** (rename toward the
+`MediaRule`/`MediaRuleDescriptor` vocabulary, add `sourceProviders` + provider-gating via
+`providerSettingsService`, reflect the range collapse) rather than standing up a new descriptors endpoint
+beside it — a second endpoint here would be exactly the fracture this phase exists to close. Its existing
+integration test's key-based assertions (`imdbRatingGte`, `imdbRatingLte`, etc.) will need rewriting once the
+range collapse lands, not merely left green.
+
+**A fifth live surface, also previously undocumented:** `KEY_RENAMES` + `toFilterValues()` in
+[`src/hooks/useMediaQueries.ts:21–52`](ref:path:src/hooks/useMediaQueries.ts) — a **second, independent
+client-side translator**, distinct from `FILTER_FIELDS` itself, that maps `FilterState`/`FILTER_FIELDS` keys
+back to registry keys (`radarrImdbRatingGte → imdbRatingGte`, `sonarrRatingGte → communityRatingGte`, etc.)
+before `save()` persists a saved query via `POST /api/saved-queries`. It is the client-side mirror of the
+server's `MOVIE_PARAM_TO_KEY`/`SERIES_PARAM_TO_KEY` translator (#2 below) — same fracture, opposite
+direction, and confusingly named identically (`toFilterValues`) to the one in `media.handler.ts`; don't
+conflate them when tracing call sites. Deleting `FILTER_FIELDS` alone does not retire this: `KEY_RENAMES` and
+`toFilterValues()` in `useMediaQueries.ts` must be deleted too once the client emits registry keys directly,
+or the saved-query persistence path keeps a translator the browse path no longer has.
+
 Phase 4 deletes #1 **and** #2: the client emits registry keys directly (per-page `contentType`
 disambiguates what the `movie*`/`series*` prefixes worked around), so `toFilterValues` collapses to identity
 and the `PARAM_TO_KEY` maps are removed. The renamed keys retired:
@@ -102,9 +128,13 @@ and persisted `filterValues` carry a structured value for range rules (coerced b
 - Collapse each `*Gte`/`*Lte` pair into one `dataType: 'range'` rule with a `{ min?, max? }` value and a
   single predicate (see "Range rules"); widen `FilterValue` to include the range object. This is a
   behaviour-preserving remodel guarded by the engine/`matchItems` tests.
-- Expose a provider-gated descriptors endpoint mirroring `GET /api/providers/tasks`: returns the
-  `MediaRuleDescriptor`s whose `sourceProviders` intersect the configured providers (needs
-  `providerSettingsService`). This is the single source the client reads.
+- Extend the existing `GET /api/filter-fields` endpoint (`filterFields.handler.ts` /
+  `filterFields.routes.ts`, shipped Phase 2c, currently unconsumed by any client) **in place** — do not add
+  a parallel endpoint. Widen its projection to full `MediaRuleDescriptor`s (`sourceProviders`, `required`)
+  and provider-gate it, mirroring `GET /api/providers/tasks`: return only the descriptors whose
+  `sourceProviders` intersect the configured providers (needs `providerSettingsService`). This becomes the
+  single source the client reads. Update `filterFields.integration.test.ts`'s key-based assertions for the
+  range collapse and add gating/`sourceProviders` coverage.
 - Delete the server-side rename translator: `MOVIE_PARAM_TO_KEY`/`SERIES_PARAM_TO_KEY` and `toFilterValues`
   (`media.handler.ts`) collapse to identity once the client emits registry keys (Stage 2).
 
@@ -129,6 +159,9 @@ Only after Stage 1. The *goal* the earlier Phase 4 had right, the *mechanism* it
   provider — closing both problems in `docs/intent/filter-ui.md` (retired into this phase).
 - **Delete** `FILTER_FIELDS` and its renamed keys; nothing client-side declares what rules exist. The
   client speaks the server's rule keys, so `filterValues` need no translation to persist or preview.
+- **Delete** `KEY_RENAMES` and `toFilterValues()` in `useMediaQueries.ts` (the fifth surface, above) at the
+  same time — `save()` persists registry keys directly once the client holds no renamed vocabulary to
+  translate from.
 - Preview count (independent of the vocabulary fix, kept): `useQueryPreview(savedQueryId)` exposes the
   engine-backed `{ count }`; a query row bound to a saved query renders it. Include/exclude maps to
   `MediaQuerySource.role`.
