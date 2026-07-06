@@ -778,6 +778,21 @@ function booleanOptions(rule: MediaRuleDescriptor) {
   ];
 }
 
+// The segment label shown beside an enum control's options. Defaults to the
+// registry's own `label`, which reads fine standalone but is occasionally
+// redundant next to the FilterGroup it renders inside (e.g. "TMDB status"
+// under a "TMDB" heading) — override only where that's the case.
+const SEGMENT_LABEL_OVERRIDES: Partial<Record<string, string | undefined>> = {
+  seriesStatus: 'Status',
+  seriesType: 'Type',
+  overseerrRequestStatus: 'Status',
+  tmdbStatus: undefined,
+};
+
+function segmentLabel(rule: MediaRuleDescriptor): string | undefined {
+  return rule.key in SEGMENT_LABEL_OVERRIDES ? SEGMENT_LABEL_OVERRIDES[rule.key] : rule.label;
+}
+
 // Fixed option sets for the enum-shaped string/number rules. A string/number
 // rule outside this table has no known enum and no free-text/number control
 // is rendered for it yet (matches pre-Stage-2d: `certification`, a
@@ -961,10 +976,11 @@ function RuleControl({
     case 'number': {
       const options = ENUM_OPTIONS[rule.key];
       if (!options) return null;
-      return (
+      const label = segmentLabel(rule);
+      const control = (
         <OptionFilter
           variant={variant}
-          label={variant === 'segment' ? rule.label : undefined}
+          label={variant === 'segment' ? label : undefined}
           options={options}
           value={value !== undefined ? String(value) : undefined}
           onChange={(v) =>
@@ -975,6 +991,16 @@ function RuleControl({
             )
           }
         />
+      );
+      // Chips variant has no inline label slot (unlike segment) — mirror the
+      // mobile sheet's own labeled-block wrapper so "Standard/Anime/Daily"
+      // still reads as "Type: ..." instead of a bare, unexplained chip row.
+      if (variant !== 'chips' || !label) return control;
+      return (
+        <div>
+          <span className="text-xs text-text-muted mb-2 block">{label}</span>
+          {control}
+        </div>
       );
     }
 
