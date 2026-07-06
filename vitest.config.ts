@@ -48,6 +48,7 @@ export default defineConfig({
       '@app': path.resolve(__dirname, './src'),
       '@tests': path.resolve(__dirname, './tests'),
       'next/image': path.resolve(__dirname, './tests/mocks/next/image.tsx'),
+      'next/link': path.resolve(__dirname, './tests/mocks/next/link.tsx'),
       'next/router': path.resolve(__dirname, './tests/mocks/next/router.tsx'),
     },
   },
