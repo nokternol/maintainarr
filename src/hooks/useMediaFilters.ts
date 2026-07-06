@@ -28,7 +28,7 @@ const EMPTY_FILTER_STATE: FilterState = {
   seriesSort: SORT_DEFAULT,
 };
 
-function scopeOf(rule: MediaRuleDescriptor): ContentScope {
+export function scopeOf(rule: MediaRuleDescriptor): ContentScope {
   if (rule.contentTypes.length === 2) return 'shared';
   return rule.contentTypes[0] === 'movie' ? 'movie' : 'show';
 }

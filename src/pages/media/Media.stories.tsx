@@ -1,51 +1,202 @@
+import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
+import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
 import { MediaContent } from './index';
 import type { ActiveTab, MediaSlice } from './index';
-import type { LegacyFilterState } from './legacyFilterBridge';
 
 // ─── Fixture data ─────────────────────────────────────────────────────────────
 
-const DEFAULT_FILTER: LegacyFilterState = {
-  title: '',
-  hasFile: undefined,
-  monitored: undefined,
-  seriesStatus: undefined,
-  yearMin: undefined,
-  yearMax: undefined,
-  movieTagIds: undefined,
-  seriesTagIds: undefined,
-  movieQualityProfileIds: undefined,
-  seriesQualityProfileIds: undefined,
-  movieGenres: undefined,
-  seriesGenres: undefined,
-  seriesType: undefined,
-  network: undefined,
-  tautulliWatched: undefined,
+const EMPTY_FILTER_STATE: FilterState = {
+  shared: { title: '' },
+  movie: {},
+  show: {},
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
-  addedDaysAgoGte: undefined,
-  addedDaysAgoLte: undefined,
-  sizeOnDiskGbGte: undefined,
-  sizeOnDiskGbLte: undefined,
-  certification: undefined,
-  radarrImdbRatingGte: undefined,
-  radarrImdbRatingLte: undefined,
-  sonarrRatingGte: undefined,
-  sonarrRatingLte: undefined,
-  sonarrEnded: undefined,
-  sonarrLastAiredDaysAgoGte: undefined,
-  sonarrLastAiredDaysAgoLte: undefined,
-  sonarrPercentEpisodesGte: undefined,
-  sonarrPercentEpisodesLte: undefined,
-  lastWatchedDaysAgoGte: undefined,
-  lastWatchedDaysAgoLte: undefined,
-  overseerrHasIssue: undefined,
-  overseerrRequestStatus: undefined,
-  tmdbStatus: undefined,
 };
+
+// Mirrors GET /api/filter-fields' provider-gated MediaRuleDescriptor projection
+// for a RADARR + SONARR + TAUTULLI library — matches ALL_PROVIDERS below.
+const FIXTURE_RULES: MediaRuleDescriptor[] = [
+  {
+    key: 'title',
+    label: 'Title',
+    contentTypes: ['movie', 'show'],
+    dataType: 'string',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'year',
+    label: 'Year',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'watched',
+    label: 'Watched',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['TAUTULLI'],
+    required: false,
+  },
+  {
+    key: 'addedDaysAgo',
+    label: 'Added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'sizeOnDiskGb',
+    label: 'Size on disk (GB)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'hasFile',
+    label: 'Has file',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['movie'],
+    dataType: 'csv-ids',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'qualityProfileIds',
+    label: 'Quality profile',
+    contentTypes: ['movie'],
+    dataType: 'csv-ids',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'genres',
+    label: 'Genres',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'imdbRating',
+    label: 'IMDB rating',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'monitored',
+    label: 'Monitored',
+    contentTypes: ['show'],
+    dataType: 'boolean',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'seriesStatus',
+    label: 'Series status',
+    contentTypes: ['show'],
+    dataType: 'string',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'qualityProfileIds',
+    label: 'Quality profile',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'genres',
+    label: 'Genres',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'seriesType',
+    label: 'Series type',
+    contentTypes: ['show'],
+    dataType: 'string',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'network',
+    label: 'Network',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'communityRating',
+    label: 'Community rating',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'ended',
+    label: 'Ended',
+    contentTypes: ['show'],
+    dataType: 'boolean',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'lastAiredDaysAgo',
+    label: 'Last aired (days ago)',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'episodePercentage',
+    label: 'Episode completion (%)',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'lastWatchedDaysAgo',
+    label: 'Last watched (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['TAUTULLI'],
+    required: false,
+  },
+];
 
 function emptySlice<T>(): MediaSlice<T> {
   return {
@@ -92,7 +243,14 @@ const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);
 
 // ─── Controlled wrapper ───────────────────────────────────────────────────────
 
-const SORT_KEYS = new Set(['movieSort', 'seriesSort']);
+function isBucketActive(bucket: Record<string, FilterValue>, skipEmptyTitle = false): boolean {
+  return Object.entries(bucket).some(([key, value]) => {
+    if (skipEmptyTitle && key === 'title') return value !== '';
+    if (value === undefined) return false;
+    if (typeof value === 'object') return value.min !== undefined || value.max !== undefined;
+    return true;
+  });
+}
 
 function Controlled({
   filtersOpen,
@@ -103,58 +261,31 @@ function Controlled({
   onFiltersClose: () => void;
   activeTab?: ActiveTab;
 }) {
-  const [filterState, setFilterState] = useState<LegacyFilterState>(DEFAULT_FILTER);
-  const patch = (partial: Partial<LegacyFilterState>) =>
-    setFilterState((s) => ({ ...s, ...partial }));
-  const isActive = Object.entries(filterState).some(([key, v]) => {
-    if (SORT_KEYS.has(key)) return false;
-    return key === 'title' ? v !== '' : v !== undefined;
-  });
+  const [values, setValues] = useState<FilterState>(EMPTY_FILTER_STATE);
+  const onRuleChange = (scope: ContentScope, key: string, value: FilterValue | undefined) =>
+    setValues((s) => {
+      const bucket = { ...s[scope] };
+      if (value === undefined) delete bucket[key];
+      else bucket[key] = value;
+      return { ...s, [scope]: bucket };
+    });
+  const isActive =
+    isBucketActive(values.shared, true) ||
+    isBucketActive(values.movie) ||
+    isBucketActive(values.show);
 
   return (
     <MediaContent
-      filterState={filterState}
-      setTitle={(v) => patch({ title: v })}
-      setHasFile={(v) => patch({ hasFile: v })}
-      setMonitored={(v) => patch({ monitored: v })}
-      setSeriesStatus={(v) => patch({ seriesStatus: v })}
-      setYearMin={(v) => patch({ yearMin: v })}
-      setYearMax={(v) => patch({ yearMax: v })}
-      setMovieTagIds={(v) => patch({ movieTagIds: v })}
-      setSeriesTagIds={(v) => patch({ seriesTagIds: v })}
-      setMovieQualityProfileIds={(v) => patch({ movieQualityProfileIds: v })}
-      setSeriesQualityProfileIds={(v) => patch({ seriesQualityProfileIds: v })}
-      setMovieGenres={(v) => patch({ movieGenres: v })}
-      setSeriesGenres={(v) => patch({ seriesGenres: v })}
-      setSeriesType={(v) => patch({ seriesType: v })}
-      setNetwork={(v) => patch({ network: v })}
-      setTautulliWatched={(v) => patch({ tautulliWatched: v })}
-      setAddedDaysAgoGte={(v) => patch({ addedDaysAgoGte: v })}
-      setAddedDaysAgoLte={(v) => patch({ addedDaysAgoLte: v })}
-      setSizeOnDiskGbGte={(v) => patch({ sizeOnDiskGbGte: v })}
-      setSizeOnDiskGbLte={(v) => patch({ sizeOnDiskGbLte: v })}
-      setCertification={(v) => patch({ certification: v })}
-      setRadarrImdbRatingGte={(v) => patch({ radarrImdbRatingGte: v })}
-      setRadarrImdbRatingLte={(v) => patch({ radarrImdbRatingLte: v })}
-      setSonarrRatingGte={(v) => patch({ sonarrRatingGte: v })}
-      setSonarrRatingLte={(v) => patch({ sonarrRatingLte: v })}
-      setSonarrEnded={(v) => patch({ sonarrEnded: v })}
-      setSonarrLastAiredDaysAgoGte={(v) => patch({ sonarrLastAiredDaysAgoGte: v })}
-      setSonarrLastAiredDaysAgoLte={(v) => patch({ sonarrLastAiredDaysAgoLte: v })}
-      setSonarrPercentEpisodesGte={(v) => patch({ sonarrPercentEpisodesGte: v })}
-      setSonarrPercentEpisodesLte={(v) => patch({ sonarrPercentEpisodesLte: v })}
-      setLastWatchedDaysAgoGte={(v) => patch({ lastWatchedDaysAgoGte: v })}
-      setLastWatchedDaysAgoLte={(v) => patch({ lastWatchedDaysAgoLte: v })}
-      setOverseerrHasIssue={(v) => patch({ overseerrHasIssue: v })}
-      setOverseerrRequestStatus={(v) => patch({ overseerrRequestStatus: v })}
-      setTmdbStatus={(v) => patch({ tmdbStatus: v })}
-      clearAll={() => setFilterState(DEFAULT_FILTER)}
+      rules={FIXTURE_RULES}
+      values={values}
+      onRuleChange={onRuleChange}
+      clearAll={() => setValues(EMPTY_FILTER_STATE)}
       isActive={isActive}
       activeFilterCount={0}
-      movieSort={filterState.movieSort}
-      seriesSort={filterState.seriesSort}
-      setMovieSort={(v) => patch({ movieSort: v })}
-      setSeriesSort={(v) => patch({ seriesSort: v })}
+      movieSort={values.movieSort}
+      seriesSort={values.seriesSort}
+      setMovieSort={(v) => setValues((s) => ({ ...s, movieSort: v }))}
+      setSeriesSort={(v) => setValues((s) => ({ ...s, seriesSort: v }))}
       activeTab={activeTab}
       filtersOpen={filtersOpen}
       onFiltersClose={onFiltersClose}
