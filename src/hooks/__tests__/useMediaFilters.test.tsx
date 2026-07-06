@@ -1,27 +1,24 @@
 /**
- * useMediaFilters — Cycle 4 RED
- *
- * Tests filter state management, debounce, URL sync, clearAll, isActive,
- * AND the FILTER_FIELDS registry contract (single source of truth).
- * Cycle 4 adds: narrow-type assertions proving FILTER_FIELDS is as-const
- * and FilterState is correctly derived from it.
+ * useMediaFilters — derives its field vocabulary from the server rule
+ * registry (`useMediaRules`) instead of a static client-side catalogue.
+ * FilterState is scoped `{ shared, movie, show }` so the registry's
+ * intentionally-reused keys (tagIds, qualityProfileIds, genres) can hold
+ * independent movie/show values without collision.
  *
  * Run: vitest run --project client
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
-import type { FilterState } from '../useMediaFilters';
+import { http, HttpResponse } from 'msw';
+import React from 'react';
+import { SWRConfig } from 'swr';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { server } from '../../../tests/mocks/server';
 import { useMediaFilters } from '../useMediaFilters';
 
-// ─── Router mock ───────────────────────────────────────────────────────────────
-
-// vi.hoisted ensures these are defined before module imports so vi.mock can close over them.
 const { mockReplace } = vi.hoisted(() => ({
   mockReplace: vi.fn().mockResolvedValue(true),
 }));
 
-// Mutable query state for testing URL-read-on-mount behaviour.
-// The factory reads this at call time via a getter.
 let mockRouterQuery: Record<string, string> = {};
 
 vi.mock('next/router', () => ({
@@ -38,709 +35,241 @@ vi.mock('next/router', () => ({
   }),
 }));
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const RULES = [
+  {
+    key: 'title',
+    label: 'Title',
+    contentTypes: ['movie', 'show'],
+    dataType: 'string',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'year',
+    label: 'Year',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'hasFile',
+    label: 'Has file',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['movie'],
+    dataType: 'csv-ids',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'imdbRating',
+    label: 'IMDB rating',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+];
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
 
 beforeEach(() => {
   mockRouterQuery = {};
   mockReplace.mockClear();
+  server.use(http.get('/api/filter-fields', () => HttpResponse.json(RULES)));
 });
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-// ─── Filter state ─────────────────────────────────────────────────────────────
+async function renderReady() {
+  const view = renderHook(() => useMediaFilters(), { wrapper });
+  await waitFor(() => expect(view.result.current.isLoading).toBe(false));
+  return view;
+}
 
 describe('useMediaFilters — initial state', () => {
-  it('starts with all fields empty when router.query is empty', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState.title).toBe('');
-    expect(result.current.filterState.hasFile).toBeUndefined();
-    expect(result.current.filterState.monitored).toBeUndefined();
-    expect(result.current.filterState.seriesStatus).toBeUndefined();
-    expect(result.current.filterState.yearMin).toBeUndefined();
-    expect(result.current.filterState.yearMax).toBeUndefined();
-    expect(result.current.filterState.movieTagIds).toBeUndefined();
-    expect(result.current.filterState.seriesTagIds).toBeUndefined();
-    expect(result.current.filterState.movieQualityProfileIds).toBeUndefined();
-    expect(result.current.filterState.seriesQualityProfileIds).toBeUndefined();
+  it('starts empty when router.query is empty', async () => {
+    const { result } = await renderReady();
+    expect(result.current.filterState.shared.title).toBe('');
+    expect(result.current.filterState.movie.tagIds).toBeUndefined();
+    expect(result.current.filterState.show.tagIds).toBeUndefined();
   });
 
-  it('reads title from router.query on mount', () => {
+  it('parses a shared scalar field from the URL', async () => {
     mockRouterQuery = { title: 'batman' };
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState.title).toBe('batman');
+    const { result } = await renderReady();
+    expect(result.current.filterState.shared.title).toBe('batman');
   });
 
-  it('reads hasFile from router.query on mount', () => {
-    mockRouterQuery = { hasFile: 'true' };
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState.hasFile).toBe('true');
-  });
-
-  it('reads yearMin and yearMax from router.query on mount', () => {
+  it('parses a range field into { min, max } once rules load', async () => {
     mockRouterQuery = { yearMin: '2010', yearMax: '2020' };
-    const { result } = renderHook(() => useMediaFilters());
+    const { result } = renderHook(() => useMediaFilters(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.filterState.shared.year).toEqual({ min: 2010, max: 2020 })
+    );
+  });
 
-    expect(result.current.filterState.yearMin).toBe(2010);
-    expect(result.current.filterState.yearMax).toBe(2020);
+  it('keeps movie.tagIds and show.tagIds independent for the colliding registry key', async () => {
+    mockRouterQuery = { movieTagIds: '1,2', showTagIds: '3,4' };
+    const { result } = await renderReady();
+    expect(result.current.filterState.movie.tagIds).toBe('1,2');
+    expect(result.current.filterState.show.tagIds).toBe('3,4');
   });
 });
 
-// ─── Setters ──────────────────────────────────────────────────────────────────
-
-describe('useMediaFilters — setters', () => {
-  it('setTitle updates filterState.title immediately', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('matrix');
-    });
-
-    expect(result.current.filterState.title).toBe('matrix');
+describe('useMediaFilters — setValue', () => {
+  it('updates a shared value immediately', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('shared', 'title', 'matrix'));
+    expect(result.current.filterState.shared.title).toBe('matrix');
   });
 
-  it('setHasFile updates filterState.hasFile immediately', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setHasFile('true');
-    });
-
-    expect(result.current.filterState.hasFile).toBe('true');
+  it('scopes a movie-only value without touching show', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'tagIds', '1,2'));
+    expect(result.current.filterState.movie.tagIds).toBe('1,2');
+    expect(result.current.filterState.show.tagIds).toBeUndefined();
   });
 
-  it('setHasFile(undefined) clears the field', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setHasFile('true');
-    });
-    act(() => {
-      result.current.setHasFile(undefined);
-    });
-
-    expect(result.current.filterState.hasFile).toBeUndefined();
-  });
-
-  it('setMonitored updates filterState.monitored', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setMonitored('false');
-    });
-
-    expect(result.current.filterState.monitored).toBe('false');
-  });
-
-  it('setSeriesStatus updates filterState.seriesStatus', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setSeriesStatus('ended');
-    });
-
-    expect(result.current.filterState.seriesStatus).toBe('ended');
-  });
-
-  it('setYearMin updates filterState.yearMin', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setYearMin(2010);
-    });
-
-    expect(result.current.filterState.yearMin).toBe(2010);
-  });
-
-  it('setMovieTagIds updates filterState.movieTagIds', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setMovieTagIds('1,2');
-    });
-
-    expect(result.current.filterState.movieTagIds).toBe('1,2');
+  it('setValue(undefined) clears the field', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'tagIds', '1,2'));
+    act(() => result.current.setValue('movie', 'tagIds', undefined));
+    expect(result.current.filterState.movie.tagIds).toBeUndefined();
   });
 });
 
-// ─── Debounce ─────────────────────────────────────────────────────────────────
-
-describe('useMediaFilters — debounce on title', () => {
-  it('debouncedFilters.title is empty immediately after setTitle', () => {
+describe('useMediaFilters — title debounce', () => {
+  it('debouncedFilters.shared.title lags filterState.shared.title until 300ms pass', async () => {
+    const { result } = await renderReady();
     vi.useFakeTimers();
-    const { result } = renderHook(() => useMediaFilters());
 
-    act(() => {
-      result.current.setTitle('batman');
-    });
+    act(() => result.current.setValue('shared', 'title', 'batman'));
+    expect(result.current.filterState.shared.title).toBe('batman');
+    expect(result.current.debouncedFilters.shared.title).toBeUndefined();
 
-    // filterState updates immediately, but debouncedFilters.title does not
-    expect(result.current.filterState.title).toBe('batman');
-    expect(result.current.debouncedFilters.title).toBeUndefined();
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.debouncedFilters.shared.title).toBe('batman');
   });
 
-  it('debouncedFilters.title updates after 300ms', async () => {
-    vi.useFakeTimers();
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('batman');
-    });
-
-    // Advance timers past the debounce threshold
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(result.current.debouncedFilters.title).toBe('batman');
-  });
-
-  it('debouncedFilters.title coalesces rapid keystrokes into one update', async () => {
-    vi.useFakeTimers();
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('b');
-    });
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-    act(() => {
-      result.current.setTitle('ba');
-    });
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-    act(() => {
-      result.current.setTitle('bat');
-    });
-    // 300ms after the LAST keystroke
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(result.current.debouncedFilters.title).toBe('bat');
+  it('non-title values are immediate in debouncedFilters', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'hasFile', true));
+    expect(result.current.debouncedFilters.movie.hasFile).toBe(true);
   });
 });
-
-// ─── Non-title filters are immediate in debouncedFilters ─────────────────────
-
-describe('useMediaFilters — non-title filters update debouncedFilters immediately', () => {
-  it('setHasFile is reflected in debouncedFilters immediately', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setHasFile('false');
-    });
-
-    expect(result.current.debouncedFilters.hasFile).toBe('false');
-  });
-
-  it('setYearMin is reflected in debouncedFilters immediately', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setYearMin(2005);
-    });
-
-    expect(result.current.debouncedFilters.yearMin).toBe(2005);
-  });
-});
-
-// ─── clearAll ─────────────────────────────────────────────────────────────────
-
-describe('useMediaFilters — clearAll', () => {
-  it('resets all filter state to empty', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('matrix');
-      result.current.setHasFile('true');
-      result.current.setYearMin(2005);
-      result.current.setMovieTagIds('1,2');
-    });
-
-    act(() => {
-      result.current.clearAll();
-    });
-
-    expect(result.current.filterState.title).toBe('');
-    expect(result.current.filterState.hasFile).toBeUndefined();
-    expect(result.current.filterState.yearMin).toBeUndefined();
-    expect(result.current.filterState.movieTagIds).toBeUndefined();
-  });
-});
-
-// ─── isActive ─────────────────────────────────────────────────────────────────
-
-describe('useMediaFilters — isActive', () => {
-  it('is false when no filters are set', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expect(result.current.isActive).toBe(false);
-  });
-
-  it('is true when title is set', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('batman');
-    });
-
-    expect(result.current.isActive).toBe(true);
-  });
-
-  it('is true when hasFile is set', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setHasFile('true');
-    });
-
-    expect(result.current.isActive).toBe(true);
-  });
-
-  it('becomes false again after clearAll', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setTitle('matrix');
-    });
-    act(() => {
-      result.current.clearAll();
-    });
-
-    expect(result.current.isActive).toBe(false);
-  });
-});
-
-// ─── URL sync ─────────────────────────────────────────────────────────────────
 
 describe('useMediaFilters — URL sync', () => {
-  it('does NOT call router.replace on initial mount', async () => {
-    renderHook(() => useMediaFilters());
-
-    // Allow any effects to flush
-    await waitFor(() => {
-      expect(mockReplace).not.toHaveBeenCalled();
-    });
+  it('does not call router.replace on initial mount', async () => {
+    await renderReady();
+    await waitFor(() => expect(mockReplace).not.toHaveBeenCalled());
   });
 
-  it('calls router.replace with shallow=true when a filter changes', async () => {
-    const { result } = renderHook(() => useMediaFilters());
+  it('serializes a scoped, colliding key with its scope prefix', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'tagIds', '1,2'));
 
-    act(() => {
-      result.current.setHasFile('true');
-    });
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith(
-        expect.objectContaining({ query: expect.objectContaining({ hasFile: 'true' }) }),
-        undefined,
-        { shallow: true }
-      );
-    });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+    const query = mockReplace.mock.calls.at(-1)![0].query as Record<string, string>;
+    expect(query.movieTagIds).toBe('1,2');
   });
 
-  it('omits undefined fields from the URL query', async () => {
-    const { result } = renderHook(() => useMediaFilters());
+  it('serializes a range value as Min/Max param pairs', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('shared', 'year', { min: 2000, max: 2020 }));
 
-    act(() => {
-      result.current.setHasFile('true');
-    });
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalled();
-    });
-
-    const callArgs = mockReplace.mock.calls[0][0];
-    // Only hasFile should be in the query — no undefined keys
-    expect(Object.keys(callArgs.query)).toEqual(['hasFile']);
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+    const query = mockReplace.mock.calls.at(-1)![0].query as Record<string, string>;
+    expect(query.yearMin).toBe('2000');
+    expect(query.yearMax).toBe('2020');
   });
 
-  it('clears URL params when clearAll is called', async () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setHasFile('true');
-    });
+  it('clears URL params on clearAll', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'hasFile', true));
     await waitFor(() => expect(mockReplace).toHaveBeenCalled());
     mockReplace.mockClear();
 
-    act(() => {
-      result.current.clearAll();
-    });
-
-    await waitFor(() => {
+    act(() => result.current.clearAll());
+    await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith(expect.objectContaining({ query: {} }), undefined, {
         shallow: true,
-      });
-    });
+      })
+    );
   });
 });
 
-// ─── Complete round-trips (all fields) ────────────────────────────────────────
-
-describe('parseQuery — complete round-trip for all registry fields', () => {
-  it('parses all pre-Phase-1 fields from query', () => {
-    mockRouterQuery = {
-      title: 'batman',
-      hasFile: 'true',
-      monitored: 'false',
-      seriesStatus: 'ended',
-      yearMin: '2000',
-      yearMax: '2020',
-      movieTagIds: '1,2',
-      seriesTagIds: '3,4',
-      movieQualityProfileIds: '5',
-      seriesQualityProfileIds: '6',
-      movieGenres: 'Action',
-      seriesGenres: 'Drama',
-      seriesType: 'standard',
-      network: 'HBO',
-      tautulliWatched: 'false',
-      movieSort: 'year_desc',
-      seriesSort: 'status_asc',
-    };
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState).toMatchObject({
-      title: 'batman',
-      hasFile: 'true',
-      monitored: 'false',
-      seriesStatus: 'ended',
-      yearMin: 2000,
-      yearMax: 2020,
-      movieTagIds: '1,2',
-      seriesTagIds: '3,4',
-      movieQualityProfileIds: '5',
-      seriesQualityProfileIds: '6',
-      movieGenres: 'Action',
-      seriesGenres: 'Drama',
-      seriesType: 'standard',
-      network: 'HBO',
-      tautulliWatched: 'false',
-      movieSort: 'year_desc',
-      seriesSort: 'status_asc',
-    });
-  });
-
-  it('parses all Phase 1 fields from query', () => {
-    mockRouterQuery = {
-      addedDaysAgoGte: '90',
-      addedDaysAgoLte: '365',
-      sizeOnDiskGbGte: '5',
-      sizeOnDiskGbLte: '50',
-      certification: 'PG-13',
-      radarrImdbRatingGte: '7',
-      radarrImdbRatingLte: '9',
-      sonarrRatingGte: '6',
-      sonarrRatingLte: '9',
-      sonarrEnded: 'true',
-      sonarrLastAiredDaysAgoGte: '30',
-      sonarrLastAiredDaysAgoLte: '365',
-      sonarrPercentEpisodesGte: '80',
-      sonarrPercentEpisodesLte: '100',
-    };
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState).toMatchObject({
-      addedDaysAgoGte: 90,
-      addedDaysAgoLte: 365,
-      sizeOnDiskGbGte: 5,
-      sizeOnDiskGbLte: 50,
-      certification: 'PG-13',
-      radarrImdbRatingGte: 7,
-      radarrImdbRatingLte: 9,
-      sonarrRatingGte: 6,
-      sonarrRatingLte: 9,
-      sonarrEnded: 'true',
-      sonarrLastAiredDaysAgoGte: 30,
-      sonarrLastAiredDaysAgoLte: 365,
-      sonarrPercentEpisodesGte: 80,
-      sonarrPercentEpisodesLte: 100,
-    });
-  });
-
-  it('applies registry defaults for every absent key', () => {
-    mockRouterQuery = {};
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState).toMatchObject({
-      title: '',
-      movieSort: 'title_asc',
-      seriesSort: 'title_asc',
-    });
-    // All optional fields default to undefined — spot-check Phase 1 additions
-    expect(result.current.filterState.addedDaysAgoGte).toBeUndefined();
-    expect(result.current.filterState.sonarrEnded).toBeUndefined();
-    expect(result.current.filterState.certification).toBeUndefined();
-  });
-});
-
-describe('buildQuery — serializes all non-default fields', () => {
-  it('includes every set filter key in the URL query', async () => {
-    const { result } = renderHook(() => useMediaFilters());
-
+describe('useMediaFilters — sort keys are not rules', () => {
+  it('setMovieSort/setSeriesSort update filterState but stay out of debouncedFilters', async () => {
+    const { result } = await renderReady();
     act(() => {
-      result.current.setTitle('batman');
-      result.current.setHasFile('true');
-      result.current.setMonitored('false');
-      result.current.setSeriesStatus('ended');
-      result.current.setYearMin(2000);
-      result.current.setYearMax(2020);
-      result.current.setMovieTagIds('1,2');
-      result.current.setSeriesTagIds('3,4');
-      result.current.setMovieQualityProfileIds('5');
-      result.current.setSeriesQualityProfileIds('6');
-      result.current.setMovieGenres('Action');
-      result.current.setSeriesGenres('Drama');
-      result.current.setSeriesType('standard');
-      result.current.setNetwork('HBO');
-      result.current.setTautulliWatched('false');
       result.current.setMovieSort('year_desc');
       result.current.setSeriesSort('status_asc');
     });
-
-    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
-    const query = mockReplace.mock.calls[0][0].query as Record<string, string>;
-
-    expect(Object.keys(query).sort()).toEqual([
-      'hasFile',
-      'monitored',
-      'movieGenres',
-      'movieQualityProfileIds',
-      'movieSort',
-      'movieTagIds',
-      'network',
-      'seriesGenres',
-      'seriesQualityProfileIds',
-      'seriesSort',
-      'seriesStatus',
-      'seriesTagIds',
-      'seriesType',
-      'tautulliWatched',
-      'title',
-      'yearMax',
-      'yearMin',
-    ]);
-  });
-});
-
-// ─── Sort setters ─────────────────────────────────────────────────────────────
-
-describe('useMediaFilters — sort setters', () => {
-  it('setMovieSort updates filterState.movieSort', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setMovieSort('year_desc');
-    });
-
     expect(result.current.filterState.movieSort).toBe('year_desc');
-  });
-
-  it('setSeriesSort updates filterState.seriesSort', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setSeriesSort('status_asc');
-    });
-
     expect(result.current.filterState.seriesSort).toBe('status_asc');
-  });
-
-  it('isActive remains false when only sort is non-default', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setMovieSort('year_desc');
-      result.current.setSeriesSort('status_asc');
-    });
-
-    expect(result.current.isActive).toBe(false);
-  });
-
-  it('sort keys are excluded from debouncedFilters', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setMovieSort('year_desc');
-      result.current.setSeriesSort('status_asc');
-    });
-
     expect(result.current.debouncedFilters).not.toHaveProperty('movieSort');
     expect(result.current.debouncedFilters).not.toHaveProperty('seriesSort');
   });
 
-  it('sort state persists through clearAll', () => {
-    const { result } = renderHook(() => useMediaFilters());
+  it('sort is excluded from isActive', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setMovieSort('year_desc'));
+    expect(result.current.isActive).toBe(false);
+  });
 
+  it('sort state survives clearAll', async () => {
+    const { result } = await renderReady();
     act(() => {
       result.current.setMovieSort('year_desc');
-      result.current.setHasFile('true');
+      result.current.setValue('movie', 'hasFile', true);
     });
-    act(() => {
-      result.current.clearAll();
-    });
-
+    act(() => result.current.clearAll());
     expect(result.current.filterState.movieSort).toBe('title_asc');
-    expect(result.current.filterState.hasFile).toBeUndefined();
+    expect(result.current.filterState.movie.hasFile).toBeUndefined();
   });
 });
 
-// ─── Setter argument type regression guards ───────────────────────────────────
-//
-// These tests assert that each setter's parameter type equals FilterState[K]
-// for its corresponding key. They serve as regression guards: if a FieldSpec
-// type mapping changes and a setter's inline type is NOT updated, these fail.
-//
-// The tests pass today because the inline types happen to match — that is
-// intentional. After the GREEN step they pass because types are derived.
-
-describe('useMediaFilters — setter argument type regression guards', () => {
-  it('setHasFile parameter type equals FilterState["hasFile"] (bool3 shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setHasFile).parameter(0).toEqualTypeOf<FilterState['hasFile']>();
+describe('useMediaFilters — isActive', () => {
+  it('is false with nothing set', async () => {
+    const { result } = await renderReady();
+    expect(result.current.isActive).toBe(false);
   });
 
-  it('setMonitored parameter type equals FilterState["monitored"] (bool3 shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setMonitored)
-      .parameter(0)
-      .toEqualTypeOf<FilterState['monitored']>();
-  });
-
-  it('setTautulliWatched parameter type equals FilterState["tautulliWatched"] (bool3 shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setTautulliWatched)
-      .parameter(0)
-      .toEqualTypeOf<FilterState['tautulliWatched']>();
-  });
-
-  it('setYearMin parameter type equals FilterState["yearMin"] (number shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setYearMin).parameter(0).toEqualTypeOf<FilterState['yearMin']>();
-  });
-
-  it('setYearMax parameter type equals FilterState["yearMax"] (number shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setYearMax).parameter(0).toEqualTypeOf<FilterState['yearMax']>();
-  });
-
-  it('setTitle parameter type equals FilterState["title"] (string with non-undefined default → string, not string|undefined)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setTitle).parameter(0).toEqualTypeOf<FilterState['title']>();
-  });
-
-  it('setSeriesStatus parameter type equals FilterState["seriesStatus"] (optional string shape)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setSeriesStatus)
-      .parameter(0)
-      .toEqualTypeOf<FilterState['seriesStatus']>();
-  });
-
-  it('setMovieSort parameter type equals FilterState["movieSort"] (string with non-undefined default)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setMovieSort)
-      .parameter(0)
-      .toEqualTypeOf<FilterState['movieSort']>();
-  });
-
-  it('setSeriesSort parameter type equals FilterState["seriesSort"] (string with non-undefined default)', () => {
-    const { result } = renderHook(() => useMediaFilters());
-    expectTypeOf(result.current.setSeriesSort)
-      .parameter(0)
-      .toEqualTypeOf<FilterState['seriesSort']>();
-  });
-});
-
-// ─── Phase 1 predicate fields ─────────────────────────────────────────────────
-
-describe('useMediaFilters — Phase 1 new fields have correct defaults', () => {
-  it('all Phase 1 fields default to undefined', () => {
-    mockRouterQuery = {};
-    const { result } = renderHook(() => useMediaFilters());
-    const s = result.current.filterState;
-
-    expect(s.addedDaysAgoGte).toBeUndefined();
-    expect(s.addedDaysAgoLte).toBeUndefined();
-    expect(s.sizeOnDiskGbGte).toBeUndefined();
-    expect(s.sizeOnDiskGbLte).toBeUndefined();
-    expect(s.certification).toBeUndefined();
-    expect(s.radarrImdbRatingGte).toBeUndefined();
-    expect(s.radarrImdbRatingLte).toBeUndefined();
-    expect(s.sonarrRatingGte).toBeUndefined();
-    expect(s.sonarrRatingLte).toBeUndefined();
-    expect(s.sonarrEnded).toBeUndefined();
-    expect(s.sonarrLastAiredDaysAgoGte).toBeUndefined();
-    expect(s.sonarrLastAiredDaysAgoLte).toBeUndefined();
-    expect(s.sonarrPercentEpisodesGte).toBeUndefined();
-    expect(s.sonarrPercentEpisodesLte).toBeUndefined();
-  });
-
-  it('number fields are parsed from query params', () => {
-    mockRouterQuery = { addedDaysAgoGte: '90', sizeOnDiskGbLte: '50', radarrImdbRatingGte: '7' };
-    const { result } = renderHook(() => useMediaFilters());
-
-    expect(result.current.filterState.addedDaysAgoGte).toBe(90);
-    expect(result.current.filterState.sizeOnDiskGbLte).toBe(50);
-    expect(result.current.filterState.radarrImdbRatingGte).toBe(7);
-  });
-
-  it('Phase 1 number setters update filterState and appear in debouncedFilters', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setAddedDaysAgoGte(30);
-    });
-    expect(result.current.filterState.addedDaysAgoGte).toBe(30);
-    expect(result.current.debouncedFilters.addedDaysAgoGte).toBe(30);
-  });
-
-  it('sonarrEnded is a bool3 field and its setter accepts the correct type', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setSonarrEnded('true');
-    });
-    expect(result.current.filterState.sonarrEnded).toBe('true');
-    expect(result.current.debouncedFilters.sonarrEnded).toBe('true');
-  });
-
-  it('isActive is true when any Phase 1 field is set', () => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      result.current.setSizeOnDiskGbGte(10);
-    });
+  it('is true when a shared value is set', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('shared', 'title', 'batman'));
     expect(result.current.isActive).toBe(true);
   });
-});
 
-describe('isActive — fields not covered by earlier tests', () => {
-  it.each([
-    ['monitored', 'setMonitored', 'false' as const],
-    ['seriesStatus', 'setSeriesStatus', 'ended'],
-    ['yearMax', 'setYearMax', 2020],
-    ['seriesTagIds', 'setSeriesTagIds', '3,4'],
-    ['movieQualityProfileIds', 'setMovieQualityProfileIds', '5'],
-    ['seriesQualityProfileIds', 'setSeriesQualityProfileIds', '6'],
-    ['movieGenres', 'setMovieGenres', 'Action'],
-    ['seriesGenres', 'setSeriesGenres', 'Drama'],
-    ['seriesType', 'setSeriesType', 'standard'],
-    ['network', 'setNetwork', 'HBO'],
-    ['tautulliWatched', 'setTautulliWatched', 'false' as const],
-  ])('isActive is true when only %s is set', (_field, setter, value) => {
-    const { result } = renderHook(() => useMediaFilters());
-
-    act(() => {
-      (result.current[setter as keyof typeof result.current] as (v: unknown) => void)(value);
-    });
-
+  it('is true when only a show-scoped value is set', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('show', 'tagIds', '3,4'));
     expect(result.current.isActive).toBe(true);
+  });
+
+  it('returns to false after clearAll', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('shared', 'title', 'matrix'));
+    act(() => result.current.clearAll());
+    expect(result.current.isActive).toBe(false);
   });
 });

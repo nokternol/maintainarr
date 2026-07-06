@@ -42,7 +42,19 @@ is graphed, dated, and verified against code, not inferred from a plan.
 
 ## Open
 
-### Filter/rule vocabulary (Phase 4 — Stage 1 shipped 2026-07-05, Stage 2 not started)
+### Filter/rule vocabulary (Phase 4 — Stage 1 shipped 2026-07-05, Stage 2a shipped 2026-07-06, 2b–2d not started)
+
+- **Stage 2 is sub-staged** (the blast radius — `FilterState`, `useMediaFilters`, `useMediaQueries.save()`,
+  `MediaFilterBar`'s ~33 `setX` props, `MediaContent`, `MediaPage` — is one tightly-coupled chain, not a
+  single change): **2a** `useMediaRules` hook (done), **2b** `useMediaQueries.ts` persists registry keys
+  directly (deletes `KEY_RENAMES`/`toFilterValues`), **2c** `useMediaFilters.ts` derives `FilterState` from
+  the registry (deletes `FILTER_FIELDS`), **2d** `MediaFilterBar`/`MediaContent`/`MediaPage` render
+  generically from descriptors — `impeccable`, Ladle-first, not TDD, only after 2b/2c are green. 2b and 2c
+  land together (2b's `save()` signature change breaks its only caller until 2c changes that caller's
+  shape). Full breakdown: `docs/in_progress/phase-4-client-query-alignment.md`'s "Stage 2" section.
+- **2a shipped 2026-07-06:** `src/hooks/useMediaRules.ts` (SWR, MSW-mocked) fetches the provider- and
+  contentType-gated `GET /api/filter-fields`, mirroring `useProviderTasks`'s shape. Purely additive — zero
+  consumers yet, nothing deleted, none of Stage 1's deployment risk carried by this sub-stage alone.
 
 - **Deployment-order constraint, not a Stage 1 defect:** Stage 1's rename/collapse is server-only by design
   (the client stays untouched until Stage 2 makes it derive from the registry). Between the two stages,
@@ -112,3 +124,23 @@ is graphed, dated, and verified against code, not inferred from a plan.
   `docs/in_progress/` files are deleted per the project's docs convention. Stage 2 (client derives from
   `GET /api/filter-fields`, deletes `FILTER_FIELDS` and both `KEY_RENAMES`/`toFilterValues` translators) is
   the remaining work.
+
+### MediaSource ownership vocabulary (spotted 2026-07-06, tracing Phase 4 Stage 2d — not yet worked)
+
+- **Fracture:** the server has a single authority for "which provider type owns this content type" —
+  `MediaSourceFactory.OWNER_TYPE` (`server/providers/mediaSourceFactory.ts:11`, `{ movie: RADARR, show:
+  SONARR }`), used to resolve the active `MediaSource` for a `ContentType` (see the Provider role model —
+  Source/Enricher/Actuator — in `docs/architecture/warden-core-model.md`). The client never reads this;
+  it independently re-hardcodes the identical mapping as literal string checks in four places:
+  `MediaFilterBar`'s `hasMovieSection`/`hasSeriesSection` gating
+  ([`src/components/MediaFilterBar/index.tsx:921,923`](ref:path:src/components/MediaFilterBar/index.tsx)),
+  and `MediaPage`'s empty-state gating
+  ([`src/pages/media/index.tsx:652,732`](ref:path:src/pages/media/index.tsx)) — all four spell
+  `configuredTypes.has('RADARR'|'SONARR')` rather than deriving from anything server-projected. Same
+  two-designs-for-one-process shape as the rule vocabulary above, over source ownership instead of
+  predicates: today the mapping happens to agree by coincidence, not by construction, so a future change to
+  `OWNER_TYPE` silently desyncs from these four call sites.
+- **Not yet worked.** Spotted while tracing Phase 4 Stage 2d's section-gating rewrite; out of that stage's
+  scope (rules/predicates, not source ownership) and not folded in. No plan document owns this yet — whoever
+  picks it up should decide whether the fix is projecting `OWNER_TYPE` onto an existing client-facing
+  surface (e.g. `GET /api/providers` or a new small endpoint) or something narrower.

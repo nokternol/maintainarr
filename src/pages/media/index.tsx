@@ -10,7 +10,6 @@ import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
 import type { CardDensity } from '@app/hooks/useCardDensity';
 import { useCardDensity } from '@app/hooks/useCardDensity';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { useMediaQueries } from '@app/hooks/useMediaQueries';
@@ -34,6 +33,13 @@ import {
 } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { LegacyFilterState } from './legacyFilterBridge';
+import {
+  legacySetters,
+  toBrowseParams,
+  toLegacyFilterState,
+  toSaveValues,
+} from './legacyFilterBridge';
 
 // ─── Density icons ────────────────────────────────────────────────────────────
 
@@ -349,7 +355,7 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
   return images?.find((img) => img.coverType === 'poster')?.remoteUrl;
 }
 
-function countActiveFilters(filterState: FilterState, tab: ActiveTab): number {
+function countActiveFilters(filterState: LegacyFilterState, tab: ActiveTab): number {
   const shared =
     (filterState.title ? 1 : 0) +
     (filterState.yearMin !== undefined || filterState.yearMax !== undefined ? 1 : 0) +
@@ -424,7 +430,7 @@ interface Lookups {
 
 export interface MediaContentProps {
   // filter bar
-  filterState: FilterState;
+  filterState: LegacyFilterState;
   setTitle: (v: string) => void;
   setHasFile: (v: 'true' | 'false' | undefined) => void;
   setMonitored: (v: 'true' | 'false' | undefined) => void;
@@ -794,50 +800,26 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function MediaPage() {
   const {
-    filterState,
+    filterState: rawFilterState,
     debouncedFilters,
-    setTitle,
-    setHasFile,
-    setMonitored,
-    setSeriesStatus,
-    setYearMin,
-    setYearMax,
-    setMovieTagIds,
-    setSeriesTagIds,
-    setMovieQualityProfileIds,
-    setSeriesQualityProfileIds,
-    setMovieGenres,
-    setSeriesGenres,
-    setSeriesType,
-    setNetwork,
-    setTautulliWatched,
-    setAddedDaysAgoGte,
-    setAddedDaysAgoLte,
-    setSizeOnDiskGbGte,
-    setSizeOnDiskGbLte,
-    setCertification,
-    setRadarrImdbRatingGte,
-    setRadarrImdbRatingLte,
-    setSonarrRatingGte,
-    setSonarrRatingLte,
-    setSonarrEnded,
-    setSonarrLastAiredDaysAgoGte,
-    setSonarrLastAiredDaysAgoLte,
-    setSonarrPercentEpisodesGte,
-    setSonarrPercentEpisodesLte,
-    setLastWatchedDaysAgoGte,
-    setLastWatchedDaysAgoLte,
-    setOverseerrHasIssue,
-    setOverseerrRequestStatus,
-    setTmdbStatus,
+    setValue,
     setMovieSort,
     setSeriesSort,
     clearAll,
     isActive,
   } = useMediaFilters();
 
-  const movies = useMovies({ ...debouncedFilters, sort: filterState.movieSort });
-  const series = useSeries({ ...debouncedFilters, sort: filterState.seriesSort });
+  const filterState = toLegacyFilterState(rawFilterState);
+  const setters = legacySetters(rawFilterState, setValue);
+
+  const movies = useMovies({
+    ...toBrowseParams(debouncedFilters, 'movie'),
+    sort: rawFilterState.movieSort,
+  });
+  const series = useSeries({
+    ...toBrowseParams(debouncedFilters, 'show'),
+    sort: rawFilterState.seriesSort,
+  });
   const lookups = useMediaLookups();
   const { providers } = useProviderSettings();
 
@@ -928,40 +910,7 @@ export default function MediaPage() {
       >
         <MediaContent
           filterState={filterState}
-          setTitle={setTitle}
-          setHasFile={setHasFile}
-          setMonitored={setMonitored}
-          setSeriesStatus={setSeriesStatus}
-          setYearMin={setYearMin}
-          setYearMax={setYearMax}
-          setMovieTagIds={setMovieTagIds}
-          setSeriesTagIds={setSeriesTagIds}
-          setMovieQualityProfileIds={setMovieQualityProfileIds}
-          setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-          setMovieGenres={setMovieGenres}
-          setSeriesGenres={setSeriesGenres}
-          setSeriesType={setSeriesType}
-          setNetwork={setNetwork}
-          setTautulliWatched={setTautulliWatched}
-          setAddedDaysAgoGte={setAddedDaysAgoGte}
-          setAddedDaysAgoLte={setAddedDaysAgoLte}
-          setSizeOnDiskGbGte={setSizeOnDiskGbGte}
-          setSizeOnDiskGbLte={setSizeOnDiskGbLte}
-          setCertification={setCertification}
-          setRadarrImdbRatingGte={setRadarrImdbRatingGte}
-          setRadarrImdbRatingLte={setRadarrImdbRatingLte}
-          setSonarrRatingGte={setSonarrRatingGte}
-          setSonarrRatingLte={setSonarrRatingLte}
-          setSonarrEnded={setSonarrEnded}
-          setSonarrLastAiredDaysAgoGte={setSonarrLastAiredDaysAgoGte}
-          setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
-          setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
-          setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
-          setLastWatchedDaysAgoGte={setLastWatchedDaysAgoGte}
-          setLastWatchedDaysAgoLte={setLastWatchedDaysAgoLte}
-          setOverseerrHasIssue={setOverseerrHasIssue}
-          setOverseerrRequestStatus={setOverseerrRequestStatus}
-          setTmdbStatus={setTmdbStatus}
+          {...setters}
           clearAll={clearAll}
           onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
           isActive={isActive}
@@ -985,7 +934,10 @@ export default function MediaPage() {
       <SaveQueryDialog
         open={saveDialogOpen}
         onClose={() => setSaveDialogOpen(false)}
-        onSave={(name) => saveQuery(name, activeTab === 'movies' ? 'movie' : 'show', filterState)}
+        onSave={(name) => {
+          const contentType = activeTab === 'movies' ? 'movie' : 'show';
+          return saveQuery(name, contentType, toSaveValues(rawFilterState, contentType));
+        }}
       />
     </>
   );

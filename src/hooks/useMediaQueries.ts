@@ -8,8 +8,6 @@ import type {
 import useSWR from 'swr';
 import useSWRMutation from 'swr/mutation';
 import type { z } from 'zod';
-import { FILTER_FIELDS } from './useMediaFilters';
-import type { FilterState } from './useMediaFilters';
 
 export type ContentType = z.infer<typeof ContentTypeSchema>;
 export type FilterValue = z.infer<typeof FilterValueSchema>;
@@ -17,49 +15,13 @@ export type FilterValueEntry = z.infer<typeof FilterValueEntrySchema>;
 export type QueryHealth = z.infer<typeof QueryHealthSchema>;
 export type MediaQueryRecord = z.infer<typeof MediaQueryRecordSchema>;
 
-// Translation from FilterState keys to registry keys
-const KEY_RENAMES: Partial<Record<string, string>> = {
-  tautulliWatched: 'watched',
-  movieTagIds: 'tagIds',
-  movieQualityProfileIds: 'qualityProfileIds',
-  movieGenres: 'genres',
-  radarrImdbRatingGte: 'imdbRatingGte',
-  radarrImdbRatingLte: 'imdbRatingLte',
-  seriesTagIds: 'tagIds',
-  seriesQualityProfileIds: 'qualityProfileIds',
-  seriesGenres: 'genres',
-  sonarrRatingGte: 'communityRatingGte',
-  sonarrRatingLte: 'communityRatingLte',
-  sonarrEnded: 'ended',
-  sonarrLastAiredDaysAgoGte: 'lastAiredDaysAgoGte',
-  sonarrLastAiredDaysAgoLte: 'lastAiredDaysAgoLte',
-  sonarrPercentEpisodesGte: 'episodePercentageGte',
-  sonarrPercentEpisodesLte: 'episodePercentageLte',
-};
-
-const SORT_KEYS = new Set(['movieSort', 'seriesSort']);
-
-export function toFilterValues(filterState: FilterState): FilterValueEntry[] {
-  const entries: FilterValueEntry[] = [];
-  for (const [rawKey, value] of Object.entries(filterState)) {
-    if (SORT_KEYS.has(rawKey)) continue;
-    const spec = FILTER_FIELDS[rawKey as keyof typeof FILTER_FIELDS];
-    if (value === undefined || value === spec?.default) continue;
-    const key = KEY_RENAMES[rawKey] ?? rawKey;
-    entries.push({ key, value: value as FilterValue });
-  }
-  return entries;
-}
-
-export function buildQueryParams(filterState: FilterState): string {
-  const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(filterState)) {
-    const spec = FILTER_FIELDS[k as keyof typeof FILTER_FIELDS];
-    if (v !== undefined && spec && v !== spec.default) {
-      params.set(k, String(v));
-    }
-  }
-  return params.toString();
+/** The client speaks registry keys directly — no rename table between here and `MEDIA_RULES`. */
+export function toFilterValues(
+  values: Record<string, FilterValue | undefined>
+): FilterValueEntry[] {
+  return Object.entries(values)
+    .filter((entry): entry is [string, FilterValue] => entry[1] !== undefined)
+    .map(([key, value]) => ({ key, value }));
 }
 
 const KEY = '/api/saved-queries';
@@ -99,9 +61,9 @@ export function useMediaQueries() {
   const save = async (
     name: string,
     contentType: ContentType,
-    filterState: FilterState
+    values: Record<string, FilterValue | undefined>
   ): Promise<MediaQueryRecord> => {
-    const filterValues = toFilterValues(filterState);
+    const filterValues = toFilterValues(values);
     const q = await triggerCreate({ name, contentType, filterValues });
     await mutate();
     return q!;

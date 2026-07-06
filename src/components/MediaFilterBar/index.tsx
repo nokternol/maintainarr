@@ -1,7 +1,11 @@
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { cn } from '@app/lib/utils/cn';
 import { useEffect, useId, useRef, useState } from 'react';
+// Temporary: FilterState here is the pre-Stage-2d flat shape, aliased from the
+// bridge in src/pages/media/legacyFilterBridge.ts (not the registry-derived
+// FilterState in @app/hooks/useMediaFilters). Deleted when 2d collapses this
+// component's ~33 props to onRuleChange(key, value).
+import type { LegacyFilterState as FilterState } from '../../pages/media/legacyFilterBridge';
 import { OptionFilter } from '../filters/OptionFilter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

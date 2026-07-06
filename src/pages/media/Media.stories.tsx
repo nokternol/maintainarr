@@ -1,14 +1,14 @@
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
 import { MediaContent } from './index';
 import type { ActiveTab, MediaSlice } from './index';
+import type { LegacyFilterState } from './legacyFilterBridge';
 
 // ─── Fixture data ─────────────────────────────────────────────────────────────
 
-const DEFAULT_FILTER: FilterState = {
+const DEFAULT_FILTER: LegacyFilterState = {
   title: '',
   hasFile: undefined,
   monitored: undefined,
@@ -103,8 +103,9 @@ function Controlled({
   onFiltersClose: () => void;
   activeTab?: ActiveTab;
 }) {
-  const [filterState, setFilterState] = useState<FilterState>(DEFAULT_FILTER);
-  const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
+  const [filterState, setFilterState] = useState<LegacyFilterState>(DEFAULT_FILTER);
+  const patch = (partial: Partial<LegacyFilterState>) =>
+    setFilterState((s) => ({ ...s, ...partial }));
   const isActive = Object.entries(filterState).some(([key, v]) => {
     if (SORT_KEYS.has(key)) return false;
     return key === 'title' ? v !== '' : v !== undefined;

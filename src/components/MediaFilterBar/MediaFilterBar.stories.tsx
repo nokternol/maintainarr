@@ -1,6 +1,6 @@
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
+import type { LegacyFilterState as FilterState } from '../../pages/media/legacyFilterBridge';
 import { MediaFilterBar } from './index';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────

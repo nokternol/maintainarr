@@ -1,8 +1,9 @@
 # Phase 4 — Client derives the rule vocabulary (server-first)
 
-**Status:** IN PROGRESS — Stage 1 (server) shipped 2026-07-05, Stage 2 (client) not started. Supersedes the
-earlier "client query alignment" framing. TDD (server naming + projection, then client hooks) +
-`impeccable` (filter view visual). **Depends on:** Phase 1 (engine + honest `/preview`).
+**Status:** IN PROGRESS — Stage 1 (server) shipped 2026-07-05. Stage 2 (client) is broken into sub-stages
+2a–2d (below); 2a shipped 2026-07-06, 2b–2d not started. Supersedes the earlier "client query alignment"
+framing. TDD (server naming + projection, then client hooks) + `impeccable` (filter view visual).
+**Depends on:** Phase 1 (engine + honest `/preview`).
 
 **Stage 1 is done; this is the handoff to whoever picks up Stage 2 next.** Read the "Stage 2" section below
 for what's left, and `docs/architecture/fracture-ledger.md`'s "Filter/rule vocabulary" entry for the as-built
@@ -169,23 +170,87 @@ affordance by design; the engine's contract is "match what the item carries."
 
 ## Stage 2 — the client derives (delete the second vocabulary)
 
-Only after Stage 1. The *goal* the earlier Phase 4 had right, the *mechanism* it had wrong:
+Only after Stage 1. The *goal* the earlier Phase 4 had right, the *mechanism* it had wrong. The blast
+radius (`FilterState`, `useMediaFilters`, `useMediaQueries.save()`, `MediaFilterBar`'s ~33 explicit `setX`
+props, `MediaContent`, `MediaPage`) is one tightly-coupled chain, not a single-session change, so Stage 2
+is split into four independently-shippable sub-stages. Each is TDD except 2d, which is `impeccable`
+(Ladle-first) by the plan's own original sequencing — the visual, generic-render pass happens only after
+the logic underneath it is green.
 
-- `useMediaRules` (SWR, MSW-mocked) fetches the provider-gated `MediaRuleDescriptor`s.
-- `MediaFilterBar` / `QueryRow` render **data-driven** from the descriptors: the control set, its
-  `dataType`, and its gating all come from the server. This collapses the ~33 explicit `setX` props
-  (`MediaFilterBarProps`) to a single `onRuleChange(key, value)` and gates controls by configured
-  provider — closing both problems in `docs/intent/filter-ui.md` (retired into this phase).
-- **Delete** `FILTER_FIELDS` and its renamed keys; nothing client-side declares what rules exist. The
-  client speaks the server's rule keys, so `filterValues` need no translation to persist or preview.
-- **Delete** `KEY_RENAMES` and `toFilterValues()` in `useMediaQueries.ts` (the fifth surface, above) at the
-  same time — `save()` persists registry keys directly once the client holds no renamed vocabulary to
-  translate from.
+### Stage 2a — `useMediaRules` (DONE — shipped 2026-07-06)
+
+- ✅ New hook (`src/hooks/useMediaRules.ts`, SWR, MSW-mocked in
+  `src/hooks/__tests__/useMediaRules.test.tsx`) fetching `GET /api/filter-fields`, optionally scoped by
+  `contentType` (mirrors `useProviderTasks`'s shape — same god-node-adjacent pattern Phase 3 established).
+  Reuses the shared `ContentTypeSchema` from `src/lib/api/schemas.ts` rather than re-declaring the
+  `'movie' | 'show'` union locally.
+- Purely additive: nothing deleted, nothing else in the chain touched yet, so this sub-stage carries none
+  of Stage 1's deployment risk on its own. It has zero consumers today — 2c is what wires it in.
+
+### Stage 2b — `useMediaQueries.ts` persists registry keys directly (DONE — shipped 2026-07-06)
+
+- ✅ Deleted `KEY_RENAMES` and the old `toFilterValues()`. `save(name, contentType, values)` now takes a
+  plain `Record<string, FilterValue | undefined>` and emits `{ key, value }` entries directly — no
+  translation, undefined values dropped. `useMediaQueries.ts` had no dedicated test file; wrote one
+  test-first (`src/hooks/__tests__/useMediaQueries.test.tsx`) rather than adjusting a nonexistent one.
+- Also deleted `buildQueryParams`, dead code with no callers outside the file.
+- Landed together with 2c below, as planned — `save()`'s shape and its only caller's shape had to change
+  in the same PR.
+
+### Stage 2c — `useMediaFilters.ts` derives from the registry (DONE — shipped 2026-07-06)
+
+- ✅ Replaced the static `FILTER_FIELDS` catalogue with `FilterState = { shared, movie, show, movieSort,
+  seriesSort }`, each of `shared`/`movie`/`show` a `Record<string, FilterValue>` keyed by **registry keys
+  directly** (`tagIds`, `genres`, `year`, etc.) sourced from `useMediaRules` (2a). Tracing the old
+  `KEY_RENAMES`/`toFilterValues` translator surfaced a real, previously-undocumented bug it would have
+  reproduced: `MEDIA_RULES` intentionally reuses the same key (`tagIds`, `qualityProfileIds`, `genres`)
+  across its movie-scoped and show-scoped entries, and the old flat `FilterState` held both
+  simultaneously (`movieGenres`/`seriesGenres` etc., both live since movies+series data stay mounted
+  together regardless of active tab) — collapsing both back to bare registry keys for `toFilterValues()`
+  would have silently pushed two `{ key: 'genres', ... }` entries into one saved query. Scoping
+  `FilterState` by content type (rather than merging movie+show into one flat map) closes that outright:
+  `toSaveValues(filterState, contentType)` merges only `shared` with the one relevant scope.
+  `useMediaFilters.test.tsx`'s old assertions encoded the flat, renamed vocabulary (the wrong end shape);
+  rewrote the suite against the target shape rather than layering a parallel one alongside a soon-dead one.
+- Range rules parse from two `Min`/`Max` URL params into one `{ min?, max? }` value; URL param names for
+  the three colliding key families are prefixed by scope (`movieTagIds`/`showTagIds`) via a mechanical
+  function of collision, not a hand-maintained name table.
+- **Known, accepted limitation:** `useMediaRules` resolves asynchronously, but `parseQuery` needs to know
+  each key's `dataType` (for number/range coercion) synchronously at mount to read the URL. Numeric/range
+  URL params parse as raw strings until rules load, then a one-time re-parse corrects them — a same-tick
+  self-heal in practice, not a permanent client-side dataType table reappearing.
+- **Temporary bridge, not the fracture reappearing:** `MediaFilterBar`/`MediaContent`/`MediaPage` (Stage
+  2d) still expect the old flat, individually-named prop contract (~33 `setX` props) and the old
+  browse-path param names (`server/modules/media/media.handler.ts`'s surface #2, undeleted). Rather than
+  rewrite 2d's generic render pass early to keep the build green, added
+  `src/pages/media/legacyFilterBridge.ts` — a small, explicitly-temporary adapter
+  (`toLegacyFilterState`/`legacySetters`/`toSaveValues`/`toBrowseParams`) translating the new scoped state
+  to/from the old flat shape at the `MediaPage` boundary only. `MediaFilterBar`'s own file is otherwise
+  untouched (just repoints its `FilterState` import at the bridge's `LegacyFilterState`). **Deleted whole
+  when 2d lands** — it is not a second permanent vocabulary, it is scaffolding for the gap between 2c
+  landing and 2d rewriting the render layer.
+- Added a default `GET /api/filter-fields` MSW handler (`tests/mocks/handlers/media.ts`) — previously
+  unconsumed by any client hook, so no mock existed; now needed globally since `useMediaFilters` calls
+  `useMediaRules` on every page render.
+
+### Stage 2d — `MediaFilterBar` / `MediaContent` / `MediaPage` render generically (`impeccable`, not TDD)
+
+- Only after 2b/2c are green. `MediaFilterBar` / `QueryRow` render **data-driven** from the descriptors:
+  the control set, its `dataType`, and its gating all come from the server. This collapses the ~33
+  explicit `setX` props (`MediaFilterBarProps`) to a single `onRuleChange(key, value)` and gates controls
+  by configured provider — closing both problems in `docs/intent/filter-ui.md` (retired into this phase).
 - Preview count (independent of the vocabulary fix, kept): `useQueryPreview(savedQueryId)` exposes the
   engine-backed `{ count }`; a query row bound to a saved query renders it. Include/exclude maps to
   `MediaQuerySource.role`.
-- Visual pass via `impeccable` (Ladle story first, per `CLAUDE.md`) **after** the hook logic is green:
-  the rule-driven `MediaFilterBar`, per-row preview count, include/exclude, provider-gated empty states.
+- Ladle story first, per `CLAUDE.md`: the rule-driven `MediaFilterBar`, per-row preview count,
+  include/exclude, provider-gated empty states.
+- **Adjacent fracture spotted while tracing this sub-stage, not this phase's to fix:** the section-gating
+  this sub-stage rewrites (`hasMovieSection`/`hasSeriesSection` in `MediaFilterBar`, the empty-state gating
+  in `MediaPage`) independently hardcodes `configuredTypes.has('RADARR'|'SONARR')` in four places rather
+  than deriving from the server's single authority for "which provider owns this content type" —
+  `MediaSourceFactory.OWNER_TYPE` (`server/providers/mediaSourceFactory.ts:11`). Same
+  two-designs-for-one-process shape as the rule vocabulary, over source-ownership instead of predicates.
+  Recorded as its own Open entry in `docs/architecture/fracture-ledger.md`; not folded into Stage 2's scope.
 
 ## Out of scope (noted, not built here)
 
