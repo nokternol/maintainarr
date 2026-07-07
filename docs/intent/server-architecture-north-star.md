@@ -16,9 +16,11 @@ A module is a vertical slice of the product, not an HTTP surface.
 
 **Sharing model: public-API imports + a small kernel.**
 
-- Each module exposes a deliberate public surface via its `index.ts` barrel. Other modules may import
-  **only** that barrel — never a module's internals. The barrel is the module's contract; anything not
-  exported from it is private.
+- Each module exposes a **deliberately crafted public interface** via its `index.ts`. This is *not* a
+  barrel file — it must never wholesale re-export the module's internals. It exports the minimal,
+  intentionally designed surface other modules and the HTTP layer consume: the types, functions, and
+  services that form the module's contract, chosen one by one. Anything not exported is private, and a
+  growing export list is a design smell to challenge, not a convenience.
 - A small `server/kernel/` holds true infrastructure with no domain meaning: the event bus, logger,
   config, database handle, error hierarchy, middleware, and `defineRoute`. Every module may depend on
   the kernel; the kernel depends on no module.
@@ -28,7 +30,7 @@ A module is a vertical slice of the product, not an HTTP surface.
 
 **Dependency direction follows the product loop** (providers unlock metadata → predicates → queries →
 automations): `automations → media, mediaQueries`; `mediaQueries → media, providers`;
-`media → providers`; everyone → `kernel`. Cycles between module barrels are design errors.
+`media → providers`; everyone → `kernel`. Cycles between module interfaces are design errors.
 
 ## Target module inventory
 
@@ -55,8 +57,12 @@ Boundary decisions this inventory encodes:
 
 - **`filterFields`, `backdrops`, `search` are media concerns**, not modules — they were separate only
   because module boundaries were drawn by HTTP route, not by domain aggregate.
-- **`mediaQueries` stays its own module** (not folded into media): the saved query → automation input
-  aggregate is the pivot the whole product loop turns on, and it deserves its own boundary.
+- **`mediaQueries` stays its own module** (not folded into media, and never grouped with automations):
+  it owns the *construction* of filters over enriched source data — `MediaQueryRecord` CRUD,
+  filter-value persistence, query health — which is enough logic to live on its own. Automations
+  *use* media queries but their logic is separate: the join is database entities
+  (`automation_query_sources` relates an automation to the queries it runs against) plus the
+  mediaQueries public interface — automations never reach into query internals.
 - **Both `health` homes merge into `system`.** Today `server/modules/health/` (HTTP liveness) and
   `server/health/` (system self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are two different
   processes sharing one name; `system` owns both.
