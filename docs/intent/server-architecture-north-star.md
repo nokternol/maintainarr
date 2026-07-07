@@ -1,0 +1,79 @@
+# Server architecture North Star — full DDD feature modules
+
+**Status:** INTENT (unbuilt). This is the single design every server-side change should converge on.
+It exists because the server currently runs three competing designs at once (see the "Server layering"
+entry in `docs/architecture/fracture-ledger.md` for the as-built evidence): a boilerplate
+"clean architecture" the READMEs used to describe, a transport-modules + flat-services split that is
+what's actually built, and the domain-module ambition `server/modules/README.md` always hinted at.
+This doc picks one — the third — and defines it precisely enough that any relocation question has
+exactly one answer.
+
+## The design
+
+**Feature modules own everything for their domain** — schemas, handlers, routes, services, domain
+logic, and jobs. The flat `server/services/` layer dissolves into the modules that own each service.
+A module is a vertical slice of the product, not an HTTP surface.
+
+**Sharing model: public-API imports + a small kernel.**
+
+- Each module exposes a deliberate public surface via its `index.ts` barrel. Other modules may import
+  **only** that barrel — never a module's internals. The barrel is the module's contract; anything not
+  exported from it is private.
+- A small `server/kernel/` holds true infrastructure with no domain meaning: the event bus, logger,
+  config, database handle, error hierarchy, middleware, and `defineRoute`. Every module may depend on
+  the kernel; the kernel depends on no module.
+- No event-driven ceremony for synchronous flows: when automations needs to evaluate media rules, it
+  imports the media module's public API directly. The event bus is for genuinely asynchronous
+  domain events, not a mandatory indirection.
+
+**Dependency direction follows the product loop** (providers unlock metadata → predicates → queries →
+automations): `automations → media, mediaQueries`; `mediaQueries → media, providers`;
+`media → providers`; everyone → `kernel`. Cycles between module barrels are design errors.
+
+## Target module inventory
+
+```
+server/
+  kernel/          # eventBus, logger, config, db, errors, middleware, defineRoute
+  modules/
+    providers/     # connections (BaseProviderConnection + per-system), roles,
+                   # MediaSourceFactory, provider settings service, task enablement,
+                   # identity-resolution job
+    media/         # normalize + NormalizedMovie/NormalizedShow shapes, filterRegistry
+                   # + MediaRuleDescriptor projection (today's filterFields endpoint),
+                   # mediaQueryEngine, enrichment job + merge, backdrops, search
+    mediaQueries/  # MediaQueryRecord CRUD + query health
+    automations/   # automation service, executor, run service, combinationEvaluator,
+                   # scheduler (today's server/cron/)
+    auth/          # authService, session store (drizzleStore)
+    system/        # health endpoints, systemHealthCheck, ensureSystemJobs,
+                   # systemTaskRunner, failedStateMiddleware
+    settings/
+```
+
+Boundary decisions this inventory encodes:
+
+- **`filterFields`, `backdrops`, `search` are media concerns**, not modules — they were separate only
+  because module boundaries were drawn by HTTP route, not by domain aggregate.
+- **`mediaQueries` stays its own module** (not folded into media): the saved query → automation input
+  aggregate is the pivot the whole product loop turns on, and it deserves its own boundary.
+- **Both `health` homes merge into `system`.** Today `server/modules/health/` (HTTP liveness) and
+  `server/health/` (system self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are two different
+  processes sharing one name; `system` owns both.
+- **`filterRegistry` leaves `utils/`.** The single authority for the rule vocabulary is media-module
+  domain logic, not a "small utility" beside `defineRoute`.
+- **Orphan directories dissolve**: `server/cron/` → automations, `server/jobs/` → media (enrichment)
+  and providers (identity), `server/domain/` → media, `server/health/` → system.
+
+## What does not change
+
+- The transport pattern inside a module (schemas / handlers / routes, `defineRoute`, Zod validation,
+  Awilix cradle injection) is kept as-is — it is the part of the current design that works.
+- Server-side authority principles already won by healed fractures stay won: registries project
+  descriptors, roles own their tasks, the client derives and never re-declares.
+
+## Migration stance
+
+No migration plan lives here. Moves toward this design are phased through `docs/in_progress/` plans as
+they are picked up; each shipped move updates `docs/architecture/` (and the fracture ledger) to record
+the new as-built state. When the layout above is fully real, this doc moves to `docs/architecture/`.

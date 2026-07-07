@@ -1,6 +1,6 @@
 # Modules
 
-Domain-organized API modules with separated concerns. Each module represents a feature or resource domain (e.g., health, users, media) and owns its schemas, handlers, routes, and services.
+HTTP transport, organized per feature. Each module owns its schemas, handlers, and routes for one API surface (e.g., media, automations, providers). Business logic lives in `server/services/` and is injected into handler factories via the cradle — modules do not own services today (the split is tracked in `docs/architecture/fracture-ledger.md`, "Server layering").
 
 ## Architecture
 
@@ -21,7 +21,7 @@ server/modules/
     health.handler.ts   # Handler factory (business logic)
     health.routes.ts    # Express router (HTTP wiring)
   index.ts              # Mounts all module routers
-  MODULES.md            # This file
+  README.md             # This file
 ```
 
 ## 1. Schemas Layer
