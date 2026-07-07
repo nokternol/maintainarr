@@ -9,11 +9,13 @@ import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
 import type { CardDensity } from '@app/hooks/useCardDensity';
 import { useCardDensity } from '@app/hooks/useCardDensity';
+import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
-import type { FilterState } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { useMediaQueries } from '@app/hooks/useMediaQueries';
+import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
+import { useMediaRules } from '@app/hooks/useMediaRules';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
@@ -34,6 +36,7 @@ import {
 } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toBrowseParams, toSaveValues } from './mediaQueryAdapters';
 
 // ─── Density icons ────────────────────────────────────────────────────────────
 
@@ -349,31 +352,18 @@ function getPosterUrl(images?: { coverType: string; remoteUrl: string }[]): stri
   return images?.find((img) => img.coverType === 'poster')?.remoteUrl;
 }
 
-function countActiveFilters(filterState: FilterState, tab: ActiveTab): number {
-  const shared =
-    (filterState.title ? 1 : 0) +
-    (filterState.yearMin !== undefined || filterState.yearMax !== undefined ? 1 : 0) +
-    (filterState.tautulliWatched !== undefined ? 1 : 0);
+function isFilterValueActive(value: FilterValue | undefined): boolean {
+  if (value === undefined) return false;
+  if (typeof value === 'object') return value.min !== undefined || value.max !== undefined;
+  return value !== '';
+}
 
-  if (tab === 'movies') {
-    return (
-      shared +
-      (filterState.hasFile !== undefined ? 1 : 0) +
-      (filterState.movieTagIds ? 1 : 0) +
-      (filterState.movieQualityProfileIds ? 1 : 0) +
-      (filterState.movieGenres ? 1 : 0)
-    );
-  }
-  return (
-    shared +
-    (filterState.monitored !== undefined ? 1 : 0) +
-    (filterState.seriesStatus !== undefined ? 1 : 0) +
-    (filterState.seriesTagIds ? 1 : 0) +
-    (filterState.seriesQualityProfileIds ? 1 : 0) +
-    (filterState.seriesGenres ? 1 : 0) +
-    (filterState.seriesType !== undefined ? 1 : 0) +
-    (filterState.network ? 1 : 0)
-  );
+/** Counts every active condition affecting this tab's results: shared values plus the tab's own scope. */
+function countActiveFilters(values: FilterState, tab: ActiveTab): number {
+  const scope: ContentScope = tab === 'movies' ? 'movie' : 'show';
+  const countBucket = (bucket: Record<string, FilterValue>) =>
+    Object.values(bucket).filter(isFilterValueActive).length;
+  return countBucket(values.shared) + countBucket(values[scope]);
 }
 
 function useSentinel(onIntersect: () => void) {
@@ -424,41 +414,9 @@ interface Lookups {
 
 export interface MediaContentProps {
   // filter bar
-  filterState: FilterState;
-  setTitle: (v: string) => void;
-  setHasFile: (v: 'true' | 'false' | undefined) => void;
-  setMonitored: (v: 'true' | 'false' | undefined) => void;
-  setSeriesStatus: (v: string | undefined) => void;
-  setYearMin: (v: number | undefined) => void;
-  setYearMax: (v: number | undefined) => void;
-  setMovieTagIds: (v: string | undefined) => void;
-  setSeriesTagIds: (v: string | undefined) => void;
-  setMovieQualityProfileIds: (v: string | undefined) => void;
-  setSeriesQualityProfileIds: (v: string | undefined) => void;
-  setMovieGenres: (v: string | undefined) => void;
-  setSeriesGenres: (v: string | undefined) => void;
-  setSeriesType: (v: string | undefined) => void;
-  setNetwork: (v: string | undefined) => void;
-  setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
-  setAddedDaysAgoGte: (v: number | undefined) => void;
-  setAddedDaysAgoLte: (v: number | undefined) => void;
-  setSizeOnDiskGbGte: (v: number | undefined) => void;
-  setSizeOnDiskGbLte: (v: number | undefined) => void;
-  setCertification: (v: string | undefined) => void;
-  setRadarrImdbRatingGte: (v: number | undefined) => void;
-  setRadarrImdbRatingLte: (v: number | undefined) => void;
-  setSonarrRatingGte: (v: number | undefined) => void;
-  setSonarrRatingLte: (v: number | undefined) => void;
-  setSonarrEnded: (v: 'true' | 'false' | undefined) => void;
-  setSonarrLastAiredDaysAgoGte: (v: number | undefined) => void;
-  setSonarrLastAiredDaysAgoLte: (v: number | undefined) => void;
-  setSonarrPercentEpisodesGte: (v: number | undefined) => void;
-  setSonarrPercentEpisodesLte: (v: number | undefined) => void;
-  setLastWatchedDaysAgoGte: (v: number | undefined) => void;
-  setLastWatchedDaysAgoLte: (v: number | undefined) => void;
-  setOverseerrHasIssue: (v: 'true' | 'false' | undefined) => void;
-  setOverseerrRequestStatus: (v: string | undefined) => void;
-  setTmdbStatus: (v: string | undefined) => void;
+  rules: MediaRuleDescriptor[];
+  values: FilterState;
+  onRuleChange: (scope: ContentScope, key: string, value: FilterValue | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   activeFilterCount: number;
@@ -488,41 +446,9 @@ export interface MediaContentProps {
 // ─── MediaContent ─────────────────────────────────────────────────────────────
 
 export function MediaContent({
-  filterState,
-  setTitle,
-  setHasFile,
-  setMonitored,
-  setSeriesStatus,
-  setYearMin,
-  setYearMax,
-  setMovieTagIds,
-  setSeriesTagIds,
-  setMovieQualityProfileIds,
-  setSeriesQualityProfileIds,
-  setMovieGenres,
-  setSeriesGenres,
-  setSeriesType,
-  setNetwork,
-  setTautulliWatched,
-  setAddedDaysAgoGte,
-  setAddedDaysAgoLte,
-  setSizeOnDiskGbGte,
-  setSizeOnDiskGbLte,
-  setCertification,
-  setRadarrImdbRatingGte,
-  setRadarrImdbRatingLte,
-  setSonarrRatingGte,
-  setSonarrRatingLte,
-  setSonarrEnded,
-  setSonarrLastAiredDaysAgoGte,
-  setSonarrLastAiredDaysAgoLte,
-  setSonarrPercentEpisodesGte,
-  setSonarrPercentEpisodesLte,
-  setLastWatchedDaysAgoGte,
-  setLastWatchedDaysAgoLte,
-  setOverseerrHasIssue,
-  setOverseerrRequestStatus,
-  setTmdbStatus,
+  rules,
+  values,
+  onRuleChange,
   clearAll,
   onSaveQuery,
   isActive,
@@ -550,41 +476,9 @@ export function MediaContent({
   return (
     <>
       <MediaFilterBar
-        filterState={filterState}
-        setTitle={setTitle}
-        setHasFile={setHasFile}
-        setMonitored={setMonitored}
-        setSeriesStatus={setSeriesStatus}
-        setYearMin={setYearMin}
-        setYearMax={setYearMax}
-        setMovieTagIds={setMovieTagIds}
-        setSeriesTagIds={setSeriesTagIds}
-        setMovieQualityProfileIds={setMovieQualityProfileIds}
-        setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-        setMovieGenres={setMovieGenres}
-        setSeriesGenres={setSeriesGenres}
-        setSeriesType={setSeriesType}
-        setNetwork={setNetwork}
-        setTautulliWatched={setTautulliWatched}
-        setAddedDaysAgoGte={setAddedDaysAgoGte}
-        setAddedDaysAgoLte={setAddedDaysAgoLte}
-        setSizeOnDiskGbGte={setSizeOnDiskGbGte}
-        setSizeOnDiskGbLte={setSizeOnDiskGbLte}
-        setCertification={setCertification}
-        setRadarrImdbRatingGte={setRadarrImdbRatingGte}
-        setRadarrImdbRatingLte={setRadarrImdbRatingLte}
-        setSonarrRatingGte={setSonarrRatingGte}
-        setSonarrRatingLte={setSonarrRatingLte}
-        setSonarrEnded={setSonarrEnded}
-        setSonarrLastAiredDaysAgoGte={setSonarrLastAiredDaysAgoGte}
-        setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
-        setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
-        setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
-        setLastWatchedDaysAgoGte={setLastWatchedDaysAgoGte}
-        setLastWatchedDaysAgoLte={setLastWatchedDaysAgoLte}
-        setOverseerrHasIssue={setOverseerrHasIssue}
-        setOverseerrRequestStatus={setOverseerrRequestStatus}
-        setTmdbStatus={setTmdbStatus}
+        rules={rules}
+        values={values}
+        onRuleChange={onRuleChange}
         clearAll={clearAll}
         onSaveQuery={onSaveQuery}
         isActive={isActive}
@@ -794,50 +688,24 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function MediaPage() {
   const {
-    filterState,
+    filterState: values,
     debouncedFilters,
-    setTitle,
-    setHasFile,
-    setMonitored,
-    setSeriesStatus,
-    setYearMin,
-    setYearMax,
-    setMovieTagIds,
-    setSeriesTagIds,
-    setMovieQualityProfileIds,
-    setSeriesQualityProfileIds,
-    setMovieGenres,
-    setSeriesGenres,
-    setSeriesType,
-    setNetwork,
-    setTautulliWatched,
-    setAddedDaysAgoGte,
-    setAddedDaysAgoLte,
-    setSizeOnDiskGbGte,
-    setSizeOnDiskGbLte,
-    setCertification,
-    setRadarrImdbRatingGte,
-    setRadarrImdbRatingLte,
-    setSonarrRatingGte,
-    setSonarrRatingLte,
-    setSonarrEnded,
-    setSonarrLastAiredDaysAgoGte,
-    setSonarrLastAiredDaysAgoLte,
-    setSonarrPercentEpisodesGte,
-    setSonarrPercentEpisodesLte,
-    setLastWatchedDaysAgoGte,
-    setLastWatchedDaysAgoLte,
-    setOverseerrHasIssue,
-    setOverseerrRequestStatus,
-    setTmdbStatus,
+    setValue: onRuleChange,
     setMovieSort,
     setSeriesSort,
     clearAll,
     isActive,
   } = useMediaFilters();
+  const { rules = [] } = useMediaRules();
 
-  const movies = useMovies({ ...debouncedFilters, sort: filterState.movieSort });
-  const series = useSeries({ ...debouncedFilters, sort: filterState.seriesSort });
+  const movies = useMovies({
+    ...toBrowseParams(debouncedFilters, 'movie'),
+    sort: values.movieSort,
+  });
+  const series = useSeries({
+    ...toBrowseParams(debouncedFilters, 'show'),
+    sort: values.seriesSort,
+  });
   const lookups = useMediaLookups();
   const { providers } = useProviderSettings();
 
@@ -853,7 +721,7 @@ export default function MediaPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('movies');
 
   const providersLoaded = providers !== undefined;
-  const activeFilterCount = countActiveFilters(filterState, activeTab);
+  const activeFilterCount = countActiveFilters(values, activeTab);
 
   const mobileNav = (
     <nav className="flex items-center justify-around h-16 px-2">
@@ -927,47 +795,15 @@ export default function MediaPage() {
         }
       >
         <MediaContent
-          filterState={filterState}
-          setTitle={setTitle}
-          setHasFile={setHasFile}
-          setMonitored={setMonitored}
-          setSeriesStatus={setSeriesStatus}
-          setYearMin={setYearMin}
-          setYearMax={setYearMax}
-          setMovieTagIds={setMovieTagIds}
-          setSeriesTagIds={setSeriesTagIds}
-          setMovieQualityProfileIds={setMovieQualityProfileIds}
-          setSeriesQualityProfileIds={setSeriesQualityProfileIds}
-          setMovieGenres={setMovieGenres}
-          setSeriesGenres={setSeriesGenres}
-          setSeriesType={setSeriesType}
-          setNetwork={setNetwork}
-          setTautulliWatched={setTautulliWatched}
-          setAddedDaysAgoGte={setAddedDaysAgoGte}
-          setAddedDaysAgoLte={setAddedDaysAgoLte}
-          setSizeOnDiskGbGte={setSizeOnDiskGbGte}
-          setSizeOnDiskGbLte={setSizeOnDiskGbLte}
-          setCertification={setCertification}
-          setRadarrImdbRatingGte={setRadarrImdbRatingGte}
-          setRadarrImdbRatingLte={setRadarrImdbRatingLte}
-          setSonarrRatingGte={setSonarrRatingGte}
-          setSonarrRatingLte={setSonarrRatingLte}
-          setSonarrEnded={setSonarrEnded}
-          setSonarrLastAiredDaysAgoGte={setSonarrLastAiredDaysAgoGte}
-          setSonarrLastAiredDaysAgoLte={setSonarrLastAiredDaysAgoLte}
-          setSonarrPercentEpisodesGte={setSonarrPercentEpisodesGte}
-          setSonarrPercentEpisodesLte={setSonarrPercentEpisodesLte}
-          setLastWatchedDaysAgoGte={setLastWatchedDaysAgoGte}
-          setLastWatchedDaysAgoLte={setLastWatchedDaysAgoLte}
-          setOverseerrHasIssue={setOverseerrHasIssue}
-          setOverseerrRequestStatus={setOverseerrRequestStatus}
-          setTmdbStatus={setTmdbStatus}
+          rules={rules}
+          values={values}
+          onRuleChange={onRuleChange}
           clearAll={clearAll}
           onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
           isActive={isActive}
           activeFilterCount={activeFilterCount}
-          movieSort={filterState.movieSort}
-          seriesSort={filterState.seriesSort}
+          movieSort={values.movieSort}
+          seriesSort={values.seriesSort}
           setMovieSort={setMovieSort}
           setSeriesSort={setSeriesSort}
           activeTab={activeTab}
@@ -985,7 +821,10 @@ export default function MediaPage() {
       <SaveQueryDialog
         open={saveDialogOpen}
         onClose={() => setSaveDialogOpen(false)}
-        onSave={(name) => saveQuery(name, activeTab === 'movies' ? 'movie' : 'show', filterState)}
+        onSave={(name) => {
+          const contentType = activeTab === 'movies' ? 'movie' : 'show';
+          return saveQuery(name, contentType, toSaveValues(values, contentType));
+        }}
       />
     </>
   );

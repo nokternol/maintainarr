@@ -1,7 +1,14 @@
-import type { FilterState } from '@app/hooks/useMediaFilters';
+import type {
+  ContentScope,
+  FilterState,
+  FilterValue,
+  RangeValue,
+} from '@app/hooks/useMediaFilters';
+import { scopeOf } from '@app/hooks/useMediaFilters';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
+import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
 import { cn } from '@app/lib/utils/cn';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { OptionFilter } from '../filters/OptionFilter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -19,51 +26,17 @@ interface Lookups {
 }
 
 export interface MediaFilterBarProps {
-  filterState: FilterState;
-  setTitle: (v: string) => void;
-  setHasFile: (v: 'true' | 'false' | undefined) => void;
-  setMonitored: (v: 'true' | 'false' | undefined) => void;
-  setSeriesStatus: (v: string | undefined) => void;
-  setYearMin: (v: number | undefined) => void;
-  setYearMax: (v: number | undefined) => void;
-  setMovieTagIds: (v: string | undefined) => void;
-  setSeriesTagIds: (v: string | undefined) => void;
-  setMovieQualityProfileIds: (v: string | undefined) => void;
-  setSeriesQualityProfileIds: (v: string | undefined) => void;
-  setMovieGenres: (v: string | undefined) => void;
-  setSeriesGenres: (v: string | undefined) => void;
-  setSeriesType: (v: string | undefined) => void;
-  setNetwork: (v: string | undefined) => void;
-  setTautulliWatched: (v: 'true' | 'false' | undefined) => void;
-  setLastWatchedDaysAgoGte: (v: number | undefined) => void;
-  setLastWatchedDaysAgoLte: (v: number | undefined) => void;
-  setOverseerrHasIssue: (v: 'true' | 'false' | undefined) => void;
-  setOverseerrRequestStatus: (v: string | undefined) => void;
-  setTmdbStatus: (v: string | undefined) => void;
-  // ── Shared (movies + series) ─────────────────────────────────────────────
-  setAddedDaysAgoGte: (v: number | undefined) => void;
-  setAddedDaysAgoLte: (v: number | undefined) => void;
-  setSizeOnDiskGbGte: (v: number | undefined) => void;
-  setSizeOnDiskGbLte: (v: number | undefined) => void;
-  setCertification: (v: string | undefined) => void;
-  // ── Movie-specific ───────────────────────────────────────────────────────
-  setRadarrImdbRatingGte: (v: number | undefined) => void;
-  setRadarrImdbRatingLte: (v: number | undefined) => void;
-  // ── Series-specific ──────────────────────────────────────────────────────
-  setSonarrRatingGte: (v: number | undefined) => void;
-  setSonarrRatingLte: (v: number | undefined) => void;
-  setSonarrEnded: (v: 'true' | 'false' | undefined) => void;
-  setSonarrLastAiredDaysAgoGte: (v: number | undefined) => void;
-  setSonarrLastAiredDaysAgoLte: (v: number | undefined) => void;
-  setSonarrPercentEpisodesGte: (v: number | undefined) => void;
-  setSonarrPercentEpisodesLte: (v: number | undefined) => void;
+  /** Provider- and content-type-gated rule descriptors from `useMediaRules()` — the single source of what controls exist. */
+  rules: MediaRuleDescriptor[];
+  values: FilterState;
+  onRuleChange: (scope: ContentScope, key: string, value: FilterValue | undefined) => void;
   clearAll: () => void;
   onSaveQuery?: () => void;
   isActive: boolean;
   movieYearRange: YearRange | null;
   seriesYearRange: YearRange | null;
   lookups: Lookups;
-  /** Set of active provider types, used to gate filter sections */
+  /** Disambiguates which group(s) a shared, multi-provider rule renders in (see `groupsFor`) — not used for gating, which `rules` already handles. */
   configuredTypes: Set<string>;
   /** Scopes visible filter groups to the active tab. Omit to show all. */
   activeTab?: 'movies' | 'series';
@@ -742,96 +715,332 @@ function toStringCsvOrUndefined(values: string[]): string | undefined {
   return values.length > 0 ? values.join(',') : undefined;
 }
 
-// ─── Option sets (shared between desktop and mobile) ─────────────────────────
+// ─── Rule grouping — derived from scope + sourceProviders, not a hand-kept table ──
+//
+// 'title' and 'year' are the two universal controls, rendered outside any
+// FilterGroup. Every other rule groups by content-type scope (movie/show), or
+// — for shared rules — by which provider(s) it's sourced from: a shared rule
+// sourced partly from RADARR/SONARR (addedDaysAgo, sizeOnDiskGb, hasFile)
+// appears in both the Movies and Series groups, matching how those groups
+// already rendered a repeated set of shared fields pre-Stage-2d. A rule can
+// belong to more than one group.
+//
+// `configuredTypes` disambiguates a shared rule sourced from *both*
+// RADARR and SONARR when only one is actually active: `rules` is already
+// server-gated (a rule appears if *any* of its sourceProviders is
+// configured), so a rule naming both would otherwise render in both groups
+// even with only one of the two providers present.
 
-const HAS_FILE_OPTIONS = [
-  { value: 'true' as const, label: 'Downloaded' },
-  { value: 'false' as const, label: 'Missing' },
-];
+type FilterGroupId = 'movies' | 'series' | 'playHistory' | 'requests' | 'tmdb';
 
-const MONITORED_OPTIONS = [
-  { value: 'true' as const, label: 'Monitored' },
-  { value: 'false' as const, label: 'Unmonitored' },
-];
+function groupsFor(rule: MediaRuleDescriptor, configuredTypes: Set<string>): FilterGroupId[] {
+  if (rule.key === 'title' || rule.key === 'year') return [];
+  const scope = scopeOf(rule);
+  if (scope === 'movie') return ['movies'];
+  if (scope === 'show') return ['series'];
 
-const SERIES_STATUS_OPTIONS = [
-  { value: 'continuing', label: 'Continuing' },
-  { value: 'ended', label: 'Ended' },
-];
+  const providers = new Set(rule.sourceProviders.filter((sp) => configuredTypes.has(sp)));
+  const groups: FilterGroupId[] = [];
+  if (providers.has('OVERSEERR')) groups.push('requests');
+  if (providers.has('TMDB') && !providers.has('RADARR') && !providers.has('SONARR')) {
+    groups.push('tmdb');
+  }
+  if (
+    (providers.has('TAUTULLI') || providers.has('PLEX')) &&
+    !providers.has('RADARR') &&
+    !providers.has('SONARR')
+  ) {
+    groups.push('playHistory');
+  }
+  if (providers.has('RADARR')) groups.push('movies');
+  if (providers.has('SONARR')) groups.push('series');
+  return groups;
+}
 
-const SERIES_TYPE_OPTIONS = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'anime', label: 'Anime' },
-  { value: 'daily', label: 'Daily' },
-];
+// ─── Per-value display — the registry owns dataType/label/gating; these small
+// tables own only *value-level* display text a MediaRuleDescriptor doesn't
+// (and structurally can't) carry. Any dataType: 'boolean' rule not listed
+// here still renders correctly with a generic Yes/No pair.
 
-const TAUTULLI_WATCHED_OPTIONS = [
-  { value: 'true' as const, label: 'Watched' },
-  { value: 'false' as const, label: 'Unwatched' },
-];
+const BOOLEAN_VALUE_LABELS: Record<string, [true: string, false: string]> = {
+  hasFile: ['Downloaded', 'Missing'],
+  monitored: ['Monitored', 'Unmonitored'],
+  watched: ['Watched', 'Unwatched'],
+  ended: ['Finished', 'Running'],
+  overseerrHasIssue: ['Has Issue', 'No Issue'],
+};
 
-const SONARR_ENDED_OPTIONS = [
-  { value: 'true' as const, label: 'Finished' },
-  { value: 'false' as const, label: 'Running' },
-];
+function booleanOptions(rule: MediaRuleDescriptor) {
+  const [trueLabel, falseLabel] = BOOLEAN_VALUE_LABELS[rule.key] ?? ['Yes', 'No'];
+  return [
+    { value: 'true' as const, label: trueLabel },
+    { value: 'false' as const, label: falseLabel },
+  ];
+}
 
-const OVERSEERR_HAS_ISSUE_OPTIONS = [
-  { value: 'true' as const, label: 'Has Issue' },
-  { value: 'false' as const, label: 'No Issue' },
-];
+// The segment label shown beside an enum control's options. Defaults to the
+// registry's own `label`, which reads fine standalone but is occasionally
+// redundant next to the FilterGroup it renders inside (e.g. "TMDB status"
+// under a "TMDB" heading) — override only where that's the case.
+const SEGMENT_LABEL_OVERRIDES: Partial<Record<string, string | undefined>> = {
+  seriesStatus: 'Status',
+  seriesType: 'Type',
+  overseerrRequestStatus: 'Status',
+  tmdbStatus: undefined,
+};
 
-const OVERSEERR_REQUEST_STATUS_OPTIONS = [
-  { value: '1', label: 'Pending' },
-  { value: '2', label: 'Approved' },
-  { value: '3', label: 'Declined' },
-  { value: '4', label: 'Available' },
-];
+function segmentLabel(rule: MediaRuleDescriptor): string | undefined {
+  return rule.key in SEGMENT_LABEL_OVERRIDES ? SEGMENT_LABEL_OVERRIDES[rule.key] : rule.label;
+}
 
-const TMDB_STATUS_OPTIONS = [
-  { value: 'Released', label: 'Released' },
-  { value: 'In Production', label: 'In Production' },
-  { value: 'Ended', label: 'Ended' },
-  { value: 'Returning Series', label: 'Returning Series' },
-  { value: 'Canceled', label: 'Canceled' },
-];
+// Fixed option sets for the enum-shaped string/number rules. A string/number
+// rule outside this table has no known enum and no free-text/number control
+// is rendered for it yet (matches pre-Stage-2d: `certification`, a
+// csv-strings rule with no lookup source either, rendered nothing).
+const ENUM_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  seriesStatus: [
+    { value: 'continuing', label: 'Continuing' },
+    { value: 'ended', label: 'Ended' },
+  ],
+  seriesType: [
+    { value: 'standard', label: 'Standard' },
+    { value: 'anime', label: 'Anime' },
+    { value: 'daily', label: 'Daily' },
+  ],
+  tmdbStatus: [
+    { value: 'Released', label: 'Released' },
+    { value: 'In Production', label: 'In Production' },
+    { value: 'Ended', label: 'Ended' },
+    { value: 'Returning Series', label: 'Returning Series' },
+    { value: 'Canceled', label: 'Canceled' },
+  ],
+  overseerrRequestStatus: [
+    { value: '1', label: 'Pending' },
+    { value: '2', label: 'Approved' },
+    { value: '3', label: 'Declined' },
+    { value: '4', label: 'Available' },
+  ],
+};
+
+// csv-ids / csv-strings rules need an option *list*, sourced from `lookups`
+// rather than the registry (tag/quality-profile/genre/network values are
+// library data, not part of the rule vocabulary). Only the handful of keys
+// with a known lookup source render a control; others are skipped, same as
+// `certification` today.
+
+function csvIdOptions(
+  rule: MediaRuleDescriptor,
+  scope: ContentScope,
+  lookups: Lookups
+): Array<{ id: number; displayName: string }> | null {
+  if (rule.key === 'tagIds') {
+    const list = scope === 'movie' ? lookups.tags.radarr : lookups.tags.sonarr;
+    return list.map((t) => ({ id: t.id, displayName: t.label }));
+  }
+  if (rule.key === 'qualityProfileIds') {
+    const list =
+      scope === 'movie' ? lookups.qualityProfiles.radarr : lookups.qualityProfiles.sonarr;
+    return list.map((p) => ({ id: p.id, displayName: p.name }));
+  }
+  return null;
+}
+
+function csvStringOptions(
+  rule: MediaRuleDescriptor,
+  scope: ContentScope,
+  lookups: Lookups
+): string[] | null {
+  if (rule.key === 'genres')
+    return scope === 'movie' ? lookups.genres.movies : lookups.genres.series;
+  if (rule.key === 'network') return lookups.networks;
+  return null;
+}
+
+// ─── Value access + range collapse ────────────────────────────────────────────
+
+function readRangeBound(
+  values: FilterState,
+  scope: ContentScope,
+  key: string,
+  bound: 'min' | 'max'
+) {
+  return (values[scope][key] as RangeValue | undefined)?.[bound];
+}
+
+/** Collapses `{min: undefined, max: undefined}` back to `undefined` — the server rejects a range value with no bound set, so "clear both" must remove the key, not persist an empty object. */
+function rangePatch(
+  current: RangeValue | undefined,
+  bound: 'min' | 'max',
+  value: number | undefined
+) {
+  const next = { ...current, [bound]: value };
+  return next.min === undefined && next.max === undefined ? undefined : next;
+}
+
+// ─── Active-condition formatting — one entry per active rule, generically ────
+
+function formatRangeLabel(rule: MediaRuleDescriptor, value: RangeValue, suffix = ''): string {
+  const fmt = (v: number | undefined) => (v !== undefined ? String(v) : '…');
+  return `${rule.label} ${fmt(value.min)}–${fmt(value.max)}${suffix}`;
+}
+
+function conditionLabel(rule: MediaRuleDescriptor, value: FilterValue): string | null {
+  switch (rule.dataType) {
+    case 'range':
+      return formatRangeLabel(rule, value as RangeValue);
+    case 'boolean': {
+      const opt = booleanOptions(rule).find((o) => o.value === value);
+      return opt?.label ?? null;
+    }
+    case 'string':
+    case 'number': {
+      const options = ENUM_OPTIONS[rule.key];
+      const strValue = String(value);
+      return options ? (options.find((o) => o.value === strValue)?.label ?? null) : strValue;
+    }
+    case 'csv-ids':
+    case 'csv-strings': {
+      const count = String(value)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean).length;
+      return count > 0 ? `${rule.label} · ${count}` : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function isValueActive(value: FilterValue | undefined): boolean {
+  if (value === undefined) return false;
+  if (typeof value === 'object') return value.min !== undefined || value.max !== undefined;
+  return true;
+}
+
+// ─── Generic control ──────────────────────────────────────────────────────────
+//
+// One control per rule, chosen by `dataType`. Grouping decides *where* a rule
+// renders; this decides *what* renders. `variant` mirrors OptionFilter's
+// desktop/mobile split.
+
+function RuleControl({
+  rule,
+  scope,
+  values,
+  onRuleChange,
+  lookups,
+  variant = 'segment',
+  dataMin,
+  dataMax,
+}: {
+  rule: MediaRuleDescriptor;
+  scope: ContentScope;
+  values: FilterState;
+  onRuleChange: MediaFilterBarProps['onRuleChange'];
+  lookups: Lookups;
+  variant?: 'segment' | 'chips';
+  dataMin?: number | null;
+  dataMax?: number | null;
+}) {
+  const value = values[scope][rule.key];
+
+  switch (rule.dataType) {
+    case 'range':
+      return (
+        <NumberRangeFilter
+          label={rule.label}
+          min={readRangeBound(values, scope, rule.key, 'min')}
+          max={readRangeBound(values, scope, rule.key, 'max')}
+          dataMin={dataMin}
+          dataMax={dataMax}
+          onChangeMin={(v) =>
+            onRuleChange(scope, rule.key, rangePatch(value as RangeValue | undefined, 'min', v))
+          }
+          onChangeMax={(v) =>
+            onRuleChange(scope, rule.key, rangePatch(value as RangeValue | undefined, 'max', v))
+          }
+        />
+      );
+
+    case 'boolean':
+      return (
+        <OptionFilter
+          variant={variant}
+          options={booleanOptions(rule)}
+          value={value as 'true' | 'false' | undefined}
+          onChange={(v) => onRuleChange(scope, rule.key, v)}
+        />
+      );
+
+    case 'string':
+    case 'number': {
+      const options = ENUM_OPTIONS[rule.key];
+      if (!options) return null;
+      const label = segmentLabel(rule);
+      const control = (
+        <OptionFilter
+          variant={variant}
+          label={variant === 'segment' ? label : undefined}
+          options={options}
+          value={value !== undefined ? String(value) : undefined}
+          onChange={(v) =>
+            onRuleChange(
+              scope,
+              rule.key,
+              v === undefined ? undefined : rule.dataType === 'number' ? Number(v) : v
+            )
+          }
+        />
+      );
+      // Chips variant has no inline label slot (unlike segment) — mirror the
+      // mobile sheet's own labeled-block wrapper so "Standard/Anime/Daily"
+      // still reads as "Type: ..." instead of a bare, unexplained chip row.
+      if (variant !== 'chips' || !label) return control;
+      return (
+        <div>
+          <span className="text-xs text-text-muted mb-2 block">{label}</span>
+          {control}
+        </div>
+      );
+    }
+
+    case 'csv-ids': {
+      const options = csvIdOptions(rule, scope, lookups);
+      if (!options) return null;
+      return (
+        <MultiSelectDropdown
+          label={rule.label}
+          options={options}
+          selectedIds={parseCsvIds(value as string | undefined)}
+          onChange={(ids) => onRuleChange(scope, rule.key, toCsvOrUndefined(ids))}
+        />
+      );
+    }
+
+    case 'csv-strings': {
+      const options = csvStringOptions(rule, scope, lookups);
+      if (!options) return null;
+      return (
+        <StringMultiSelectDropdown
+          label={rule.label}
+          options={options}
+          selectedValues={parseCsvStrings(value as string | undefined)}
+          onChange={(v) => onRuleChange(scope, rule.key, toStringCsvOrUndefined(v))}
+        />
+      );
+    }
+
+    default:
+      return null;
+  }
+}
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function MediaFilterBar({
-  filterState,
-  setTitle,
-  setHasFile,
-  setMonitored,
-  setSeriesStatus,
-  setYearMin,
-  setYearMax,
-  setMovieTagIds,
-  setSeriesTagIds,
-  setMovieQualityProfileIds,
-  setSeriesQualityProfileIds,
-  setMovieGenres,
-  setSeriesGenres,
-  setSeriesType,
-  setNetwork,
-  setTautulliWatched,
-  setLastWatchedDaysAgoGte,
-  setLastWatchedDaysAgoLte,
-  setOverseerrHasIssue,
-  setOverseerrRequestStatus,
-  setTmdbStatus,
-  setAddedDaysAgoGte,
-  setAddedDaysAgoLte,
-  setSizeOnDiskGbGte,
-  setSizeOnDiskGbLte,
-  setRadarrImdbRatingGte,
-  setRadarrImdbRatingLte,
-  setSonarrRatingGte,
-  setSonarrRatingLte,
-  setSonarrEnded,
-  setSonarrLastAiredDaysAgoGte,
-  setSonarrLastAiredDaysAgoLte,
-  setSonarrPercentEpisodesGte,
-  setSonarrPercentEpisodesLte,
+  rules,
+  values,
+  onRuleChange,
   clearAll,
   onSaveQuery,
   isActive,
@@ -854,13 +1063,28 @@ export function MediaFilterBar({
   const globalMin = dataMin ?? 1888;
   const globalMax = dataMax ?? new Date().getFullYear();
 
-  const movieTagIds = parseCsvIds(filterState.movieTagIds);
-  const seriesTagIds = parseCsvIds(filterState.seriesTagIds);
-  const movieQualityProfileIds = parseCsvIds(filterState.movieQualityProfileIds);
-  const seriesQualityProfileIds = parseCsvIds(filterState.seriesQualityProfileIds);
-  const selectedMovieGenres = parseCsvStrings(filterState.movieGenres);
-  const selectedSeriesGenres = parseCsvStrings(filterState.seriesGenres);
-  const selectedNetworks = parseCsvStrings(filterState.network);
+  const titleRule = rules.find((r) => r.key === 'title');
+  const yearRule = rules.find((r) => r.key === 'year');
+
+  const groupedRules = useMemo(() => {
+    const groups: Record<
+      FilterGroupId,
+      Array<{ rule: MediaRuleDescriptor; scope: ContentScope }>
+    > = {
+      movies: [],
+      series: [],
+      playHistory: [],
+      requests: [],
+      tmdb: [],
+    };
+    for (const rule of rules) {
+      const scope = scopeOf(rule);
+      for (const group of groupsFor(rule, configuredTypes)) {
+        groups[group].push({ rule, scope });
+      }
+    }
+    return groups;
+  }, [rules, configuredTypes]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -918,21 +1142,16 @@ export function MediaFilterBar({
   }, [mobileOpen]);
 
   const hasMovieSection =
-    configuredTypes.has('RADARR') && (activeTab === undefined || activeTab === 'movies');
+    groupedRules.movies.length > 0 && (activeTab === undefined || activeTab === 'movies');
   const hasSeriesSection =
-    configuredTypes.has('SONARR') && (activeTab === undefined || activeTab === 'series');
-  const hasPlayHistorySection = configuredTypes.has('TAUTULLI') || configuredTypes.has('PLEX');
-  const hasOverseerrSection = configuredTypes.has('OVERSEERR');
-  const hasTmdbSection = configuredTypes.has('TMDB');
-
-  const hasMovieDropdowns =
-    lookups.tags.radarr.length > 0 || lookups.qualityProfiles.radarr.length > 0;
-  const hasSeriesDropdowns =
-    lookups.tags.sonarr.length > 0 || lookups.qualityProfiles.sonarr.length > 0;
+    groupedRules.series.length > 0 && (activeTab === undefined || activeTab === 'series');
+  const hasPlayHistorySection = groupedRules.playHistory.length > 0;
+  const hasOverseerrSection = groupedRules.requests.length > 0;
+  const hasTmdbSection = groupedRules.tmdb.length > 0;
 
   // ─── Shared sub-elements ─────────────────────────────────────────────────
 
-  const searchInput = (
+  const searchInput = titleRule ? (
     <div className="relative flex-shrink-0">
       <svg
         className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted pointer-events-none"
@@ -952,397 +1171,135 @@ export function MediaFilterBar({
         type="search"
         placeholder="Filter by title…"
         aria-label="Filter by title"
-        value={filterState.title}
-        onChange={(e) => setTitle(e.target.value)}
+        value={(values.shared.title as string) ?? ''}
+        onChange={(e) => onRuleChange('shared', 'title', e.target.value)}
         className="pl-8 pr-3 py-1.5 rounded-md text-xs bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary w-44"
       />
     </div>
-  );
-
-  const movieGroup = hasMovieSection ? (
-    <FilterGroup label="Movies">
-      <OptionFilter options={HAS_FILE_OPTIONS} value={filterState.hasFile} onChange={setHasFile} />
-      {hasMovieDropdowns && (
-        <>
-          <MultiSelectDropdown
-            label="Movie Tags"
-            options={lookups.tags.radarr.map((t) => ({
-              id: t.id,
-              displayName: t.label,
-            }))}
-            selectedIds={movieTagIds}
-            onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
-          />
-          <MultiSelectDropdown
-            label="Movie Quality"
-            options={lookups.qualityProfiles.radarr.map((p) => ({
-              id: p.id,
-              displayName: p.name,
-            }))}
-            selectedIds={movieQualityProfileIds}
-            onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
-          />
-        </>
-      )}
-      <StringMultiSelectDropdown
-        label="Movie Genres"
-        options={lookups.genres.movies}
-        selectedValues={selectedMovieGenres}
-        onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
-      />
-      <NumberRangeFilter
-        label="Added"
-        min={filterState.addedDaysAgoGte}
-        max={filterState.addedDaysAgoLte}
-        onChangeMin={setAddedDaysAgoGte}
-        onChangeMax={setAddedDaysAgoLte}
-      />
-      <NumberRangeFilter
-        label="Size (GB)"
-        min={filterState.sizeOnDiskGbGte}
-        max={filterState.sizeOnDiskGbLte}
-        onChangeMin={setSizeOnDiskGbGte}
-        onChangeMax={setSizeOnDiskGbLte}
-      />
-      <NumberRangeFilter
-        label="IMDB Rating"
-        min={filterState.radarrImdbRatingGte}
-        max={filterState.radarrImdbRatingLte}
-        onChangeMin={setRadarrImdbRatingGte}
-        onChangeMax={setRadarrImdbRatingLte}
-      />
-    </FilterGroup>
   ) : null;
 
-  const seriesGroup = hasSeriesSection ? (
-    <FilterGroup label="Series">
-      <OptionFilter
-        options={MONITORED_OPTIONS}
-        value={filterState.monitored}
-        onChange={setMonitored}
-      />
-      <OptionFilter
-        label="Status"
-        options={SERIES_STATUS_OPTIONS}
-        value={filterState.seriesStatus}
-        onChange={setSeriesStatus}
-      />
-      <OptionFilter
-        label="Type"
-        options={SERIES_TYPE_OPTIONS}
-        value={filterState.seriesType}
-        onChange={setSeriesType}
-      />
-      {hasSeriesDropdowns && (
-        <>
-          <MultiSelectDropdown
-            label="Series Tags"
-            options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-            selectedIds={seriesTagIds}
-            onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
-          />
-          <MultiSelectDropdown
-            label="Series Quality"
-            options={lookups.qualityProfiles.sonarr.map((p) => ({
-              id: p.id,
-              displayName: p.name,
-            }))}
-            selectedIds={seriesQualityProfileIds}
-            onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
-          />
-        </>
-      )}
-      <StringMultiSelectDropdown
-        label="Series Genres"
-        options={lookups.genres.series}
-        selectedValues={selectedSeriesGenres}
-        onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
-      />
-      <StringMultiSelectDropdown
-        label="Network"
-        options={lookups.networks}
-        selectedValues={selectedNetworks}
-        onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
-      />
-      <NumberRangeFilter
-        label="Added"
-        min={filterState.addedDaysAgoGte}
-        max={filterState.addedDaysAgoLte}
-        onChangeMin={setAddedDaysAgoGte}
-        onChangeMax={setAddedDaysAgoLte}
-      />
-      <NumberRangeFilter
-        label="Size (GB)"
-        min={filterState.sizeOnDiskGbGte}
-        max={filterState.sizeOnDiskGbLte}
-        onChangeMin={setSizeOnDiskGbGte}
-        onChangeMax={setSizeOnDiskGbLte}
-      />
-      <NumberRangeFilter
-        label="Sonarr Rating"
-        min={filterState.sonarrRatingGte}
-        max={filterState.sonarrRatingLte}
-        onChangeMin={setSonarrRatingGte}
-        onChangeMax={setSonarrRatingLte}
-      />
-      <OptionFilter
-        label="Ended"
-        options={SONARR_ENDED_OPTIONS}
-        value={filterState.sonarrEnded}
-        onChange={setSonarrEnded}
-      />
-      <NumberRangeFilter
-        label="Last Aired"
-        min={filterState.sonarrLastAiredDaysAgoGte}
-        max={filterState.sonarrLastAiredDaysAgoLte}
-        onChangeMin={setSonarrLastAiredDaysAgoGte}
-        onChangeMax={setSonarrLastAiredDaysAgoLte}
-      />
-      <NumberRangeFilter
-        label="% Episodes"
-        min={filterState.sonarrPercentEpisodesGte}
-        max={filterState.sonarrPercentEpisodesLte}
-        onChangeMin={setSonarrPercentEpisodesGte}
-        onChangeMax={setSonarrPercentEpisodesLte}
-      />
-    </FilterGroup>
-  ) : null;
-
-  const yearFilter = (
-    <NumberRangeFilter
-      label="Year"
-      min={filterState.yearMin}
-      max={filterState.yearMax}
+  const yearFilter = yearRule ? (
+    <RuleControl
+      rule={yearRule}
+      scope="shared"
+      values={values}
+      onRuleChange={onRuleChange}
+      lookups={lookups}
       dataMin={dataMin}
       dataMax={dataMax}
-      onChangeMin={setYearMin}
-      onChangeMax={setYearMax}
     />
-  );
+  ) : null;
+
+  const movieGroup =
+    hasMovieSection && groupedRules.movies.length > 0 ? (
+      <FilterGroup label="Movies">
+        {groupedRules.movies.map(({ rule, scope }) => (
+          <RuleControl
+            key={rule.key}
+            rule={rule}
+            scope={scope}
+            values={values}
+            onRuleChange={onRuleChange}
+            lookups={lookups}
+          />
+        ))}
+      </FilterGroup>
+    ) : null;
+
+  const seriesGroup =
+    hasSeriesSection && groupedRules.series.length > 0 ? (
+      <FilterGroup label="Series">
+        {groupedRules.series.map(({ rule, scope }) => (
+          <RuleControl
+            key={rule.key}
+            rule={rule}
+            scope={scope}
+            values={values}
+            onRuleChange={onRuleChange}
+            lookups={lookups}
+          />
+        ))}
+      </FilterGroup>
+    ) : null;
 
   const playHistoryFilter = hasPlayHistorySection ? (
     <FilterGroup label="Play History">
-      <OptionFilter
-        options={TAUTULLI_WATCHED_OPTIONS}
-        value={filterState.tautulliWatched}
-        onChange={setTautulliWatched}
-      />
-      <NumberRangeFilter
-        label="Last Watched"
-        min={filterState.lastWatchedDaysAgoGte}
-        max={filterState.lastWatchedDaysAgoLte}
-        onChangeMin={setLastWatchedDaysAgoGte}
-        onChangeMax={setLastWatchedDaysAgoLte}
-      />
+      {groupedRules.playHistory.map(({ rule, scope }) => (
+        <RuleControl
+          key={rule.key}
+          rule={rule}
+          scope={scope}
+          values={values}
+          onRuleChange={onRuleChange}
+          lookups={lookups}
+        />
+      ))}
     </FilterGroup>
   ) : null;
 
   const overseerrFilter = hasOverseerrSection ? (
     <FilterGroup label="Requests">
-      <OptionFilter
-        options={OVERSEERR_HAS_ISSUE_OPTIONS}
-        value={filterState.overseerrHasIssue}
-        onChange={setOverseerrHasIssue}
-      />
-      <OptionFilter
-        label="Status"
-        options={OVERSEERR_REQUEST_STATUS_OPTIONS}
-        value={filterState.overseerrRequestStatus}
-        onChange={setOverseerrRequestStatus}
-      />
+      {groupedRules.requests.map(({ rule, scope }) => (
+        <RuleControl
+          key={rule.key}
+          rule={rule}
+          scope={scope}
+          values={values}
+          onRuleChange={onRuleChange}
+          lookups={lookups}
+        />
+      ))}
     </FilterGroup>
   ) : null;
 
   const tmdbFilter = hasTmdbSection ? (
     <FilterGroup label="TMDB">
-      <OptionFilter
-        options={TMDB_STATUS_OPTIONS}
-        value={filterState.tmdbStatus}
-        onChange={setTmdbStatus}
-      />
+      {groupedRules.tmdb.map(({ rule, scope }) => (
+        <RuleControl
+          key={rule.key}
+          rule={rule}
+          scope={scope}
+          values={values}
+          onRuleChange={onRuleChange}
+          lookups={lookups}
+        />
+      ))}
     </FilterGroup>
   ) : null;
 
   // ─── Active conditions — drives the saved-query summary row ───────────────
   // Each active filter becomes one removable chip. The chips are exactly the
   // conditions persisted by "Save as query", so the row makes the
-  // filters → saved-query relationship literal.
-  const fmtNum = (v: number | undefined) => (v != null ? String(v) : '…');
-  const range = (lo: number | undefined, hi: number | undefined) => `${fmtNum(lo)}–${fmtNum(hi)}`;
-  const optLabel = <T extends string>(
-    opts: ReadonlyArray<{ value: T; label: string }>,
-    v: string | undefined
-  ): string | undefined => opts.find((o) => o.value === v)?.label;
+  // filters → saved-query relationship literal. Derived generically from
+  // `rules` + `values` rather than one hand-written check per field.
 
   type Condition = { key: string; label: string; onClear: () => void };
   const activeConditions: Condition[] = [];
-  const pushOpt = (key: string, label: string | undefined, onClear: () => void) => {
-    if (label) activeConditions.push({ key, label, onClear });
-  };
 
-  if (filterState.title) {
+  const titleValue = values.shared.title as string;
+  if (titleValue) {
     activeConditions.push({
       key: 'title',
-      label: `“${filterState.title}”`,
-      onClear: () => setTitle(''),
+      label: `“${titleValue}”`,
+      onClear: () => onRuleChange('shared', 'title', ''),
     });
   }
-  // Movies
-  pushOpt('hasFile', optLabel(HAS_FILE_OPTIONS, filterState.hasFile), () => setHasFile(undefined));
-  if (movieTagIds.length > 0)
+
+  const seenKeys = new Set<string>();
+  for (const rule of rules) {
+    if (rule.key === 'title' || seenKeys.has(`${scopeOf(rule)}:${rule.key}`)) continue;
+    seenKeys.add(`${scopeOf(rule)}:${rule.key}`);
+    const scope = scopeOf(rule);
+    const value = values[scope][rule.key];
+    if (!isValueActive(value)) continue;
+    const label = conditionLabel(rule, value as FilterValue);
+    if (!label) continue;
     activeConditions.push({
-      key: 'movieTags',
-      label: `Movie tags · ${movieTagIds.length}`,
-      onClear: () => setMovieTagIds(undefined),
+      key: `${scope}:${rule.key}`,
+      label,
+      onClear: () => onRuleChange(scope, rule.key, undefined),
     });
-  if (movieQualityProfileIds.length > 0)
-    activeConditions.push({
-      key: 'movieQuality',
-      label: `Movie quality · ${movieQualityProfileIds.length}`,
-      onClear: () => setMovieQualityProfileIds(undefined),
-    });
-  if (selectedMovieGenres.length > 0)
-    activeConditions.push({
-      key: 'movieGenres',
-      label: `Movie genres · ${selectedMovieGenres.length}`,
-      onClear: () => setMovieGenres(undefined),
-    });
-  if (filterState.radarrImdbRatingGte != null || filterState.radarrImdbRatingLte != null)
-    activeConditions.push({
-      key: 'imdb',
-      label: `IMDB ${range(filterState.radarrImdbRatingGte, filterState.radarrImdbRatingLte)}`,
-      onClear: () => {
-        setRadarrImdbRatingGte(undefined);
-        setRadarrImdbRatingLte(undefined);
-      },
-    });
-  // Series
-  pushOpt('monitored', optLabel(MONITORED_OPTIONS, filterState.monitored), () =>
-    setMonitored(undefined)
-  );
-  pushOpt('seriesStatus', optLabel(SERIES_STATUS_OPTIONS, filterState.seriesStatus), () =>
-    setSeriesStatus(undefined)
-  );
-  pushOpt('seriesType', optLabel(SERIES_TYPE_OPTIONS, filterState.seriesType), () =>
-    setSeriesType(undefined)
-  );
-  if (seriesTagIds.length > 0)
-    activeConditions.push({
-      key: 'seriesTags',
-      label: `Series tags · ${seriesTagIds.length}`,
-      onClear: () => setSeriesTagIds(undefined),
-    });
-  if (seriesQualityProfileIds.length > 0)
-    activeConditions.push({
-      key: 'seriesQuality',
-      label: `Series quality · ${seriesQualityProfileIds.length}`,
-      onClear: () => setSeriesQualityProfileIds(undefined),
-    });
-  if (selectedSeriesGenres.length > 0)
-    activeConditions.push({
-      key: 'seriesGenres',
-      label: `Series genres · ${selectedSeriesGenres.length}`,
-      onClear: () => setSeriesGenres(undefined),
-    });
-  if (selectedNetworks.length > 0)
-    activeConditions.push({
-      key: 'network',
-      label: `Network · ${selectedNetworks.length}`,
-      onClear: () => setNetwork(undefined),
-    });
-  if (filterState.sonarrRatingGte != null || filterState.sonarrRatingLte != null)
-    activeConditions.push({
-      key: 'sonarrRating',
-      label: `Rating ${range(filterState.sonarrRatingGte, filterState.sonarrRatingLte)}`,
-      onClear: () => {
-        setSonarrRatingGte(undefined);
-        setSonarrRatingLte(undefined);
-      },
-    });
-  pushOpt('sonarrEnded', optLabel(SONARR_ENDED_OPTIONS, filterState.sonarrEnded), () =>
-    setSonarrEnded(undefined)
-  );
-  if (
-    filterState.sonarrLastAiredDaysAgoGte != null ||
-    filterState.sonarrLastAiredDaysAgoLte != null
-  )
-    activeConditions.push({
-      key: 'lastAired',
-      label: `Last aired ${range(filterState.sonarrLastAiredDaysAgoGte, filterState.sonarrLastAiredDaysAgoLte)}d`,
-      onClear: () => {
-        setSonarrLastAiredDaysAgoGte(undefined);
-        setSonarrLastAiredDaysAgoLte(undefined);
-      },
-    });
-  if (filterState.sonarrPercentEpisodesGte != null || filterState.sonarrPercentEpisodesLte != null)
-    activeConditions.push({
-      key: 'percentEpisodes',
-      label: `Episodes ${range(filterState.sonarrPercentEpisodesGte, filterState.sonarrPercentEpisodesLte)}%`,
-      onClear: () => {
-        setSonarrPercentEpisodesGte(undefined);
-        setSonarrPercentEpisodesLte(undefined);
-      },
-    });
-  // Shared (movies + series)
-  if (filterState.addedDaysAgoGte != null || filterState.addedDaysAgoLte != null)
-    activeConditions.push({
-      key: 'added',
-      label: `Added ${range(filterState.addedDaysAgoGte, filterState.addedDaysAgoLte)}d`,
-      onClear: () => {
-        setAddedDaysAgoGte(undefined);
-        setAddedDaysAgoLte(undefined);
-      },
-    });
-  if (filterState.sizeOnDiskGbGte != null || filterState.sizeOnDiskGbLte != null)
-    activeConditions.push({
-      key: 'size',
-      label: `Size ${range(filterState.sizeOnDiskGbGte, filterState.sizeOnDiskGbLte)} GB`,
-      onClear: () => {
-        setSizeOnDiskGbGte(undefined);
-        setSizeOnDiskGbLte(undefined);
-      },
-    });
-  // Year (library-global)
-  if (filterState.yearMin != null || filterState.yearMax != null)
-    activeConditions.push({
-      key: 'year',
-      label: `Year ${range(filterState.yearMin, filterState.yearMax)}`,
-      onClear: () => {
-        setYearMin(undefined);
-        setYearMax(undefined);
-      },
-    });
-  // Play History
-  pushOpt('watched', optLabel(TAUTULLI_WATCHED_OPTIONS, filterState.tautulliWatched), () =>
-    setTautulliWatched(undefined)
-  );
-  if (filterState.lastWatchedDaysAgoGte != null || filterState.lastWatchedDaysAgoLte != null)
-    activeConditions.push({
-      key: 'lastWatched',
-      label: `Last watched ${range(filterState.lastWatchedDaysAgoGte, filterState.lastWatchedDaysAgoLte)}d`,
-      onClear: () => {
-        setLastWatchedDaysAgoGte(undefined);
-        setLastWatchedDaysAgoLte(undefined);
-      },
-    });
-  // Requests (Overseerr)
-  pushOpt(
-    'overseerrHasIssue',
-    optLabel(OVERSEERR_HAS_ISSUE_OPTIONS, filterState.overseerrHasIssue),
-    () => setOverseerrHasIssue(undefined)
-  );
-  pushOpt(
-    'overseerrRequestStatus',
-    optLabel(OVERSEERR_REQUEST_STATUS_OPTIONS, filterState.overseerrRequestStatus),
-    () => setOverseerrRequestStatus(undefined)
-  );
-  // TMDB
-  if (filterState.tmdbStatus)
-    activeConditions.push({
-      key: 'tmdbStatus',
-      label: filterState.tmdbStatus,
-      onClear: () => setTmdbStatus(undefined),
-    });
+  }
 
   const conditionCount = activeConditions.length;
 
@@ -1460,69 +1417,51 @@ export function MediaFilterBar({
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {/* Search */}
-            <div>
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            {titleRule && (
+              <div>
+                <div className="relative">
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    type="search"
+                    placeholder="Filter by title…"
+                    aria-label="Filter by title"
+                    value={(values.shared.title as string) ?? ''}
+                    onChange={(e) => onRuleChange('shared', 'title', e.target.value)}
+                    className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                </svg>
-                <input
-                  type="search"
-                  placeholder="Filter by title…"
-                  aria-label="Filter by title"
-                  value={filterState.title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-surface-bg border border-border text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
-                />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Movies section */}
             {hasMovieSection && (
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Movies</h3>
                 <div className="space-y-3">
-                  <OptionFilter
-                    variant="chips"
-                    options={HAS_FILE_OPTIONS}
-                    value={filterState.hasFile}
-                    onChange={setHasFile}
-                  />
-                  {lookups.tags.radarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Movie Tags"
-                      options={lookups.tags.radarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                      selectedIds={movieTagIds}
-                      onChange={(ids) => setMovieTagIds(toCsvOrUndefined(ids))}
+                  {groupedRules.movies.map(({ rule, scope }) => (
+                    <RuleControl
+                      key={rule.key}
+                      rule={rule}
+                      scope={scope}
+                      values={values}
+                      onRuleChange={onRuleChange}
+                      lookups={lookups}
+                      variant={rule.dataType === 'boolean' ? 'chips' : 'segment'}
                     />
-                  )}
-                  {lookups.qualityProfiles.radarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Movie Quality"
-                      options={lookups.qualityProfiles.radarr.map((p) => ({
-                        id: p.id,
-                        displayName: p.name,
-                      }))}
-                      selectedIds={movieQualityProfileIds}
-                      onChange={(ids) => setMovieQualityProfileIds(toCsvOrUndefined(ids))}
-                    />
-                  )}
-                  <StringMultiSelectDropdown
-                    label="Movie Genres"
-                    options={lookups.genres.movies}
-                    selectedValues={selectedMovieGenres}
-                    onChange={(v) => setMovieGenres(toStringCsvOrUndefined(v))}
-                  />
+                  ))}
                 </div>
               </div>
             )}
@@ -1532,61 +1471,21 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Series</h3>
                 <div className="space-y-3">
-                  <OptionFilter
-                    variant="chips"
-                    options={MONITORED_OPTIONS}
-                    value={filterState.monitored}
-                    onChange={setMonitored}
-                  />
-                  <div>
-                    <span className="text-xs text-text-muted mb-2 block">Status</span>
-                    <OptionFilter
-                      variant="chips"
-                      options={SERIES_STATUS_OPTIONS}
-                      value={filterState.seriesStatus}
-                      onChange={setSeriesStatus}
+                  {groupedRules.series.map(({ rule, scope }) => (
+                    <RuleControl
+                      key={rule.key}
+                      rule={rule}
+                      scope={scope}
+                      values={values}
+                      onRuleChange={onRuleChange}
+                      lookups={lookups}
+                      variant={
+                        rule.dataType === 'boolean' || rule.dataType === 'string'
+                          ? 'chips'
+                          : 'segment'
+                      }
                     />
-                  </div>
-                  <div>
-                    <span className="text-xs text-text-muted mb-2 block">Type</span>
-                    <OptionFilter
-                      variant="chips"
-                      options={SERIES_TYPE_OPTIONS}
-                      value={filterState.seriesType}
-                      onChange={setSeriesType}
-                    />
-                  </div>
-                  {lookups.tags.sonarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Series Tags"
-                      options={lookups.tags.sonarr.map((t) => ({ id: t.id, displayName: t.label }))}
-                      selectedIds={seriesTagIds}
-                      onChange={(ids) => setSeriesTagIds(toCsvOrUndefined(ids))}
-                    />
-                  )}
-                  {lookups.qualityProfiles.sonarr.length > 0 && (
-                    <MultiSelectDropdown
-                      label="Series Quality"
-                      options={lookups.qualityProfiles.sonarr.map((p) => ({
-                        id: p.id,
-                        displayName: p.name,
-                      }))}
-                      selectedIds={seriesQualityProfileIds}
-                      onChange={(ids) => setSeriesQualityProfileIds(toCsvOrUndefined(ids))}
-                    />
-                  )}
-                  <StringMultiSelectDropdown
-                    label="Series Genres"
-                    options={lookups.genres.series}
-                    selectedValues={selectedSeriesGenres}
-                    onChange={(v) => setSeriesGenres(toStringCsvOrUndefined(v))}
-                  />
-                  <StringMultiSelectDropdown
-                    label="Network"
-                    options={lookups.networks}
-                    selectedValues={selectedNetworks}
-                    onChange={(v) => setNetwork(toStringCsvOrUndefined(v))}
-                  />
+                  ))}
                 </div>
               </div>
             )}
@@ -1595,36 +1494,48 @@ export function MediaFilterBar({
             {hasPlayHistorySection && (
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
-                <OptionFilter
-                  variant="chips"
-                  options={TAUTULLI_WATCHED_OPTIONS}
-                  value={filterState.tautulliWatched}
-                  onChange={setTautulliWatched}
-                />
-                <div className="mt-3">
-                  <NumberRangeFilter
-                    label="Last Watched"
-                    min={filterState.lastWatchedDaysAgoGte}
-                    max={filterState.lastWatchedDaysAgoLte}
-                    onChangeMin={setLastWatchedDaysAgoGte}
-                    onChangeMax={setLastWatchedDaysAgoLte}
-                  />
+                <div className="space-y-3">
+                  {groupedRules.playHistory.map(({ rule, scope }) => (
+                    <RuleControl
+                      key={rule.key}
+                      rule={rule}
+                      scope={scope}
+                      values={values}
+                      onRuleChange={onRuleChange}
+                      lookups={lookups}
+                      variant={rule.dataType === 'boolean' ? 'chips' : 'segment'}
+                    />
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Year section */}
-            <div>
-              <h3 className="text-sm font-semibold text-text-secondary mb-3">Year Range</h3>
-              <MobileYearInputs
-                yearMin={filterState.yearMin}
-                yearMax={filterState.yearMax}
-                globalMin={globalMin}
-                globalMax={globalMax}
-                setYearMin={setYearMin}
-                setYearMax={setYearMax}
-              />
-            </div>
+            {yearRule && (
+              <div>
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">Year Range</h3>
+                <MobileYearInputs
+                  yearMin={readRangeBound(values, 'shared', 'year', 'min')}
+                  yearMax={readRangeBound(values, 'shared', 'year', 'max')}
+                  globalMin={globalMin}
+                  globalMax={globalMax}
+                  setYearMin={(v) =>
+                    onRuleChange(
+                      'shared',
+                      'year',
+                      rangePatch(values.shared.year as RangeValue | undefined, 'min', v)
+                    )
+                  }
+                  setYearMax={(v) =>
+                    onRuleChange(
+                      'shared',
+                      'year',
+                      rangePatch(values.shared.year as RangeValue | undefined, 'max', v)
+                    )
+                  }
+                />
+              </div>
+            )}
           </div>
 
           {/* Sticky Done footer */}

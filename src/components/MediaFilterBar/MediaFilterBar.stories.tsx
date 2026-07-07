@@ -1,4 +1,5 @@
-import type { FilterState } from '@app/hooks/useMediaFilters';
+import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
+import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
 import { MediaFilterBar } from './index';
@@ -54,44 +55,207 @@ const RICH_LOOKUPS = {
   networks: NETWORKS,
 };
 
-const DEFAULT_FILTER: FilterState = {
-  title: '',
-  hasFile: undefined,
-  monitored: undefined,
-  seriesStatus: undefined,
-  yearMin: undefined,
-  yearMax: undefined,
-  movieTagIds: undefined,
-  seriesTagIds: undefined,
-  movieQualityProfileIds: undefined,
-  seriesQualityProfileIds: undefined,
-  movieGenres: undefined,
-  seriesGenres: undefined,
-  seriesType: undefined,
-  network: undefined,
-  tautulliWatched: undefined,
+// The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/utils/filterRegistry.ts).
+// `rulesFor()` below applies the same provider-gating `GET /api/filter-fields` does.
+const ALL_RULES: MediaRuleDescriptor[] = [
+  {
+    key: 'title',
+    label: 'Title',
+    contentTypes: ['movie', 'show'],
+    dataType: 'string',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'year',
+    label: 'Year',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'watched',
+    label: 'Watched',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['TAUTULLI'],
+    required: false,
+  },
+  {
+    key: 'addedDaysAgo',
+    label: 'Added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'sizeOnDiskGb',
+    label: 'Size on disk (GB)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'hasFile',
+    label: 'Has file',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['RADARR', 'SONARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['movie'],
+    dataType: 'csv-ids',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'qualityProfileIds',
+    label: 'Quality profile',
+    contentTypes: ['movie'],
+    dataType: 'csv-ids',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'genres',
+    label: 'Genres',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'imdbRating',
+    label: 'IMDB rating',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'monitored',
+    label: 'Monitored',
+    contentTypes: ['show'],
+    dataType: 'boolean',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'seriesStatus',
+    label: 'Series status',
+    contentTypes: ['show'],
+    dataType: 'string',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'tagIds',
+    label: 'Tags',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'qualityProfileIds',
+    label: 'Quality profile',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'genres',
+    label: 'Genres',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'seriesType',
+    label: 'Series type',
+    contentTypes: ['show'],
+    dataType: 'string',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'network',
+    label: 'Network',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'communityRating',
+    label: 'Community rating',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'ended',
+    label: 'Ended',
+    contentTypes: ['show'],
+    dataType: 'boolean',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'lastAiredDaysAgo',
+    label: 'Last aired (days ago)',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'episodePercentage',
+    label: 'Episode completion (%)',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'lastWatchedDaysAgo',
+    label: 'Last watched (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['TAUTULLI'],
+    required: false,
+  },
+];
+
+function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
+  return ALL_RULES.filter((rule) => rule.sourceProviders.some((sp) => configuredTypes.has(sp)));
+}
+
+const EMPTY_FILTER_STATE: FilterState = {
+  shared: { title: '' },
+  movie: {},
+  show: {},
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
-  addedDaysAgoGte: undefined,
-  addedDaysAgoLte: undefined,
-  sizeOnDiskGbGte: undefined,
-  sizeOnDiskGbLte: undefined,
-  certification: undefined,
-  radarrImdbRatingGte: undefined,
-  radarrImdbRatingLte: undefined,
-  sonarrRatingGte: undefined,
-  sonarrRatingLte: undefined,
-  sonarrEnded: undefined,
-  sonarrLastAiredDaysAgoGte: undefined,
-  sonarrLastAiredDaysAgoLte: undefined,
-  sonarrPercentEpisodesGte: undefined,
-  sonarrPercentEpisodesLte: undefined,
-  lastWatchedDaysAgoGte: undefined,
-  lastWatchedDaysAgoLte: undefined,
-  overseerrHasIssue: undefined,
-  overseerrRequestStatus: undefined,
-  tmdbStatus: undefined,
 };
+
+function isBucketActive(bucket: Record<string, FilterValue>, skipEmptyTitle = false): boolean {
+  return Object.entries(bucket).some(([key, value]) => {
+    if (skipEmptyTitle && key === 'title') return value !== '';
+    if (value === undefined) return false;
+    if (typeof value === 'object') return value.min !== undefined || value.max !== undefined;
+    return true;
+  });
+}
 
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
@@ -114,14 +278,21 @@ function FilterBarWrapper({
   richLookups = true,
   mobileOpen: initialMobileOpen = false,
 }: WrapperArgs) {
-  const [filterState, setFilterState] = useState<FilterState>(DEFAULT_FILTER);
+  const [values, setValues] = useState<FilterState>(EMPTY_FILTER_STATE);
   const [mobileOpen, setMobileOpen] = useState(initialMobileOpen);
 
-  const isActive = Object.entries(filterState).some(([key, v]) =>
-    key === 'title' ? v !== '' : v !== undefined
-  );
+  const isActive =
+    isBucketActive(values.shared, true) ||
+    isBucketActive(values.movie) ||
+    isBucketActive(values.show);
 
-  const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
+  const onRuleChange = (scope: ContentScope, key: string, value: FilterValue | undefined) =>
+    setValues((s) => {
+      const bucket = { ...s[scope] };
+      if (value === undefined) delete bucket[key];
+      else bucket[key] = value;
+      return { ...s, [scope]: bucket };
+    });
 
   const types =
     CONFIGURED_TYPE_OPTIONS[configuredTypes] ?? CONFIGURED_TYPE_OPTIONS['All providers'];
@@ -135,49 +306,17 @@ function FilterBarWrapper({
           <span className={isActive ? 'text-primary' : 'text-text-muted'}>
             {isActive ? 'active' : 'default'}
           </span>
-          {filterState.title && (
-            <span className="ml-2 text-text-secondary">title="{filterState.title}"</span>
+          {values.shared.title && (
+            <span className="ml-2 text-text-secondary">title="{String(values.shared.title)}"</span>
           )}
         </span>
       </div>
 
       <MediaFilterBar
-        filterState={filterState}
-        setTitle={(v) => patch({ title: v })}
-        setHasFile={(v) => patch({ hasFile: v })}
-        setMonitored={(v) => patch({ monitored: v })}
-        setSeriesStatus={(v) => patch({ seriesStatus: v })}
-        setYearMin={(v) => patch({ yearMin: v })}
-        setYearMax={(v) => patch({ yearMax: v })}
-        setMovieTagIds={(v) => patch({ movieTagIds: v })}
-        setSeriesTagIds={(v) => patch({ seriesTagIds: v })}
-        setMovieQualityProfileIds={(v) => patch({ movieQualityProfileIds: v })}
-        setSeriesQualityProfileIds={(v) => patch({ seriesQualityProfileIds: v })}
-        setMovieGenres={(v) => patch({ movieGenres: v })}
-        setSeriesGenres={(v) => patch({ seriesGenres: v })}
-        setSeriesType={(v) => patch({ seriesType: v })}
-        setNetwork={(v) => patch({ network: v })}
-        setTautulliWatched={(v) => patch({ tautulliWatched: v })}
-        setAddedDaysAgoGte={(v) => patch({ addedDaysAgoGte: v })}
-        setAddedDaysAgoLte={(v) => patch({ addedDaysAgoLte: v })}
-        setSizeOnDiskGbGte={(v) => patch({ sizeOnDiskGbGte: v })}
-        setSizeOnDiskGbLte={(v) => patch({ sizeOnDiskGbLte: v })}
-        setCertification={(v) => patch({ certification: v })}
-        setRadarrImdbRatingGte={(v) => patch({ radarrImdbRatingGte: v })}
-        setRadarrImdbRatingLte={(v) => patch({ radarrImdbRatingLte: v })}
-        setSonarrRatingGte={(v) => patch({ sonarrRatingGte: v })}
-        setSonarrRatingLte={(v) => patch({ sonarrRatingLte: v })}
-        setSonarrEnded={(v) => patch({ sonarrEnded: v })}
-        setSonarrLastAiredDaysAgoGte={(v) => patch({ sonarrLastAiredDaysAgoGte: v })}
-        setSonarrLastAiredDaysAgoLte={(v) => patch({ sonarrLastAiredDaysAgoLte: v })}
-        setSonarrPercentEpisodesGte={(v) => patch({ sonarrPercentEpisodesGte: v })}
-        setSonarrPercentEpisodesLte={(v) => patch({ sonarrPercentEpisodesLte: v })}
-        setLastWatchedDaysAgoGte={(v) => patch({ lastWatchedDaysAgoGte: v })}
-        setLastWatchedDaysAgoLte={(v) => patch({ lastWatchedDaysAgoLte: v })}
-        setOverseerrHasIssue={(v) => patch({ overseerrHasIssue: v })}
-        setOverseerrRequestStatus={(v) => patch({ overseerrRequestStatus: v })}
-        setTmdbStatus={(v) => patch({ tmdbStatus: v })}
-        clearAll={() => setFilterState(DEFAULT_FILTER)}
+        rules={rulesFor(types)}
+        values={values}
+        onRuleChange={onRuleChange}
+        clearAll={() => setValues(EMPTY_FILTER_STATE)}
         isActive={isActive}
         movieYearRange={YEAR_RANGE}
         seriesYearRange={YEAR_RANGE}
@@ -231,16 +370,20 @@ MobileSheet.args = { configuredTypes: 'All providers', richLookups: true, mobile
 MobileSheet.argTypes = sharedArgTypes;
 
 export const WithActiveFilters: Story = () => {
-  const [filterState, setFilterState] = useState<FilterState>({
-    ...DEFAULT_FILTER,
-    hasFile: 'true',
-    seriesStatus: 'continuing',
-    seriesType: 'anime',
-    tautulliWatched: 'false',
-    yearMin: 2010,
+  const [values, setValues] = useState<FilterState>({
+    shared: { title: '', watched: 'false', year: { min: 2010 }, hasFile: 'true' },
+    movie: {},
+    show: { seriesStatus: 'continuing', seriesType: 'anime' },
+    movieSort: 'title_asc',
+    seriesSort: 'title_asc',
   });
-  const isActive = true;
-  const patch = (partial: Partial<FilterState>) => setFilterState((s) => ({ ...s, ...partial }));
+  const onRuleChange = (scope: ContentScope, key: string, value: FilterValue | undefined) =>
+    setValues((s) => {
+      const bucket = { ...s[scope] };
+      if (value === undefined) delete bucket[key];
+      else bucket[key] = value;
+      return { ...s, [scope]: bucket };
+    });
 
   return (
     <div className="bg-surface-bg min-h-screen">
@@ -253,43 +396,11 @@ export const WithActiveFilters: Story = () => {
         </span>
       </div>
       <MediaFilterBar
-        filterState={filterState}
-        setTitle={(v) => patch({ title: v })}
-        setHasFile={(v) => patch({ hasFile: v })}
-        setMonitored={(v) => patch({ monitored: v })}
-        setSeriesStatus={(v) => patch({ seriesStatus: v })}
-        setYearMin={(v) => patch({ yearMin: v })}
-        setYearMax={(v) => patch({ yearMax: v })}
-        setMovieTagIds={(v) => patch({ movieTagIds: v })}
-        setSeriesTagIds={(v) => patch({ seriesTagIds: v })}
-        setMovieQualityProfileIds={(v) => patch({ movieQualityProfileIds: v })}
-        setSeriesQualityProfileIds={(v) => patch({ seriesQualityProfileIds: v })}
-        setMovieGenres={(v) => patch({ movieGenres: v })}
-        setSeriesGenres={(v) => patch({ seriesGenres: v })}
-        setSeriesType={(v) => patch({ seriesType: v })}
-        setNetwork={(v) => patch({ network: v })}
-        setTautulliWatched={(v) => patch({ tautulliWatched: v })}
-        setAddedDaysAgoGte={(v) => patch({ addedDaysAgoGte: v })}
-        setAddedDaysAgoLte={(v) => patch({ addedDaysAgoLte: v })}
-        setSizeOnDiskGbGte={(v) => patch({ sizeOnDiskGbGte: v })}
-        setSizeOnDiskGbLte={(v) => patch({ sizeOnDiskGbLte: v })}
-        setCertification={(v) => patch({ certification: v })}
-        setRadarrImdbRatingGte={(v) => patch({ radarrImdbRatingGte: v })}
-        setRadarrImdbRatingLte={(v) => patch({ radarrImdbRatingLte: v })}
-        setSonarrRatingGte={(v) => patch({ sonarrRatingGte: v })}
-        setSonarrRatingLte={(v) => patch({ sonarrRatingLte: v })}
-        setSonarrEnded={(v) => patch({ sonarrEnded: v })}
-        setSonarrLastAiredDaysAgoGte={(v) => patch({ sonarrLastAiredDaysAgoGte: v })}
-        setSonarrLastAiredDaysAgoLte={(v) => patch({ sonarrLastAiredDaysAgoLte: v })}
-        setSonarrPercentEpisodesGte={(v) => patch({ sonarrPercentEpisodesGte: v })}
-        setSonarrPercentEpisodesLte={(v) => patch({ sonarrPercentEpisodesLte: v })}
-        setLastWatchedDaysAgoGte={(v) => patch({ lastWatchedDaysAgoGte: v })}
-        setLastWatchedDaysAgoLte={(v) => patch({ lastWatchedDaysAgoLte: v })}
-        setOverseerrHasIssue={(v) => patch({ overseerrHasIssue: v })}
-        setOverseerrRequestStatus={(v) => patch({ overseerrRequestStatus: v })}
-        setTmdbStatus={(v) => patch({ tmdbStatus: v })}
-        clearAll={() => setFilterState(DEFAULT_FILTER)}
-        isActive={isActive}
+        rules={ALL_RULES}
+        values={values}
+        onRuleChange={onRuleChange}
+        clearAll={() => setValues(EMPTY_FILTER_STATE)}
+        isActive={true}
         movieYearRange={YEAR_RANGE}
         seriesYearRange={YEAR_RANGE}
         lookups={RICH_LOOKUPS}
