@@ -16,12 +16,15 @@ import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import { useMediaQueries } from '@app/hooks/useMediaQueries';
 import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
 import { useMediaRules } from '@app/hooks/useMediaRules';
+import type { MediaSourceDescriptor } from '@app/hooks/useMediaSources';
+import { useMediaSources } from '@app/hooks/useMediaSources';
 import type { ManagedMovie } from '@app/hooks/useMovies';
 import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
 import { NAV_ITEMS } from '@app/lib/navigation';
+import { PROVIDER_REGISTRY } from '@app/lib/provider-registry';
 import { cn } from '@app/lib/utils/cn';
 import { requireAuth } from '@app/lib/utils/requireAuth';
 import {
@@ -437,7 +440,7 @@ export interface MediaContentProps {
   series: MediaSlice<ManagedSeries>;
   lookups: Lookups;
   configuredTypes: Set<string>;
-  providersLoaded: boolean;
+  sources: Record<'movie' | 'show', MediaSourceDescriptor> | undefined;
   // card density
   density: CardDensity;
   onDensityChange: (d: CardDensity) => void;
@@ -464,10 +467,11 @@ export function MediaContent({
   series,
   lookups,
   configuredTypes,
-  providersLoaded,
+  sources,
   density,
   onDensityChange,
 }: MediaContentProps) {
+  const providerLabel = (type: string) => PROVIDER_REGISTRY[type]?.label ?? type;
   const [selected, setSelected] = useState<SelectedMedia | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const movieSentinelRef = useSentinel(movies.fetchMore);
@@ -542,15 +546,16 @@ export function MediaContent({
           )}
           {!movies.isLoading &&
             movies.items.length === 0 &&
-            providersLoaded &&
-            (!configuredTypes.has('RADARR') ? (
+            sources &&
+            (!sources.movie.configured ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
                 <ServerOff size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm font-medium text-text-secondary">
-                  No Radarr connection configured.
+                  No {providerLabel(sources.movie.ownerType)} connection configured.
                 </p>
                 <p className="text-xs text-text-muted">
-                  Add a Radarr provider in Settings to manage your movie library.
+                  Add a {providerLabel(sources.movie.ownerType)} provider in Settings to manage your
+                  movie library.
                 </p>
                 <a
                   href="/settings"
@@ -576,7 +581,7 @@ export function MediaContent({
                 <Film size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">Your movie library is empty.</p>
                 <p className="text-xs text-text-muted">
-                  Movies synced from Radarr will appear here.
+                  Movies synced from {providerLabel(sources.movie.ownerType)} will appear here.
                 </p>
               </div>
             ))}
@@ -622,15 +627,16 @@ export function MediaContent({
           )}
           {!series.isLoading &&
             series.items.length === 0 &&
-            providersLoaded &&
-            (!configuredTypes.has('SONARR') ? (
+            sources &&
+            (!sources.show.configured ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
                 <ServerOff size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm font-medium text-text-secondary">
-                  No Sonarr connection configured.
+                  No {providerLabel(sources.show.ownerType)} connection configured.
                 </p>
                 <p className="text-xs text-text-muted">
-                  Add a Sonarr provider in Settings to manage your series library.
+                  Add a {providerLabel(sources.show.ownerType)} provider in Settings to manage your
+                  series library.
                 </p>
                 <a
                   href="/settings"
@@ -656,7 +662,7 @@ export function MediaContent({
                 <Tv2 size={32} strokeWidth={1.25} className="text-text-muted" />
                 <p className="text-sm text-text-secondary">Your series library is empty.</p>
                 <p className="text-xs text-text-muted">
-                  Series synced from Sonarr will appear here.
+                  Series synced from {providerLabel(sources.show.ownerType)} will appear here.
                 </p>
               </div>
             ))}
@@ -708,6 +714,7 @@ export default function MediaPage() {
   });
   const lookups = useMediaLookups();
   const { providers } = useProviderSettings();
+  const { sources } = useMediaSources();
 
   const configuredTypes = useMemo(
     () => new Set((providers ?? []).filter((p) => p.isActive).map((p) => p.type)),
@@ -720,7 +727,6 @@ export default function MediaPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('movies');
 
-  const providersLoaded = providers !== undefined;
   const activeFilterCount = countActiveFilters(values, activeTab);
 
   const mobileNav = (
@@ -813,7 +819,7 @@ export default function MediaPage() {
           series={series}
           lookups={lookups}
           configuredTypes={configuredTypes}
-          providersLoaded={providersLoaded}
+          sources={sources}
           density={density}
           onDensityChange={setDensity}
         />

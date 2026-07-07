@@ -1,0 +1,34 @@
+import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import React from 'react';
+import { SWRConfig } from 'swr';
+import { describe, expect, it } from 'vitest';
+import { server } from '../../../tests/mocks/server';
+import { useMediaSources } from '../useMediaSources';
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
+
+describe('useMediaSources', () => {
+  it('exposes the ownership projection keyed by content type', async () => {
+    server.use(
+      http.get('/api/media/sources', () =>
+        HttpResponse.json({
+          status: 'ok',
+          data: [
+            { contentType: 'movie', ownerType: 'RADARR', configured: true },
+            { contentType: 'show', ownerType: 'SONARR', configured: false },
+          ],
+        })
+      )
+    );
+
+    const { result } = renderHook(() => useMediaSources(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.sources).toEqual({
+      movie: { contentType: 'movie', ownerType: 'RADARR', configured: true },
+      show: { contentType: 'show', ownerType: 'SONARR', configured: false },
+    });
+  });
+});

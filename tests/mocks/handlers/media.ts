@@ -101,6 +101,19 @@ export const mediaHandlers = [
     });
   }),
 
+  // Mirrors GET /api/media/sources' ownership projection (sourceOwnership in
+  // server/providers/mediaSourceFactory.ts) — configured state matches the
+  // default settings.ts fixture (RADARR active, no SONARR).
+  http.get('/api/media/sources', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: [
+        { contentType: 'movie', ownerType: 'RADARR', configured: true },
+        { contentType: 'show', ownerType: 'SONARR', configured: false },
+      ],
+    });
+  }),
+
   // Mirrors GET /api/filter-fields' provider-gated MediaRuleDescriptor projection
   // (server/utils/filterRegistry.ts) — the default set every RADARR+SONARR test
   // fixture implies is configured, per providers.ts's default handler.

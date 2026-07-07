@@ -11,8 +11,7 @@ export function createFilterFieldsHandlers(cradle: FilterFieldsCradle) {
   const { providerSettingsService } = cradle;
 
   async function gatedDescriptors(contentType?: ContentType): Promise<MediaRuleDescriptor[]> {
-    const providers = await providerSettingsService.list();
-    const configuredTypes = new Set(providers.filter((p) => p.isActive).map((p) => p.type));
+    const configuredTypes = await providerSettingsService.activeTypes();
 
     return MEDIA_RULES.filter(
       (rule) => contentType === undefined || rule.contentTypes.includes(contentType)

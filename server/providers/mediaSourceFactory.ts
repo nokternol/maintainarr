@@ -35,4 +35,26 @@ export class MediaSourceFactory {
   }
 }
 
+/** One content type's ownership, joined with whether the owner is configured. */
+export interface MediaSourceDescriptor {
+  contentType: ContentType;
+  ownerType: MetadataProviderType;
+  configured: boolean;
+}
+
+/**
+ * Projects `OWNER_TYPE` for the client: which provider type owns each content
+ * type, and whether an active instance of it exists. The wire surface of the
+ * single ownership authority — clients derive from this, never re-declare it.
+ */
+export function sourceOwnership(configuredTypes: ReadonlySet<string>): MediaSourceDescriptor[] {
+  return (Object.entries(OWNER_TYPE) as [ContentType, MetadataProviderType][]).map(
+    ([contentType, ownerType]) => ({
+      contentType,
+      ownerType,
+      configured: configuredTypes.has(ownerType),
+    })
+  );
+}
+
 export { OWNER_TYPE };

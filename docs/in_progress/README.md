@@ -35,7 +35,7 @@ the phase's PR rather than silently reconciled.
 | Phase | Heals | Observable value | Kind |
 |---|---|---|---|
 | **0** | MediaQuery naming residue | Client speaks only `/api/media-queries`; the `/api/saved-queries` alias is deleted | TDD |
-| **1** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
+| **1 ✅ shipped** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
 | **2** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
 | **3** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
 | **4** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
@@ -59,16 +59,13 @@ vocabulary. Surfaces (verified 2026-07-07):
 
 Ships: ledger's "MediaQuery naming residue" → Healed; deprecated row in `VOCABULARY.md` marked deleted.
 
-## Phase 1 — Source ownership projected, not spelled
+## Phase 1 — Source ownership projected, not spelled ✅ (shipped 2026-07-07)
 
-`MediaSourceFactory.OWNER_TYPE` is the single authority for "which provider type owns this content
-type"; `MediaPage`'s empty-state gating (`src/pages/media/index.tsx`) still spells
-`configuredTypes.has('RADARR'|'SONARR')` client-side. Design decision deferred to the phase's design
-pass (the ledger entry lists the options): project ownership onto an existing surface
-(`GET /api/providers` or the filter-fields meta) vs. a narrower signal. Requirement: the client derives
-empty-state gating from the projection; a change to `OWNER_TYPE` desyncs nothing.
-
-Ships: ledger's "MediaSource ownership vocabulary" → Healed.
+Design pass chose a dedicated projection over piggybacking existing surfaces: `sourceOwnership()`
+beside `OWNER_TYPE` itself, served as `GET /api/media/sources`
+(`MediaSourceDescriptor { contentType, ownerType, configured }`), read via `useMediaSources`.
+`MediaPage` derives empty-state gating and copy from it; the literal checks are deleted. Ledger entry
+moved to Healed; `MediaSourceDescriptor` recorded in `VOCABULARY.md`.
 
 ## Phase 2 — Kernel
 
