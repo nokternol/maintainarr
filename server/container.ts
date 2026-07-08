@@ -1,3 +1,7 @@
+import {
+  type ProvidersCradle,
+  registerProvidersDependencies,
+} from '@server/modules/providers/index';
 import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import { AutomationScheduler } from './cron/automationScheduler';
@@ -21,7 +25,6 @@ import { AutomationService } from './services/automationService';
 import { MediaQueryEngine } from './services/mediaQueryEngine';
 import { MediaQueryService } from './services/mediaQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
-import { type ProvidersCradle, registerProvidersDependencies } from '@server/modules/providers/index';
 
 const log = getChildLogger('Container');
 
