@@ -15,6 +15,12 @@
 // HTTP surface — mounted by the API router.
 export { createProvidersRoutes } from './providers.routes';
 
+// Container contribution — the app builder composes Cradle from this slice
+// and calls the registration; classes registered here stay module-private
+// unless consumers construct them directly.
+export { registerProvidersDependencies } from './providers.registrations';
+export type { ProvidersCradle } from './providers.registrations';
+
 // Provider roles — the capability vocabulary connections implement.
 export type {
   ActuatorTask,
@@ -28,10 +34,12 @@ export type {
 export type { MediaItem, MediaItemSet, MediaSource } from './mediaSource';
 
 // Factories: connections from stored settings, sources from connections.
+// ProviderFactory keeps a value export because consumers construct it as an
+// injection fallback; the container-only classes are types here.
 export { ProviderFactory } from './providerFactory';
 export type { IProviderFactory } from './providerFactory';
-export { MediaSourceFactory, sourceOwnership } from './mediaSourceFactory';
-export type { MediaSourceDescriptor } from './mediaSourceFactory';
+export { sourceOwnership } from './mediaSourceFactory';
+export type { MediaSourceDescriptor, MediaSourceFactory } from './mediaSourceFactory';
 
 // Provider settings — persistence and projection of configured providers.
 export { ProviderSettingsService } from './providerSettingsService';
@@ -40,12 +48,12 @@ export type { ProviderSettingsDraft, ProviderSummary } from './providerSettingsS
 // Per-provider task enablement read by automations.
 export { readEnabledTaskIds } from './taskEnablement';
 
-// Standalone provider-backed services.
-export { PlexService } from './plexService';
-export { TmdbService } from './tmdbService';
+// Standalone provider-backed services, resolved via the cradle.
+export type { PlexService } from './plexService';
+export type { TmdbService } from './tmdbService';
 
 // Identity resolution — the system job that stitches source identities.
-export { IdentityJobFactory } from './identityJobFactory';
+export type { IdentityJobFactory } from './identityJobFactory';
 
 // Connection classes + payload types still consumed outside the module
 // (search handler, media handler, enrichment mappers) until Phase 4.
