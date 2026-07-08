@@ -1,6 +1,6 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { MetadataProvider } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { ProviderFactory } from '@server/providers/providerFactory';

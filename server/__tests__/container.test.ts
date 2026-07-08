@@ -1,12 +1,12 @@
+import { buildContainer } from '@server/container';
 /**
  * Container wiring tests — verify singleton invariants for services that
  * carry no per-request state and must not be captured stale by singletons.
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { buildContainer } from '@server/container';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const testConfig: AppConfig = {

@@ -1,36 +1,36 @@
-import type { ContentTypeSchema } from "@app/lib/api/schemas";
-import useSWR from "swr";
-import type { z } from "zod";
-import type { FetchResponse } from "@app/types/fetch";
+import type { ContentTypeSchema } from '@app/lib/api/schemas';
+import type { FetchResponse } from '@app/types/fetch';
+import useSWR from 'swr';
+import type { z } from 'zod';
 
 type ContentType = z.infer<typeof ContentTypeSchema>;
 
 /** One content type's ownership as projected by GET /api/media/sources. */
 export interface MediaSourceDescriptor {
-    contentType: ContentType;
-    ownerType: string;
-    configured: boolean;
+  contentType: ContentType;
+  ownerType: string;
+  configured: boolean;
 }
 
-const KEY = "/api/media/sources";
+const KEY = '/api/media/sources';
 
 async function fetcher(url: string) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch media sources");
-    const json = await res.json<FetchResponse<MediaSourceDescriptor[]>>();
-    return json.data;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch media sources');
+  const json = await res.json<FetchResponse<MediaSourceDescriptor[]>>();
+  return json.data;
 }
 
 export function useMediaSources(): {
-    sources: Record<ContentType, MediaSourceDescriptor> | undefined;
-    isLoading: boolean;
+  sources: Record<ContentType, MediaSourceDescriptor> | undefined;
+  isLoading: boolean;
 } {
-    const { data, isLoading } = useSWR(KEY, fetcher);
-    const sources = data
-        ? (Object.fromEntries(data.map((d) => [d.contentType, d])) as Record<
-              ContentType,
-              MediaSourceDescriptor
-          >)
-        : undefined;
-    return { sources, isLoading };
+  const { data, isLoading } = useSWR(KEY, fetcher);
+  const sources = data
+    ? (Object.fromEntries(data.map((d) => [d.contentType, d])) as Record<
+        ContentType,
+        MediaSourceDescriptor
+      >)
+    : undefined;
+  return { sources, isLoading };
 }

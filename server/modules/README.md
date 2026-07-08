@@ -57,7 +57,7 @@ Factory functions that receive dependencies via Awilix cradle injection. Returns
 
 ```typescript
 // server/modules/health/health.handler.ts
-import { defineRoute } from '@server/utils/defineRoute';
+import { defineRoute } from '@server/kernel/defineRoute';
 import { healthSchemas } from './health.schemas';
 import type { AppConfig } from '@server/config';
 
@@ -147,7 +147,7 @@ export function createApiRouter(cradle: Cradle) {
 
 3. **Create handler factory**: `yourDomain.handler.ts`
    ```typescript
-   import { defineRoute } from '@server/utils/defineRoute';
+   import { defineRoute } from '@server/kernel/defineRoute';
    import { yourDomainSchemas } from './yourDomain.schemas';
    import type { YourService } from '@server/services/yourService';
 

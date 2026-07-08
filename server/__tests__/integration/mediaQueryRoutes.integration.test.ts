@@ -1,6 +1,6 @@
-import type { AppConfig } from '@server/config';
 import { buildContainer } from '@server/container';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { createApiRouter } from '@server/modules';
 import express from 'express';
 import supertest from 'supertest';

@@ -1,5 +1,5 @@
 import { Cron } from 'croner';
-import { getChildLogger } from '../logger';
+import { getChildLogger } from '../kernel/logger';
 
 const log = getChildLogger('AutomationScheduler');
 

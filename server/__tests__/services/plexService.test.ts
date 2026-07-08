@@ -1,4 +1,4 @@
-import { UnauthorizedError } from '@server/errors';
+import { UnauthorizedError } from '@server/kernel/errors';
 import { PlexService } from '@server/services/plexService';
 import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';

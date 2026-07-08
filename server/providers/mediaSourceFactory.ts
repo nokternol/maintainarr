@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '../database/schema';
-import { getChildLogger } from '../logger';
+import { getChildLogger } from '../kernel/logger';
 import type { ProviderSettingsService } from '../services/providerSettingsService';
 import type { ContentType } from '../utils/filterRegistry';
 import type { MediaSource } from './mediaSource';

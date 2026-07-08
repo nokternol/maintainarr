@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { mediaQueries, mediaQueryFilterValues } from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

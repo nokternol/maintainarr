@@ -1,5 +1,5 @@
 import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import { BaseProviderConnection } from '@server/providers/baseProviderConnection';
 import { describe, expect, it } from 'vitest';
 

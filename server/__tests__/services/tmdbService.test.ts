@@ -1,4 +1,4 @@
-import type { AppConfig } from '@server/config';
+import type { AppConfig } from '@server/kernel/config';
 import { TmdbService } from '@server/services/tmdbService';
 import { server } from '@tests/mocks/server';
 import { http, HttpResponse, delay } from 'msw';

@@ -1,6 +1,6 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { NormalizedMovie } from '@server/domain/movie';
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Cradle } from '../../container';
-import { isAuthenticated } from '../../middleware/auth';
+import { isAuthenticated } from '../../kernel/middleware/auth';
 import { createMediaHandlers } from './media.handler';
 
 export function createMediaRoutes(

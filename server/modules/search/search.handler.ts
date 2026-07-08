@@ -1,7 +1,8 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { MetadataProvider } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
-import { isAuthenticated } from '@server/middleware/auth';
+import { defineRoute } from '@server/kernel/defineRoute';
+import { getChildLogger } from '@server/kernel/logger';
+import { isAuthenticated } from '@server/kernel/middleware/auth';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
@@ -9,7 +10,6 @@ import { RadarrProvider } from '@server/providers/radarrProvider';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { TautulliProvider } from '@server/providers/tautulliProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { defineRoute } from '@server/utils/defineRoute';
 import { searchMetadataQuery } from './search.schemas';
 
 const log = getChildLogger('SearchHandler');

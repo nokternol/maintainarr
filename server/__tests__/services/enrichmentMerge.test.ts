@@ -1,4 +1,6 @@
-import type { AppConfig } from '@server/config';
+import { mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import type { NormalizedMovie } from '@server/domain/movie';
+import type { AppConfig } from '@server/kernel/config';
 /**
  * Phase 2 — Cycle 2.1. Shared identity→enrichment merge extracted from
  * AutomationExecutor.mergeEnrichment. One implementation, used by both the
@@ -6,9 +8,7 @@ import type { AppConfig } from '@server/config';
  *
  * Run: vitest run --project server
  */
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { mediaEnrichment, mediaIdentity } from '@server/database/schema';
-import type { NormalizedMovie } from '@server/domain/movie';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { mergeEnrichment } from '@server/services/enrichmentMerge';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

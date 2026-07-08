@@ -1,3 +1,4 @@
+import { MetadataProviderType } from '@server/database/schema';
 /**
  * AutomationRunService tests.
  *
@@ -6,9 +7,8 @@
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType } from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { MediaQueryService } from '@server/services/mediaQueryService';

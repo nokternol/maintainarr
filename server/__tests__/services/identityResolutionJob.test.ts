@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { mediaIdentity } from '@server/database/schema';
 import { IdentityResolutionJob } from '@server/jobs/identityResolutionJob';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import type { RadarrMovie } from '@server/providers/radarrProvider';
 import type { SonarrSeries } from '@server/providers/sonarrProvider';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

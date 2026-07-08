@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import logger, { formatLogLine, getChildLogger } from '../logger';
+import logger, { formatLogLine, getChildLogger } from '../../kernel/logger';
 
 describe('formatLogLine', () => {
   it('formats a basic message with timestamp and level', () => {

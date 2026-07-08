@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { _resetConfig, getConfig, loadConfig } from '../config';
+import { _resetConfig, getConfig, loadConfig } from '../../kernel/config';
 
 describe('config', () => {
   const originalEnv = { ...process.env };

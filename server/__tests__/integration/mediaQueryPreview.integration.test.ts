@@ -1,9 +1,9 @@
-import { loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
-import { closeDatabase, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
-import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
-import { requestIdMiddleware } from '@server/middleware/requestId';
+import { loadConfig } from '@server/kernel/config';
+import { closeDatabase, initializeDatabase } from '@server/kernel/db';
+import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQueries.routes';
 import { MediaQueryService } from '@server/services/mediaQueryService';
 import { createMockConfig } from '@tests/factories';

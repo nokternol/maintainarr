@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import { EnrichmentJobFactory } from '@server/jobs/enrichmentJobFactory';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { ProviderFactory } from '@server/providers/providerFactory';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { eq } from 'drizzle-orm';

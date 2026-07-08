@@ -1,8 +1,8 @@
-import { type AppConfig, loadConfig } from '@server/config';
 import { buildContainer } from '@server/container';
-import { type DrizzleDb, closeDatabase, initializeDatabase } from '@server/database';
-import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
-import { requestIdMiddleware } from '@server/middleware/requestId';
+import { type AppConfig, loadConfig } from '@server/kernel/config';
+import { type DrizzleDb, closeDatabase, initializeDatabase } from '@server/kernel/db';
+import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createProvidersRoutes } from '@server/modules/providers/providers.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectSuccessResponse } from '@tests/helpers/api';

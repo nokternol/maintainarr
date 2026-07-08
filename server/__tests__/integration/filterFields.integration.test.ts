@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
 import { buildContainer } from '@server/container';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { createApiRouter } from '@server/modules';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import express from 'express';

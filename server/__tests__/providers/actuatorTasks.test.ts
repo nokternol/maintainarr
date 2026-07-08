@@ -1,4 +1,4 @@
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { PlexProvider } from '@server/providers/plexProvider';
 import { RadarrProvider } from '@server/providers/radarrProvider';

@@ -1,3 +1,5 @@
+import { buildContainer } from '@server/container';
+import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 /**
  * Phase 2 — enriched predicates on the browse path.
  *
@@ -8,12 +10,10 @@
  *
  * Run: vitest run --project server
  */
-import { loadConfig } from '@server/config';
-import { buildContainer } from '@server/container';
-import { closeDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
-import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
-import { requestIdMiddleware } from '@server/middleware/requestId';
+import { loadConfig } from '@server/kernel/config';
+import { closeDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createMediaRoutes } from '@server/modules/media/media.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectSuccessResponse } from '@tests/helpers/api';

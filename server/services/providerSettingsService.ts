@@ -1,5 +1,4 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import {
   type MetadataProvider,
   type MetadataProviderType,
@@ -7,8 +6,9 @@ import {
   type RawMetadataProvider,
   metadataProviders,
 } from '../database/schema';
-import { NotFoundError, ValidationError } from '../errors';
-import { getChildLogger } from '../logger';
+import type { DrizzleDb } from '../kernel/db';
+import { NotFoundError, ValidationError } from '../kernel/errors';
+import { getChildLogger } from '../kernel/logger';
 
 const log = getChildLogger('ProviderSettingsService');
 

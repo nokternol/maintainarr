@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, mediaIdentity } from '@server/database/schema';
 import { IdentityJobFactory } from '@server/jobs/identityJobFactory';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { ProviderFactory } from '@server/providers/providerFactory';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import type { IdentityJobLike } from '@server/services/systemTaskRunner';

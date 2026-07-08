@@ -1,5 +1,5 @@
-import type { AppConfig } from '../../config';
-import { defineRoute } from '../../utils/defineRoute';
+import type { AppConfig } from '../../kernel/config';
+import { defineRoute } from '../../kernel/defineRoute';
 import { healthSchemas } from './health.schemas';
 
 export function createHealthHandlers({ config }: { config: AppConfig }) {

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import { automations } from '../database/schema';
+import type { DrizzleDb } from '../kernel/db';
 
 const SYSTEM_JOBS = [
   {

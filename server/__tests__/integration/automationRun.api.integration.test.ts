@@ -1,13 +1,13 @@
+import { buildContainer } from '@server/container';
+import { automations } from '@server/database/schema';
 /**
  * POST /api/automations/:id/run — Phase 3 Run Now
  * Async 202 + background execute; unknown id → 404; kind-agnostic and ignores paused.
  */
-import { loadConfig } from '@server/config';
-import { buildContainer } from '@server/container';
-import { closeDatabase, getDb, initializeDatabase } from '@server/database';
-import { automations } from '@server/database/schema';
-import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
-import { requestIdMiddleware } from '@server/middleware/requestId';
+import { loadConfig } from '@server/kernel/config';
+import { closeDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createAutomationRoutes } from '@server/modules/automations/automations.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient } from '@tests/helpers/api';

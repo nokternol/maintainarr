@@ -1,5 +1,5 @@
 import type { Cradle } from '@server/container';
-import { isAuthenticated } from '@server/middleware/auth';
+import { isAuthenticated } from '@server/kernel/middleware/auth';
 import { Router } from 'express';
 import { createAuthHandlers } from './auth.handler';
 

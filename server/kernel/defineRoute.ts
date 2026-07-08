@@ -1,6 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import { ValidationError } from '../errors';
+import { ValidationError } from './errors';
 
 interface RouteContext<TBody, TQuery, TParams> {
   body: TBody;

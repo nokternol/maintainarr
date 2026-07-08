@@ -1,3 +1,10 @@
+import {
+  MetadataProviderType,
+  UserType,
+  metadataProviders,
+  sessions,
+  users,
+} from '@server/database/schema';
 /**
  * Drizzle schema shape + database integration tests.
  *
@@ -9,15 +16,8 @@
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import {
-  MetadataProviderType,
-  UserType,
-  metadataProviders,
-  sessions,
-  users,
-} from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { eq } from 'drizzle-orm';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

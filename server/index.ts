@@ -1,4 +1,4 @@
-import { loadEnv } from './env';
+import { loadEnv } from './kernel/env';
 // Must run before any import that reads process.env (including loadConfig).
 loadEnv();
 import cookieParser from 'cookie-parser';
@@ -7,15 +7,19 @@ import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
 import next from 'next';
-import { loadConfig } from './config';
-import { SESSION_TTL_SECONDS } from './config';
 import { buildContainer, scopePerRequest } from './container';
-import { closeDatabase, initializeDatabase } from './database';
 import { DrizzleStore } from './database/drizzleStore';
 import { failedStateMiddleware } from './health/failedStateMiddleware';
 import { systemHealthCheck } from './health/systemHealthCheck';
-import { getChildLogger } from './logger';
-import { errorHandlerMiddleware, requestIdMiddleware, requestLoggerMiddleware } from './middleware';
+import { loadConfig } from './kernel/config';
+import { SESSION_TTL_SECONDS } from './kernel/config';
+import { closeDatabase, initializeDatabase } from './kernel/db';
+import { getChildLogger } from './kernel/logger';
+import {
+  errorHandlerMiddleware,
+  requestIdMiddleware,
+  requestLoggerMiddleware,
+} from './kernel/middleware';
 import { createApiRouter } from './modules';
 
 const log = getChildLogger('Server');

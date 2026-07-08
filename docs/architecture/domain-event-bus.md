@@ -9,7 +9,7 @@ deployment). Horizontal scaling is the boundary to revisit.
 
 ## The bus
 
-`DomainEventBus` ([`server/services/eventBus.ts`](ref:path:server/services/eventBus.ts)) wraps a Node `EventEmitter` with a typed event map
+`DomainEventBus` ([`server/kernel/eventBus.ts`](ref:path:server/kernel/eventBus.ts)) wraps a Node `EventEmitter` with a typed event map
 (`DomainEvents`). It is registered as a singleton in the awilix cradle ([`server/container.ts`](ref:path:server/container.ts),
 `eventBus`). `on`/`off`/`emit` are generic over the event-name keys so payloads are checked against
 the map at compile time.

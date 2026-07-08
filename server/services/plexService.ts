@@ -1,6 +1,6 @@
 import ky from 'ky';
-import { UnauthorizedError } from '../errors';
-import { getChildLogger } from '../logger';
+import { UnauthorizedError } from '../kernel/errors';
+import { getChildLogger } from '../kernel/logger';
 
 const log = getChildLogger('PlexService');
 

@@ -1,5 +1,5 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { MediaQueryService } from '@server/services/mediaQueryService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

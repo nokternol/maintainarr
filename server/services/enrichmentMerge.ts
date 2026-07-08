@@ -1,8 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import { mediaEnrichment, mediaIdentity } from '../database/schema';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
+import type { DrizzleDb } from '../kernel/db';
 
 /**
  * Maps `media_enrichment` rows onto Normalized* items, keyed by

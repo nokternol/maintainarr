@@ -1,4 +1,4 @@
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { SonarrProvider } from '@server/providers/sonarrProvider';
 import { http, HttpResponse } from 'msw';

@@ -1,3 +1,11 @@
+import { buildContainer } from '@server/container';
+import {
+  MetadataProviderType,
+  automations,
+  mediaEnrichment,
+  mediaIdentity,
+} from '@server/database/schema';
+import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
 /**
  * Integration test for Phase 1 — system task execution via DI (D1).
  *
@@ -8,17 +16,9 @@
  *
  * Run: yarn vitest run --project server server/__tests__/integration/system.task.execution.integration.test.ts
  */
-import { loadConfig } from '@server/config';
-import { buildContainer } from '@server/container';
-import { closeDatabase, initializeDatabase } from '@server/database';
-import type { DrizzleDb } from '@server/database';
-import {
-  MetadataProviderType,
-  automations,
-  mediaEnrichment,
-  mediaIdentity,
-} from '@server/database/schema';
-import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
+import { loadConfig } from '@server/kernel/config';
+import { closeDatabase, initializeDatabase } from '@server/kernel/db';
+import type { DrizzleDb } from '@server/kernel/db';
 import { createMockConfig } from '@tests/factories';
 import { server } from '@tests/mocks/server';
 import { eq } from 'drizzle-orm';

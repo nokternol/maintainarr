@@ -36,7 +36,7 @@ the phase's PR rather than silently reconciled.
 |---|---|---|---|
 | **0** | MediaQuery naming residue | Client speaks only `/api/media-queries`; the `/api/saved-queries` alias is deleted | TDD |
 | **1 ✅ shipped** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
-| **2** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
+| **2 ✅ shipped** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
 | **3** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
 | **4** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
 | **5** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
@@ -67,13 +67,14 @@ beside `OWNER_TYPE` itself, served as `GET /api/media/sources`
 `MediaPage` derives empty-state gating and copy from it; the literal checks are deleted. Ledger entry
 moved to Healed; `MediaSourceDescriptor` recorded in `VOCABULARY.md`.
 
-## Phase 2 — Kernel
+## Phase 2 — Kernel ✅ (shipped 2026-07-08)
 
-Create `server/kernel/` and move: `eventBus`, `logger`, `config`, `errors`, `env`, `middleware/`,
-`utils/defineRoute`, and the database handle accessors (`server/database/` stays put as the schema +
-migrations home; the kernel re-exports the handle contract the container injects). Update every import.
-No logic changes; suite green is the gate. The kernel's rule is directional: every module may import
-kernel; kernel imports no module.
+`server/kernel/` created and now the only home for infrastructure: `eventBus`, `logger`, `config`,
+`errors`, `env`, `middleware/`, `defineRoute`, and `kernel/db.ts` re-exporting the `DrizzleDb` handle
+contract the container injects (`server/database/` stays put as the schema + migrations home). Every
+import updated — zero old-path imports, no shims; kernel-owned tests moved to
+`server/__tests__/kernel/`. The direction rule holds: every module may import kernel; kernel imports
+no module. Ledger's "Server layering" entry records the kernel surface as healed.
 
 ## Phase 3 — providers module
 

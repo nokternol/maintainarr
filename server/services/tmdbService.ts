@@ -1,6 +1,6 @@
 import ky from 'ky';
-import type { AppConfig } from '../config';
-import { getChildLogger } from '../logger';
+import type { AppConfig } from '../kernel/config';
+import { getChildLogger } from '../kernel/logger';
 import { MediaCache } from '../modules/media/media.cache';
 
 const log = getChildLogger('TmdbService');
