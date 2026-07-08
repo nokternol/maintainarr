@@ -1,4 +1,7 @@
-import type { MediaItem } from '../../providers/mediaSource';
+// Leaf type import, not the providers interface: the provider connections
+// import this file, so consuming the module index here would be circular and
+// would drag the whole server graph into any program that includes a connection.
+import type { MediaItem } from '../../modules/providers/mediaSource';
 
 /**
  * Pure match-and-decorate: join a batch of canonical items to a per-key set of

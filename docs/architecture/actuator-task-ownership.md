@@ -14,7 +14,7 @@ runner bound to that instance. A system without the role has no tasks, by constr
 non-actuator can never be offered one.
 
 ```ts
-// server/providers/roles.ts
+// server/modules/providers/roles.ts
 interface ActuatorTaskDescriptor { id: string; label: string; destructive: boolean; affects?: 'media'; }
 interface ActuatorTask extends ActuatorTaskDescriptor { run(ids: number[]): Promise<void>; }
 interface MediaActuator { readonly actuatorType: MetadataProviderType; tasks(): ActuatorTask[]; }
@@ -53,7 +53,7 @@ Discovery and enforcement are **instance-keyed**, not type-keyed, because two in
 legitimately differ — a 4K Radarr may enable `deleteMovieWithFiles` while a 1080p Radarr withholds it.
 
 - **Enablement is per instance**, held in `provider.settings.enabledTasks` and read by the single pure
-  authority `readEnabledTaskIds(settings)` ([`server/providers/taskEnablement.ts`](ref:path:server/providers/taskEnablement.ts)).
+  authority `readEnabledTaskIds(settings)` ([`server/modules/providers/taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts)).
 - **Default disabled.** A newly configured instance enables no tasks until chosen.
 - **Enforced at two boundaries, not the UI:** `automationService.create` rejects a `taskId` not enabled on
   *that instance*; `AutomationExecutor` refuses (before any provider HTTP call) a task not enabled on the
@@ -87,13 +87,13 @@ not actuator tasks, and absent from the discovery surface.
 
 ## How it is wired
 
-- [`server/providers/roles.ts`](ref:path:server/providers/roles.ts) — `MediaActuator` / `ActuatorTask` / `ActuatorTaskDescriptor` contracts,
+- [`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts) — `MediaActuator` / `ActuatorTask` / `ActuatorTaskDescriptor` contracts,
   `modelledRun`, `isMediaActuator`.
 - `RadarrProvider`, `SonarrProvider` — `tasks()` with real (instance-bound) + modelled tasks.
 - `PlexProvider`, `JellyfinProvider`, `TautulliProvider` — `implements MediaActuator`, modelled-only `tasks()`.
-- [`server/providers/taskEnablement.ts`](ref:path:server/providers/taskEnablement.ts) — `readEnabledTaskIds`, the one authority both create and the
+- [`server/modules/providers/taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts) — `readEnabledTaskIds`, the one authority both create and the
   executor consult.
-- [`server/providers/providerFactory.ts`](ref:path:server/providers/providerFactory.ts) — constructs every configured type so discovery can ask any
+- [`server/modules/providers/providerFactory.ts`](ref:path:server/modules/providers/providerFactory.ts) — constructs every configured type so discovery can ask any
   instance for its role.
 - [`server/services/automationService.ts`](ref:path:server/services/automationService.ts), [`automationExecutor.ts`](ref:path:server/services/automationExecutor.ts) — create-time and run-time enablement.
 - [`server/modules/providers/providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts) — instance-keyed discovery.

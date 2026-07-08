@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { ProviderSettingsService } from '../../services/providerSettingsService';
 import { MEDIA_RULES, toDescriptor } from '../../utils/filterRegistry';
 import type { ContentType, MediaRuleDescriptor } from '../../utils/filterRegistry';
+import type { ProviderSettingsService } from '../providers';
 
 interface FilterFieldsCradle {
   providerSettingsService: ProviderSettingsService;

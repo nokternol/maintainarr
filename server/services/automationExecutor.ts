@@ -2,15 +2,18 @@ import type { MetadataProvider } from '../database/schema';
 import type { DrizzleDb } from '../kernel/db';
 import type { DomainEventBus } from '../kernel/eventBus';
 import { getChildLogger } from '../kernel/logger';
-import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
-import type { RadarrProvider } from '../providers/radarrProvider';
-import type { SonarrProvider } from '../providers/sonarrProvider';
-import { readEnabledTaskIds } from '../providers/taskEnablement';
+import {
+  type IProviderFactory,
+  ProviderFactory,
+  type ProviderSettingsService,
+  type RadarrProvider,
+  type SonarrProvider,
+  readEnabledTaskIds,
+} from '../modules/providers';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import type { MediaQueryService } from './mediaQueryService';
-import type { ProviderSettingsService } from './providerSettingsService';
 
 const log = getChildLogger('AutomationExecutor');
 

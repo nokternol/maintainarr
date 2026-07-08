@@ -1,7 +1,6 @@
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
-import type { RadarrMovie } from './radarrProvider';
-import type { SonarrSeries } from './sonarrProvider';
+import type { RadarrMovie, SonarrSeries } from '../modules/providers';
 
 /**
  * Translate provider DTOs into the canonical Normalized* domain shapes the

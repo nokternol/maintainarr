@@ -2,7 +2,7 @@ import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/da
 import { EnrichmentJob } from '@server/jobs/enrichmentJob';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
-import type { MediaEnricher, MediaItem } from '@server/providers/roles';
+import type { MediaEnricher, MediaItem } from '@server/modules/providers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {

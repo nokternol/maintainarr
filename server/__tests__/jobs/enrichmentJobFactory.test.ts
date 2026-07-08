@@ -2,8 +2,7 @@ import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/da
 import { EnrichmentJobFactory } from '@server/jobs/enrichmentJobFactory';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
-import { ProviderFactory } from '@server/providers/providerFactory';
-import { ProviderSettingsService } from '@server/services/providerSettingsService';
+import { ProviderFactory, ProviderSettingsService } from '@server/modules/providers';
 import { eq } from 'drizzle-orm';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

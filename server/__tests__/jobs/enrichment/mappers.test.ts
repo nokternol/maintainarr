@@ -1,7 +1,10 @@
 import { mapOverseerr, mapPlexItems, mapTautulliHistory } from '@server/jobs/enrichment/mappers';
-import type { OverseerrIssue, OverseerrRequest } from '@server/providers/overseerrProvider';
-import type { PlexMediaItem } from '@server/providers/plexProvider';
-import type { TautulliHistoryItem } from '@server/providers/tautulliProvider';
+import type {
+  OverseerrIssue,
+  OverseerrRequest,
+  PlexMediaItem,
+  TautulliHistoryItem,
+} from '@server/modules/providers';
 import { describe, expect, it } from 'vitest';
 
 function history(rating_key: string, played_at?: number): TautulliHistoryItem {

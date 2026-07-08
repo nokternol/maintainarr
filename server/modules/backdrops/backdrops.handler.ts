@@ -1,5 +1,5 @@
 import { defineRoute } from '@server/kernel/defineRoute';
-import type { TmdbService } from '@server/services/tmdbService';
+import type { TmdbService } from '@server/modules/providers';
 import { backdropsSchemas } from './backdrops.schemas';
 
 export function createBackdropsHandlers({ tmdbService }: { tmdbService: TmdbService }) {

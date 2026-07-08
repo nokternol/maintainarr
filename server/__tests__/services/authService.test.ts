@@ -9,8 +9,8 @@ import { users } from '@server/database/schema';
  */
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import type { PlexService } from '@server/modules/providers';
 import { AuthService } from '@server/services/authService';
-import type { PlexService } from '@server/services/plexService';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {
