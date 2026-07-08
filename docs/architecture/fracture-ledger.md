@@ -3,7 +3,7 @@
 **Status:** AS-BUILT (current fact) — a living ledger, not a plan. Extended as each fracture heals or a new
 one is found; entries move from Open to Healed, never deleted. Companion to two documents that do *not*
 overlap with it: `docs/in_progress/README.md` (the phase-by-phase *plan* for healing what's still Open here)
-and the Ubiquitous Language table in [`docs/architecture/warden-core-model.md`](ref:path:docs/architecture/warden-core-model.md)
+and the vocabulary in [`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)
 (the settled *names* for concepts once healed). This doc answers a narrower question than either: **for a
 named fracture, what surfaces actually exist in code right now** — verified directly against source, not
 against what a plan document claims.
@@ -81,8 +81,9 @@ is graphed, dated, and verified against code, not inferred from a plan.
 - Migrations `0007_query_model_rewrite.sql` (historical rename rewrite) and
   `0013_media_rule_range_collapse.sql` (historical range-collapse rewrite) are left as-is — not live
   duplication.
-- **Spec:** `docs/architecture/warden-core-model.md`'s Ubiquitous Language table (`MediaRule` /
-  `MediaRuleDescriptor` entry, mirroring `ActuatorTask`/`ActuatorTaskDescriptor` for Phase 3).
+- **Spec:** the `MediaRule` / `MediaRuleDescriptor` entry in
+  [`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md) (mirroring
+  `ActuatorTask`/`ActuatorTaskDescriptor` for Phase 3).
 
 ## Open
 
@@ -109,3 +110,61 @@ is graphed, dated, and verified against code, not inferred from a plan.
 - **Not yet worked.** No plan document owns this yet — whoever picks it up should decide whether the fix is
   projecting `OWNER_TYPE` onto an existing client-facing surface (e.g. `GET /api/providers` or a new small
   endpoint) or something narrower.
+
+### MediaQuery naming residue — the `SavedMediaQuery` second vocabulary (recorded 2026-07-07, not yet worked)
+
+- **Fracture:** one concept, two names at the HTTP/client boundary. The settled vocabulary (see
+  [`VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)) is `MediaQuery` /
+  `MediaQueryRecord` — "saved" is a state of a database entity, not a name — and the server already
+  speaks it: [`MediaQueryService`](ref:path:server/services/mediaQueryService.ts) (cradle key
+  `mediaQueryService`), `MediaQueryRecord`, tables `media_queries` / `media_query_filter_values`,
+  canonical route `/api/media-queries`. The old vocabulary survives as a live translator at the HTTP
+  boundary: [`server/modules/index.ts`](ref:path:server/modules/index.ts) mounts `/api/saved-queries`
+  as a back-compat alias, and the client still calls it —
+  [`useMediaQueries.ts`](ref:path:src/hooks/useMediaQueries.ts) (`KEY = '/api/saved-queries'`) and
+  [`QuerySourceList`](ref:path:src/components/QuerySourceList/index.tsx) (preview URLs, plus a
+  `savedQueries` prop fed from
+  [`AutomationBuilder`](ref:path:src/components/AutomationBuilder/index.tsx)).
+- **How it misled:** this doc set itself was infected — the class-level rename shipped 2026-06-24
+  (`SavedMediaQueryService` → `MediaQueryService`, `SavedMediaQueryRecord` → `MediaQueryRecord`,
+  `useSavedQueries` → `useMediaQueries`), but the core model's Ubiquitous Language table kept recording
+  the *deprecated* names as canonical, sending anyone who trusted the table hunting for classes that no
+  longer existed (fixed 2026-07-07 when the vocabulary moved to `VOCABULARY.md`).
+- **Heals when:** the client speaks `MediaQuery`/`MediaQueryRecord` and calls `/api/media-queries`, and
+  the `/api/saved-queries` alias is deleted. Not yet worked; no plan document owns it.
+
+### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07, not yet worked)
+
+- **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
+  structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
+  verified against the tree:
+  - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
+    schemas/handlers/routes per HTTP surface while all business logic sits in a flat `server/services/`.
+    Until 2026-07-07, [`server/modules/README.md`](ref:path:server/modules/README.md) declared each
+    module "owns its schemas, handlers, routes, and services" — the doc now states the actual split,
+    but the split itself remains: neither design is enforced, so services accrete wherever the author
+    leaned.
+  - **Module boundaries drawn by route, not domain.** `filterFields`
+    ([`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts)) is a
+    one-endpoint module projecting the media rule registry; `backdrops` and `search` are media concerns
+    with their own top-level modules.
+  - **Orphan directories outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
+    (one file, the automation scheduler), [`server/jobs/`](ref:path:server/jobs/enrichmentJob.ts)
+    (enrichment + identity), [`server/domain/`](ref:path:server/domain/movie.ts) (two type files the
+    `Normalized*` shapes live in), each a layer with a single tenant.
+  - **The rule authority lives in "utils".** [`filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts)
+    — the single authority the Phase 4 heal established — sits in `server/utils/` beside `defineRoute`
+    and small helpers. [`server/README.md`](ref:path:server/README.md) now flags it in place ("the
+    media-rule authority"), but domain authority filed under utilities is the location fracture itself.
+  - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)
+    (HTTP liveness) and [`server/health/`](ref:path:server/health/systemHealthCheck.ts) (system
+    self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are different processes sharing the name
+    `health` — a naming collision that reads as duplication until traced.
+  - **Doc fiction as a third design (pruned 2026-07-07):** the server READMEs and the deleted
+    `docs/agent/architecture.md` described a boilerplate "clean architecture" on TypeORM —
+    `DataSource`, entities, repositories — while the code is Drizzle
+    ([`server/database/index.ts`](ref:path:server/database/index.ts): `DrizzleDb`, `getDb()`). Agents
+    reading those docs built against an ORM that isn't installed.
+- **Direction:** a single target design is declared in `docs/intent/` (the server-architecture North
+  Star). This entry tracks only what exists; it heals surface-by-surface as relocations ship and gets
+  verified here against the tree, not against the plan.

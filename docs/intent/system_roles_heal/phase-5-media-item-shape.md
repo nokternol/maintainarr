@@ -1,6 +1,6 @@
 # Phase 5 — MediaItem shape (identity + open provider-contingent fields)
 
-**Status:** IN PROGRESS — **needs a design pass before TDD.** Realises
+**Status:** INTENT (relegated 2026-07-07) — **needs a design pass before TDD.** Realises
 `docs/intent/media-item-shape.md`. Closes the *shape* fracture left by Phases 2–4: the canonical
 `MediaItem` is a closed typed union with every enricher field baked into the core and no provenance axis.
 

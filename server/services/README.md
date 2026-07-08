@@ -13,23 +13,32 @@ Business logic and external API interactions. Services are pure TypeScript — n
 
 ```typescript
 // server/services/exampleService.ts
-import { getChildLogger } from '../logger';
+import { eq } from 'drizzle-orm';
+import type { DrizzleDb } from '../database';
+import { examples } from '../database/schema';
 import { NotFoundError } from '../errors';
-import type { DataSource } from 'typeorm';
+import { getChildLogger } from '../logger';
 
 const log = getChildLogger('ExampleService');
 
 export class ExampleService {
-  constructor(private readonly dataSource: DataSource) {}
+  private readonly db: DrizzleDb;
+
+  constructor({ db }: { db: DrizzleDb }) {
+    this.db = db;
+  }
 
   async getById(id: number) {
     log.debug('Fetching example', { id });
-    const result = await this.dataSource.getRepository(Example).findOneBy({ id });
+    const [result] = await this.db.select().from(examples).where(eq(examples.id, id));
     if (!result) throw new NotFoundError(`Example ${id} not found`);
     return result;
   }
 }
 ```
+
+Constructor injection is Awilix proxy-style: the constructor takes a single object destructured from
+the cradle (`{ db }`), not positional arguments.
 
 ## Registering a Service
 
@@ -50,7 +59,7 @@ Update the `Cradle` interface:
 ```typescript
 export interface Cradle {
   config: AppConfig;
-  dataSource: DataSource;
+  db: DrizzleDb;
   exampleService: ExampleService;
 }
 ```
@@ -87,18 +96,14 @@ export function createExampleHandlers({ exampleService }: { exampleService: Exam
 
 Services are tested without Express. There are two patterns depending on service type:
 
-### Internal Services (DataSource-backed)
+### Internal services (database-backed)
 
-Pass mock dependencies via constructor:
+Prefer a real in-memory database over mocking the query builder — `initializeDatabase` with
+`DB_PATH: ':memory:'` runs migrations and gives the service a genuine `DrizzleDb`:
 
 ```typescript
-const mockDataSource = {
-  getRepository: vi.fn().mockReturnValue({
-    findOneBy: vi.fn().mockResolvedValue(null),
-  }),
-} as unknown as DataSource;
-
-const service = new ExampleService(mockDataSource);
+const db = await initializeDatabase(testConfig); // DB_PATH: ':memory:'
+const service = new ExampleService({ db });
 await expect(service.getById(999)).rejects.toThrow(NotFoundError);
 ```
 
