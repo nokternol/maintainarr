@@ -293,7 +293,10 @@ function Controlled({
       series={emptySlice<ManagedSeries>()}
       lookups={LOOKUPS}
       configuredTypes={ALL_PROVIDERS}
-      providersLoaded={true}
+      sources={{
+        movie: { contentType: 'movie', ownerType: 'RADARR', configured: true },
+        show: { contentType: 'show', ownerType: 'SONARR', configured: true },
+      }}
       density="normal"
       onDensityChange={() => {}}
     />

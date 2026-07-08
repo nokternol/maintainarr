@@ -73,9 +73,43 @@ describe('MediaPage', () => {
     });
   });
 
-  it('shows no-provider message on movies tab when RADARR is not configured', async () => {
+  it('derives empty-state gating and provider name from the ownership projection', async () => {
+    // Settings still report an active RADARR — the projection, not the client's
+    // own provider-type constant, must decide the empty state and its copy.
     server.use(
-      http.get('/api/settings/providers', () => HttpResponse.json({ status: 'ok', data: [] })),
+      http.get('/api/media/sources', () =>
+        HttpResponse.json({
+          status: 'ok',
+          data: [
+            { contentType: 'movie', ownerType: 'JELLYFIN', configured: false },
+            { contentType: 'show', ownerType: 'SONARR', configured: false },
+          ],
+        })
+      ),
+      http.get('/api/media/movies', () =>
+        HttpResponse.json({
+          status: 'ok',
+          data: { items: [], totalCount: 0, page: 1, pageSize: 48 },
+        })
+      )
+    );
+    render(<MediaPage />, { wrapper: Wrapper });
+    await waitFor(() => {
+      expect(screen.getByText(/no jellyfin connection configured/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows no-provider message on movies tab when the movie owner is not configured', async () => {
+    server.use(
+      http.get('/api/media/sources', () =>
+        HttpResponse.json({
+          status: 'ok',
+          data: [
+            { contentType: 'movie', ownerType: 'RADARR', configured: false },
+            { contentType: 'show', ownerType: 'SONARR', configured: false },
+          ],
+        })
+      ),
       http.get('/api/media/movies', () =>
         HttpResponse.json({
           status: 'ok',

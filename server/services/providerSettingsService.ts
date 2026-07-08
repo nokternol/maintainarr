@@ -67,6 +67,12 @@ export class ProviderSettingsService {
     return rows.map((r) => redact(parseRaw(r)));
   }
 
+  /** The set of provider types with an active configured instance. */
+  async activeTypes(): Promise<Set<MetadataProviderType>> {
+    const providers = await this.list();
+    return new Set(providers.filter((p) => p.isActive).map((p) => p.type));
+  }
+
   /**
    * Enforces the single-active-provider-per-type invariant (D8): rejects when an
    * active provider of `type` already exists. `excludeId` omits the row being updated

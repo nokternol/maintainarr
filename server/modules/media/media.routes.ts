@@ -8,9 +8,17 @@ export function createMediaRoutes(
   handlers?: ReturnType<typeof createMediaHandlers>
 ) {
   const router = Router();
-  const { listMovies, listSeries, listTags, listQualityProfiles, listGenres, listNetworks } =
-    handlers ?? createMediaHandlers(cradle);
+  const {
+    listMovies,
+    listSeries,
+    listTags,
+    listQualityProfiles,
+    listGenres,
+    listNetworks,
+    listSources,
+  } = handlers ?? createMediaHandlers(cradle);
 
+  router.get('/sources', isAuthenticated(), listSources);
   router.get('/movies', isAuthenticated(), listMovies);
   router.get('/series', isAuthenticated(), listSeries);
   router.get('/tags', isAuthenticated(), listTags);

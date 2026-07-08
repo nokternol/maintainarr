@@ -85,31 +85,31 @@ is graphed, dated, and verified against code, not inferred from a plan.
   [`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md) (mirroring
   `ActuatorTask`/`ActuatorTaskDescriptor` for Phase 3).
 
-## Open
-
-### MediaSource ownership vocabulary (spotted 2026-07-06, tracing Phase 4 Stage 2d — not yet worked)
+### MediaSource ownership vocabulary (spotted 2026-07-06 — healed 2026-07-07, North Star Phase 1)
 
 - **Fracture:** the server has a single authority for "which provider type owns this content type" —
-  `MediaSourceFactory.OWNER_TYPE` (`server/providers/mediaSourceFactory.ts:11`, `{ movie: RADARR, show:
-  SONARR }`), used to resolve the active `MediaSource` for a `ContentType` (see the Provider role model —
-  Source/Enricher/Actuator — in `docs/architecture/warden-core-model.md`). The client never reads this.
-  Two of the four call sites originally flagged here were incidentally removed by Phase 4 Stage 2d's
-  generic rewrite — `MediaFilterBar`'s section visibility is now derived from whether any gated rule
-  belongs to a group (`groupedRules.movies.length > 0`, etc.), not a direct `configuredTypes.has('RADARR')`
-  check. Two remain: `MediaPage`'s empty-state gating
-  ([`src/pages/media/index.tsx:546,626`](ref:path:src/pages/media/index.tsx)) still spells
-  `configuredTypes.has('RADARR'|'SONARR')` rather than deriving from anything server-projected. Same
-  two-designs-for-one-process shape as the rule vocabulary above, over source ownership instead of
-  predicates: today the mapping happens to agree by coincidence, not by construction, so a future change to
-  `OWNER_TYPE` silently desyncs from these two call sites.
-  Adjacent, not the same fracture: `MediaFilterBar`'s new `groupsFor` also spells `'RADARR'`/`'SONARR'`
-  literally when deciding which group a *shared, multi-provider* rule belongs to — but it reads them off
-  the rule's own server-provided `sourceProviders`, not a separately-declared client constant, so it's a
-  naming-convention dependency rather than a duplicated authority. Worth the next person's awareness, not
-  necessarily the same fix.
-- **Not yet worked.** No plan document owns this yet — whoever picks it up should decide whether the fix is
-  projecting `OWNER_TYPE` onto an existing client-facing surface (e.g. `GET /api/providers` or a new small
-  endpoint) or something narrower.
+  `OWNER_TYPE` in [`mediaSourceFactory.ts`](ref:path:server/providers/mediaSourceFactory.ts)
+  (`{ movie: RADARR, show: SONARR }`) — but the client never read it: `MediaPage`'s empty-state gating
+  spelled `configuredTypes.has('RADARR'|'SONARR')` literally, agreeing with the authority by
+  coincidence, not by construction.
+- **Healed by:** the authority is projected once and derived generically.
+  [`sourceOwnership()`](ref:path:server/providers/mediaSourceFactory.ts) (beside `OWNER_TYPE` itself)
+  maps each `ContentType` to `MediaSourceDescriptor { contentType, ownerType, configured }`, joining
+  active instances via `ProviderSettingsService.activeTypes()` (extracted — the same join
+  [`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts) already
+  did). `GET /api/media/sources` ([`media.handler.ts`](ref:path:server/modules/media/media.handler.ts))
+  serves it; the client reads it via [`useMediaSources`](ref:path:src/hooks/useMediaSources.ts) (SWR),
+  and `MediaPage` ([`src/pages/media/index.tsx`](ref:path:src/pages/media/index.tsx)) derives both the
+  empty-state gating **and its copy** (provider name via `PROVIDER_REGISTRY[ownerType].label`) from the
+  projection — the literal checks and the `providersLoaded` gate are deleted. A change to `OWNER_TYPE`
+  now flows to the client by construction.
+- **Adjacent, deliberately untouched:** `MediaFilterBar`'s `groupsFor`
+  ([`index.tsx`](ref:path:src/components/MediaFilterBar/index.tsx)) still spells `'RADARR'`/`'SONARR'`
+  when grouping shared rules — but it reads them off each rule's own server-provided `sourceProviders`,
+  a naming-convention dependency rather than a duplicated authority. Worth the next person's awareness,
+  not necessarily a fix.
+
+## Open
 
 ### MediaQuery naming residue — the `SavedMediaQuery` second vocabulary (recorded 2026-07-07, not yet worked)
 

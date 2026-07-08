@@ -5,6 +5,7 @@ import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { sortMedia } from '@server/modules/media/media.sort';
 import type { MediaSource } from '@server/providers/mediaSource';
+import { sourceOwnership } from '@server/providers/mediaSourceFactory';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
 import type { RadarrProvider } from '@server/providers/radarrProvider';
@@ -421,6 +422,10 @@ export function createMediaHandlers(cradle: MediaCradle) {
           const { series: all } = await getSeries();
           return [...new Set(all.map((s) => s.network).filter((n): n is string => !!n))].sort();
         }),
+    }),
+
+    listSources: defineRoute({
+      handler: async () => sourceOwnership(await providerSettingsService.activeTypes()),
     }),
   };
 }
