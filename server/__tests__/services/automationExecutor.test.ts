@@ -1,5 +1,3 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import {
   MetadataProviderType,
   automationRuns,
@@ -9,7 +7,10 @@ import {
 } from '@server/database/schema';
 import type { NormalizedMovie } from '@server/domain/movie';
 import type { NormalizedShow } from '@server/domain/show';
-import { getChildLogger } from '@server/logger';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { DomainEventBus, type DomainEvents } from '@server/kernel/eventBus';
+import { getChildLogger } from '@server/kernel/logger';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import type { IProviderFactory } from '@server/providers/providerFactory';
 import { type RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
@@ -17,7 +18,6 @@ import { SonarrProvider, type SonarrSeries } from '@server/providers/sonarrProvi
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
-import { DomainEventBus, type DomainEvents } from '@server/services/eventBus';
 import { MediaQueryService } from '@server/services/mediaQueryService';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';

@@ -1,3 +1,5 @@
+import { DrizzleStore } from '@server/database/drizzleStore';
+import { sessions } from '@server/database/schema';
 /**
  * DrizzleStore — express-session compatible store backed by the sessions table.
  *
@@ -7,10 +9,8 @@
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { DrizzleStore } from '@server/database/drizzleStore';
-import { sessions } from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 // ---------------------------------------------------------------------------
@@ -71,8 +71,7 @@ function makeSession(overrides: Partial<Express.SessionData> = {}): Express.Sess
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
-      // biome-ignore lint/suspicious/noExplicitAny: test helper cast
-    } as any,
+    },
     ...overrides,
   };
 }
@@ -236,8 +235,7 @@ describe('DrizzleStore', () => {
     it('does not remove the session that was just set, even if it looks expired', async () => {
       // A session with no maxAge uses the store ttl (default 86400s — far future)
       const sessionWithNoMaxAge: Express.SessionData = {
-        // biome-ignore lint/suspicious/noExplicitAny: test helper cast
-        cookie: { originalMaxAge: null, maxAge: null, path: '/' } as any,
+        cookie: { originalMaxAge: null, path: '/' },
       };
       await storeSet(store, 'just-set', sessionWithNoMaxAge);
 

@@ -8,13 +8,14 @@ injection.
 
 ```
 server/
-  config.ts          # Zod-validated env configuration — loadConfig() / getConfig()
   container.ts       # Awilix DI container with typed Cradle — buildContainer()
-  errors.ts          # AppError hierarchy (NotFoundError, ValidationError, …)
   index.ts           # Entry point and startup sequence
-  logger.ts          # Winston logger — getChildLogger('Label')
-  database/          # Drizzle db handle, schema, migrations, session store
-  middleware/        # Request pipeline (requestId → requestLogger → … → errorHandler)
+  kernel/            # Infrastructure with no domain meaning — the only home for it:
+                     #   config (Zod-validated env), env, errors (AppError hierarchy),
+                     #   logger (getChildLogger), eventBus, defineRoute,
+                     #   middleware/ (requestId → requestLogger → … → errorHandler),
+                     #   db (re-exports the DrizzleDb handle contract)
+  database/          # Drizzle schema, migrations, session store (handle consumed via kernel/db)
   modules/           # HTTP transport per feature: schemas / handlers / routes
   services/          # Business logic (no Express types)
   providers/         # External-system connections + capability roles (Source/Enricher/Actuator)
@@ -23,7 +24,7 @@ server/
   cron/              # Automation scheduler (croner)
   health/            # System self-healing (ensureSystemJobs, failed-state middleware)
   types/             # Shared types and Express augmentations
-  utils/             # defineRoute, filterRegistry (the media-rule authority), helpers
+  utils/             # filterRegistry (the media-rule authority), helpers
   __tests__/         # Server unit + integration tests
 ```
 

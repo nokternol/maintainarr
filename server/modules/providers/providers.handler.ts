@@ -1,7 +1,8 @@
-import type { AppConfig } from '@server/config';
 import { MetadataProviderType } from '@server/database/schema';
 import type { MetadataProvider } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
+import type { AppConfig } from '@server/kernel/config';
+import { defineRoute } from '@server/kernel/defineRoute';
+import { getChildLogger } from '@server/kernel/logger';
 import { JellyfinProvider } from '@server/providers/jellyfinProvider';
 import { OmdbProvider } from '@server/providers/omdbProvider';
 import { OverseerrProvider } from '@server/providers/overseerrProvider';
@@ -15,7 +16,6 @@ import { TautulliProvider } from '@server/providers/tautulliProvider';
 import { TmdbProvider } from '@server/providers/tmdbProvider';
 import { TvMazeProvider } from '@server/providers/tvmazeProvider';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { defineRoute } from '@server/utils/defineRoute';
 import { resolveApiKey } from '@server/utils/keyResolver';
 import { aggregateRatings } from '@server/utils/ratingsAggregation';
 import { providersSchemas } from './providers.schemas';

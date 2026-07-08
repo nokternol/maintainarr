@@ -1,6 +1,6 @@
-import type { DrizzleDb } from '../database';
 import type { NormalizedMovie } from '../domain/movie';
 import type { NormalizedShow } from '../domain/show';
+import type { DrizzleDb } from '../kernel/db';
 import type { MediaItemSet, MediaSource } from '../providers/mediaSource';
 import { getRule } from '../utils/filterRegistry';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';

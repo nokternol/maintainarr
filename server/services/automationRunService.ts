@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import { automationRuns, automations } from '../database/schema';
+import type { DrizzleDb } from '../kernel/db';
 
 export interface AutomationRunDto {
   id: number;

@@ -1,3 +1,4 @@
+import { MetadataProviderType } from '@server/database/schema';
 /**
  * ProviderSettingsService tests — behaviour-only, real in-memory SQLite.
  *
@@ -6,10 +7,9 @@
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { MetadataProviderType } from '@server/database/schema';
-import { ValidationError } from '@server/errors';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { ValidationError } from '@server/kernel/errors';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

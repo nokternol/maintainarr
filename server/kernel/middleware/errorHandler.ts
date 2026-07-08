@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
+import type { ApiErrorResponse } from '../../types/api';
 import { AppError, ValidationError } from '../errors';
 import { getChildLogger } from '../logger';
-import type { ApiErrorResponse } from '../types/api';
 
 const log = getChildLogger('ErrorHandler');
 

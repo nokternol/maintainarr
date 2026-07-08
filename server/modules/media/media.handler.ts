@@ -1,6 +1,7 @@
-import type { DrizzleDb } from '@server/database';
 import { MetadataProviderType } from '@server/database/schema';
-import { getChildLogger } from '@server/logger';
+import type { DrizzleDb } from '@server/kernel/db';
+import { defineRoute } from '@server/kernel/defineRoute';
+import { getChildLogger } from '@server/kernel/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { sortMedia } from '@server/modules/media/media.sort';
@@ -15,7 +16,6 @@ import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/s
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { defineRoute } from '@server/utils/defineRoute';
 import type {
   FilterValue,
   NormalizedMovie,

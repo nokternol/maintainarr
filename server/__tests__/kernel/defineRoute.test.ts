@@ -2,8 +2,8 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { errorHandlerMiddleware, requestIdMiddleware } from '../../middleware';
-import { defineRoute } from '../../utils/defineRoute';
+import { defineRoute } from '../../kernel/defineRoute';
+import { errorHandlerMiddleware, requestIdMiddleware } from '../../kernel/middleware';
 
 function createApp() {
   const app = express();

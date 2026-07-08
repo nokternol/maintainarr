@@ -1,8 +1,8 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { AppError, NotFoundError, ValidationError } from '../../errors';
-import { errorHandlerMiddleware, requestIdMiddleware } from '../../middleware';
+import { AppError, NotFoundError, ValidationError } from '../../../kernel/errors';
+import { errorHandlerMiddleware, requestIdMiddleware } from '../../../kernel/middleware';
 
 function createApp() {
   const app = express();

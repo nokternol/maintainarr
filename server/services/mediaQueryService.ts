@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import {
   type MetadataProviderType,
   mediaQueries,
   mediaQueryFilterValues,
   metadataProviders,
 } from '../database/schema';
-import { NotFoundError, ValidationError } from '../errors';
+import type { DrizzleDb } from '../kernel/db';
+import { NotFoundError, ValidationError } from '../kernel/errors';
 import type { ContentType, FilterValue } from '../utils/filterRegistry';
 import { getRule } from '../utils/filterRegistry';
 

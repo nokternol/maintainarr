@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, automations } from '@server/database/schema';
-import { ForbiddenError, ValidationError } from '@server/errors';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { ForbiddenError, ValidationError } from '@server/kernel/errors';
 import { AutomationService } from '@server/services/automationService';
 import { MediaQueryService } from '@server/services/mediaQueryService';
 import { ProviderSettingsService } from '@server/services/providerSettingsService';

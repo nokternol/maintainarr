@@ -1,13 +1,13 @@
-import type { DrizzleDb } from '../database';
 import type { MetadataProvider } from '../database/schema';
-import { getChildLogger } from '../logger';
+import type { DrizzleDb } from '../kernel/db';
+import type { DomainEventBus } from '../kernel/eventBus';
+import { getChildLogger } from '../kernel/logger';
 import { type IProviderFactory, ProviderFactory } from '../providers/providerFactory';
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
 import { readEnabledTaskIds } from '../providers/taskEnablement';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
-import type { DomainEventBus } from './eventBus';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import type { MediaQueryService } from './mediaQueryService';
 import type { ProviderSettingsService } from './providerSettingsService';

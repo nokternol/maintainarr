@@ -6,7 +6,7 @@ import {
   NotFoundError,
   UnauthorizedError,
   ValidationError,
-} from '../errors';
+} from '../../kernel/errors';
 
 describe('AppError', () => {
   it('has correct defaults', () => {

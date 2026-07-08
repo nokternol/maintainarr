@@ -1,3 +1,5 @@
+import { buildContainer } from '@server/container';
+import { MetadataProviderType } from '@server/database/schema';
 /**
  * Integration test for the single-active-provider-per-type invariant (D8) at the API edge.
  *
@@ -6,12 +8,10 @@
  *
  * Run: yarn vitest run --project server server/__tests__/integration/settings.provider.activation.integration.test.ts
  */
-import { loadConfig } from '@server/config';
-import { buildContainer } from '@server/container';
-import { closeDatabase, initializeDatabase } from '@server/database';
-import { MetadataProviderType } from '@server/database/schema';
-import { errorHandlerMiddleware } from '@server/middleware/errorHandler';
-import { requestIdMiddleware } from '@server/middleware/requestId';
+import { loadConfig } from '@server/kernel/config';
+import { closeDatabase, initializeDatabase } from '@server/kernel/db';
+import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
+import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createSettingsRoutes } from '@server/modules/settings/settings.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectValidationError } from '@tests/helpers/api';

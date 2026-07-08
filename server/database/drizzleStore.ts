@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, lt } from 'drizzle-orm';
 import session from 'express-session';
-import type { DrizzleDb } from './index';
+import type { DrizzleDb } from '../kernel/db';
 import { sessions } from './schema';
 
 interface DrizzleStoreOptions {

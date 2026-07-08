@@ -1,3 +1,4 @@
+import { users } from '@server/database/schema';
 /**
  * AuthService tests — behaviour-only, no implementation details inspected.
  *
@@ -6,9 +7,8 @@
  *
  * Run: vitest run --project server
  */
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
-import { users } from '@server/database/schema';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { AuthService } from '@server/services/authService';
 import type { PlexService } from '@server/services/plexService';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

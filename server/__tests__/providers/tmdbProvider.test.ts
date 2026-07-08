@@ -1,6 +1,6 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { NormalizedMovie } from '@server/domain/movie';
-import { getChildLogger } from '@server/logger';
+import { getChildLogger } from '@server/kernel/logger';
 import type { ProviderConfig } from '@server/providers/baseProviderConnection';
 import { TmdbProvider, type TmdbStreamingServices } from '@server/providers/tmdbProvider';
 import { http, HttpResponse } from 'msw';

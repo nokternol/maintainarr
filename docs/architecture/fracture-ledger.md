@@ -133,8 +133,17 @@ is graphed, dated, and verified against code, not inferred from a plan.
 - **Heals when:** the client speaks `MediaQuery`/`MediaQueryRecord` and calls `/api/media-queries`, and
   the `/api/saved-queries` alias is deleted. Not yet worked; no plan document owns it.
 
-### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07, not yet worked)
+### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07, healing surface-by-surface)
 
+- **Healed so far — infrastructure has one home (North Star Phase 2, 2026-07-08):**
+  [`server/kernel/`](ref:path:server/kernel/db.ts) now owns everything infrastructural with no domain
+  meaning: `config`, `env`, `errors`, `logger`, `eventBus`, `defineRoute`, `middleware/`, and `db.ts` —
+  the database-handle surface re-exporting the `DrizzleDb` contract from
+  [`server/database/`](ref:path:server/database/index.ts), which stays the schema + migrations home.
+  Zero imports from the old locations remain (`server/config.ts`, `server/errors.ts`,
+  `server/logger.ts`, `server/env.ts`, `server/middleware/`, `server/services/eventBus.ts`,
+  `server/utils/defineRoute.ts` are gone); the direction rule holds — kernel imports no service or
+  module. The remaining surfaces below are still open.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
@@ -153,8 +162,8 @@ is graphed, dated, and verified against code, not inferred from a plan.
     (enrichment + identity), [`server/domain/`](ref:path:server/domain/movie.ts) (two type files the
     `Normalized*` shapes live in), each a layer with a single tenant.
   - **The rule authority lives in "utils".** [`filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts)
-    — the single authority the Phase 4 heal established — sits in `server/utils/` beside `defineRoute`
-    and small helpers. [`server/README.md`](ref:path:server/README.md) now flags it in place ("the
+    — the single authority the Phase 4 heal established — sits in `server/utils/` beside small
+    helpers. [`server/README.md`](ref:path:server/README.md) now flags it in place ("the
     media-rule authority"), but domain authority filed under utilities is the location fracture itself.
   - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)
     (HTTP liveness) and [`server/health/`](ref:path:server/health/systemHealthCheck.ts) (system

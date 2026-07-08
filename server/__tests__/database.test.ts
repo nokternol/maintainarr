@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AppConfig } from '../config';
-import { _resetDatabase, getDb, initializeDatabase } from '../database';
+import type { AppConfig } from '../kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '../kernel/db';
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',

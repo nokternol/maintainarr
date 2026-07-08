@@ -1,6 +1,5 @@
 import { Cron } from 'croner';
 import { type SQL, eq, inArray } from 'drizzle-orm';
-import type { DrizzleDb } from '../database';
 import {
   type Automation as AutomationRow,
   MetadataProviderType,
@@ -10,7 +9,8 @@ import {
   mediaQueries,
   metadataProviders,
 } from '../database/schema';
-import { ForbiddenError, NotFoundError, ValidationError } from '../errors';
+import type { DrizzleDb } from '../kernel/db';
+import { ForbiddenError, NotFoundError, ValidationError } from '../kernel/errors';
 import { readEnabledTaskIds } from '../providers/taskEnablement';
 import type { ContentType } from './mediaQueryService';
 

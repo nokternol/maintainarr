@@ -1,4 +1,4 @@
-import { DomainEventBus } from '@server/services/eventBus';
+import { DomainEventBus } from '@server/kernel/eventBus';
 import { describe, expect, it } from 'vitest';
 
 describe('DomainEventBus', () => {

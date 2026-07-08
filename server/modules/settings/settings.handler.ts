@@ -1,8 +1,8 @@
 import { ProviderSchema } from '@app/lib/api/schemas';
 import { MetadataProviderType } from '@server/database/schema';
-import { isAuthenticated } from '@server/middleware/auth';
+import { defineRoute } from '@server/kernel/defineRoute';
+import { isAuthenticated } from '@server/kernel/middleware/auth';
 import type { ProviderSettingsService } from '@server/services/providerSettingsService';
-import { defineRoute } from '@server/utils/defineRoute';
 import ky from 'ky';
 import { z } from 'zod';
 import { settingsSchemas, testProviderQuery } from './settings.schemas';

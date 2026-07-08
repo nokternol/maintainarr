@@ -3,8 +3,8 @@ import { type Client, createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
-import type { AppConfig } from '../config';
-import { getChildLogger } from '../logger';
+import type { AppConfig } from '../kernel/config';
+import { getChildLogger } from '../kernel/logger';
 import * as schema from './schema';
 
 const log = getChildLogger('Database');

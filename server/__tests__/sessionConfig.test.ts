@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SESSION_TTL_SECONDS } from '../config';
+import { SESSION_TTL_SECONDS } from '../kernel/config';
 
 const MS_PER_DAY = 86400 * 1000;
 const DAYS_30 = 30 * MS_PER_DAY;

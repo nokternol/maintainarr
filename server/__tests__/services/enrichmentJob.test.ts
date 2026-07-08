@@ -1,7 +1,7 @@
-import type { AppConfig } from '@server/config';
-import { _resetDatabase, getDb, initializeDatabase } from '@server/database';
 import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import { EnrichmentJob } from '@server/jobs/enrichmentJob';
+import type { AppConfig } from '@server/kernel/config';
+import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import type { MediaEnricher, MediaItem } from '@server/providers/roles';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

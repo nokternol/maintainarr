@@ -1,8 +1,8 @@
 import { and, eq, sql } from 'drizzle-orm';
 
 const defaultDelay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-import type { DrizzleDb } from '../database';
 import { mediaIdentity } from '../database/schema';
+import type { DrizzleDb } from '../kernel/db';
 import type { RadarrProvider } from '../providers/radarrProvider';
 import type { SonarrProvider } from '../providers/sonarrProvider';
 
