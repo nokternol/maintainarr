@@ -16,8 +16,8 @@ Business logic and external API interactions. Services are pure TypeScript — n
 import { eq } from 'drizzle-orm';
 import type { DrizzleDb } from '../database';
 import { examples } from '../database/schema';
-import { NotFoundError } from '../errors';
-import { getChildLogger } from '../logger';
+import { NotFoundError } from '../kernel/errors';
+import { getChildLogger } from '../kernel/logger';
 
 const log = getChildLogger('ExampleService');
 
@@ -70,7 +70,7 @@ Services are injected via the cradle in handler factories. **No manual resolutio
 
 ```typescript
 // server/modules/example/example.handler.ts
-import { defineRoute } from '@server/utils/defineRoute';
+import { defineRoute } from '@server/kernel/defineRoute';
 import { exampleSchemas } from './example.schemas';
 import type { ExampleService } from '@server/services/exampleService';
 
@@ -107,9 +107,9 @@ const service = new ExampleService({ db });
 await expect(service.getById(999)).rejects.toThrow(NotFoundError);
 ```
 
-### Provider connections (extending `BaseProviderConnection`)
+### External API services
 
-External service tests use **MSW** to mock the network layer — not the `ky` client itself. This tests actual URL construction, headers, and response parsing against a real HTTP shape.
+Tests for services that call external APIs use **MSW** to mock the network layer — not the `ky` client itself. This tests actual URL construction, headers, and response parsing against a real HTTP shape. (Provider connections follow the same pattern; they live in `server/modules/providers/` with their own README.)
 
 ```typescript
 // tests/mocks/handlers/example.ts
@@ -139,12 +139,4 @@ Services registered in Awilix can be:
 
 ## External Service Integrations
 
-Media system integrations (Radarr, Sonarr, Tautulli, Jellyfin, Overseerr, Seerr) live in `server/providers/` and extend `BaseProviderConnection` rather than the standard service pattern above. The capability roles a provider holds are declared by the role interfaces it `implements` (`server/providers/roles.ts`), never by extending this base.
-
-- **`BaseProviderConnection`** (`server/providers/baseProviderConnection.ts`) — abstract HTTP/config base providing a pre-configured [`ky`](https://github.com/sindresorhus/ky) instance (Node 24 native `fetch` wrapper). Handles `prefixUrl` construction from the stored URL + optional `urlBase` setting, 10s timeout, JSON `Accept` header, and error logging hooks. It is a connection base, not a metadata or role contract.
-- Individual services extend it and call `this.client.get('endpoint').json<T>()` — no auth boilerplate needed per-method.
-- **Auth patterns**:
-  - Radarr/Sonarr/Tautulli: API key as `?apikey=` query param
-  - Jellyfin: `X-Emby-Authorization` header
-  - Overseerr/Seerr: `X-Api-Key` header
-- Connection config (URL, API key, settings) is stored in the `MetadataProvider` database entity.
+Media system integrations (Radarr, Sonarr, Tautulli, Jellyfin, Overseerr, Seerr) are provider connections owned by the providers module — see `server/modules/providers/README.md`. They extend `BaseProviderConnection` rather than the standard service pattern above, and the rest of the server consumes them only through the module's public interface (`@server/modules/providers`).

@@ -16,11 +16,13 @@ server/
                      #   middleware/ (requestId → requestLogger → … → errorHandler),
                      #   db (re-exports the DrizzleDb handle contract)
   database/          # Drizzle schema, migrations, session store (handle consumed via kernel/db)
-  modules/           # HTTP transport per feature: schemas / handlers / routes
-  services/          # Business logic (no Express types)
-  providers/         # External-system connections + capability roles (Source/Enricher/Actuator)
+  modules/           # Feature modules: schemas / handlers / routes; providers/ also owns
+                     #   its domain logic behind a crafted public interface (index.ts)
+  services/          # Business logic not yet moved into its module (tracked in
+                     #   docs/architecture/fracture-ledger.md, "Server layering")
+  providers/         # normalizeMedia.ts only — a media concern awaiting the media module
   domain/            # NormalizedMovie / NormalizedShow — the canonical media shapes
-  jobs/              # Enrichment + identity-resolution jobs
+  jobs/              # Enrichment job + merge pipeline
   cron/              # Automation scheduler (croner)
   health/            # System self-healing (ensureSystemJobs, failed-state middleware)
   types/             # Shared types and Express augmentations

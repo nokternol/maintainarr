@@ -1,6 +1,5 @@
 import { MetadataProviderType } from '../../database/schema';
-import type { MediaItem } from '../../providers/mediaSource';
-import type { EnrichmentResult } from '../../providers/roles';
+import type { EnrichmentResult, MediaItem } from '../../modules/providers';
 
 /** The canonical enrichment fields a `MediaEnricher` can resolve onto a `MediaItem`. */
 export type EnrichableField =

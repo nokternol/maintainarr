@@ -2,8 +2,11 @@
  * Test data factories for generating consistent test data.
  * Use these instead of hardcoding test data to ensure consistency.
  */
-import type { RadarrMovie } from '../../server/providers/radarrProvider';
-import type { SonarrSeries } from '../../server/providers/sonarrProvider';
+// Leaf type imports, not the module interface: this helper is compiled by the
+// client tsconfig too, and the interface's value exports would pull the whole
+// server graph into that program.
+import type { RadarrMovie } from '../../server/modules/providers/connections/radarrProvider';
+import type { SonarrSeries } from '../../server/modules/providers/connections/sonarrProvider';
 
 let idCounter = 1;
 

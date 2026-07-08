@@ -1,7 +1,13 @@
-import type { MediaItem } from '../../providers/mediaSource';
-import type { OverseerrIssue, OverseerrRequest } from '../../providers/overseerrProvider';
-import type { PlexMediaItem } from '../../providers/plexProvider';
-import type { TautulliHistoryItem } from '../../providers/tautulliProvider';
+// Leaf type imports, not the providers interface: the provider connections
+// import this file, so consuming the module index here would be circular and
+// would drag the whole server graph into any program that includes a connection.
+import type {
+  OverseerrIssue,
+  OverseerrRequest,
+} from '../../modules/providers/connections/overseerrProvider';
+import type { PlexMediaItem } from '../../modules/providers/connections/plexProvider';
+import type { TautulliHistoryItem } from '../../modules/providers/connections/tautulliProvider';
+import type { MediaItem } from '../../modules/providers/mediaSource';
 
 const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
 

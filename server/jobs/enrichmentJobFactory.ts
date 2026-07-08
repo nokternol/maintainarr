@@ -1,8 +1,7 @@
 import { MetadataProviderType } from '../database/schema';
 import type { DrizzleDb } from '../kernel/db';
 import { getChildLogger } from '../kernel/logger';
-import type { ProviderFactory } from '../providers/providerFactory';
-import type { ProviderSettingsService } from '../services/providerSettingsService';
+import type { ProviderFactory, ProviderSettingsService } from '../modules/providers';
 import type { EnrichmentJobFactoryLike } from '../services/systemTaskRunner';
 import { EnrichmentJob } from './enrichmentJob';
 

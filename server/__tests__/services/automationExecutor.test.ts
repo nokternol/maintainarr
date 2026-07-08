@@ -11,16 +11,20 @@ import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { DomainEventBus, type DomainEvents } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
+import {
+  type IProviderFactory,
+  ProviderSettingsService,
+  type RadarrMovie,
+  RadarrProvider,
+  SonarrProvider,
+  type SonarrSeries,
+} from '@server/modules/providers';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
-import type { IProviderFactory } from '@server/providers/providerFactory';
-import { type RadarrMovie, RadarrProvider } from '@server/providers/radarrProvider';
-import { SonarrProvider, type SonarrSeries } from '@server/providers/sonarrProvider';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
 import { MediaQueryService } from '@server/services/mediaQueryService';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
-import { ProviderSettingsService } from '@server/services/providerSettingsService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';

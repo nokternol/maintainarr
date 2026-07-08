@@ -31,10 +31,10 @@ is graphed, dated, and verified against code, not inferred from a plan.
 - **Fracture:** a type-keyed `taskManifest` table (Phase 2) duplicated what `MediaActuator.tasks()` should
   own — the client held its own ~30-task catalogue, detached from what any instance could actually run.
 - **Healed by:** the role owns its tasks —
-  [`ActuatorTask` / `ActuatorTaskDescriptor`](ref:path:server/providers/roles.ts), instance-keyed discovery
+  [`ActuatorTask` / `ActuatorTaskDescriptor`](ref:path:server/modules/providers/roles.ts), instance-keyed discovery
   at [`providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts)
   (`GET /api/providers/tasks`), per-instance enablement via
-  [`taskEnablement.ts`](ref:path:server/providers/taskEnablement.ts). The client derives via
+  [`taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts). The client derives via
   [`useProviderTasks`](ref:path:src/hooks/useProviderTasks.ts) and holds no catalogue; the old catalogue
   (`src/lib/tasks.ts`) is deleted and the `tasks` surface removed from
   [`provider-registry.ts`](ref:path:src/lib/provider-registry.ts).
@@ -88,12 +88,12 @@ is graphed, dated, and verified against code, not inferred from a plan.
 ### MediaSource ownership vocabulary (spotted 2026-07-06 — healed 2026-07-07, North Star Phase 1)
 
 - **Fracture:** the server has a single authority for "which provider type owns this content type" —
-  `OWNER_TYPE` in [`mediaSourceFactory.ts`](ref:path:server/providers/mediaSourceFactory.ts)
+  `OWNER_TYPE` in [`mediaSourceFactory.ts`](ref:path:server/modules/providers/mediaSourceFactory.ts)
   (`{ movie: RADARR, show: SONARR }`) — but the client never read it: `MediaPage`'s empty-state gating
   spelled `configuredTypes.has('RADARR'|'SONARR')` literally, agreeing with the authority by
   coincidence, not by construction.
 - **Healed by:** the authority is projected once and derived generically.
-  [`sourceOwnership()`](ref:path:server/providers/mediaSourceFactory.ts) (beside `OWNER_TYPE` itself)
+  [`sourceOwnership()`](ref:path:server/modules/providers/mediaSourceFactory.ts) (beside `OWNER_TYPE` itself)
   maps each `ContentType` to `MediaSourceDescriptor { contentType, ownerType, configured }`, joining
   active instances via `ProviderSettingsService.activeTypes()` (extracted — the same join
   [`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts) already
@@ -143,24 +143,40 @@ is graphed, dated, and verified against code, not inferred from a plan.
   Zero imports from the old locations remain (`server/config.ts`, `server/errors.ts`,
   `server/logger.ts`, `server/env.ts`, `server/middleware/`, `server/services/eventBus.ts`,
   `server/utils/defineRoute.ts` are gone); the direction rule holds — kernel imports no service or
-  module. The remaining surfaces below are still open.
+  module.
+- **Healed so far — providers is the first full feature module (North Star Phase 3, 2026-07-08):**
+  [`server/modules/providers/`](ref:path:server/modules/providers/index.ts) owns the provider domain
+  end to end beside the transport files it already had: the connections
+  ([`connections/`](ref:path:server/modules/providers/connections/baseProviderConnection.ts) — the
+  base plus one class per external system), [`roles.ts`](ref:path:server/modules/providers/roles.ts),
+  [`mediaSource.ts`](ref:path:server/modules/providers/mediaSource.ts),
+  [`mediaSourceFactory.ts`](ref:path:server/modules/providers/mediaSourceFactory.ts),
+  [`providerFactory.ts`](ref:path:server/modules/providers/providerFactory.ts),
+  [`taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts), the provider settings
+  service, `plexService`, `tmdbService`, `keyResolver`, and the identity-resolution job + factory.
+  Everything outside the module imports only the crafted public interface
+  ([`index.ts`](ref:path:server/modules/providers/index.ts)); zero old-path imports remain.
+  `server/providers/` keeps only `normalizeMedia.ts` — a media concern the media-module phase
+  relocates. The remaining surfaces below are still open.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
   - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
-    schemas/handlers/routes per HTTP surface while all business logic sits in a flat `server/services/`.
-    Until 2026-07-07, [`server/modules/README.md`](ref:path:server/modules/README.md) declared each
-    module "owns its schemas, handlers, routes, and services" — the doc now states the actual split,
-    but the split itself remains: neither design is enforced, so services accrete wherever the author
-    leaned.
+    schemas/handlers/routes per HTTP surface while business logic sits in a flat `server/services/`
+    (auth, automations, the media-query engine and service — the provider services left for their
+    module in Phase 3). Until 2026-07-07, [`server/modules/README.md`](ref:path:server/modules/README.md)
+    declared each module "owns its schemas, handlers, routes, and services" — the doc now states the
+    actual split, but the split itself remains for every module except providers: neither design is
+    enforced, so services accrete wherever the author leaned.
   - **Module boundaries drawn by route, not domain.** `filterFields`
     ([`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts)) is a
     one-endpoint module projecting the media rule registry; `backdrops` and `search` are media concerns
     with their own top-level modules.
   - **Orphan directories outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
     (one file, the automation scheduler), [`server/jobs/`](ref:path:server/jobs/enrichmentJob.ts)
-    (enrichment + identity), [`server/domain/`](ref:path:server/domain/movie.ts) (two type files the
-    `Normalized*` shapes live in), each a layer with a single tenant.
+    (enrichment — identity resolution moved into the providers module in Phase 3),
+    [`server/domain/`](ref:path:server/domain/movie.ts) (two type files the `Normalized*` shapes live
+    in), each a layer with a single tenant.
   - **The rule authority lives in "utils".** [`filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts)
     — the single authority the Phase 4 heal established — sits in `server/utils/` beside small
     helpers. [`server/README.md`](ref:path:server/README.md) now flags it in place ("the

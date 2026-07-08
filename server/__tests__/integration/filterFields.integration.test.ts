@@ -3,7 +3,7 @@ import { MetadataProviderType } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { createApiRouter } from '@server/modules';
-import type { ProviderSettingsService } from '@server/services/providerSettingsService';
+import type { ProviderSettingsService } from '@server/modules/providers';
 import express from 'express';
 import supertest from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

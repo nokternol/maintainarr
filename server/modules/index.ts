@@ -9,7 +9,7 @@ import { createHealthRoutes } from './health/health.routes';
 import { createMediaHandlers } from './media/media.handler';
 import { createMediaRoutes } from './media/media.routes';
 import { createMediaQueryRoutes } from './mediaQueries/mediaQueries.routes';
-import { createProvidersRoutes } from './providers/providers.routes';
+import { createProvidersRoutes } from './providers';
 import { createSearchRoutes } from './search/search.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
 

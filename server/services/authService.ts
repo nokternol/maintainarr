@@ -3,7 +3,7 @@ import { type PublicUser, UserType, users } from '../database/schema';
 import type { DrizzleDb } from '../kernel/db';
 import { NotFoundError } from '../kernel/errors';
 import { getChildLogger } from '../kernel/logger';
-import type { PlexService } from './plexService';
+import type { PlexService } from '../modules/providers';
 
 const log = getChildLogger('AuthService');
 

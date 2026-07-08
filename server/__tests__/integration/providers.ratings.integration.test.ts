@@ -3,7 +3,7 @@ import { type AppConfig, loadConfig } from '@server/kernel/config';
 import { type DrizzleDb, closeDatabase, initializeDatabase } from '@server/kernel/db';
 import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
-import { createProvidersRoutes } from '@server/modules/providers/providers.routes';
+import { createProvidersRoutes } from '@server/modules/providers';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectSuccessResponse } from '@tests/helpers/api';
 import { server } from '@tests/mocks/server';

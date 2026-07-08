@@ -1,6 +1,6 @@
 # Modules
 
-HTTP transport, organized per feature. Each module owns its schemas, handlers, and routes for one API surface (e.g., media, automations, providers). Business logic lives in `server/services/` and is injected into handler factories via the cradle — modules do not own services today (the split is tracked in `docs/architecture/fracture-ledger.md`, "Server layering").
+Feature modules. Each module owns its schemas, handlers, and routes for one API surface (e.g., media, automations, providers). The target design (`docs/intent/server-architecture-north-star.md`) has each module own its domain logic too, exposed through a deliberately crafted public interface — `providers/` is the first module converged: it owns its connections, factories, services, and jobs, and everything outside it imports only `@server/modules/providers` (its `index.ts`). The other modules still inject business logic from `server/services/` via the cradle (the remaining split is tracked in `docs/architecture/fracture-ledger.md`, "Server layering").
 
 ## Architecture
 

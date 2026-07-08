@@ -37,7 +37,7 @@ the phase's PR rather than silently reconciled.
 | **0** | MediaQuery naming residue | Client speaks only `/api/media-queries`; the `/api/saved-queries` alias is deleted | TDD |
 | **1 ✅ shipped** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
 | **2 ✅ shipped** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
-| **3** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
+| **3 ✅ shipped** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
 | **4** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
 | **5** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
 | **6** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
@@ -76,16 +76,19 @@ import updated — zero old-path imports, no shims; kernel-owned tests moved to
 `server/__tests__/kernel/`. The direction rule holds: every module may import kernel; kernel imports
 no module. Ledger's "Server layering" entry records the kernel surface as healed.
 
-## Phase 3 — providers module
+## Phase 3 — providers module ✅ (shipped 2026-07-08)
 
-Move into `server/modules/providers/`: all of `server/providers/` (connections, `roles.ts`,
-`mediaSource.ts`, `mediaSourceFactory.ts`, `taskEnablement.ts`, normalize *stays for Phase 4*),
-`services/providerSettingsService.ts`, `services/plexService.ts`, `services/tmdbService.ts`,
-`utils/keyResolver.ts` (API-key resolution priority — a provider-connection concern),
-`jobs/identityResolutionJob.ts` + `jobs/identityJobFactory.ts`. Craft `index.ts` as the public
-interface — roles, factory, descriptor types, settings service, chosen export by export, never a
-wholesale re-export. The existing `providers.handler/routes/schemas` stay — the module now owns its
-logic as the North Star prescribes.
+`server/modules/providers/` now owns the provider domain end to end: the connections in a
+`connections/` subdirectory (`BaseProviderConnection` + one class per system), `roles.ts`,
+`mediaSource.ts`, `mediaSourceFactory.ts`, `providerFactory.ts`, `taskEnablement.ts`,
+`providerSettingsService.ts`, `plexService.ts`, `tmdbService.ts`, `keyResolver.ts`, and the
+identity-resolution job + factory, beside the transport files it already had. `index.ts` is the
+crafted public interface — roles, source shapes, factories, descriptor types, settings service, and
+(until Phase 4 pulls enrichment/search/media into `modules/media/`) the connection classes and
+payload types those consumers still need. Everything outside the module imports only that interface;
+zero old-path imports remain. `server/providers/` keeps only `normalizeMedia.ts` for Phase 4;
+module-owned tests moved to `server/__tests__/modules/providers/`. Ledger's "Server layering" entry
+records the providers surface as healed.
 
 ## Phase 4 — media module
 

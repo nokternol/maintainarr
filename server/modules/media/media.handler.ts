@@ -5,17 +5,24 @@ import { getChildLogger } from '@server/kernel/logger';
 import { MediaCache } from '@server/modules/media/media.cache';
 import { paginateItems } from '@server/modules/media/media.pagination';
 import { sortMedia } from '@server/modules/media/media.sort';
-import type { MediaSource } from '@server/providers/mediaSource';
-import { sourceOwnership } from '@server/providers/mediaSourceFactory';
+import {
+  type IProviderFactory,
+  type MediaSource,
+  ProviderFactory,
+  type ProviderSettingsService,
+  type RadarrMovie,
+  type RadarrProfile,
+  type RadarrProvider,
+  type RadarrTag,
+  type SonarrProfile,
+  type SonarrProvider,
+  type SonarrSeries,
+  type SonarrTag,
+  sourceOwnership,
+} from '@server/modules/providers';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
-import { type IProviderFactory, ProviderFactory } from '@server/providers/providerFactory';
-import type { RadarrProvider } from '@server/providers/radarrProvider';
-import type { RadarrMovie, RadarrProfile, RadarrTag } from '@server/providers/radarrProvider';
-import type { SonarrProvider } from '@server/providers/sonarrProvider';
-import type { SonarrProfile, SonarrSeries, SonarrTag } from '@server/providers/sonarrProvider';
 import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
-import type { ProviderSettingsService } from '@server/services/providerSettingsService';
 import type {
   FilterValue,
   NormalizedMovie,

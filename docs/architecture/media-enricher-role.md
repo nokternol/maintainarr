@@ -32,7 +32,7 @@ not enrichers even though they carry rich fields.
 ## The contract is the canonical MediaItem
 
 ```ts
-// server/providers/roles.ts
+// server/modules/providers/roles.ts
 interface MediaEnricher {
   enrich(items: MediaItem[]): Promise<EnrichmentResult>;
 }
@@ -100,7 +100,7 @@ It is upstream of, and separate from, enrichment — an ownership/identity conce
 
 ## How it is wired
 
-- [`server/providers/roles.ts`](ref:path:server/providers/roles.ts) — `MediaEnricher` / `EnrichmentResult` contracts.
+- [`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts) — `MediaEnricher` / `EnrichmentResult` contracts.
 - `PlexProvider`, `TautulliProvider`, `OverseerrProvider`, `TmdbProvider` — `implements MediaEnricher`,
   each a thin shell: fetch, run its pure mapper (`enrichment/mappers.ts`), then `enrichment/decorate.ts`.
 - [`enrichment/precedence.ts`](ref:path:server/jobs/enrichment/precedence.ts) — `resolvePrecedence` + the per-field `ENRICHMENT_POLICY`.

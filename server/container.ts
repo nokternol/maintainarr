@@ -2,23 +2,25 @@ import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer 
 import type { NextFunction, Request, Response } from 'express';
 import { AutomationScheduler } from './cron/automationScheduler';
 import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
-import { IdentityJobFactory } from './jobs/identityJobFactory';
 import type { AppConfig } from './kernel/config';
 import type { DrizzleDb } from './kernel/db';
 import { DomainEventBus } from './kernel/eventBus';
 import { getChildLogger } from './kernel/logger';
-import { MediaSourceFactory } from './providers/mediaSourceFactory';
-import { ProviderFactory } from './providers/providerFactory';
+import {
+  IdentityJobFactory,
+  MediaSourceFactory,
+  PlexService,
+  ProviderFactory,
+  ProviderSettingsService,
+  TmdbService,
+} from './modules/providers';
 import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
 import { MediaQueryEngine } from './services/mediaQueryEngine';
 import { MediaQueryService } from './services/mediaQueryService';
-import { PlexService } from './services/plexService';
-import { ProviderSettingsService } from './services/providerSettingsService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
-import { TmdbService } from './services/tmdbService';
 
 const log = getChildLogger('Container');
 
