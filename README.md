@@ -52,7 +52,7 @@ yarn ladle           # Component stories
 
 **📚 Documentation** - Click any link to view comprehensive README documentation:
 
-- **Backend** → [server/](server/README.md) | [middleware/](server/middleware/README.md) | [modules/](server/modules/README.md) | [services/](server/services/README.md) | [database/](server/database/README.md) | [types/](server/types/README.md) | [utils/](server/utils/README.md)
+- **Backend** → [server/](server/README.md) | [modules/](server/modules/README.md) | [services/](server/services/README.md) | [database/](server/database/README.md) | [types/](server/types/README.md)
 - **Frontend** → [src/](src/README.md) | [components/](src/components/README.md) | [ui/](src/components/ui/README.md) | [layout/](src/components/layout/README.md) | [hooks/](src/hooks/README.md) | [pages/](src/pages/README.md) | [styles/](src/styles/README.md) | [types/](src/types/README.md)
 - **Testing** → [tests/](tests/README.md) | [helpers/](tests/helpers/README.md) | [mocks/](tests/mocks/README.md)
 - **Config** → [config/](config/README.md)
