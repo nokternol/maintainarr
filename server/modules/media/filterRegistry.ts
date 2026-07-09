@@ -9,6 +9,12 @@ export type ContentType = 'movie' | 'show';
 export type RangeValue = { min?: number; max?: number };
 export type FilterValue = string | number | boolean | RangeValue;
 
+/** One predicate application: a registry key paired with the value to test it against. */
+export interface FilterValueEntry {
+  key: string;
+  value: FilterValue;
+}
+
 export type Predicate<
   T extends NormalizedMovie | NormalizedShow = NormalizedMovie | NormalizedShow,
 > = (item: T, value: FilterValue) => boolean;

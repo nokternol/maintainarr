@@ -1,8 +1,8 @@
 import type { DrizzleDb } from '../../kernel/db';
 import { type QueryResult, evaluateCombination } from '../../services/combinationEvaluator';
-import type { FilterValueEntry } from '../../services/mediaQueryService';
 import type { MediaSource } from '../providers';
 import { mergeEnrichment } from './enrichmentMerge';
+import type { FilterValueEntry } from './filterRegistry';
 import { getRule } from './filterRegistry';
 import type { MediaItemSet } from './mediaItem';
 import type { NormalizedMovie } from './movie';

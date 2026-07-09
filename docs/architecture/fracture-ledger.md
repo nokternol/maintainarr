@@ -114,7 +114,7 @@ is graphed, dated, and verified against code, not inferred from a plan.
 - **Fracture:** one concept, two names at the HTTP/client boundary. The settled vocabulary (see
   [`VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)) is `MediaQuery` /
   `MediaQueryRecord` — "saved" is a state of a database entity, not a name — and the server already
-  spoke it: [`MediaQueryService`](ref:path:server/services/mediaQueryService.ts) (cradle key
+  spoke it: [`MediaQueryService`](ref:path:server/modules/mediaQueries/mediaQueryService.ts) (cradle key
   `mediaQueryService`), `MediaQueryRecord`, tables `media_queries` / `media_query_filter_values`,
   canonical route `/api/media-queries`. The old vocabulary survived as a live translator at the HTTP
   boundary: `server/modules/index.ts` mounted `/api/saved-queries` as a back-compat alias, and the
@@ -174,9 +174,9 @@ is graphed, dated, and verified against code, not inferred from a plan.
   route-drawn `filterFields`/`backdrops`/`search` modules as `media.filterFields.*`/`media.backdrops.*`/
   `media.search.*` beside the pre-existing `media.handler.ts`. `server/domain/`, `server/utils/
   filterRegistry.ts`, `server/utils/ratingsAggregation.ts`, `server/providers/normalizeMedia.ts`, and
-  `server/jobs/` are gone. `index.ts` is the crafted public interface; `server/services/
-  mediaQueryService.ts` and `automationExecutor.ts` (still open surfaces, Phases 5–6) consume only that
-  interface. Per-provider enrichment mechanics that only need providers' own vocabulary — the
+  `server/jobs/` are gone. `index.ts` is the crafted public interface; `mediaQueryService.ts`
+  (Phase 5) and `automationExecutor.ts` (still open, Phase 6) consume only that interface.
+  Per-provider enrichment mechanics that only need providers' own vocabulary — the
   `decorate()` join and the `mapTautulliHistory`/`mapPlexItems`/`mapOverseerr` DTO translators — moved to
   [`server/modules/providers/enrichment/`](ref:path:server/modules/providers/enrichment/decorate.ts)
   instead, typed as `Pick<MediaItem, ...>` subsets of media's canonical shape rather than a
@@ -193,17 +193,38 @@ is graphed, dated, and verified against code, not inferred from a plan.
   It stays module-private (only `providers.handler.ts` and the client's `RatingsDisplay` — a documented
   leaf-type cross-boundary import — consume it), so it is not part of `providers/index.ts`'s crafted
   interface.
+- **Healed so far — mediaQueries is the third full feature module (North Star Phase 5, 2026-07-09):**
+  [`server/modules/mediaQueries/`](ref:path:server/modules/mediaQueries/index.ts) owns the construction
+  of filters over enriched source data:
+  [`mediaQueryService.ts`](ref:path:server/modules/mediaQueries/mediaQueryService.ts) (`MediaQueryRecord`
+  CRUD, filter-value persistence, query health), beside the transport files it already had
+  (`mediaQueries.handler.ts`/`.routes.ts`/`.schemas.ts`). `index.ts` is the crafted public interface —
+  `MediaQueryService`, `MediaQueryRecord`, `MediaQueryValue`, the health types, `createMediaQueryRoutes`
+  — that automations (still open, Phase 6) and the HTTP layer consume; `server/services/` no longer has
+  a `mediaQueryService.ts`. Added `mediaQueries.registrations.ts`: `MediaQueriesCradle`
+  (`mediaQueryService`) and `registerMediaQueriesDependencies()`, composed into `server/container.ts`
+  alongside the kernel, media, and providers registrations.
+
+  This surfaced a pre-existing, un-flagged direction violation: `media/mediaQueryEngine.ts` imported
+  `FilterValueEntry` from `services/mediaQueryService.ts` — `media → mediaQueries`, backwards from the
+  declared `mediaQueries → media` direction, invisible before mediaQueryService had a module boundary to
+  cross. `FilterValueEntry` (`{ key, value }`, one predicate application) is structurally a media concept
+  — it pairs with `FilterValue` and is the element type of `MediaQuerySource.filterValues`, which
+  `mediaQueryEngine.ts` already owns — so it moved to
+  [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts) beside `FilterValue` and is now
+  part of media's crafted interface; `mediaQueryService.ts` imports it from there like any other
+  mediaQueries → media consumer.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
   - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
     schemas/handlers/routes per HTTP surface while business logic sits in a flat `server/services/`
-    (auth, automations, the media-query service — the provider services left in Phase 3, the
-    media-query engine and enrichment left in Phase 4). Until 2026-07-07,
+    (auth, automations — the provider services left in Phase 3, the media-query engine and enrichment
+    left in Phase 4, the media-query service left in Phase 5). Until 2026-07-07,
     [`server/modules/README.md`](ref:path:server/modules/README.md) declared each module "owns its
     schemas, handlers, routes, and services" — the doc now states the actual split, but the split itself
-    remains for every module except providers and media: neither design is enforced, so services accrete
-    wherever the author leaned.
+    remains for every module except providers, media, and mediaQueries: neither design is enforced, so
+    services accrete wherever the author leaned.
   - **Orphan directory outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
     (one file, the automation scheduler) — a layer with a single tenant, relocates in Phase 6.
   - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)

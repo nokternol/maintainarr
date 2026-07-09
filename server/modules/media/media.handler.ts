@@ -17,9 +17,14 @@ import {
   type SonarrTag,
   sourceOwnership,
 } from '@server/modules/providers';
-import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import { z } from 'zod';
-import type { FilterValue, NormalizedMovie, NormalizedShow, RangeValue } from './filterRegistry';
+import type {
+  FilterValue,
+  FilterValueEntry,
+  NormalizedMovie,
+  NormalizedShow,
+  RangeValue,
+} from './filterRegistry';
 import { MediaCache } from './media.cache';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';

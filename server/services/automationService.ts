@@ -11,8 +11,8 @@ import {
 } from '../database/schema';
 import type { DrizzleDb } from '../kernel/db';
 import { ForbiddenError, NotFoundError, ValidationError } from '../kernel/errors';
+import type { ContentType } from '../modules/media';
 import { readEnabledTaskIds } from '../modules/providers';
-import type { ContentType } from './mediaQueryService';
 
 export interface QuerySourceDraft {
   queryId: number;

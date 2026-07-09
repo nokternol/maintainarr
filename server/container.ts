@@ -1,5 +1,9 @@
 import { type MediaCradle, registerMediaDependencies } from '@server/modules/media';
 import {
+  type MediaQueriesCradle,
+  registerMediaQueriesDependencies,
+} from '@server/modules/mediaQueries';
+import {
   type ProvidersCradle,
   registerProvidersDependencies,
 } from '@server/modules/providers/index';
@@ -14,7 +18,6 @@ import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
-import { MediaQueryService } from './services/mediaQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
 
 const log = getChildLogger('Container');
@@ -23,9 +26,8 @@ const log = getChildLogger('Container');
  * Registered dependencies available via the container.
  * Extend this interface when adding new services.
  */
-export interface Cradle extends KernelCradle, MediaCradle, ProvidersCradle {
+export interface Cradle extends KernelCradle, MediaCradle, MediaQueriesCradle, ProvidersCradle {
   authService: AuthService;
-  mediaQueryService: MediaQueryService;
   automationService: AutomationService;
   automationRunService: AutomationRunService;
   systemTaskRunner: SystemTaskRunner;
@@ -50,7 +52,6 @@ export function buildContainer(deps: {
   container.register({
     // Services
     authService: asClass(AuthService).scoped(),
-    mediaQueryService: asClass(MediaQueryService).singleton(),
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
     systemTaskRunner: asClass(SystemTaskRunner).singleton(),
@@ -58,6 +59,7 @@ export function buildContainer(deps: {
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
   registerMediaDependencies(container);
+  registerMediaQueriesDependencies(container);
   registerProvidersDependencies(container);
 
   log.info('Container built', {

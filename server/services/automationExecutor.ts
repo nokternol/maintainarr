@@ -3,6 +3,7 @@ import type { DrizzleDb } from '../kernel/db';
 import type { DomainEventBus } from '../kernel/eventBus';
 import { getChildLogger } from '../kernel/logger';
 import { MediaQueryEngine } from '../modules/media';
+import type { MediaQueryService } from '../modules/mediaQueries';
 import {
   type IProviderFactory,
   ProviderFactory,
@@ -13,7 +14,6 @@ import {
 } from '../modules/providers';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
-import type { MediaQueryService } from './mediaQueryService';
 
 const log = getChildLogger('AutomationExecutor');
 
