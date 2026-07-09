@@ -1,12 +1,12 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { decorate } from '@server/jobs/enrichment/decorate';
-import { mapTautulliHistory } from '@server/jobs/enrichment/mappers';
+import type { MediaItem } from '@server/modules/media/mediaItem';
+import { decorate } from '../enrichment/decorate';
+import { mapTautulliHistory } from '../enrichment/mappers';
 import {
   type ActuatorTask,
   type EnrichmentResult,
   type MediaActuator,
   type MediaEnricher,
-  type MediaItem,
   modelledRun,
 } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
@@ -47,7 +47,7 @@ interface TautulliResponse<T> {
 
 export class TautulliProvider
   extends BaseProviderConnection
-  implements MediaEnricher, MediaActuator
+  implements MediaEnricher<'playCount' | 'lastWatchedAt'>, MediaActuator
 {
   public readonly actuatorType = MetadataProviderType.TAUTULLI;
 
@@ -75,7 +75,7 @@ export class TautulliProvider
     ];
   }
 
-  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> {
     const fieldsByKey = mapTautulliHistory(await this.getHistory());
     return {
       provider: MetadataProviderType.TAUTULLI,

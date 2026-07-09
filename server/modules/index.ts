@@ -3,14 +3,16 @@ import type { Cradle } from '../container';
 import { checkUser } from '../kernel/middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
 import { createAutomationRoutes } from './automations/automations.routes';
-import { createBackdropsRoutes } from './backdrops/backdrops.routes';
-import { createFilterFieldsRoutes } from './filterFields/filterFields.routes';
 import { createHealthRoutes } from './health/health.routes';
-import { createMediaHandlers } from './media/media.handler';
-import { createMediaRoutes } from './media/media.routes';
+import {
+  createBackdropsRoutes,
+  createFilterFieldsRoutes,
+  createMediaHandlers,
+  createMediaRoutes,
+  createSearchRoutes,
+} from './media';
 import { createMediaQueryRoutes } from './mediaQueries/mediaQueries.routes';
 import { createProvidersRoutes } from './providers';
-import { createSearchRoutes } from './search/search.routes';
 import { createSettingsRoutes } from './settings/settings.routes';
 
 /**

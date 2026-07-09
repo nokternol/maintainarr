@@ -2,9 +2,6 @@ import { MetadataProviderType } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
-import { MediaCache } from '@server/modules/media/media.cache';
-import { paginateItems } from '@server/modules/media/media.pagination';
-import { sortMedia } from '@server/modules/media/media.sort';
 import {
   type IProviderFactory,
   type MediaSource,
@@ -20,16 +17,14 @@ import {
   type SonarrTag,
   sourceOwnership,
 } from '@server/modules/providers';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
-import type { MediaQueryEngine } from '@server/services/mediaQueryEngine';
 import type { FilterValueEntry } from '@server/services/mediaQueryService';
-import type {
-  FilterValue,
-  NormalizedMovie,
-  NormalizedShow,
-  RangeValue,
-} from '@server/utils/filterRegistry';
 import { z } from 'zod';
+import type { FilterValue, NormalizedMovie, NormalizedShow, RangeValue } from './filterRegistry';
+import { MediaCache } from './media.cache';
+import { paginateItems } from './media.pagination';
+import { sortMedia } from './media.sort';
+import type { MediaQueryEngine } from './mediaQueryEngine';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
 
 const log = getChildLogger('MediaHandler');
 

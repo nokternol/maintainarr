@@ -26,6 +26,14 @@ the phase's PR rather than silently reconciled.
 - **One phase, one PR, one branch** (`feat/north-star-phase-N-<topic>`).
 - **Imports move with the file.** A relocation phase ends with zero imports from the old path — no
   re-export shims left behind ("a translator *is* the fracture, persisted").
+- **Every module phase produces its own container registrations slice** (added after Phase 2 shipped,
+  applies to Phases 4 onward): a `<module>.registrations.ts` beside the module's `index.ts`, exporting
+  a `<Module>Cradle` interface and a `register<Module>Dependencies(container)` function — the pattern
+  `providers.registrations.ts` established in Phase 3. `server/container.ts` composes `Cradle` from
+  `KernelCradle` (the mechanism, `server/kernel/container.ts`) and each module's `<Module>Cradle`, and
+  calls each module's registration function; it never registers a module's services inline. A phase
+  that moves services into a module without also moving their registration out of `server/container.ts`
+  is incomplete.
 - **Close the loop on docs**: each shipped phase updates the fracture ledger (surface-by-surface), and
   the final phase moves the North Star doc from `docs/intent/` to `docs/architecture/`.
   `graphify update .` + the doc linker run after each doc edit.
@@ -38,7 +46,7 @@ the phase's PR rather than silently reconciled.
 | **1 ✅ shipped** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
 | **2 ✅ shipped** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
 | **3 ✅ shipped** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
-| **4** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
+| **4 ✅ shipped** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
 | **5** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
 | **6** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
 | **7** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
@@ -88,21 +96,43 @@ needed.
 `providerSettingsService.ts`, `plexService.ts`, `tmdbService.ts`, `keyResolver.ts`, and the
 identity-resolution job + factory, beside the transport files it already had. `index.ts` is the
 crafted public interface — roles, source shapes, factories, descriptor types, settings service, and
-(until Phase 4 pulls enrichment/search/media into `modules/media/`) the connection classes and
-payload types those consumers still need. Everything outside the module imports only that interface;
-zero old-path imports remain. `server/providers/` keeps only `normalizeMedia.ts` for Phase 4;
-module-owned tests moved to `server/__tests__/modules/providers/`. Ledger's "Server layering" entry
-records the providers surface as healed.
+the connection classes and payload types media and other consumers need. Everything outside the module
+imports only that interface; zero old-path imports remain. Module-owned tests moved to
+`server/__tests__/modules/providers/`. Ledger's "Server layering" entry records the providers surface as
+healed.
 
-## Phase 4 — media module
+## Phase 4 — media module ✅ (shipped 2026-07-09)
 
-Move into `server/modules/media/`: `domain/movie.ts` + `domain/show.ts`, `providers/normalizeMedia.ts`,
-`utils/filterRegistry.ts` (+ `ContentType`), `utils/ratingsAggregation.ts`,
-`services/mediaQueryEngine.ts`, `services/enrichmentMerge.ts`, `jobs/enrichmentJob.ts` +
-`enrichment/` + `enrichmentJobFactory.ts`.
-Absorb the three route-drawn modules: `filterFields/` (the descriptor projection), `backdrops/`,
-`search/`. The crafted interface exports: `MediaItem`, `Normalized*`, `MEDIA_RULES`/`getRule`/the
-descriptor projection, the engine. `automations` and `mediaQueries` consume only that interface.
+`server/modules/media/` now owns normalize, the domain shapes, the rule registry, the query engine, and
+enrichment: `movie.ts` + `show.ts` (flattened — no `domain/` subdirectory; two type files didn't warrant
+one, matching providers' flat layout where `connections/` is the only subdirectory because it's a real
+one-file-per-system fan-out), `mediaItem.ts`, `normalizeMedia.ts`, `filterRegistry.ts` (+ `ContentType`),
+`ratingsAggregation.ts`, `mediaQueryEngine.ts`, `enrichmentMerge.ts`, `enrichmentJob.ts` +
+`enrichmentJobFactory.ts`. Absorbed the three route-drawn modules as `media.filterFields.*`/
+`media.backdrops.*`/`media.search.*` beside the pre-existing `media.handler.ts`/`media.routes.ts`;
+route mounts unchanged. `index.ts` is the crafted public interface: `MediaItem`/`MediaItemSet`,
+`Normalized*`, `normalizeRadarrMovie`/`normalizeSonarrSeries`, `MEDIA_RULES`/`getRule`/`toDescriptor`/the
+descriptor projection, `MediaQueryEngine`, `mergeEnrichment`, `EnrichmentJobFactory`,
+`aggregateRatings`/`formatRating`/`getSummaryText`. `server/services/mediaQueryService.ts` and
+`automationExecutor.ts` (still-open Phase 5/6 surfaces) consume only that interface.
+
+Added `media.registrations.ts`: `MediaCradle` (`mediaQueryEngine`, `enrichmentJobFactory`) and
+`registerMediaDependencies()`; removed both from `server/container.ts`'s inline registration block and
+extended `Cradle` from `MediaCradle`.
+
+**Design correction mid-phase:** tracing `MediaEnricher`'s actual call graph found the enrichment
+mechanics (`decorate()`'s join, the per-provider `mapTautulliHistory`/`mapPlexItems`/`mapOverseerr` DTO
+translators) only ever need providers' own DTOs plus `Pick<MediaItem, ...>` field subsets — never the
+full canonical item — so they moved to `server/modules/providers/enrichment/` instead of media, typed as
+compiler-checked subsets of media's `MediaItem` rather than a hand-duplicated field list. This surfaced
+the one deliberate exception to "media → providers, never the reverse": `MediaSource`/`MediaEnricher`
+(providers' role contracts, unchanged location) reference media's `MediaItem` directly, because a role
+contract has to name the shape it operates on. `RadarrProvider`/`SonarrProvider`'s `MediaSource`
+implementation was *not* dead code — the media-query preview endpoint
+(`mediaSourceFactory.forContentType()` → `mediaQueryEngine.evaluate()`) depends on it — so it was kept,
+not deleted. Recorded in `VOCABULARY.md`'s `MediaItem` entry and the ledger rather than left implicit.
+Behavior-preserving throughout — gated by the existing suite (all 636 server + 468 client tests), no new
+tests needed. Ledger's "Server layering" entry records the media surface as healed.
 
 ## Phase 5 — mediaQueries module
 
@@ -110,7 +140,9 @@ descriptor projection, the engine. `automations` and `mediaQueries` consume only
 filters over enriched source data — `MediaQueryRecord` CRUD, filter-value persistence, query health —
 its own domain, deliberately not grouped with automations. Its `index.ts` exports the crafted
 interface (`MediaQueryService`, `MediaQueryRecord`, the health types) that automations and the HTTP
-layer consume.
+layer consume. Add `mediaQueries.registrations.ts`: `MediaQueriesCradle` (`mediaQueryService`) and
+`registerMediaQueriesDependencies()`; remove it from `server/container.ts`'s inline block and extend
+`Cradle` from `MediaQueriesCradle`.
 
 ## Phase 6 — automations module
 
@@ -119,7 +151,10 @@ layer consume.
 media queries; the logic stays separate — the join is the `automation_query_sources` database relation
 plus the mediaQueries public interface. Verify the dependency direction holds: `automations` imports
 only the `media`, `mediaQueries`, `providers` interfaces and kernel, and never reaches into query
-internals.
+internals. Add `automations.registrations.ts`: `AutomationsCradle` (`automationService`,
+`automationRunService`, `automationExecutor`, `automationScheduler`) and
+`registerAutomationsDependencies()`; remove those from `server/container.ts`'s inline block and extend
+`Cradle` from `AutomationsCradle`.
 
 ## Phase 7 — auth, system, settings
 
@@ -128,6 +163,10 @@ internals.
 (liveness) + `services/systemTaskRunner.ts` → `modules/system/`. `settings` already matches the target.
 End state: `server/services/`, `server/jobs/`, `server/cron/`, `server/domain/`, `server/health/`,
 and `server/utils/` (emptied across Phases 2–6) deleted — empty directories are the phase's proof.
+Add `auth.registrations.ts` (`AuthCradle`: `authService`) and `system.registrations.ts`
+(`SystemCradle`: `systemTaskRunner`); by the end of this phase `server/container.ts`'s inline
+registration block is empty — every entry in `Cradle` comes from `KernelCradle` or a module's
+`<Module>Cradle`.
 
 ## Phase 8 — Enforcement and closure
 

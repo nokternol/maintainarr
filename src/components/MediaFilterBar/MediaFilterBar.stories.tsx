@@ -55,7 +55,7 @@ const RICH_LOOKUPS = {
   networks: NETWORKS,
 };
 
-// The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/utils/filterRegistry.ts).
+// The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/modules/media/filterRegistry.ts).
 // `rulesFor()` below applies the same provider-gating `GET /api/filter-fields` does.
 const ALL_RULES: MediaRuleDescriptor[] = [
   {

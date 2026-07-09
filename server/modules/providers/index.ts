@@ -7,9 +7,8 @@
  * growing export list is a design smell to challenge.
  *
  * The per-system connection classes and their payload types are part of the
- * contract while the media domain (enrichment, search, media handler) still
- * lives outside this module; Phase 4 of the North Star plan pulls those
- * consumers into `modules/media/`, after which this surface should shrink.
+ * contract — the media module (query engine, media handler, search) consumes
+ * them directly to build its `MediaSource`/`MediaEnricher` instances.
  */
 
 // HTTP surface — mounted by the API router.
@@ -25,13 +24,17 @@ export type { ProvidersCradle } from './providers.registrations';
 export type {
   ActuatorTask,
   ActuatorTaskDescriptor,
+  EnrichableField,
   EnrichmentResult,
   MediaActuator,
   MediaEnricher,
 } from './roles';
 
-// Canonical source shapes the rest of the system consumes.
-export type { MediaItem, MediaItemSet, MediaSource } from './mediaSource';
+// The read role a media-owning provider plays for the query engine.
+// `MediaItem`/`MediaItemSet` are media's own canonical shapes (see
+// `@server/modules/media`) — this module only re-exports the role that's
+// parameterized by them.
+export type { MediaSource } from './mediaSource';
 
 // Factories: connections from stored settings, sources from connections.
 // ProviderFactory keeps a value export because consumers construct it as an

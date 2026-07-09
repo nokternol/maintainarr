@@ -7,8 +7,7 @@ import {
 } from '../database/schema';
 import type { DrizzleDb } from '../kernel/db';
 import { NotFoundError, ValidationError } from '../kernel/errors';
-import type { ContentType, FilterValue } from '../utils/filterRegistry';
-import { getRule } from '../utils/filterRegistry';
+import { type ContentType, type FilterValue, getRule } from '../modules/media';
 
 export type { ContentType, FilterValue };
 

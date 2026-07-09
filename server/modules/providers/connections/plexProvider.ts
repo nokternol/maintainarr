@@ -1,12 +1,12 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { decorate } from '@server/jobs/enrichment/decorate';
-import { mapPlexItems } from '@server/jobs/enrichment/mappers';
+import type { MediaItem } from '@server/modules/media/mediaItem';
+import { decorate } from '../enrichment/decorate';
+import { mapPlexItems } from '../enrichment/mappers';
 import {
   type ActuatorTask,
   type EnrichmentResult,
   type MediaActuator,
   type MediaEnricher,
-  type MediaItem,
   modelledRun,
 } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
@@ -32,7 +32,10 @@ export interface PlexMediaItem {
  * PlexProvider handles metadata gathering from a Plex Media Server instance.
  * Auth token validation against plex.tv lives in services/plexService.ts (PlexService).
  */
-export class PlexProvider extends BaseProviderConnection implements MediaEnricher, MediaActuator {
+export class PlexProvider
+  extends BaseProviderConnection
+  implements MediaEnricher<'playCount' | 'lastWatchedAt'>, MediaActuator
+{
   public readonly actuatorType = MetadataProviderType.PLEX;
 
   public tasks(): ActuatorTask[] {
@@ -75,7 +78,7 @@ export class PlexProvider extends BaseProviderConnection implements MediaEnriche
     ];
   }
 
-  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> {
     const fieldsByKey = mapPlexItems(await this.getAllItems());
     return {
       provider: MetadataProviderType.PLEX,

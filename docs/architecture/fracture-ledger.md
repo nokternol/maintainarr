@@ -49,10 +49,10 @@ is graphed, dated, and verified against code, not inferred from a plan.
   vocabulary back to registry keys at two different boundaries (save, browse).
 - **Healed by:** the registry is the single authority, projected once, consumed generically.
   `MEDIA_RULES`/`MediaRule`/`getRule()` in
-  [`filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts) own the predicate contract; every
+  [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts) own the predicate contract; every
   `*Gte`/`*Lte` bound pair collapsed into one `dataType: 'range'` rule (`{ min?, max? }`), so "one rule = one
   control = one value shape" holds structurally. `GET /api/filter-fields`
-  ([`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts)) projects the
+  ([`media.filterFields.handler.ts`](ref:path:server/modules/media/media.filterFields.handler.ts)) projects the
   provider-gated `MediaRuleDescriptor[]` the client reads via
   [`useMediaRules`](ref:path:src/hooks/useMediaRules.ts) (SWR). `useMediaFilters`
   ([`useMediaFilters.ts`](ref:path:src/hooks/useMediaFilters.ts)) derives `FilterState = { shared, movie,
@@ -96,7 +96,7 @@ is graphed, dated, and verified against code, not inferred from a plan.
   [`sourceOwnership()`](ref:path:server/modules/providers/mediaSourceFactory.ts) (beside `OWNER_TYPE` itself)
   maps each `ContentType` to `MediaSourceDescriptor { contentType, ownerType, configured }`, joining
   active instances via `ProviderSettingsService.activeTypes()` (extracted — the same join
-  [`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts) already
+  [`media.filterFields.handler.ts`](ref:path:server/modules/media/media.filterFields.handler.ts) already
   did). `GET /api/media/sources` ([`media.handler.ts`](ref:path:server/modules/media/media.handler.ts))
   serves it; the client reads it via [`useMediaSources`](ref:path:src/hooks/useMediaSources.ts) (SWR),
   and `MediaPage` ([`src/pages/media/index.tsx`](ref:path:src/pages/media/index.tsx)) derives both the
@@ -164,29 +164,40 @@ is graphed, dated, and verified against code, not inferred from a plan.
   ([`index.ts`](ref:path:server/modules/providers/index.ts)); zero old-path imports remain.
   `server/providers/` keeps only `normalizeMedia.ts` — a media concern the media-module phase
   relocates. The remaining surfaces below are still open.
+- **Healed so far — media is the second full feature module (North Star Phase 4, 2026-07-09):**
+  [`server/modules/media/`](ref:path:server/modules/media/index.ts) owns normalize, the domain shapes,
+  the rule registry, the query engine, and enrichment: `movie.ts`/`show.ts`, `mediaItem.ts`,
+  [`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts),
+  [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts),
+  `ratingsAggregation.ts`, [`mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts),
+  `enrichmentMerge.ts`, `enrichmentJob.ts` + `enrichmentJobFactory.ts`, and absorbs the three
+  route-drawn `filterFields`/`backdrops`/`search` modules as `media.filterFields.*`/`media.backdrops.*`/
+  `media.search.*` beside the pre-existing `media.handler.ts`. `server/domain/`, `server/utils/
+  filterRegistry.ts`, `server/utils/ratingsAggregation.ts`, `server/providers/normalizeMedia.ts`, and
+  `server/jobs/` are gone. `index.ts` is the crafted public interface; `server/services/
+  mediaQueryService.ts` and `automationExecutor.ts` (still open surfaces, Phases 5–6) consume only that
+  interface. Per-provider enrichment mechanics that only need providers' own vocabulary — the
+  `decorate()` join and the `mapTautulliHistory`/`mapPlexItems`/`mapOverseerr` DTO translators — moved to
+  [`server/modules/providers/enrichment/`](ref:path:server/modules/providers/enrichment/decorate.ts)
+  instead, typed as `Pick<MediaItem, ...>` subsets of media's canonical shape rather than a
+  hand-duplicated field list; `resolvePrecedence` (needs cross-provider precedence over the canonical
+  item) stays media-owned. This is the one deliberate, narrow exception to "media → providers, never the
+  reverse": the `MediaSource`/`MediaEnricher` role contracts in `providers/mediaSource.ts` and
+  `providers/roles.ts` reference media's `MediaItem` directly, because a role contract has to name the
+  shape it operates on — recorded in `VOCABULARY.md`'s MediaItem entry rather than left implicit.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
   - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
     schemas/handlers/routes per HTTP surface while business logic sits in a flat `server/services/`
-    (auth, automations, the media-query engine and service — the provider services left for their
-    module in Phase 3). Until 2026-07-07, [`server/modules/README.md`](ref:path:server/modules/README.md)
-    declared each module "owns its schemas, handlers, routes, and services" — the doc now states the
-    actual split, but the split itself remains for every module except providers: neither design is
-    enforced, so services accrete wherever the author leaned.
-  - **Module boundaries drawn by route, not domain.** `filterFields`
-    ([`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts)) is a
-    one-endpoint module projecting the media rule registry; `backdrops` and `search` are media concerns
-    with their own top-level modules.
-  - **Orphan directories outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
-    (one file, the automation scheduler), [`server/jobs/`](ref:path:server/jobs/enrichmentJob.ts)
-    (enrichment — identity resolution moved into the providers module in Phase 3),
-    [`server/domain/`](ref:path:server/domain/movie.ts) (two type files the `Normalized*` shapes live
-    in), each a layer with a single tenant.
-  - **The rule authority lives in "utils".** [`filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts)
-    — the single authority the Phase 4 heal established — sits in `server/utils/` beside small
-    helpers. [`server/README.md`](ref:path:server/README.md) now flags it in place ("the
-    media-rule authority"), but domain authority filed under utilities is the location fracture itself.
+    (auth, automations, the media-query service — the provider services left in Phase 3, the
+    media-query engine and enrichment left in Phase 4). Until 2026-07-07,
+    [`server/modules/README.md`](ref:path:server/modules/README.md) declared each module "owns its
+    schemas, handlers, routes, and services" — the doc now states the actual split, but the split itself
+    remains for every module except providers and media: neither design is enforced, so services accrete
+    wherever the author leaned.
+  - **Orphan directory outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
+    (one file, the automation scheduler) — a layer with a single tenant, relocates in Phase 6.
   - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)
     (HTTP liveness) and [`server/health/`](ref:path:server/health/systemHealthCheck.ts) (system
     self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are different processes sharing the name
