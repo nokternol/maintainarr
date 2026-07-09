@@ -23,7 +23,6 @@ server/
   cron/              # Automation scheduler (croner)
   health/            # System self-healing (ensureSystemJobs, failed-state middleware)
   types/             # Shared types and Express augmentations
-  utils/             # helpers (the media-rule authority moved to modules/media/filterRegistry.ts)
   __tests__/         # Server unit + integration tests
 ```
 
