@@ -1,6 +1,6 @@
 import { authHandlers } from './auth';
 import { automationRunHandlers } from './automationRuns';
-import { automationsHandlers, savedQueriesHandlers } from './automations';
+import { automationsHandlers, mediaQueriesHandlers } from './automations';
 import { backdropsHandlers } from './backdrops';
 import { jellyfinHandlers } from './jellyfin';
 import { mediaHandlers } from './media';
@@ -15,7 +15,7 @@ import { tautulliHandlers } from './tautulli';
 export const handlers = [
   ...authHandlers,
   ...automationsHandlers,
-  ...savedQueriesHandlers,
+  ...mediaQueriesHandlers,
   ...automationRunHandlers,
   ...backdropsHandlers,
   ...radarrHandlers,

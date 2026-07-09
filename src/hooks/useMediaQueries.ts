@@ -24,11 +24,11 @@ export function toFilterValues(
     .map(([key, value]) => ({ key, value }));
 }
 
-const KEY = '/api/saved-queries';
+const KEY = '/api/media-queries';
 
 async function fetchQueries(url: string): Promise<MediaQueryRecord[]> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch saved queries');
+  if (!res.ok) throw new Error('Failed to fetch media queries');
   const json = (await res.json()) as { data: MediaQueryRecord[] };
   return json.data;
 }

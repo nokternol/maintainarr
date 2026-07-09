@@ -8,8 +8,12 @@ export interface QuerySource {
 
 export interface QuerySourceListProps {
   sources: QuerySource[];
-  savedQueries: { id: number; name: string }[];
+  queries: { id: number; name: string }[];
   onChange: (sources: QuerySource[]) => void;
+}
+
+function previewUrl(queryId: number): string {
+  return `/api/media-queries/${queryId}/preview`;
 }
 
 async function fetchPreview(url: string): Promise<{ count: number }> {
@@ -20,7 +24,7 @@ async function fetchPreview(url: string): Promise<{ count: number }> {
 }
 
 function usePreviewCount(queryId: number): number | null {
-  const key = queryId > 0 ? `/api/saved-queries/${queryId}/preview` : null;
+  const key = queryId > 0 ? previewUrl(queryId) : null;
   const { data } = useSWR(key, fetchPreview);
   return data?.count ?? null;
 }
@@ -73,7 +77,7 @@ async function fetchAllPreviews(
   return Promise.all(
     sources.map(async (s) => {
       if (s.queryId === 0) return { role: s.role, count: 0 };
-      const data = await fetchPreview(`/api/saved-queries/${s.queryId}/preview`);
+      const data = await fetchPreview(previewUrl(s.queryId));
       return { role: s.role, count: data.count };
     })
   );
@@ -93,7 +97,7 @@ function useNetCount(sources: QuerySource[]): number | null {
 
 export default function QuerySourceList({
   sources,
-  savedQueries: _savedQueries,
+  queries: _queries,
   onChange,
 }: QuerySourceListProps) {
   function handleAdd() {

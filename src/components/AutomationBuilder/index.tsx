@@ -222,7 +222,7 @@ export default function AutomationBuilder({
           <p className="text-xs text-text-muted mb-3">Which media this automation targets.</p>
           <QuerySourceList
             sources={querySources}
-            savedQueries={queries.map((q) => ({ id: q.id, name: q.name }))}
+            queries={queries.map((q) => ({ id: q.id, name: q.name }))}
             onChange={setQuerySources}
           />
         </div>

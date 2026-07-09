@@ -40,11 +40,7 @@ export function createApiRouter(cradle: Cradle) {
   router.use('/media', createMediaRoutes(cradle, mediaHandlers));
   router.use('/search', createSearchRoutes(cradle));
   router.use('/filter-fields', createFilterFieldsRoutes(cradle));
-  const mediaQueryRoutes = createMediaQueryRoutes(cradle);
-  router.use('/media-queries', mediaQueryRoutes);
-  // Back-compat alias — the client still calls /saved-queries until the Phase 4
-  // client migration lands. Both mount the same router.
-  router.use('/saved-queries', mediaQueryRoutes);
+  router.use('/media-queries', createMediaQueryRoutes(cradle));
   router.use('/automations', createAutomationRoutes(cradle));
 
   return router;

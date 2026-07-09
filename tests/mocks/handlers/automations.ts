@@ -89,12 +89,12 @@ export const MOCK_MEDIA_QUERIES = [
   },
 ];
 
-export const savedQueriesHandlers = [
-  http.get('/api/saved-queries', () => {
+export const mediaQueriesHandlers = [
+  http.get('/api/media-queries', () => {
     return HttpResponse.json({ status: 'ok', data: MOCK_MEDIA_QUERIES });
   }),
 
-  http.post('/api/saved-queries', async ({ request }) => {
+  http.post('/api/media-queries', async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       status: 'ok',
@@ -109,11 +109,11 @@ export const savedQueriesHandlers = [
     });
   }),
 
-  http.delete('/api/saved-queries/:id', () => {
+  http.delete('/api/media-queries/:id', () => {
     return HttpResponse.json({ status: 'ok', data: null });
   }),
 
-  http.get('/api/saved-queries/:id/preview', ({ params }) => {
+  http.get('/api/media-queries/:id/preview', ({ params }) => {
     const id = Number(params.id);
     return HttpResponse.json({ status: 'ok', data: { count: id === 1 ? 42 : 14 } });
   }),

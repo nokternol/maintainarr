@@ -109,29 +109,33 @@ is graphed, dated, and verified against code, not inferred from a plan.
   a naming-convention dependency rather than a duplicated authority. Worth the next person's awareness,
   not necessarily a fix.
 
-## Open
-
-### MediaQuery naming residue — the `SavedMediaQuery` second vocabulary (recorded 2026-07-07, not yet worked)
+### MediaQuery naming residue — the `SavedMediaQuery` second vocabulary (recorded 2026-07-07 — healed 2026-07-09, North Star Phase 0)
 
 - **Fracture:** one concept, two names at the HTTP/client boundary. The settled vocabulary (see
   [`VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)) is `MediaQuery` /
   `MediaQueryRecord` — "saved" is a state of a database entity, not a name — and the server already
-  speaks it: [`MediaQueryService`](ref:path:server/services/mediaQueryService.ts) (cradle key
+  spoke it: [`MediaQueryService`](ref:path:server/services/mediaQueryService.ts) (cradle key
   `mediaQueryService`), `MediaQueryRecord`, tables `media_queries` / `media_query_filter_values`,
-  canonical route `/api/media-queries`. The old vocabulary survives as a live translator at the HTTP
-  boundary: [`server/modules/index.ts`](ref:path:server/modules/index.ts) mounts `/api/saved-queries`
-  as a back-compat alias, and the client still calls it —
-  [`useMediaQueries.ts`](ref:path:src/hooks/useMediaQueries.ts) (`KEY = '/api/saved-queries'`) and
-  [`QuerySourceList`](ref:path:src/components/QuerySourceList/index.tsx) (preview URLs, plus a
-  `savedQueries` prop fed from
-  [`AutomationBuilder`](ref:path:src/components/AutomationBuilder/index.tsx)).
+  canonical route `/api/media-queries`. The old vocabulary survived as a live translator at the HTTP
+  boundary: `server/modules/index.ts` mounted `/api/saved-queries` as a back-compat alias, and the
+  client still called it — `useMediaQueries` (`KEY`), `QuerySourceList` (preview URLs, plus a
+  `savedQueries` prop fed from `AutomationBuilder`).
 - **How it misled:** this doc set itself was infected — the class-level rename shipped 2026-06-24
   (`SavedMediaQueryService` → `MediaQueryService`, `SavedMediaQueryRecord` → `MediaQueryRecord`,
   `useSavedQueries` → `useMediaQueries`), but the core model's Ubiquitous Language table kept recording
   the *deprecated* names as canonical, sending anyone who trusted the table hunting for classes that no
   longer existed (fixed 2026-07-07 when the vocabulary moved to `VOCABULARY.md`).
-- **Heals when:** the client speaks `MediaQuery`/`MediaQueryRecord` and calls `/api/media-queries`, and
-  the `/api/saved-queries` alias is deleted. Not yet worked; no plan document owns it.
+- **Healed by:** deleting the second vocabulary rather than translating it. The client speaks only the
+  canonical route: [`useMediaQueries.ts`](ref:path:src/hooks/useMediaQueries.ts)
+  (`KEY = '/api/media-queries'`), [`QuerySourceList`](ref:path:src/components/QuerySourceList/index.tsx)
+  (preview URLs via a single `previewUrl()`, prop renamed to `queries`, fed from
+  [`AutomationBuilder`](ref:path:src/components/AutomationBuilder/index.tsx)). The `/api/saved-queries`
+  alias mount is deleted from [`server/modules/index.ts`](ref:path:server/modules/index.ts);
+  [`mediaQueryRoutes.integration.test.ts`](ref:path:server/__tests__/integration/mediaQueryRoutes.integration.test.ts)
+  pins the canonical path. Test vocabulary followed (MSW `mediaQueriesHandlers`, integration mounts,
+  contract-test labels).
+
+## Open
 
 ### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07, healing surface-by-surface)
 

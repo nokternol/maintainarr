@@ -16,7 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const RADARR_URL = 'http://localhost:7878';
 
-describe('GET /api/saved-queries/:id/preview', () => {
+describe('GET /api/media-queries/:id/preview', () => {
   let client: ReturnType<typeof createApiClient>;
   let seededQueryId: number;
   let filteredQueryId: number;
@@ -65,7 +65,7 @@ describe('GET /api/saved-queries/:id/preview', () => {
       req.user = { id: 1 } as unknown as NonNullable<typeof req.user>;
       next();
     });
-    app.use('/api/saved-queries', createMediaQueryRoutes(container.cradle));
+    app.use('/api/media-queries', createMediaQueryRoutes(container.cradle));
     app.use(errorHandlerMiddleware);
 
     client = createApiClient(app);
@@ -76,13 +76,13 @@ describe('GET /api/saved-queries/:id/preview', () => {
   });
 
   it('returns { count: number } for a known query id', async () => {
-    const res = await client.get(`/api/saved-queries/${seededQueryId}/preview`);
+    const res = await client.get(`/api/media-queries/${seededQueryId}/preview`);
     const data = expectSuccessResponse(res);
     expect(data).toMatchObject({ count: expect.any(Number) });
   });
 
   it('returns 404 for an unknown query id', async () => {
-    const res = await client.get('/api/saved-queries/9999/preview');
+    const res = await client.get('/api/media-queries/9999/preview');
     expectErrorResponse(res, 404);
   });
 
@@ -96,7 +96,7 @@ describe('GET /api/saved-queries/:id/preview', () => {
       )
     );
 
-    const res = await client.get(`/api/saved-queries/${filteredQueryId}/preview`);
+    const res = await client.get(`/api/media-queries/${filteredQueryId}/preview`);
     const data = expectSuccessResponse(res);
     expect(data).toEqual({ count: 1 });
   });

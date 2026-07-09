@@ -72,7 +72,7 @@ describe('API shape contracts — real server responses', () => {
       req.user = { id: 1 } as unknown as NonNullable<typeof req.user>;
       next();
     });
-    app.use('/api/saved-queries', createMediaQueryRoutes(container.cradle));
+    app.use('/api/media-queries', createMediaQueryRoutes(container.cradle));
     app.use('/api/automations', createAutomationRoutes(container.cradle));
     app.use('/api/settings', createSettingsRoutes(container.cradle));
     app.use(errorHandlerMiddleware);
@@ -86,8 +86,8 @@ describe('API shape contracts — real server responses', () => {
 
   // ─── GET responses ──────────────────────────────────────────────────────────
 
-  it('GET /api/saved-queries items match MediaQueryRecordSchema', async () => {
-    const res = await client.get('/api/saved-queries');
+  it('GET /api/media-queries items match MediaQueryRecordSchema', async () => {
+    const res = await client.get('/api/media-queries');
     expect(res.status).toBe(200);
     const items = (res.body as { data: unknown[] }).data;
     expect(items.length).toBeGreaterThan(0);
@@ -121,8 +121,8 @@ describe('API shape contracts — real server responses', () => {
 
   // ─── POST / PATCH responses ─────────────────────────────────────────────────
 
-  it('POST /api/saved-queries response matches MediaQueryRecordSchema', async () => {
-    const res = await client.post('/api/saved-queries', {
+  it('POST /api/media-queries response matches MediaQueryRecordSchema', async () => {
+    const res = await client.post('/api/media-queries', {
       name: 'Contract test query',
       contentType: 'show',
       filterValues: [{ key: 'monitored', value: true }],
