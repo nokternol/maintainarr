@@ -1,11 +1,4 @@
-import type { NormalizedMovie } from '@server/domain/movie';
-import type { NormalizedShow } from '@server/domain/show';
-
-/** The canonical media model every role acts on — a movie or a show. */
-export type MediaItem = NormalizedMovie | NormalizedShow;
-
-/** The transient result of resolving a source: its normalized items. */
-export type MediaItemSet = MediaItem[];
+import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
 
 /**
  * The read role a media-owning provider plays for the query engine. A source
@@ -16,6 +9,6 @@ export type MediaItemSet = MediaItem[];
  */
 export interface MediaSource {
   getMediaItems(): Promise<MediaItemSet>;
-  idOf(item: NormalizedMovie | NormalizedShow): number | undefined;
+  idOf(item: MediaItem): number | undefined;
   readonly enrichmentSourceType: 'RADARR' | 'SONARR';
 }

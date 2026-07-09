@@ -1,8 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
-import type { NormalizedMovie } from '@server/domain/movie';
-import type { NormalizedShow } from '@server/domain/show';
-import { normalizeRadarrMovie } from '@server/providers/normalizeMedia';
-import type { MediaItemSet, MediaSource } from '../mediaSource';
+import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
+import { normalizeRadarrMovie } from '@server/modules/media/normalizeMedia';
+import type { MediaSource } from '../mediaSource';
 import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
@@ -71,8 +70,8 @@ export class RadarrProvider extends BaseProviderConnection implements MediaSourc
     return (await this.getMovies()).map(normalizeRadarrMovie);
   }
 
-  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
-    return (item as NormalizedMovie)._sourceIds.radarr;
+  public idOf(item: MediaItem): number | undefined {
+    return (item._sourceIds as { radarr?: number }).radarr;
   }
 
   public tasks(): ActuatorTask[] {

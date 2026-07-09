@@ -1,8 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
-import type { NormalizedMovie } from '@server/domain/movie';
-import type { NormalizedShow } from '@server/domain/show';
-import { normalizeSonarrSeries } from '@server/providers/normalizeMedia';
-import type { MediaItemSet, MediaSource } from '../mediaSource';
+import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
+import { normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
+import type { MediaSource } from '../mediaSource';
 import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
@@ -80,8 +79,8 @@ export class SonarrProvider extends BaseProviderConnection implements MediaSourc
     return (await this.getSeries()).map(normalizeSonarrSeries);
   }
 
-  public idOf(item: NormalizedMovie | NormalizedShow): number | undefined {
-    return (item as NormalizedShow)._sourceIds.sonarr;
+  public idOf(item: MediaItem): number | undefined {
+    return (item._sourceIds as { sonarr?: number }).sonarr;
   }
 
   public tasks(): ActuatorTask[] {

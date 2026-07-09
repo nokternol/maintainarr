@@ -44,6 +44,15 @@ A module is a vertical slice of the product, not an HTTP surface.
 automations): `automations → media, mediaQueries`; `mediaQueries → media, providers`;
 `media → providers`; everyone → `kernel`. Cycles between module interfaces are design errors.
 
+One narrow, deliberate exception: providers' `MediaSource`/`MediaEnricher` role contracts
+(`modules/providers/mediaSource.ts`, `roles.ts`) reference media's `MediaItem` type directly. A role
+contract has to name the shape it operates on, and `MediaItem` is media's canonical superset
+(`NormalizedMovie | NormalizedShow`) — there is no meaningful role vocabulary that doesn't mention it.
+Everything a provider *contributes* stays expressed as a `Pick<MediaItem, ...>` of that shape rather than
+a hand-declared parallel type, so the subset relationship is compiler-checked, not just structural
+coincidence. This is the only sanctioned `providers → media` import; a new one anywhere else is a design
+error like any other cycle.
+
 ## Target module inventory
 
 ```

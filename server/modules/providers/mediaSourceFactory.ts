@@ -1,6 +1,9 @@
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-import type { ContentType } from '@server/utils/filterRegistry';
+// Leaf type import, not the media interface: importing the module index here
+// would be circular (media's index pulls in providers' index via
+// mediaQueryEngine.ts, which this file is part of).
+import type { ContentType } from '@server/modules/media/filterRegistry';
 import type { MediaSource } from './mediaSource';
 import type { IProviderFactory } from './providerFactory';
 import type { ProviderSettingsService } from './providerSettingsService';

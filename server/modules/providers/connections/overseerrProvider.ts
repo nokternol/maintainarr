@@ -1,7 +1,8 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { decorate } from '@server/jobs/enrichment/decorate';
-import { mapOverseerr } from '@server/jobs/enrichment/mappers';
-import type { EnrichmentResult, MediaEnricher, MediaItem } from '../roles';
+import type { MediaItem } from '@server/modules/media/mediaItem';
+import { decorate } from '../enrichment/decorate';
+import { mapOverseerr } from '../enrichment/mappers';
+import type { EnrichmentResult, MediaEnricher } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface OverseerrRequestedBy {
@@ -56,8 +57,13 @@ interface OverseerrSearchResponse {
   totalResults: number;
 }
 
-export class OverseerrProvider extends BaseProviderConnection implements MediaEnricher {
-  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
+export class OverseerrProvider
+  extends BaseProviderConnection
+  implements MediaEnricher<'overseerrRequestStatus' | 'overseerrHasIssue'>
+{
+  async enrich(
+    items: MediaItem[]
+  ): Promise<EnrichmentResult<'overseerrRequestStatus' | 'overseerrHasIssue'>> {
     const [requests, issues] = await Promise.all([this.getRequests(), this.getIssues()]);
     const fieldsByKey = mapOverseerr(requests, issues);
     return {

@@ -1,3 +1,4 @@
+import { type MediaCradle, registerMediaDependencies } from '@server/modules/media';
 import {
   type ProvidersCradle,
   registerProvidersDependencies,
@@ -5,7 +6,6 @@ import {
 import { type AwilixContainer, asClass } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import { AutomationScheduler } from './cron/automationScheduler';
-import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
 import type { AppConfig } from './kernel/config';
 import { type KernelCradle, createKernelContainer } from './kernel/container';
 import type { DrizzleDb } from './kernel/db';
@@ -14,7 +14,6 @@ import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
 import { AutomationService } from './services/automationService';
-import { MediaQueryEngine } from './services/mediaQueryEngine';
 import { MediaQueryService } from './services/mediaQueryService';
 import { SystemTaskRunner } from './services/systemTaskRunner';
 
@@ -24,13 +23,11 @@ const log = getChildLogger('Container');
  * Registered dependencies available via the container.
  * Extend this interface when adding new services.
  */
-export interface Cradle extends KernelCradle, ProvidersCradle {
+export interface Cradle extends KernelCradle, MediaCradle, ProvidersCradle {
   authService: AuthService;
   mediaQueryService: MediaQueryService;
-  mediaQueryEngine: MediaQueryEngine;
   automationService: AutomationService;
   automationRunService: AutomationRunService;
-  enrichmentJobFactory: EnrichmentJobFactory;
   systemTaskRunner: SystemTaskRunner;
   automationExecutor: AutomationExecutor;
   automationScheduler: AutomationScheduler;
@@ -54,14 +51,13 @@ export function buildContainer(deps: {
     // Services
     authService: asClass(AuthService).scoped(),
     mediaQueryService: asClass(MediaQueryService).singleton(),
-    mediaQueryEngine: asClass(MediaQueryEngine).singleton(),
     automationService: asClass(AutomationService).singleton(),
     automationRunService: asClass(AutomationRunService).singleton(),
-    enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
     systemTaskRunner: asClass(SystemTaskRunner).singleton(),
     automationExecutor: asClass(AutomationExecutor).singleton(),
     automationScheduler: asClass(AutomationScheduler).singleton(),
   });
+  registerMediaDependencies(container);
   registerProvidersDependencies(container);
 
   log.info('Container built', {

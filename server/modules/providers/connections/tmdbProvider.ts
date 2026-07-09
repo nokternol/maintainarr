@@ -1,6 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { decorate } from '@server/jobs/enrichment/decorate';
-import type { EnrichmentResult, MediaEnricher, MediaItem } from '../roles';
+import type { MediaItem } from '@server/modules/media/mediaItem';
+import { decorate } from '../enrichment/decorate';
+import type { EnrichmentResult, MediaEnricher } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface TmdbSearchResult {
@@ -192,13 +193,13 @@ function extractTvCertification(
   return first?.rating;
 }
 
-export class TmdbProvider extends BaseProviderConnection implements MediaEnricher {
+export class TmdbProvider extends BaseProviderConnection implements MediaEnricher<'tmdbStatus'> {
   private get apiParams() {
     return { api_key: this.provider.apiKey || '' };
   }
 
-  async enrich(items: MediaItem[]): Promise<EnrichmentResult> {
-    const fieldsByKey = new Map<number, Partial<MediaItem>>();
+  async enrich(items: MediaItem[]): Promise<EnrichmentResult<'tmdbStatus'>> {
+    const fieldsByKey = new Map<number, Pick<MediaItem, 'tmdbStatus'>>();
     for (const item of items) {
       const tmdbId = item._sourceIds.tmdb;
       if (tmdbId === undefined || fieldsByKey.has(tmdbId)) continue;

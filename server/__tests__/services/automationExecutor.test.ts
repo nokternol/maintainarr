@@ -5,12 +5,13 @@ import {
   mediaEnrichment,
   mediaIdentity,
 } from '@server/database/schema';
-import type { NormalizedMovie } from '@server/domain/movie';
-import type { NormalizedShow } from '@server/domain/show';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { DomainEventBus, type DomainEvents } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
+import type { NormalizedMovie } from '@server/modules/media/movie';
+import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
+import type { NormalizedShow } from '@server/modules/media/show';
 import {
   type IProviderFactory,
   ProviderSettingsService,
@@ -19,7 +20,6 @@ import {
   SonarrProvider,
   type SonarrSeries,
 } from '@server/modules/providers';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/providers/normalizeMedia';
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';

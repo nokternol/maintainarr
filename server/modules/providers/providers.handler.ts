@@ -3,7 +3,7 @@ import type { MetadataProvider } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
-import { aggregateRatings } from '@server/utils/ratingsAggregation';
+import { aggregateRatings } from '@server/modules/media/ratingsAggregation';
 import { JellyfinProvider } from './connections/jellyfinProvider';
 import { OmdbProvider } from './connections/omdbProvider';
 import { OverseerrProvider } from './connections/overseerrProvider';
