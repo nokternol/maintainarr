@@ -5,7 +5,6 @@ import {
   mediaEnrichment,
   mediaIdentity,
 } from '@server/database/schema';
-import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
 /**
  * Integration test for Phase 1 — system task execution via DI (D1).
  *
@@ -19,6 +18,7 @@ import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
 import { loadConfig } from '@server/kernel/config';
 import { closeDatabase, initializeDatabase } from '@server/kernel/db';
 import type { DrizzleDb } from '@server/kernel/db';
+import { ensureSystemJobs } from '@server/modules/system/ensureSystemJobs';
 import { createMockConfig } from '@tests/factories';
 import { server } from '@tests/mocks/server';
 import { eq } from 'drizzle-orm';

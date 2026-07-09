@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import type { Cradle } from '../container';
 import { checkUser } from '../kernel/middleware/auth';
-import { createAuthRoutes } from './auth/auth.routes';
+import { createAuthRoutes } from './auth';
 import { createAutomationRoutes } from './automations';
-import { createHealthRoutes } from './health/health.routes';
 import {
   createBackdropsRoutes,
   createFilterFieldsRoutes,
@@ -13,7 +12,8 @@ import {
 } from './media';
 import { createMediaQueryRoutes } from './mediaQueries';
 import { createProvidersRoutes } from './providers';
-import { createSettingsRoutes } from './settings/settings.routes';
+import { createSettingsRoutes } from './settings';
+import { createHealthRoutes } from './system';
 
 /**
  * Creates the API router with all module routes mounted.

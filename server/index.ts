@@ -8,9 +8,6 @@ import session from 'express-session';
 import helmet from 'helmet';
 import next from 'next';
 import { buildContainer, scopePerRequest } from './container';
-import { DrizzleStore } from './database/drizzleStore';
-import { failedStateMiddleware } from './health/failedStateMiddleware';
-import { systemHealthCheck } from './health/systemHealthCheck';
 import { loadConfig } from './kernel/config';
 import { SESSION_TTL_SECONDS } from './kernel/config';
 import { closeDatabase, initializeDatabase } from './kernel/db';
@@ -21,6 +18,8 @@ import {
   requestLoggerMiddleware,
 } from './kernel/middleware';
 import { createApiRouter } from './modules';
+import { DrizzleStore } from './modules/auth';
+import { failedStateMiddleware, systemHealthCheck } from './modules/system';
 
 const log = getChildLogger('Server');
 

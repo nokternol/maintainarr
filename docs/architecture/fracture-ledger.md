@@ -236,22 +236,26 @@ is graphed, dated, and verified against code, not inferred from a plan.
   [`server/modules/media/combinationEvaluator.ts`](ref:path:server/modules/media/combinationEvaluator.ts)
   instead, where its only consumer already lives; it stays module-private (not part of media's crafted
   interface) since nothing outside `mediaQueryEngine.ts` needs it.
+- **Healed so far — auth and system are the fifth and sixth full feature modules (North Star Phase 7,
+  2026-07-09):** [`server/modules/auth/`](ref:path:server/modules/auth/index.ts) owns
+  [`authService.ts`](ref:path:server/modules/auth/authService.ts) and
+  [`drizzleStore.ts`](ref:path:server/modules/auth/drizzleStore.ts) (the session store; schema/migrations
+  stay in `server/database/`), beside its transport files.
+  [`server/modules/system/`](ref:path:server/modules/system/index.ts) resolves the "one name, two homes"
+  collision — HTTP liveness (`server/modules/health/`) and system self-healing (`server/health/`:
+  `ensureSystemJobs`, `failedStateMiddleware`, `systemHealthCheck`) merge with
+  [`systemTaskRunner.ts`](ref:path:server/modules/system/systemTaskRunner.ts) under one module and one
+  name. Both add a `<module>.registrations.ts`; `server/container.ts`'s inline registration block is now
+  empty — every `Cradle` entry comes from `KernelCradle` or a module's `<Module>Cradle`.
+  `server/services/`, `server/health/`, `server/domain/`, `server/utils/`, `server/jobs/`, and
+  `server/cron/` are all gone. `server/modules/settings/` gets a minimal `index.ts` too, for
+  consistency — it has no domain logic of its own, only `providerSettingsService` from providers.
+  `server/modules/README.md`'s stale intro (still describing "providers is the first module converged")
+  and its "register a service" walkthrough (hand-editing `server/container.ts`, predating the
+  registrations pattern) are corrected to match the shipped convention.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
-  - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
-    schemas/handlers/routes per HTTP surface while business logic sits in a flat `server/services/`
-    (auth and `systemTaskRunner` only — the provider services left in Phase 3, the media-query engine
-    and enrichment left in Phase 4, the media-query service left in Phase 5, the automation services and
-    scheduler left in Phase 6). Until 2026-07-07,
-    [`server/modules/README.md`](ref:path:server/modules/README.md) declared each module "owns its
-    schemas, handlers, routes, and services" — the doc now states the actual split, but the split itself
-    remains for every module except providers, media, mediaQueries, and automations: neither design is
-    enforced, so services accrete wherever the author leaned.
-  - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)
-    (HTTP liveness) and [`server/health/`](ref:path:server/health/systemHealthCheck.ts) (system
-    self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are different processes sharing the name
-    `health` — a naming collision that reads as duplication until traced.
   - **Doc fiction as a third design (pruned 2026-07-07):** the server READMEs and the deleted
     `docs/agent/architecture.md` described a boilerplate "clean architecture" on TypeORM —
     `DataSource`, entities, repositories — while the code is Drizzle

@@ -1,4 +1,3 @@
-import { DrizzleStore } from '@server/database/drizzleStore';
 import { sessions } from '@server/database/schema';
 /**
  * DrizzleStore — express-session compatible store backed by the sessions table.
@@ -11,6 +10,7 @@ import { sessions } from '@server/database/schema';
  */
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { DrizzleStore } from '@server/modules/auth/drizzleStore';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 // ---------------------------------------------------------------------------

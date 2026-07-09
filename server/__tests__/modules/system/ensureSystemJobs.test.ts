@@ -1,7 +1,7 @@
 import { automations } from '@server/database/schema';
-import { ensureSystemJobs } from '@server/health/ensureSystemJobs';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { ensureSystemJobs } from '@server/modules/system/ensureSystemJobs';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

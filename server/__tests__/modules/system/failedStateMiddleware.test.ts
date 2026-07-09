@@ -1,4 +1,4 @@
-import { failedStateMiddleware } from '@server/health/failedStateMiddleware';
+import { failedStateMiddleware } from '@server/modules/system/failedStateMiddleware';
 import express, { type Express } from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';

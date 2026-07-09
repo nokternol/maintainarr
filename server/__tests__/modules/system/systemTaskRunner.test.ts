@@ -1,10 +1,10 @@
-import { SystemTaskRunner } from '@server/services/systemTaskRunner';
+import { SystemTaskRunner } from '@server/modules/system/systemTaskRunner';
 import type {
   EnrichmentJobFactoryLike,
   EnrichmentJobLike,
   IdentityJobFactoryLike,
   IdentityJobLike,
-} from '@server/services/systemTaskRunner';
+} from '@server/modules/system/systemTaskRunner';
 import { describe, expect, it, vi } from 'vitest';
 
 function makeIdentityJob(counts?: {
