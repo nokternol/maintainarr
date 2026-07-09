@@ -34,7 +34,7 @@ the phase's PR rather than silently reconciled.
 
 | Phase | Heals | Observable value | Kind |
 |---|---|---|---|
-| **0** | MediaQuery naming residue | Client speaks only `/api/media-queries`; the `/api/saved-queries` alias is deleted | TDD |
+| **0 ✅ shipped** | MediaQuery naming residue | Client speaks only `/api/media-queries`; the `/api/saved-queries` alias is deleted | TDD |
 | **1 ✅ shipped** | MediaSource ownership vocabulary | Client derives source ownership from a server projection; no literal `RADARR`/`SONARR` gating in pages | TDD |
 | **2 ✅ shipped** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
 | **3 ✅ shipped** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
@@ -44,20 +44,15 @@ the phase's PR rather than silently reconciled.
 | **7** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
 | **8** | Server layering (closure) | Interface-only imports enforced by an automated check; North Star doc promoted to `docs/architecture/`; ledger entry moves to Healed | Enforcement |
 
-## Phase 0 — Client speaks MediaQuery
+## Phase 0 — Client speaks MediaQuery ✅ (shipped 2026-07-09)
 
-The class-level rename shipped 2026-06-24; the HTTP boundary and one prop still speak the dead
-vocabulary. Surfaces (verified 2026-07-07):
-
-- `src/hooks/useMediaQueries.ts` — `KEY = '/api/saved-queries'` → `/api/media-queries`.
-- `src/components/QuerySourceList/index.tsx` — preview URLs `/api/saved-queries/:id/preview`, and the
-  `savedQueries` prop (fed from `src/components/AutomationBuilder/index.tsx`) → rename to `queries`
-  (or the settled term the tests land on).
-- `src/pages/automations/index.tsx` — `saved-queries` heading ids (cosmetic, same sweep).
-- `server/modules/index.ts` — delete the `/api/saved-queries` alias mount **last**, once no client
-  call site remains; the route integration tests assert the alias 404s and the canonical path serves.
-
-Ships: ledger's "MediaQuery naming residue" → Healed; deprecated row in `VOCABULARY.md` marked deleted.
+The client speaks only `/api/media-queries`: `useMediaQueries` (`KEY`), `QuerySourceList` preview URLs
+(single `previewUrl()`, prop renamed `queries`, fed from `AutomationBuilder`), automations-page heading
+ids. The `/api/saved-queries` alias mount is deleted from `server/modules/index.ts`;
+`mediaQueryRoutes.integration.test.ts` pins the canonical path (a 404 assertion on the retired alias
+was judged scaffolding and not kept). Test vocabulary followed (`mediaQueriesHandlers`, integration
+mounts, contract-test labels). Ledger's
+"MediaQuery naming residue" → Healed; `VOCABULARY.md` deprecated row marked deleted.
 
 ## Phase 1 — Source ownership projected, not spelled ✅ (shipped 2026-07-07)
 

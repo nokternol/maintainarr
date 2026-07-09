@@ -43,10 +43,4 @@ describe('media query routes', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
-
-  it('serves the same list at the /saved-queries back-compat alias', async () => {
-    const res = await supertest(app).get('/api/saved-queries');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
-  });
 });

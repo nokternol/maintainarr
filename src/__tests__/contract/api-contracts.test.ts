@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 // Each mock item must parse cleanly — fails if a mock drifts from the schema.
 
 describe('API contracts — MSW mock data', () => {
-  describe('GET /api/saved-queries', () => {
+  describe('GET /api/media-queries', () => {
     it.each(MOCK_MEDIA_QUERIES)('item $name parses against MediaQueryRecordSchema', (item) => {
       const result = MediaQueryRecordSchema.safeParse(item);
       expect(result.success, JSON.stringify(result.error?.format())).toBe(true);
@@ -32,7 +32,7 @@ describe('API contracts — MSW mock data', () => {
 // These fail if useMediaQueries/useAutomations sends a shape the server rejects.
 
 describe('API contracts — client request bodies', () => {
-  it('POST /api/saved-queries body is valid', () => {
+  it('POST /api/media-queries body is valid', () => {
     const body: unknown = {
       name: 'Unwatched movies',
       contentType: 'movie',

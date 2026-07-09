@@ -34,13 +34,13 @@ describe('useMediaQueries — save', () => {
   it('posts registry-keyed filterValues for the given contentType, no translation', async () => {
     let body: unknown;
     server.use(
-      http.post('/api/saved-queries', async ({ request }) => {
+      http.post('/api/media-queries', async ({ request }) => {
         body = await request.json();
         return HttpResponse.json({
           data: { id: 1, name: 'My query', contentType: 'movie', filterValues: [], health: 'ok' },
         });
       }),
-      http.get('/api/saved-queries', () => HttpResponse.json({ data: [] }))
+      http.get('/api/media-queries', () => HttpResponse.json({ data: [] }))
     );
 
     const { result } = renderHook(() => useMediaQueries(), { wrapper });

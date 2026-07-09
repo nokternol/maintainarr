@@ -46,7 +46,7 @@ the role interfaces it `implements`, never assumed from the connection base. As-
 | **MediaRule / MediaRuleDescriptor** | The queryable predicate shapes: `MediaRule` pairs a `predicate` with `{ key, label, contentTypes, dataType, sourceProviders, required }`; `MediaRuleDescriptor` is its JSON-honest, predicate-free wire projection. `MEDIA_RULES` is the single authority — no client-side rule catalogue. Client derives its controls from `GET /api/filter-fields` ([`filterFields.handler.ts`](ref:path:server/modules/filterFields/filterFields.handler.ts)) via [`useMediaRules`](ref:path:src/hooks/useMediaRules.ts), scoping state by content type because the registry intentionally reuses keys (`tagIds`, `qualityProfileIds`, `genres`) across movie/show. | [`server/utils/filterRegistry.ts`](ref:path:server/utils/filterRegistry.ts) |
 | **MediaQuerySpec** | The persistable, source-less core of a query: `{ contentType, sources }`. | [`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts) |
 | **MediaQuery** | A `MediaQuerySpec` bound to a `MediaSource` — the engine's input. | [`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts) |
-| **MediaQueryRecord** | A `MediaQuerySpec` with database identity + presentation metadata (`id`, `name`, `health`). **"Saved" is a state, not a name** — the deprecated `SavedMediaQuery` vocabulary re-prefixed the concept instead of naming the state; residue is tracked as an Open fracture. | [`server/services/mediaQueryService.ts`](ref:path:server/services/mediaQueryService.ts) |
+| **MediaQueryRecord** | A `MediaQuerySpec` with database identity + presentation metadata (`id`, `name`, `health`). **"Saved" is a state, not a name** — the deprecated `SavedMediaQuery` vocabulary re-prefixed the concept instead of naming the state; its residue was healed in North Star Phase 0 (see the ledger). | [`server/services/mediaQueryService.ts`](ref:path:server/services/mediaQueryService.ts) |
 | **MediaQueryService** | CRUD + health for `MediaQueryRecord`s (cradle key `mediaQueryService`, tables `media_queries` / `media_query_filter_values`, canonical route `/api/media-queries`). | [`server/services/mediaQueryService.ts`](ref:path:server/services/mediaQueryService.ts) |
 | **Query health** | Per-record status (`healthy`/`degraded`/`unavailable`) derived from whether the providers its filter keys need are configured. | [`server/services/mediaQueryService.ts`](ref:path:server/services/mediaQueryService.ts) |
 
@@ -65,7 +65,7 @@ the role interfaces it `implements`, never assumed from the connection base. As-
 
 | Deprecated | Canonical | Residue |
 |---|---|---|
-| `SavedMediaQuery`, `savedQueries`, `/api/saved-queries` | `MediaQuery` / `MediaQueryRecord`, `/api/media-queries` | Route alias in [`server/modules/index.ts`](ref:path:server/modules/index.ts) + client callers — Open fracture in the ledger. |
+| `SavedMediaQuery`, `savedQueries`, `/api/saved-queries` | `MediaQuery` / `MediaQueryRecord`, `/api/media-queries` | Deleted (North Star Phase 0, healed) — the retired alias 404s by regression test. |
 | `FILTER_FIELDS` (client rule catalogue) | Derived from `MediaRuleDescriptor[]` via `useMediaRules` | Deleted (Phase 4, healed). |
 | `taskManifest` (type-keyed task table) | `MediaActuator.tasks()` on the instance | Deleted (Phase 3, healed). |
 | `getMovies` / `getSeries` on sources | `getMediaItems()` on the `MediaSource` role | — |

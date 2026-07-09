@@ -154,7 +154,7 @@ export default function AutomationsPage() {
         </section>
 
         {/* ── Saved Queries ────────────────────────────────────────────────── */}
-        <section aria-labelledby="saved-queries-heading">
+        <section aria-labelledby="media-queries-heading">
           <div className="flex items-center gap-3 mb-1">
             <BookMarked
               size={16}
@@ -162,7 +162,7 @@ export default function AutomationsPage() {
               className="text-primary flex-shrink-0"
               aria-hidden="true"
             />
-            <h2 id="saved-queries-heading" className="text-sm font-semibold text-text-primary">
+            <h2 id="media-queries-heading" className="text-sm font-semibold text-text-primary">
               Saved Queries
             </h2>
           </div>
