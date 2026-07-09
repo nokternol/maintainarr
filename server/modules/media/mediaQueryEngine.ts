@@ -1,6 +1,6 @@
 import type { DrizzleDb } from '../../kernel/db';
-import { type QueryResult, evaluateCombination } from '../../services/combinationEvaluator';
 import type { MediaSource } from '../providers';
+import { type QueryResult, evaluateCombination } from './combinationEvaluator';
 import { mergeEnrichment } from './enrichmentMerge';
 import type { FilterValueEntry } from './filterRegistry';
 import { getRule } from './filterRegistry';

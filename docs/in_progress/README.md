@@ -48,7 +48,7 @@ the phase's PR rather than silently reconciled.
 | **3 ✅ shipped** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
 | **4 ✅ shipped** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
 | **5 ✅ shipped** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
-| **6** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
+| **6 ✅ shipped** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
 | **7** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
 | **8** | Server layering (closure) | Interface-only imports enforced by an automated check; North Star doc promoted to `docs/architecture/`; ledger entry moves to Healed | Enforcement |
 
@@ -169,26 +169,36 @@ than through mediaQueries' now-removed re-export, since `ContentType` is media's
 Behavior-preserving — gated by the existing suite (1104 tests green), typecheck, and lint. Ledger's
 "Server layering" entry records the mediaQueries surface as healed.
 
-## Phase 6 — automations module
+## Phase 6 — automations module ✅ (shipped 2026-07-09)
 
-`services/automationService.ts`, `automationExecutor.ts`, `automationRunService.ts`,
-`combinationEvaluator.ts`, `cron/automationScheduler.ts` → `modules/automations/`. Automations *use*
-media queries; the logic stays separate — the join is the `automation_query_sources` database relation
-plus the mediaQueries public interface. Verify the dependency direction holds: `automations` imports
-only the `media`, `mediaQueries`, `providers` interfaces and kernel, and never reaches into query
-internals. Add `automations.registrations.ts`: `AutomationsCradle` (`automationService`,
-`automationRunService`, `automationExecutor`, `automationScheduler`) and
-`registerAutomationsDependencies()`; remove those from `server/container.ts`'s inline block and extend
-`Cradle` from `AutomationsCradle`.
+`server/services/automationService.ts`, `automationExecutor.ts`, `automationRunService.ts`, and
+`server/cron/automationScheduler.ts` → `server/modules/automations/` (now dissolving `server/cron/`),
+beside the transport files it already had. `index.ts` is the crafted public interface — currently just
+`createAutomationRoutes` and the container contribution, since no other module consumes automations'
+own DTOs yet. Verified the dependency direction holds: `automations` imports only the `media`,
+`mediaQueries`, `providers` interfaces and kernel, and never reaches into query internals. Added
+`automations.registrations.ts`: `AutomationsCradle` (`automationService`, `automationRunService`,
+`automationExecutor`, `automationScheduler`) and `registerAutomationsDependencies()`; removed from
+`server/container.ts`'s inline block and extended `Cradle` from `AutomationsCradle`.
+
+**Deviation from this phase's own file list:** `combinationEvaluator.ts` was planned to move here too,
+but its only consumer is `media/mediaQueryEngine.ts` — nothing automations-domain touches it. Moving it
+to automations would have created a real `media → automations` reverse-direction violation the moment
+it crossed a module boundary, the same shape as the `ratingsAggregation.ts` (Phase 4) and
+`FilterValueEntry` (Phase 5) corrections. It moved to `server/modules/media/combinationEvaluator.ts`
+instead, staying module-private there.
+
+Behavior-preserving — gated by the existing suite (1104 tests green), typecheck, and lint. Ledger's
+"Server layering" entry records the automations surface as healed.
 
 ## Phase 7 — auth, system, settings
 
 `services/authService.ts` + `database/drizzleStore.ts` → `modules/auth/` (schema/migrations stay in
 `server/database/`). Merge the name collision: `server/health/` (self-healing) + `modules/health/`
 (liveness) + `services/systemTaskRunner.ts` → `modules/system/`. `settings` already matches the target.
-End state: `server/services/`, `server/jobs/`, `server/cron/`, `server/domain/`, `server/health/`,
-and `server/utils/` (emptied across Phases 2–6) deleted — empty directories are the phase's proof.
-Add `auth.registrations.ts` (`AuthCradle`: `authService`) and `system.registrations.ts`
+End state: `server/services/`, `server/domain/`, `server/health/`, and `server/utils/` (emptied across
+Phases 2–6; `server/jobs/` and `server/cron/` are already gone) deleted — empty directories are the
+phase's proof. Add `auth.registrations.ts` (`AuthCradle`: `authService`) and `system.registrations.ts`
 (`SystemCradle`: `systemTaskRunner`); by the end of this phase `server/container.ts`'s inline
 registration block is empty — every entry in `Cradle` comes from `KernelCradle` or a module's
 `<Module>Cradle`.

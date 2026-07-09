@@ -1,12 +1,12 @@
 import { AutomationSchema } from '@app/lib/api/schemas';
 import { defineRoute } from '@server/kernel/defineRoute';
 import { isAuthenticated } from '@server/kernel/middleware/auth';
-import type { AutomationExecutor } from '@server/services/automationExecutor';
-import type { AutomationRunService } from '@server/services/automationRunService';
-import type { AutomationService } from '@server/services/automationService';
 import { z } from 'zod';
-import type { AutomationScheduler } from '../../cron/automationScheduler';
 import { getChildLogger } from '../../kernel/logger';
+import type { AutomationExecutor } from './automationExecutor';
+import type { AutomationRunService } from './automationRunService';
+import type { AutomationScheduler } from './automationScheduler';
+import type { AutomationService } from './automationService';
 import { automationSchemas } from './automations.schemas';
 
 const log = getChildLogger('AutomationHandler');

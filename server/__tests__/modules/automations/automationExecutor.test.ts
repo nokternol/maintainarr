@@ -9,6 +9,9 @@ import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { DomainEventBus, type DomainEvents } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
+import { AutomationExecutor } from '@server/modules/automations/automationExecutor';
+import { AutomationRunService } from '@server/modules/automations/automationRunService';
+import { AutomationService } from '@server/modules/automations/automationService';
 import type { FilterValueEntry } from '@server/modules/media/filterRegistry';
 import type { NormalizedMovie } from '@server/modules/media/movie';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
@@ -22,13 +25,10 @@ import {
   SonarrProvider,
   type SonarrSeries,
 } from '@server/modules/providers';
-import { AutomationExecutor } from '@server/services/automationExecutor';
-import { AutomationRunService } from '@server/services/automationRunService';
-import { AutomationService } from '@server/services/automationService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';
-import { server } from '../../../tests/mocks/server';
+import { createRadarrMovie, createSonarrSeries } from '../../../../tests/factories';
+import { server } from '../../../../tests/mocks/server';
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',
@@ -1481,7 +1481,9 @@ describe('AutomationExecutor', () => {
 
   describe('AutomationScheduler integration', () => {
     it('calls executor.execute when a scheduled tick fires', async () => {
-      const { AutomationScheduler } = await import('@server/cron/automationScheduler');
+      const { AutomationScheduler } = await import(
+        '@server/modules/automations/automationScheduler'
+      );
 
       let executedId: number | null = null;
       const mockExecutor = {

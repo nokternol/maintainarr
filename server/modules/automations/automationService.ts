@@ -8,11 +8,11 @@ import {
   automations,
   mediaQueries,
   metadataProviders,
-} from '../database/schema';
-import type { DrizzleDb } from '../kernel/db';
-import { ForbiddenError, NotFoundError, ValidationError } from '../kernel/errors';
-import type { ContentType } from '../modules/media';
-import { readEnabledTaskIds } from '../modules/providers';
+} from '../../database/schema';
+import type { DrizzleDb } from '../../kernel/db';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../kernel/errors';
+import type { ContentType } from '../media';
+import { readEnabledTaskIds } from '../providers';
 
 export interface QuerySourceDraft {
   queryId: number;
