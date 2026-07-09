@@ -24,6 +24,18 @@ A module is a vertical slice of the product, not an HTTP surface.
 - A small `server/kernel/` holds true infrastructure with no domain meaning: the event bus, logger,
   config, database handle, error hierarchy, middleware, and `defineRoute`. Every module may depend on
   the kernel; the kernel depends on no module.
+- **The container splits into mechanism, registrations, and assembly**, and every module phase
+  produces its own registrations slice — this is not optional scaffolding, it's how a module's public
+  interface extends to its DI contract. `server/kernel/container.ts` is the mechanism: it registers
+  only the kernel's own dependencies (`config`, `db`, `eventBus`) with no domain meaning.
+  Each module owns a `<module>.registrations.ts` beside its `index.ts`, exporting a
+  `<Module>Cradle` interface (the slice of the app cradle the module contributes) and a
+  `register<Module>Dependencies(container)` function (the `asClass`/`asValue` bindings for that
+  slice) — `server/modules/providers/providers.registrations.ts` is the shipped template. `server/
+  container.ts` is assembly: it composes `Cradle` from `KernelCradle` and every module's `<Module>
+  Cradle`, calls `createKernelContainer()` then each module's `register<Module>Dependencies()`, and
+  owns nothing domain-specific itself. A module phase is incomplete if its services are still
+  registered inline in `server/container.ts` instead of through its own registrations file.
 - No event-driven ceremony for synchronous flows: when automations needs to evaluate media rules, it
   imports the media module's public API directly. The event bus is for genuinely asynchronous
   domain events, not a mandatory indirection.
