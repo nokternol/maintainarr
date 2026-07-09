@@ -4,17 +4,12 @@ import {
   mediaQueries,
   mediaQueryFilterValues,
   metadataProviders,
-} from '../database/schema';
-import type { DrizzleDb } from '../kernel/db';
-import { NotFoundError, ValidationError } from '../kernel/errors';
-import { type ContentType, type FilterValue, getRule } from '../modules/media';
+} from '../../database/schema';
+import type { DrizzleDb } from '../../kernel/db';
+import { NotFoundError, ValidationError } from '../../kernel/errors';
+import { type ContentType, type FilterValue, type FilterValueEntry, getRule } from '../media';
 
-export type { ContentType, FilterValue };
-
-export interface FilterValueEntry {
-  key: string;
-  value: FilterValue;
-}
+export type { ContentType, FilterValue, FilterValueEntry };
 
 export interface MediaQueryValue {
   name: string;

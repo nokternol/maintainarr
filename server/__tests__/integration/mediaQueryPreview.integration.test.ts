@@ -5,7 +5,7 @@ import { closeDatabase, initializeDatabase } from '@server/kernel/db';
 import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createMediaQueryRoutes } from '@server/modules/mediaQueries/mediaQueries.routes';
-import { MediaQueryService } from '@server/services/mediaQueryService';
+import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import { createMockConfig } from '@tests/factories';
 import { createRadarrMovie } from '@tests/factories';
 import { createApiClient, expectErrorResponse, expectSuccessResponse } from '@tests/helpers/api';

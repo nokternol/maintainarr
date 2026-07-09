@@ -47,7 +47,7 @@ the phase's PR rather than silently reconciled.
 | **2 ✅ shipped** | Server layering (foundation) | `server/kernel/` exists and is the only home for infrastructure; nothing imports `logger`/`errors`/`config`/db/middleware/`defineRoute` from old paths | Relocation |
 | **3 ✅ shipped** | Server layering (providers) | `modules/providers/` owns connections, roles, factory, settings service, task enablement, identity job — behind one crafted interface | Relocation |
 | **4 ✅ shipped** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
-| **5** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
+| **5 ✅ shipped** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
 | **6** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
 | **7** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
 | **8** | Server layering (closure) | Interface-only imports enforced by an automated check; North Star doc promoted to `docs/architecture/`; ledger entry moves to Healed | Enforcement |
@@ -144,15 +144,30 @@ providers rather than joining `providers/index.ts`'s crafted interface — its o
 straight to the file, bypassing both module systems so the client tsconfig program never pulls in
 either module's value exports).
 
-## Phase 5 — mediaQueries module
+## Phase 5 — mediaQueries module ✅ (shipped 2026-07-09)
 
-`services/mediaQueryService.ts` → `modules/mediaQueries/`. This module owns the *construction* of
-filters over enriched source data — `MediaQueryRecord` CRUD, filter-value persistence, query health —
-its own domain, deliberately not grouped with automations. Its `index.ts` exports the crafted
-interface (`MediaQueryService`, `MediaQueryRecord`, the health types) that automations and the HTTP
-layer consume. Add `mediaQueries.registrations.ts`: `MediaQueriesCradle` (`mediaQueryService`) and
-`registerMediaQueriesDependencies()`; remove it from `server/container.ts`'s inline block and extend
+`server/services/mediaQueryService.ts` → `server/modules/mediaQueries/mediaQueryService.ts`. This
+module owns the *construction* of filters over enriched source data — `MediaQueryRecord` CRUD,
+filter-value persistence, query health — its own domain, deliberately not grouped with automations.
+`index.ts` is the crafted public interface: `MediaQueryService`, `MediaQueryRecord`, `MediaQueryValue`,
+`ProviderStatus`/`QueryHealth`, `createMediaQueryRoutes`. `automationExecutor.ts`/`automationService.ts`
+(still-open Phase 6 surfaces) and `server/modules/index.ts` consume only that interface. Added
+`mediaQueries.registrations.ts`: `MediaQueriesCradle` (`mediaQueryService`) and
+`registerMediaQueriesDependencies()`; removed from `server/container.ts`'s inline block and extended
 `Cradle` from `MediaQueriesCradle`.
+
+**Design correction mid-phase:** the relocation surfaced a direction violation invisible until
+`mediaQueryService.ts` had a module boundary to cross — `media/mediaQueryEngine.ts` imported
+`FilterValueEntry` from `services/mediaQueryService.ts`, i.e. `media → mediaQueries`, backwards from the
+declared `mediaQueries → media` direction. `FilterValueEntry` is structurally a media concept (it pairs
+with `FilterValue` and is the element type of `mediaQueryEngine.ts`'s own `MediaQuerySource.filterValues`),
+so it moved to `filterRegistry.ts` beside `FilterValue` and joined media's crafted interface;
+`mediaQueryService.ts` now imports it from there like any other `mediaQueries → media` consumer.
+`automationService.ts`'s `ContentType` import was redirected the same way — straight from media rather
+than through mediaQueries' now-removed re-export, since `ContentType` is media's, not mediaQueries'.
+
+Behavior-preserving — gated by the existing suite (1104 tests green), typecheck, and lint. Ledger's
+"Server layering" entry records the mediaQueries surface as healed.
 
 ## Phase 6 — automations module
 

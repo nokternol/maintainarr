@@ -9,9 +9,11 @@ import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { DomainEventBus, type DomainEvents } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
+import type { FilterValueEntry } from '@server/modules/media/filterRegistry';
 import type { NormalizedMovie } from '@server/modules/media/movie';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
 import type { NormalizedShow } from '@server/modules/media/show';
+import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import {
   type IProviderFactory,
   ProviderSettingsService,
@@ -23,8 +25,6 @@ import {
 import { AutomationExecutor } from '@server/services/automationExecutor';
 import { AutomationRunService } from '@server/services/automationRunService';
 import { AutomationService } from '@server/services/automationService';
-import { MediaQueryService } from '@server/services/mediaQueryService';
-import type { FilterValueEntry } from '@server/services/mediaQueryService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../tests/factories';

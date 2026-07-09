@@ -33,6 +33,7 @@ export { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
 export type {
   ContentType,
   FilterValue,
+  FilterValueEntry,
   MediaRule,
   MediaRuleDescriptor,
   RangeValue,

@@ -11,7 +11,7 @@ import {
   createMediaRoutes,
   createSearchRoutes,
 } from './media';
-import { createMediaQueryRoutes } from './mediaQueries/mediaQueries.routes';
+import { createMediaQueryRoutes } from './mediaQueries';
 import { createProvidersRoutes } from './providers';
 import { createSettingsRoutes } from './settings/settings.routes';
 
