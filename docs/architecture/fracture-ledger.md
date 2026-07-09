@@ -147,7 +147,9 @@ is graphed, dated, and verified against code, not inferred from a plan.
   Zero imports from the old locations remain (`server/config.ts`, `server/errors.ts`,
   `server/logger.ts`, `server/env.ts`, `server/middleware/`, `server/services/eventBus.ts`,
   `server/utils/defineRoute.ts` are gone); the direction rule holds — kernel imports no service or
-  module.
+  module. [`server/container.ts`](ref:path:server/container.ts) — the app's assembly layer — builds on
+  [`server/kernel/container.ts`](ref:path:server/kernel/container.ts)'s `createKernelContainer()`
+  mechanism rather than duplicating config/db/eventBus registration itself (closed 2026-07-09).
 - **Healed so far — providers is the first full feature module (North Star Phase 3, 2026-07-08):**
   [`server/modules/providers/`](ref:path:server/modules/providers/index.ts) owns the provider domain
   end to end beside the transport files it already had: the connections

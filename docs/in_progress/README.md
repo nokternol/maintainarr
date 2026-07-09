@@ -71,6 +71,15 @@ import updated — zero old-path imports, no shims; kernel-owned tests moved to
 `server/__tests__/kernel/`. The direction rule holds: every module may import kernel; kernel imports
 no module. Ledger's "Server layering" entry records the kernel surface as healed.
 
+**Gap closed 2026-07-09:** `server/kernel/container.ts` shipped with Phase 2 as the container
+*mechanism* (`createKernelContainer()` — registers `config`/`db`/`eventBus`, no domain meaning), but
+`server/container.ts` (assembly) never called it — it still called `createContainer()` directly and
+re-registered `config`/`db`/`eventBus` itself, duplicating the mechanism instead of composing it.
+`buildContainer()` now calls `createKernelContainer<Cradle>(deps)` and `Cradle` extends `KernelCradle`
+instead of redeclaring its fields; six dead provider-class imports left over from before Phase 3 were
+also removed. Behavior-preserving — gated by the existing `container.test.ts` suite, no new tests
+needed.
+
 ## Phase 3 — providers module ✅ (shipped 2026-07-08)
 
 `server/modules/providers/` now owns the provider domain end to end: the connections in a
