@@ -2,22 +2,14 @@ import {
   type ProvidersCradle,
   registerProvidersDependencies,
 } from '@server/modules/providers/index';
-import { type AwilixContainer, InjectionMode, asClass, asValue, createContainer } from 'awilix';
+import { type AwilixContainer, asClass } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import { AutomationScheduler } from './cron/automationScheduler';
 import { EnrichmentJobFactory } from './jobs/enrichmentJobFactory';
 import type { AppConfig } from './kernel/config';
+import { type KernelCradle, createKernelContainer } from './kernel/container';
 import type { DrizzleDb } from './kernel/db';
-import { DomainEventBus } from './kernel/eventBus';
 import { getChildLogger } from './kernel/logger';
-import {
-  IdentityJobFactory,
-  MediaSourceFactory,
-  PlexService,
-  ProviderFactory,
-  ProviderSettingsService,
-  TmdbService,
-} from './modules/providers';
 import { AuthService } from './services/authService';
 import { AutomationExecutor } from './services/automationExecutor';
 import { AutomationRunService } from './services/automationRunService';
@@ -32,10 +24,7 @@ const log = getChildLogger('Container');
  * Registered dependencies available via the container.
  * Extend this interface when adding new services.
  */
-export interface Cradle extends ProvidersCradle {
-  config: AppConfig;
-  db: DrizzleDb;
-  eventBus: DomainEventBus;
+export interface Cradle extends KernelCradle, ProvidersCradle {
   authService: AuthService;
   mediaQueryService: MediaQueryService;
   mediaQueryEngine: MediaQueryEngine;
@@ -50,23 +39,18 @@ export interface Cradle extends ProvidersCradle {
 let container: AwilixContainer<Cradle> | null = null;
 
 /**
- * Build the DI container with runtime dependencies.
- * Call once during server startup after config and DB are initialized.
+ * Build the DI container with runtime dependencies. This is assembly: it
+ * starts from the kernel mechanism (`createKernelContainer`), then registers
+ * app-level services and each module's dependencies on top. Call once during
+ * server startup after config and DB are initialized.
  */
 export function buildContainer(deps: {
   config: AppConfig;
   db: DrizzleDb;
 }): AwilixContainer<Cradle> {
-  container = createContainer<Cradle>({
-    injectionMode: InjectionMode.PROXY,
-    strict: true,
-  });
+  container = createKernelContainer<Cradle>(deps);
 
   container.register({
-    config: asValue(deps.config),
-    db: asValue(deps.db),
-    eventBus: asClass(DomainEventBus).singleton(),
-
     // Services
     authService: asClass(AuthService).scoped(),
     mediaQueryService: asClass(MediaQueryService).singleton(),
