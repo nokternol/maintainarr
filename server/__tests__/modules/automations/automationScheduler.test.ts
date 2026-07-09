@@ -3,7 +3,7 @@
  *
  * Run: vitest run --project server
  */
-import { AutomationScheduler } from '@server/cron/automationScheduler';
+import { AutomationScheduler } from '@server/modules/automations/automationScheduler';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('AutomationScheduler', () => {

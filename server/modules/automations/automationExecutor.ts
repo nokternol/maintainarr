@@ -1,9 +1,9 @@
-import type { MetadataProvider } from '../database/schema';
-import type { DrizzleDb } from '../kernel/db';
-import type { DomainEventBus } from '../kernel/eventBus';
-import { getChildLogger } from '../kernel/logger';
-import { MediaQueryEngine } from '../modules/media';
-import type { MediaQueryService } from '../modules/mediaQueries';
+import type { MetadataProvider } from '../../database/schema';
+import type { DrizzleDb } from '../../kernel/db';
+import type { DomainEventBus } from '../../kernel/eventBus';
+import { getChildLogger } from '../../kernel/logger';
+import { MediaQueryEngine } from '../media';
+import type { MediaQueryService } from '../mediaQueries';
 import {
   type IProviderFactory,
   ProviderFactory,
@@ -11,7 +11,7 @@ import {
   type RadarrProvider,
   type SonarrProvider,
   readEnabledTaskIds,
-} from '../modules/providers';
+} from '../providers';
 import type { AutomationRunService } from './automationRunService';
 import type { AutomationQuerySourceDto, AutomationService } from './automationService';
 

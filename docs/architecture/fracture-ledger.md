@@ -214,19 +214,40 @@ is graphed, dated, and verified against code, not inferred from a plan.
   [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts) beside `FilterValue` and is now
   part of media's crafted interface; `mediaQueryService.ts` imports it from there like any other
   mediaQueries → media consumer.
+- **Healed so far — automations is the fourth full feature module (North Star Phase 6, 2026-07-09):**
+  [`server/modules/automations/`](ref:path:server/modules/automations/index.ts) owns
+  [`automationService.ts`](ref:path:server/modules/automations/automationService.ts),
+  `automationExecutor.ts`, `automationRunService.ts`, and `automationScheduler.ts` (formerly
+  `server/cron/`, now dissolved), beside the transport files it already had
+  (`automations.handler.ts`/`.routes.ts`/`.schemas.ts`). `index.ts` is the crafted public interface —
+  currently just `createAutomationRoutes` and the container contribution, since no other module consumes
+  automations' own DTOs yet. Added `automations.registrations.ts`: `AutomationsCradle`
+  (`automationService`, `automationRunService`, `automationExecutor`, `automationScheduler`) and
+  `registerAutomationsDependencies()`, composed into `server/container.ts`. Verified the dependency
+  direction holds: automations imports only the `media`, `mediaQueries`, `providers` interfaces and
+  kernel, never query internals.
+
+  **Deviation from the plan's file list:** the plan listed `combinationEvaluator.ts` as moving to
+  `modules/automations/` alongside the other four files, but tracing its only consumer found
+  `media/mediaQueryEngine.ts` — nothing automations-domain ever imports it. Moving it to automations
+  would have created a real `media → automations` reverse-direction violation the moment it crossed a
+  module boundary, mirroring the `ratingsAggregation.ts` (Phase 4) and `FilterValueEntry` (Phase 5)
+  corrections. It moved to
+  [`server/modules/media/combinationEvaluator.ts`](ref:path:server/modules/media/combinationEvaluator.ts)
+  instead, where its only consumer already lives; it stays module-private (not part of media's crafted
+  interface) since nothing outside `mediaQueryEngine.ts` needs it.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:
   - **Transport modules vs flat services.** [`server/modules/`](ref:path:server/modules/index.ts) holds
     schemas/handlers/routes per HTTP surface while business logic sits in a flat `server/services/`
-    (auth, automations — the provider services left in Phase 3, the media-query engine and enrichment
-    left in Phase 4, the media-query service left in Phase 5). Until 2026-07-07,
+    (auth and `systemTaskRunner` only — the provider services left in Phase 3, the media-query engine
+    and enrichment left in Phase 4, the media-query service left in Phase 5, the automation services and
+    scheduler left in Phase 6). Until 2026-07-07,
     [`server/modules/README.md`](ref:path:server/modules/README.md) declared each module "owns its
     schemas, handlers, routes, and services" — the doc now states the actual split, but the split itself
-    remains for every module except providers, media, and mediaQueries: neither design is enforced, so
-    services accrete wherever the author leaned.
-  - **Orphan directory outside both designs:** [`server/cron/`](ref:path:server/cron/automationScheduler.ts)
-    (one file, the automation scheduler) — a layer with a single tenant, relocates in Phase 6.
+    remains for every module except providers, media, mediaQueries, and automations: neither design is
+    enforced, so services accrete wherever the author leaned.
   - **One name, two homes:** [`server/modules/health/`](ref:path:server/modules/health/health.handler.ts)
     (HTTP liveness) and [`server/health/`](ref:path:server/health/systemHealthCheck.ts) (system
     self-healing: `ensureSystemJobs`, `failedStateMiddleware`) are different processes sharing the name

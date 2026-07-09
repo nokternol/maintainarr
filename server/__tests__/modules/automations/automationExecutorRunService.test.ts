@@ -9,15 +9,15 @@ import { MetadataProviderType } from '@server/database/schema';
  */
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { AutomationExecutor } from '@server/modules/automations/automationExecutor';
+import { AutomationRunService } from '@server/modules/automations/automationRunService';
+import { AutomationService } from '@server/modules/automations/automationService';
 import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import { ProviderSettingsService } from '@server/modules/providers';
-import { AutomationExecutor } from '@server/services/automationExecutor';
-import { AutomationRunService } from '@server/services/automationRunService';
-import { AutomationService } from '@server/services/automationService';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createRadarrMovie } from '../../../tests/factories';
-import { server } from '../../../tests/mocks/server';
+import { createRadarrMovie } from '../../../../tests/factories';
+import { server } from '../../../../tests/mocks/server';
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',

@@ -1,4 +1,4 @@
-import { evaluateCombination } from '@server/services/combinationEvaluator';
+import { evaluateCombination } from '@server/modules/media/combinationEvaluator';
 import { describe, expect, it } from 'vitest';
 
 describe('evaluateCombination', () => {

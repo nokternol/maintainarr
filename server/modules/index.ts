@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Cradle } from '../container';
 import { checkUser } from '../kernel/middleware/auth';
 import { createAuthRoutes } from './auth/auth.routes';
-import { createAutomationRoutes } from './automations/automations.routes';
+import { createAutomationRoutes } from './automations';
 import { createHealthRoutes } from './health/health.routes';
 import {
   createBackdropsRoutes,

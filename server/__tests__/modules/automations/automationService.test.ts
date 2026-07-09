@@ -2,9 +2,9 @@ import { MetadataProviderType, automations } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { ForbiddenError, ValidationError } from '@server/kernel/errors';
+import { AutomationService } from '@server/modules/automations/automationService';
 import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import { ProviderSettingsService } from '@server/modules/providers';
-import { AutomationService } from '@server/services/automationService';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
