@@ -2,7 +2,7 @@ import {
   aggregateRatings,
   formatRating,
   getSummaryText,
-} from '@server/modules/media/ratingsAggregation';
+} from '@server/modules/providers/ratingsAggregation';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('aggregateRatings — ids block', () => {

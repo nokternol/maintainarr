@@ -169,7 +169,7 @@ is graphed, dated, and verified against code, not inferred from a plan.
   the rule registry, the query engine, and enrichment: `movie.ts`/`show.ts`, `mediaItem.ts`,
   [`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts),
   [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts),
-  `ratingsAggregation.ts`, [`mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts),
+  [`mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts),
   `enrichmentMerge.ts`, `enrichmentJob.ts` + `enrichmentJobFactory.ts`, and absorbs the three
   route-drawn `filterFields`/`backdrops`/`search` modules as `media.filterFields.*`/`media.backdrops.*`/
   `media.search.*` beside the pre-existing `media.handler.ts`. `server/domain/`, `server/utils/
@@ -185,6 +185,14 @@ is graphed, dated, and verified against code, not inferred from a plan.
   reverse": the `MediaSource`/`MediaEnricher` role contracts in `providers/mediaSource.ts` and
   `providers/roles.ts` reference media's `MediaItem` directly, because a role contract has to name the
   shape it operates on — recorded in `VOCABULARY.md`'s MediaItem entry rather than left implicit.
+
+  **Gap closed 2026-07-09:** a code-review pass flagged `ratingsAggregation.ts` as misplaced — it
+  aggregates ratings from `TmdbProvider`/`OmdbProvider`/`TvMazeProvider` DTOs and has no dependency on
+  any media type, so it moved to
+  [`server/modules/providers/ratingsAggregation.ts`](ref:path:server/modules/providers/ratingsAggregation.ts).
+  It stays module-private (only `providers.handler.ts` and the client's `RatingsDisplay` — a documented
+  leaf-type cross-boundary import — consume it), so it is not part of `providers/index.ts`'s crafted
+  interface.
 - **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
   structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
   verified against the tree:

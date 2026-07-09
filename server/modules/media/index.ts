@@ -47,7 +47,3 @@ export type { MediaQuery, MediaQuerySource, MediaQuerySpec } from './mediaQueryE
 export { mergeEnrichment } from './enrichmentMerge';
 export { EnrichmentJobFactory } from './enrichmentJobFactory';
 export type { EnrichmentJobFactoryDeps } from './enrichmentJobFactory';
-
-// Ratings projection shared by the providers HTTP surface.
-export { aggregateRatings, formatRating, getSummaryText } from './ratingsAggregation';
-export type { AggregatedRatings } from './ratingsAggregation';
