@@ -134,6 +134,16 @@ not deleted. Recorded in `VOCABULARY.md`'s `MediaItem` entry and the ledger rath
 Behavior-preserving throughout — gated by the existing suite (all 636 server + 468 client tests), no new
 tests needed. Ledger's "Server layering" entry records the media surface as healed.
 
+**Gap closed 2026-07-09:** a code-review pass on the shipped phase flagged `ratingsAggregation.ts` as
+misplaced — it aggregates a rating from `TmdbProvider`/`OmdbProvider`/`TvMazeProvider` DTOs and has zero
+dependency on any media type (`NormalizedMovie`/`NormalizedShow`/`MediaItem`). Moved to
+`server/modules/providers/ratingsAggregation.ts`; `aggregateRatings`/`formatRating`/`getSummaryText`/
+`AggregatedRatings` dropped from `modules/media/index.ts`'s exports. It stays module-private in
+providers rather than joining `providers/index.ts`'s crafted interface — its only consumers are
+`providers.handler.ts` (intra-module) and the client's `RatingsDisplay` (a documented leaf-type import
+straight to the file, bypassing both module systems so the client tsconfig program never pulls in
+either module's value exports).
+
 ## Phase 5 — mediaQueries module
 
 `services/mediaQueryService.ts` → `modules/mediaQueries/`. This module owns the *construction* of

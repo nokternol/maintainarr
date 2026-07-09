@@ -1,9 +1,10 @@
-// Leaf type imports, not the providers interface: this file is shared with the
-// client (RatingsDisplay imports it), and the interface's value exports would
-// pull the whole server graph into the client tsconfig program.
-import type { OmdbRating } from '@server/modules/providers/connections/omdbProvider';
-import type { TmdbRating } from '@server/modules/providers/connections/tmdbProvider';
-import type { TvMazeRating } from '@server/modules/providers/connections/tvmazeProvider';
+// Leaf type imports, not the module's public interface: this file is shared
+// with the client (RatingsDisplay imports it directly), and the interface's
+// value exports would pull the whole server graph into the client tsconfig
+// program.
+import type { OmdbRating } from './connections/omdbProvider';
+import type { TmdbRating } from './connections/tmdbProvider';
+import type { TvMazeRating } from './connections/tvmazeProvider';
 
 export interface AggregatedRatings {
   title: string;
