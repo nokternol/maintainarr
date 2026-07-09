@@ -1,9 +1,9 @@
 import { and, eq, or } from 'drizzle-orm';
-import { type PublicUser, UserType, users } from '../database/schema';
-import type { DrizzleDb } from '../kernel/db';
-import { NotFoundError } from '../kernel/errors';
-import { getChildLogger } from '../kernel/logger';
-import type { PlexService } from '../modules/providers';
+import { type PublicUser, UserType, users } from '../../database/schema';
+import type { DrizzleDb } from '../../kernel/db';
+import { NotFoundError } from '../../kernel/errors';
+import { getChildLogger } from '../../kernel/logger';
+import type { PlexService } from '../providers';
 
 const log = getChildLogger('AuthService');
 

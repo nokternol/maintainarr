@@ -4,7 +4,7 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { IdentityJobFactory } from '@server/modules/providers/identityJobFactory';
 import { ProviderFactory } from '@server/modules/providers/providerFactory';
 import { ProviderSettingsService } from '@server/modules/providers/providerSettingsService';
-import type { IdentityJobLike } from '@server/services/systemTaskRunner';
+import type { IdentityJobLike } from '@server/modules/system/systemTaskRunner';
 import { createRadarrMovie, createSonarrSeries } from '@tests/factories';
 import { server } from '@tests/mocks/server';
 import { eq } from 'drizzle-orm';

@@ -1,7 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { getChildLogger } from '@server/kernel/logger';
-import type { IdentityJobFactoryLike } from '@server/services/systemTaskRunner';
+import type { IdentityJobFactoryLike } from '@server/modules/system';
 import { IdentityResolutionJob } from './identityResolutionJob';
 import type { ProviderFactory } from './providerFactory';
 import type { ProviderSettingsService } from './providerSettingsService';

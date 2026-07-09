@@ -1,4 +1,4 @@
-import type { DrizzleDb } from '../kernel/db';
+import type { DrizzleDb } from '../../kernel/db';
 import { ensureSystemJobs } from './ensureSystemJobs';
 
 export async function systemHealthCheck(db: DrizzleDb): Promise<void> {

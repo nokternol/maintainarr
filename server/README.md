@@ -15,13 +15,10 @@ server/
                      #   logger (getChildLogger), eventBus, defineRoute,
                      #   middleware/ (requestId → requestLogger → … → errorHandler),
                      #   db (re-exports the DrizzleDb handle contract)
-  database/          # Drizzle schema, migrations, session store (handle consumed via kernel/db)
-  modules/           # Feature modules: schemas / handlers / routes; providers/ and media/
-                     #   also own their domain logic behind a crafted public interface (index.ts)
-  services/          # Business logic not yet moved into its module (tracked in
-                     #   docs/architecture/fracture-ledger.md, "Server layering")
-  cron/              # Automation scheduler (croner)
-  health/            # System self-healing (ensureSystemJobs, failed-state middleware)
+  database/          # Drizzle schema, migrations (session store moved to modules/auth/)
+  modules/           # Feature modules: schemas / handlers / routes, each owning its domain
+                     #   logic behind a crafted public interface (index.ts) — settings/ is the
+                     #   one still-transport-only module (no domain logic of its own)
   types/             # Shared types and Express augmentations
   __tests__/         # Server unit + integration tests
 ```
@@ -44,8 +41,8 @@ server/
 ## Where things are documented
 
 - [database/README.md](database/README.md) — Drizzle setup, schema, migrations
-- [modules/README.md](modules/README.md) — the schemas/handlers/routes transport pattern
-- [services/README.md](services/README.md) — business-logic conventions and testing
+- [modules/README.md](modules/README.md) — the schemas/handlers/routes transport pattern, plus
+  module-owned domain logic and container registration conventions
 - `docs/architecture/` — the product model (`warden-core-model.md`), settled names (`VOCABULARY.md`),
   and the fracture ledger; read these before feature work
 - [TESTING.md](../TESTING.md) — testing architecture

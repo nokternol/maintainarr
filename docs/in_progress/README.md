@@ -49,7 +49,7 @@ the phase's PR rather than silently reconciled.
 | **4 ✅ shipped** | Server layering (media) | `modules/media/` owns normalize, domain shapes, filterRegistry, query engine, enrichment, and absorbs the `filterFields`/`backdrops`/`search` modules | Relocation |
 | **5 ✅ shipped** | Server layering (mediaQueries) | `modules/mediaQueries/` owns filter construction over enriched source data — `MediaQueryService`, filter-value persistence, query health — behind its own interface | Relocation |
 | **6 ✅ shipped** | Server layering (automations) | `modules/automations/` owns its services and the scheduler, consuming mediaQueries only via its public interface + the database join | Relocation |
-| **7** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
+| **7 ✅ shipped** | Server layering (auth + system + settings) | `modules/auth/` owns authService + session store; `modules/system/` merges both `health` homes + `systemTaskRunner`; `server/services/`, `jobs/`, `cron/`, `domain/`, `health/` are gone | Relocation |
 | **8** | Server layering (closure) | Interface-only imports enforced by an automated check; North Star doc promoted to `docs/architecture/`; ledger entry moves to Healed | Enforcement |
 
 ## Phase 0 — Client speaks MediaQuery ✅ (shipped 2026-07-09)
@@ -191,17 +191,37 @@ instead, staying module-private there.
 Behavior-preserving — gated by the existing suite (1104 tests green), typecheck, and lint. Ledger's
 "Server layering" entry records the automations surface as healed.
 
-## Phase 7 — auth, system, settings
+## Phase 7 — auth, system, settings ✅ (shipped 2026-07-09)
 
-`services/authService.ts` + `database/drizzleStore.ts` → `modules/auth/` (schema/migrations stay in
-`server/database/`). Merge the name collision: `server/health/` (self-healing) + `modules/health/`
-(liveness) + `services/systemTaskRunner.ts` → `modules/system/`. `settings` already matches the target.
-End state: `server/services/`, `server/domain/`, `server/health/`, and `server/utils/` (emptied across
-Phases 2–6; `server/jobs/` and `server/cron/` are already gone) deleted — empty directories are the
-phase's proof. Add `auth.registrations.ts` (`AuthCradle`: `authService`) and `system.registrations.ts`
-(`SystemCradle`: `systemTaskRunner`); by the end of this phase `server/container.ts`'s inline
-registration block is empty — every entry in `Cradle` comes from `KernelCradle` or a module's
-`<Module>Cradle`.
+`server/services/authService.ts` + `server/database/drizzleStore.ts` → `server/modules/auth/` (schema/
+migrations stay in `server/database/`). Merged the name collision: `server/health/` (self-healing:
+`ensureSystemJobs`, `systemHealthCheck`, `failedStateMiddleware`) + `server/modules/health/` (liveness)
++ `server/services/systemTaskRunner.ts` → `server/modules/system/`. `settings` needed no file move —
+it was already transport-only with no domain logic of its own — but got a minimal `index.ts` (just
+`createSettingsRoutes`) to match every other module's crafted-interface convention. Added
+`auth.registrations.ts` (`AuthCradle`: `authService`) and `system.registrations.ts` (`SystemCradle`:
+`systemTaskRunner`); `server/container.ts`'s inline registration block is now empty — every `Cradle`
+entry comes from `KernelCradle` or a module's `<Module>Cradle`. End state:
+`server/services/`, `server/domain/`, `server/health/`, `server/utils/`, `server/jobs/`, and
+`server/cron/` are all deleted.
+
+The `IdentityJobFactoryLike`/`EnrichmentJobFactoryLike` dependency-inversion pattern (system's
+`systemTaskRunner.ts` defines the minimal interfaces; providers' `identityJobFactory.ts` and media's
+`enrichmentJobFactory.ts` implement them, importing the interface from system rather than system
+importing their concrete classes) moved as-is — it was already correctly designed, just needed its
+import paths updated to `@server/modules/system`.
+
+`server/modules/README.md` had drifted badly behind five phases of convergence (still described
+"providers is the first module converged" and walked through hand-editing `server/container.ts` to
+register a service) — corrected to describe the current five converged modules, the
+`<module>.registrations.ts` pattern, and `settings` as the reference transport-only example. The
+now-empty `server/utils/README.md` and `server/services/README.md` (the first a loose end from a prior
+session, the second emptied by this phase) are deleted, along with their dead links from the root and
+`server/` READMEs.
+
+Behavior-preserving — gated by the existing suite (1104 tests green), typecheck, and lint. Ledger's
+"Server layering" entry records the auth and system surfaces as healed; only Phase 8's enforcement
+check and doc promotion remain before the entry itself moves to Healed.
 
 ## Phase 8 — Enforcement and closure
 

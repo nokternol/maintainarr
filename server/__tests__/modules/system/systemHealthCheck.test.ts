@@ -1,7 +1,7 @@
 import { automations } from '@server/database/schema';
-import { systemHealthCheck } from '@server/health/systemHealthCheck';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { systemHealthCheck } from '@server/modules/system/systemHealthCheck';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

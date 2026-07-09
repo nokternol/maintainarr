@@ -1,3 +1,4 @@
+import { type AuthCradle, registerAuthDependencies } from '@server/modules/auth';
 import {
   type AutomationsCradle,
   registerAutomationsDependencies,
@@ -11,14 +12,13 @@ import {
   type ProvidersCradle,
   registerProvidersDependencies,
 } from '@server/modules/providers/index';
-import { type AwilixContainer, asClass } from 'awilix';
+import { type SystemCradle, registerSystemDependencies } from '@server/modules/system';
+import type { AwilixContainer } from 'awilix';
 import type { NextFunction, Request, Response } from 'express';
 import type { AppConfig } from './kernel/config';
 import { type KernelCradle, createKernelContainer } from './kernel/container';
 import type { DrizzleDb } from './kernel/db';
 import { getChildLogger } from './kernel/logger';
-import { AuthService } from './services/authService';
-import { SystemTaskRunner } from './services/systemTaskRunner';
 
 const log = getChildLogger('Container');
 
@@ -28,21 +28,20 @@ const log = getChildLogger('Container');
  */
 export interface Cradle
   extends KernelCradle,
+    AuthCradle,
     AutomationsCradle,
     MediaCradle,
     MediaQueriesCradle,
-    ProvidersCradle {
-  authService: AuthService;
-  systemTaskRunner: SystemTaskRunner;
-}
+    ProvidersCradle,
+    SystemCradle {}
 
 let container: AwilixContainer<Cradle> | null = null;
 
 /**
  * Build the DI container with runtime dependencies. This is assembly: it
  * starts from the kernel mechanism (`createKernelContainer`), then registers
- * app-level services and each module's dependencies on top. Call once during
- * server startup after config and DB are initialized.
+ * each module's dependencies on top. Call once during server startup after
+ * config and DB are initialized.
  */
 export function buildContainer(deps: {
   config: AppConfig;
@@ -50,15 +49,12 @@ export function buildContainer(deps: {
 }): AwilixContainer<Cradle> {
   container = createKernelContainer<Cradle>(deps);
 
-  container.register({
-    // Services
-    authService: asClass(AuthService).scoped(),
-    systemTaskRunner: asClass(SystemTaskRunner).singleton(),
-  });
+  registerAuthDependencies(container);
   registerAutomationsDependencies(container);
   registerMediaDependencies(container);
   registerMediaQueriesDependencies(container);
   registerProvidersDependencies(container);
+  registerSystemDependencies(container);
 
   log.info('Container built', {
     registrations: Object.keys(container.registrations),

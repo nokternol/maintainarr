@@ -1,7 +1,7 @@
 import { defineRoute } from '@server/kernel/defineRoute';
 import { UnauthorizedError } from '@server/kernel/errors';
-import type { AuthService } from '@server/services/authService';
 import { authSchemas } from './auth.schemas';
+import type { AuthService } from './authService';
 
 export function createAuthHandlers({ authService }: { authService: AuthService }) {
   return {

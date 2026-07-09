@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import type { Cradle } from '../container';
 import { checkUser } from '../kernel/middleware/auth';
-import { createAuthRoutes } from './auth/auth.routes';
+import { createAuthRoutes } from './auth';
 import { createAutomationRoutes } from './automations';
-import { createHealthRoutes } from './health/health.routes';
 import {
   createBackdropsRoutes,
   createFilterFieldsRoutes,
@@ -13,7 +12,22 @@ import {
 } from './media';
 import { createMediaQueryRoutes } from './mediaQueries';
 import { createProvidersRoutes } from './providers';
-import { createSettingsRoutes } from './settings/settings.routes';
+import { createSettingsRoutes } from './settings';
+import { createHealthRoutes } from './system';
+
+const route = (path: string) => `/${path}`;
+export const routes = {
+  health: route('health'),
+  backdrops: route('backdrops'),
+  filterFields: route('filter-fields'),
+  media: route('media'),
+  mediaQueries: route('media-queries'),
+  providers: route('providers'),
+  settings: route('settings'),
+  auth: route('auth'),
+  automations: route('automations'),
+  search: route('search'),
+} as const;
 
 /**
  * Creates the API router with all module routes mounted.
@@ -34,16 +48,16 @@ export function createApiRouter(cradle: Cradle) {
   const { invalidateMediaCaches } = mediaHandlers;
 
   // Mount modules
-  router.use('/health', createHealthRoutes(cradle));
-  router.use('/backdrops', createBackdropsRoutes(cradle));
-  router.use('/auth', createAuthRoutes(cradle));
-  router.use('/providers', createProvidersRoutes(cradle));
-  router.use('/settings', createSettingsRoutes(cradle, invalidateMediaCaches));
-  router.use('/media', createMediaRoutes(cradle, mediaHandlers));
-  router.use('/search', createSearchRoutes(cradle));
-  router.use('/filter-fields', createFilterFieldsRoutes(cradle));
-  router.use('/media-queries', createMediaQueryRoutes(cradle));
-  router.use('/automations', createAutomationRoutes(cradle));
+  router.use(routes.health, createHealthRoutes(cradle));
+  router.use(routes.backdrops, createBackdropsRoutes(cradle));
+  router.use(routes.auth, createAuthRoutes(cradle));
+  router.use(routes.providers, createProvidersRoutes(cradle));
+  router.use(routes.settings, createSettingsRoutes(cradle, invalidateMediaCaches));
+  router.use(routes.media, createMediaRoutes(cradle, mediaHandlers));
+  router.use(routes.search, createSearchRoutes(cradle));
+  router.use(routes.filterFields, createFilterFieldsRoutes(cradle));
+  router.use(routes.mediaQueries, createMediaQueryRoutes(cradle));
+  router.use(routes.automations, createAutomationRoutes(cradle));
 
   return router;
 }

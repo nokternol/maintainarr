@@ -115,7 +115,7 @@ export const mediaHandlers = [
   }),
 
   // Mirrors GET /api/filter-fields' provider-gated MediaRuleDescriptor projection
-  // (server/utils/filterRegistry.ts) — the default set every RADARR+SONARR test
+  // (server/modules/media/filterRegistry.ts) — the default set every RADARR+SONARR test
   // fixture implies is configured, per providers.ts's default handler.
   http.get('/api/filter-fields', () => {
     return HttpResponse.json([
