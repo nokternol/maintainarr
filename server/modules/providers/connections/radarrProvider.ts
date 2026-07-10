@@ -1,7 +1,4 @@
 import { MetadataProviderType } from '@server/database/schema';
-import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
-import { normalizeRadarrMovie } from '@server/modules/media/normalizeMedia';
-import type { MediaSource } from '../mediaSource';
 import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
@@ -58,20 +55,11 @@ export interface RadarrTag {
   label: string;
 }
 
-export class RadarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
-  public readonly enrichmentSourceType = 'RADARR' as const;
+export class RadarrProvider extends BaseProviderConnection implements MediaActuator {
   public readonly actuatorType = MetadataProviderType.RADARR;
 
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
-  }
-
-  public async getMediaItems(): Promise<MediaItemSet> {
-    return (await this.getMovies()).map(normalizeRadarrMovie);
-  }
-
-  public idOf(item: MediaItem): number | undefined {
-    return (item._sourceIds as { radarr?: number }).radarr;
   }
 
   public tasks(): ActuatorTask[] {

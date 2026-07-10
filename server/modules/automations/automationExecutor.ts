@@ -2,7 +2,7 @@ import type { MetadataProvider } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { DomainEventBus } from '../../kernel/eventBus';
 import { getChildLogger } from '../../kernel/logger';
-import { MediaQueryEngine } from '../media';
+import { MediaQueryEngine, mediaSourceFor } from '../media';
 import type { MediaQueryService } from '../mediaQueries';
 import {
   type IProviderFactory,
@@ -147,12 +147,13 @@ export class AutomationExecutor {
       );
     }
 
+    const mediaSource = mediaSourceFor(source);
     const matched = await this.mediaQueryEngine.evaluate({
-      source,
+      source: mediaSource,
       contentType,
       sources: sources.map((s, i) => ({ filterValues: queryDtos[i].filterValues, role: s.role })),
     });
-    const finalIds = matched.map((item) => source.idOf(item)!);
+    const finalIds = matched.map((item) => mediaSource.idOf(item)!);
 
     await task.run(finalIds);
     return { itemCount: finalIds.length, affects: task.affects };

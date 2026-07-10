@@ -1,6 +1,7 @@
 import { type AwilixContainer, type NameAndRegistrationPair, asClass } from 'awilix';
 import { EnrichmentJobFactory } from './enrichmentJobFactory';
 import { MediaQueryEngine } from './mediaQueryEngine';
+import { MediaSourceFactory } from './mediaSourceFactory';
 
 /**
  * What the media module contributes to the app container. The app builder
@@ -10,6 +11,7 @@ import { MediaQueryEngine } from './mediaQueryEngine';
 export interface MediaCradle {
   mediaQueryEngine: MediaQueryEngine;
   enrichmentJobFactory: EnrichmentJobFactory;
+  mediaSourceFactory: MediaSourceFactory;
 }
 
 /**
@@ -23,6 +25,7 @@ export function registerMediaDependencies<TCradle extends MediaCradle>(
   const registrations: NameAndRegistrationPair<MediaCradle> = {
     mediaQueryEngine: asClass(MediaQueryEngine).singleton(),
     enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
+    mediaSourceFactory: asClass(MediaSourceFactory).singleton(),
   };
   // TCradle extends MediaCradle, so the slice's keys and resolver types
   // are a subset of the app pair type.

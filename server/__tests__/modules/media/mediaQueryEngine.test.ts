@@ -1,7 +1,8 @@
+import type { MediaSource } from '@server/modules/media';
 import { MediaQueryEngine } from '@server/modules/media/mediaQueryEngine';
 import type { NormalizedMovie } from '@server/modules/media/movie';
 import { normalizeRadarrMovie } from '@server/modules/media/normalizeMedia';
-import type { MediaSource, RadarrMovie } from '@server/modules/providers';
+import type { RadarrMovie } from '@server/modules/providers';
 import { describe, expect, it } from 'vitest';
 import { createRadarrMovie } from '../../../../tests/factories';
 

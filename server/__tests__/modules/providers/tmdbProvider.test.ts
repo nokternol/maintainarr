@@ -1,6 +1,4 @@
-import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-import type { NormalizedMovie } from '@server/modules/media/movie';
 import type { ProviderConfig } from '@server/modules/providers/connections/baseProviderConnection';
 import {
   TmdbProvider,
@@ -612,19 +610,5 @@ describe('TmdbProvider watch/providers edge cases', () => {
       peacock: false,
     };
     expect(result).toEqual(allFalse);
-  });
-});
-
-describe('TmdbProvider.enrich (MediaEnricher)', () => {
-  const provider = new TmdbProvider(mockProvider, log);
-
-  it('decorates a matched item with tmdbStatus, tagged by provider', async () => {
-    vi.spyOn(provider, 'getStatus').mockResolvedValue('Released');
-    const item: NormalizedMovie = { _sourceIds: { tmdb: 100 }, title: 'M' };
-
-    const result = await provider.enrich([item]);
-
-    expect(result.provider).toBe(MetadataProviderType.TMDB);
-    expect(result.items[0].tmdbStatus).toBe('Released');
   });
 });

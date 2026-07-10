@@ -13,9 +13,6 @@ import { AutomationExecutor } from '@server/modules/automations/automationExecut
 import { AutomationRunService } from '@server/modules/automations/automationRunService';
 import { AutomationService } from '@server/modules/automations/automationService';
 import type { FilterValueEntry } from '@server/modules/media/filterRegistry';
-import type { NormalizedMovie } from '@server/modules/media/movie';
-import { normalizeRadarrMovie, normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
-import type { NormalizedShow } from '@server/modules/media/show';
 import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import {
   type IProviderFactory,
@@ -25,6 +22,7 @@ import {
   SonarrProvider,
   type SonarrSeries,
 } from '@server/modules/providers';
+import type { ProviderConfig } from '@server/modules/providers/connections/baseProviderConnection';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRadarrMovie, createSonarrSeries } from '../../../../tests/factories';
@@ -46,63 +44,63 @@ const testConfig: AppConfig = {
 const RADARR_URL = 'http://localhost:7878';
 const SONARR_URL = 'http://localhost:8989';
 
-/**
- * The `MediaSource` + `MediaActuator` roles the executor consumes, over a raw
- * provider list. `tasks()` binds each runner to `this`, so a mock built by
- * spreading this helper plus its action methods dispatches through the instance
- * exactly as a real provider does.
- */
-const radarrSource = (movies: RadarrMovie[]) => ({
-  getMediaItems: async () => movies.map(normalizeRadarrMovie),
-  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedMovie)._sourceIds.radarr,
-  enrichmentSourceType: 'RADARR' as const,
-  tasks(this: {
-    unmonitorMovies(ids: number[]): Promise<void>;
-    triggerMoviesSearch(ids: number[]): Promise<void>;
-  }) {
-    return [
-      {
-        id: 'unmonitorMovie',
-        label: 'Unmonitor movie',
-        destructive: false,
-        affects: 'media' as const,
-        run: (ids: number[]) => this.unmonitorMovies(ids),
-      },
-      {
-        id: 'triggerSearch',
-        label: 'Trigger download search',
-        destructive: false,
-        run: (ids: number[]) => this.triggerMoviesSearch(ids),
-      },
-    ];
-  },
-});
+const mockConnectionLogger = getChildLogger('AutomationExecutorTestConnection');
 
-const sonarrSource = (series: SonarrSeries[]) => ({
-  getMediaItems: async () => series.map(normalizeSonarrSeries),
-  idOf: (item: NormalizedMovie | NormalizedShow) => (item as NormalizedShow)._sourceIds.sonarr,
-  enrichmentSourceType: 'SONARR' as const,
-  tasks(this: {
-    unmonitorSeries(ids: number[]): Promise<void>;
-    triggerSeriesSearch(ids: number[]): Promise<void>;
-  }) {
-    return [
-      {
-        id: 'unmonitorSeries',
-        label: 'Unmonitor series',
-        destructive: false,
-        affects: 'media' as const,
-        run: (ids: number[]) => this.unmonitorSeries(ids),
-      },
-      {
-        id: 'triggerSearch',
-        label: 'Trigger episode search',
-        destructive: false,
-        run: (ids: number[]) => this.triggerSeriesSearch(ids),
-      },
-    ];
-  },
-});
+const mockRadarrConfig: ProviderConfig = {
+  name: 'Mock Radarr',
+  url: RADARR_URL,
+  apiKey: 'k',
+  settings: {},
+};
+
+const mockSonarrConfig: ProviderConfig = {
+  name: 'Mock Sonarr',
+  url: SONARR_URL,
+  apiKey: 'k',
+  settings: {},
+};
+
+/**
+ * A real `RadarrProvider` instance with its native fetch and action methods
+ * stubbed — `mediaSourceFor`'s `instanceof` dispatch requires a real instance,
+ * not a duck-typed object, so tests build one instead of a `MediaSource` literal.
+ */
+function radarrSource(
+  movies: RadarrMovie[],
+  actions: {
+    unmonitorMovies?: (ids: number[]) => Promise<void>;
+    triggerMoviesSearch?: (ids: number[]) => Promise<void>;
+  } = {}
+): RadarrProvider {
+  const provider = new RadarrProvider(mockRadarrConfig, mockConnectionLogger);
+  vi.spyOn(provider, 'getMovies').mockResolvedValue(movies);
+  if (actions.unmonitorMovies) {
+    vi.spyOn(provider, 'unmonitorMovies').mockImplementation(actions.unmonitorMovies);
+  }
+  if (actions.triggerMoviesSearch) {
+    vi.spyOn(provider, 'triggerMoviesSearch').mockImplementation(actions.triggerMoviesSearch);
+  }
+  return provider;
+}
+
+/** The `SonarrProvider` counterpart to `radarrSource`. */
+function sonarrSource(
+  series: SonarrSeries[],
+  actions: {
+    unmonitorSeries?: (ids: number[]) => Promise<void>;
+    triggerSeriesSearch?: (ids: number[]) => Promise<void>;
+  } = {}
+): SonarrProvider {
+  const provider = new SonarrProvider(mockSonarrConfig, mockConnectionLogger);
+  vi.spyOn(provider, 'getSeries').mockResolvedValue(series);
+  if (actions.unmonitorSeries) {
+    vi.spyOn(provider, 'unmonitorSeries').mockImplementation(actions.unmonitorSeries);
+  }
+  if (actions.triggerSeriesSearch) {
+    vi.spyOn(provider, 'triggerSeriesSearch').mockImplementation(actions.triggerSeriesSearch);
+  }
+  return provider;
+}
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -688,13 +686,12 @@ describe('AutomationExecutor', () => {
       const movies = [createRadarrMovie({ id: 10, title: 'Dune', year: 2021 })];
       const unmonitored: number[] = [];
 
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
@@ -723,13 +720,12 @@ describe('AutomationExecutor', () => {
       const seriesList = [createSonarrSeries({ id: 5, title: 'The Wire', year: 2002 })];
       const unmonitored: number[] = [];
 
-      const mockSonarr = {
-        ...sonarrSource(seriesList),
+      const mockSonarr = sonarrSource(seriesList, {
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerSeriesSearch: async () => {},
-      } as unknown as SonarrProvider;
+      });
 
       const mockFactory: IProviderFactory = { create: () => mockSonarr };
 
@@ -760,10 +756,9 @@ describe('AutomationExecutor', () => {
   describe('legacy path removal', () => {
     it('records error when querySources is empty even if a legacy query field is defined', async () => {
       const movies = [createRadarrMovie({ id: 7, title: 'Dune', year: 2021 })];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (_: number[]) => {},
-      } as unknown as RadarrProvider;
+      });
 
       const recordRun = vi.fn();
       const mockAutomationService = {
@@ -835,13 +830,12 @@ describe('AutomationExecutor', () => {
       const movies = [createRadarrMovie({ id: 7, title: 'Dune', year: 2021 })];
       const unmonitored: number[] = [];
 
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
@@ -924,13 +918,12 @@ describe('AutomationExecutor', () => {
       });
 
       const unmonitored: number[] = [];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
@@ -989,13 +982,12 @@ describe('AutomationExecutor', () => {
       });
 
       const unmonitored: number[] = [];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
@@ -1046,13 +1038,12 @@ describe('AutomationExecutor', () => {
       });
 
       const unmonitored: number[] = [];
-      const mockSonarr = {
-        ...sonarrSource(seriesList),
+      const mockSonarr = sonarrSource(seriesList, {
         unmonitorSeries: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerSeriesSearch: async () => {},
-      } as unknown as SonarrProvider;
+      });
       const mockFactory: IProviderFactory = { create: () => mockSonarr };
 
       const provider = await seedSonarrProvider(providerSettingsService);
@@ -1097,13 +1088,12 @@ describe('AutomationExecutor', () => {
       ];
 
       const unmonitored: number[] = [];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
@@ -1148,13 +1138,12 @@ describe('AutomationExecutor', () => {
       ];
 
       const unmonitored: number[] = [];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
       const provider = await seedRadarrProvider(providerSettingsService);
@@ -1197,13 +1186,12 @@ describe('AutomationExecutor', () => {
         createRadarrMovie({ id: 2, title: 'B', hasFile: false }),
       ];
       const unmonitored: number[] = [];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async (ids: number[]) => {
           unmonitored.push(...ids);
         },
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const createSpy = vi.fn().mockReturnValue(mockRadarr);
       const mockFactory: IProviderFactory = { create: createSpy };
@@ -1366,11 +1354,10 @@ describe('AutomationExecutor', () => {
       bus.on('media:changed', (p) => changes.push(p));
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: true })];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, []);
@@ -1390,11 +1377,10 @@ describe('AutomationExecutor', () => {
       const changes: DomainEvents['media:changed'][] = [];
       bus.on('media:changed', (p) => changes.push(p));
 
-      const mockRadarr = {
-        ...radarrSource([]),
+      const mockRadarr = radarrSource([], {
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, []);
@@ -1415,11 +1401,10 @@ describe('AutomationExecutor', () => {
       bus.on('media:changed', (p) => changes.push(p));
 
       const movies = [createRadarrMovie({ id: 1, title: 'A', hasFile: false })];
-      const mockRadarr = {
-        ...radarrSource(movies),
+      const mockRadarr = radarrSource(movies, {
         unmonitorMovies: async () => {},
         triggerMoviesSearch: async () => {},
-      } as unknown as RadarrProvider;
+      });
 
       const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, []);

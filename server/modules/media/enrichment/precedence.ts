@@ -1,6 +1,6 @@
 import { MetadataProviderType } from '../../../database/schema';
-import type { EnrichableField, EnrichmentResult } from '../../providers';
 import type { MediaItem } from '../mediaItem';
+import type { EnrichableField, EnrichmentResult } from './enricher';
 
 export type { EnrichableField };
 

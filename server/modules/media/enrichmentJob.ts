@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { mediaEnrichment, mediaIdentity } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
-import type { MediaEnricher } from '../providers';
+import type { MediaEnricher } from './enrichment/enricher';
 import { ENRICHMENT_POLICY, resolvePrecedence } from './enrichment/precedence';
 import type { MediaItem } from './mediaItem';
 

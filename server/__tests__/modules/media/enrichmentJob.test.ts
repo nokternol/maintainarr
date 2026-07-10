@@ -1,9 +1,8 @@
 import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
-import type { MediaItem } from '@server/modules/media';
+import type { MediaEnricher, MediaItem } from '@server/modules/media';
 import { EnrichmentJob } from '@server/modules/media/enrichmentJob';
-import type { MediaEnricher } from '@server/modules/providers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {

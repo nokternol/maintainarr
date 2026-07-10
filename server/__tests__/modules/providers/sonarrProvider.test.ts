@@ -18,19 +18,6 @@ const mockConfig: ProviderConfig = {
 
 afterEach(() => server.resetHandlers());
 
-describe('SonarrProvider — MediaSource read role', () => {
-  const provider = new SonarrProvider(mockConfig, logger);
-
-  it('serves normalized media items whose ids project back via idOf', async () => {
-    const items = await provider.getMediaItems();
-
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Breaking Bad');
-    expect(provider.idOf(items[0])).toBe(1);
-    expect(provider.enrichmentSourceType).toBe('SONARR');
-  });
-});
-
 describe('SonarrProvider', () => {
   const provider = new SonarrProvider(mockConfig, logger);
 

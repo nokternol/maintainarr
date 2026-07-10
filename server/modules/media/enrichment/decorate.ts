@@ -1,4 +1,4 @@
-import type { MediaItem } from '@server/modules/media/mediaItem';
+import type { MediaItem } from '../mediaItem';
 
 /**
  * Pure match-and-decorate: join a batch of canonical items to a per-key set of
