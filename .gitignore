@@ -78,6 +78,9 @@ build
 !.claude/skills/plan-with-graph/
 # Agent Context Files
 .agent/plans/
+# to-spec and similar skills publish specs here instead of a hosted issue tracker -
+# local-only, never tracked (see CLAUDE.local.md).
+docs/plans/
 # Browser automation files
 .playwright-cli
 graphify-out/cost.json
