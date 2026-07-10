@@ -43,6 +43,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# local-only agent instructions
+CLAUDE.local.md
+
 # vercel
 .vercel
 
