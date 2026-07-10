@@ -1,4 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
+import { MediaCache } from '@server/kernel/cache';
 import type { DrizzleDb } from '@server/kernel/db';
 import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
@@ -25,7 +26,6 @@ import type {
   NormalizedShow,
   RangeValue,
 } from './filterRegistry';
-import { MediaCache } from './media.cache';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
 import type { MediaQueryEngine } from './mediaQueryEngine';

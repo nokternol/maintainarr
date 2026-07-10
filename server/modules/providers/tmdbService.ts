@@ -1,7 +1,7 @@
+import { MediaCache } from '@server/kernel/cache';
 import type { AppConfig } from '@server/kernel/config';
 import { getChildLogger } from '@server/kernel/logger';
 import ky from 'ky';
-import { MediaCache } from '../media/media.cache';
 
 const log = getChildLogger('TmdbService');
 

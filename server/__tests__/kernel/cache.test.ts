@@ -3,7 +3,7 @@
  *
  * Run: vitest run --project server
  */
-import { MediaCache } from '@server/modules/media/media.cache';
+import { MediaCache } from '@server/kernel/cache';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('MediaCache.getOrFetch', () => {
