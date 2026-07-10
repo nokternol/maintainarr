@@ -1,7 +1,7 @@
 import { MediaQueryRecordSchema } from '@app/lib/api/schemas';
 import { defineRoute } from '@server/kernel/defineRoute';
 import { isAuthenticated } from '@server/kernel/middleware/auth';
-import type { MediaQueryEngine } from '@server/modules/media/mediaQueryEngine';
+import type { MediaQueryEngine } from '@server/modules/media';
 import type { MediaSourceFactory } from '@server/modules/providers';
 import { z } from 'zod';
 import { mediaQuerySchemas } from './mediaQueries.schemas';
