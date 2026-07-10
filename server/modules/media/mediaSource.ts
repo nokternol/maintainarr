@@ -1,4 +1,4 @@
-import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
+import type { MediaItem, MediaItemSet } from './mediaItem';
 
 /**
  * The read role a media-owning provider plays for the query engine. A source

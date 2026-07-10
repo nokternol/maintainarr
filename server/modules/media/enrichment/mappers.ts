@@ -1,7 +1,10 @@
-import type { MediaItem } from '@server/modules/media/mediaItem';
-import type { OverseerrIssue, OverseerrRequest } from '../connections/overseerrProvider';
-import type { PlexMediaItem } from '../connections/plexProvider';
-import type { TautulliHistoryItem } from '../connections/tautulliProvider';
+import type {
+  OverseerrIssue,
+  OverseerrRequest,
+  PlexMediaItem,
+  TautulliHistoryItem,
+} from '../../providers';
+import type { MediaItem } from '../mediaItem';
 
 const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
 

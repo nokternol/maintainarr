@@ -5,7 +5,6 @@ import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
 import {
   type IProviderFactory,
-  type MediaSource,
   ProviderFactory,
   type ProviderSettingsService,
   type RadarrMovie,
@@ -16,7 +15,6 @@ import {
   type SonarrProvider,
   type SonarrSeries,
   type SonarrTag,
-  sourceOwnership,
 } from '@server/modules/providers';
 import { z } from 'zod';
 import type {
@@ -29,6 +27,8 @@ import type {
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
 import type { MediaQueryEngine } from './mediaQueryEngine';
+import type { MediaSource } from './mediaSource';
+import { sourceOwnership } from './mediaSourceFactory';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
 
 const log = getChildLogger('MediaHandler');

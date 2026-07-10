@@ -1,5 +1,5 @@
 import { type MetadataProvider, MetadataProviderType } from '@server/database/schema';
-import { MediaSourceFactory } from '@server/modules/providers/mediaSourceFactory';
+import { MediaSourceFactory } from '@server/modules/media/mediaSourceFactory';
 import { ProviderFactory } from '@server/modules/providers/providerFactory';
 import type { ProviderSettingsService } from '@server/modules/providers/providerSettingsService';
 import { describe, expect, it } from 'vitest';

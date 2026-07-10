@@ -1,6 +1,5 @@
 import { type AwilixContainer, type NameAndRegistrationPair, asClass } from 'awilix';
 import { IdentityJobFactory } from './identityJobFactory';
-import { MediaSourceFactory } from './mediaSourceFactory';
 import { PlexService } from './plexService';
 import { ProviderFactory } from './providerFactory';
 import { ProviderSettingsService } from './providerSettingsService';
@@ -14,7 +13,6 @@ import { TmdbService } from './tmdbService';
 export interface ProvidersCradle {
   providerSettingsService: ProviderSettingsService;
   providerFactory: ProviderFactory;
-  mediaSourceFactory: MediaSourceFactory;
   plexService: PlexService;
   tmdbService: TmdbService;
   identityJobFactory: IdentityJobFactory;
@@ -33,7 +31,6 @@ export function registerProvidersDependencies<TCradle extends ProvidersCradle>(
     plexService: asClass(PlexService).scoped(),
     providerSettingsService: asClass(ProviderSettingsService).singleton(),
     providerFactory: asClass(ProviderFactory).singleton(),
-    mediaSourceFactory: asClass(MediaSourceFactory).singleton(),
     identityJobFactory: asClass(IdentityJobFactory).singleton(),
   };
   // TCradle extends ProvidersCradle, so the slice's keys and resolver types

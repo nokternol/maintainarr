@@ -47,19 +47,6 @@ describe('RadarrProvider', () => {
   });
 });
 
-describe('RadarrProvider — MediaSource read role', () => {
-  const provider = new RadarrProvider(mockConfig, mockLogger);
-
-  it('serves normalized media items whose ids project back via idOf', async () => {
-    const items = await provider.getMediaItems();
-
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('The Matrix');
-    expect(provider.idOf(items[0])).toBe(1);
-    expect(provider.enrichmentSourceType).toBe('RADARR');
-  });
-});
-
 describe('RadarrProvider — task methods', () => {
   const provider = new RadarrProvider(mockConfig, mockLogger);
 

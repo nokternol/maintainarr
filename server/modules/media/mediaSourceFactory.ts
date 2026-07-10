@@ -1,12 +1,14 @@
 import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-// Leaf type import, not the media interface: importing the module index here
-// would be circular (media's index pulls in providers' index via
-// mediaQueryEngine.ts, which this file is part of).
-import type { ContentType } from '@server/modules/media/filterRegistry';
+import type {
+  IProviderFactory,
+  ProviderSettingsService,
+  RadarrProvider,
+  SonarrProvider,
+} from '@server/modules/providers';
+import type { ContentType } from './filterRegistry';
 import type { MediaSource } from './mediaSource';
-import type { IProviderFactory } from './providerFactory';
-import type { ProviderSettingsService } from './providerSettingsService';
+import { mediaSourceFor } from './sourceAdapters';
 
 const log = getChildLogger('MediaSourceFactory');
 
@@ -34,7 +36,10 @@ export class MediaSourceFactory {
       OWNER_TYPE[contentType],
     ]);
     if (!settings) return undefined;
-    return this.deps.providerFactory.create(settings, log) as MediaSource;
+    const provider = this.deps.providerFactory.create(settings, log) as
+      | RadarrProvider
+      | SonarrProvider;
+    return mediaSourceFor(provider);
   }
 }
 

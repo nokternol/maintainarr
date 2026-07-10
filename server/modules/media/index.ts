@@ -29,6 +29,26 @@ export type { NormalizedShow } from './show';
 // Per-provider DTO → canonical shape translation.
 export { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
 
+// The read role a media-owning provider plays for the query engine, and the
+// adapters that bind providers' native connections to it.
+export type { MediaSource } from './mediaSource';
+export { mediaSourceFor, radarrMediaSource, sonarrMediaSource } from './sourceAdapters';
+
+// Owner-type policy: which provider type owns each content type, resolved to
+// a bound MediaSource.
+export { sourceOwnership } from './mediaSourceFactory';
+export type { MediaSourceDescriptor, MediaSourceFactory } from './mediaSourceFactory';
+
+// Enrichment roles and the adapters that bind providers' native connections
+// to them.
+export type { EnrichableField, EnrichmentResult, MediaEnricher } from './enrichment/enricher';
+export {
+  overseerrEnricher,
+  plexEnricher,
+  tautulliEnricher,
+  tmdbEnricher,
+} from './enrichment/enricherAdapters';
+
 // The rule vocabulary and its client-facing projection.
 export type {
   ContentType,

@@ -7,8 +7,8 @@
  * growing export list is a design smell to challenge.
  *
  * The per-system connection classes and their payload types are part of the
- * contract — the media module (query engine, media handler, search) consumes
- * them directly to build its `MediaSource`/`MediaEnricher` instances.
+ * contract — media owns the `MediaSource`/`MediaEnricher` ports and builds
+ * its adapters directly over these connections' native surface.
  */
 
 // HTTP surface — mounted by the API router.
@@ -21,28 +21,13 @@ export { registerProvidersDependencies } from './providers.registrations';
 export type { ProvidersCradle } from './providers.registrations';
 
 // Provider roles — the capability vocabulary connections implement.
-export type {
-  ActuatorTask,
-  ActuatorTaskDescriptor,
-  EnrichableField,
-  EnrichmentResult,
-  MediaActuator,
-  MediaEnricher,
-} from './roles';
-
-// The read role a media-owning provider plays for the query engine.
-// `MediaItem`/`MediaItemSet` are media's own canonical shapes (see
-// `@server/modules/media`) — this module only re-exports the role that's
-// parameterized by them.
-export type { MediaSource } from './mediaSource';
+export type { ActuatorTask, ActuatorTaskDescriptor, MediaActuator } from './roles';
 
 // Factories: connections from stored settings, sources from connections.
 // ProviderFactory keeps a value export because consumers construct it as an
 // injection fallback; the container-only classes are types here.
 export { ProviderFactory } from './providerFactory';
 export type { IProviderFactory } from './providerFactory';
-export { sourceOwnership } from './mediaSourceFactory';
-export type { MediaSourceDescriptor, MediaSourceFactory } from './mediaSourceFactory';
 
 // Provider settings — persistence and projection of configured providers.
 export { ProviderSettingsService } from './providerSettingsService';
@@ -72,5 +57,6 @@ export type { SonarrProfile, SonarrSeries, SonarrTag } from './connections/sonar
 export { TautulliProvider } from './connections/tautulliProvider';
 export type { TautulliHistoryItem } from './connections/tautulliProvider';
 export type { OmdbRating } from './connections/omdbProvider';
+export { TmdbProvider } from './connections/tmdbProvider';
 export type { TmdbRating } from './connections/tmdbProvider';
 export type { TvMazeRating } from './connections/tvmazeProvider';

@@ -1,7 +1,4 @@
 import { MetadataProviderType } from '@server/database/schema';
-import type { MediaItem, MediaItemSet } from '@server/modules/media/mediaItem';
-import { normalizeSonarrSeries } from '@server/modules/media/normalizeMedia';
-import type { MediaSource } from '../mediaSource';
 import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
@@ -67,20 +64,11 @@ export interface SonarrTag {
   label: string;
 }
 
-export class SonarrProvider extends BaseProviderConnection implements MediaSource, MediaActuator {
-  public readonly enrichmentSourceType = 'SONARR' as const;
+export class SonarrProvider extends BaseProviderConnection implements MediaActuator {
   public readonly actuatorType = MetadataProviderType.SONARR;
 
   private get apiParams() {
     return { apikey: this.provider.apiKey || '' };
-  }
-
-  public async getMediaItems(): Promise<MediaItemSet> {
-    return (await this.getSeries()).map(normalizeSonarrSeries);
-  }
-
-  public idOf(item: MediaItem): number | undefined {
-    return (item._sourceIds as { sonarr?: number }).sonarr;
   }
 
   public tasks(): ActuatorTask[] {

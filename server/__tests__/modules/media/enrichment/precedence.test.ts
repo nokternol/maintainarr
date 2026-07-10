@@ -1,7 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
+import type { EnrichmentResult } from '@server/modules/media/enrichment/enricher';
 import { resolvePrecedence } from '@server/modules/media/enrichment/precedence';
 import type { NormalizedMovie } from '@server/modules/media/movie';
-import type { EnrichmentResult } from '@server/modules/providers';
 import { describe, expect, it } from 'vitest';
 
 function result(provider: MetadataProviderType, item: NormalizedMovie): EnrichmentResult {

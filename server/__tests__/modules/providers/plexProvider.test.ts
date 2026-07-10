@@ -1,9 +1,7 @@
-import { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-import type { NormalizedMovie } from '@server/modules/media/movie';
 import type { ProviderConfig } from '@server/modules/providers/connections/baseProviderConnection';
 import { PlexProvider } from '@server/modules/providers/connections/plexProvider';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestPlexProvider');
 
@@ -44,32 +42,5 @@ describe('PlexProvider', () => {
     const items = await provider.getLibraryContents('1');
     expect(items[0].viewCount).toBe(3);
     expect(items[0].lastViewedAt).toBe(1700000000);
-  });
-
-  describe('enrich (MediaEnricher)', () => {
-    it('decorates a matched item with its play count, tagged by provider', async () => {
-      vi.spyOn(provider, 'getAllItems').mockResolvedValue([
-        { ratingKey: 'plex-1', title: 'The Matrix', type: 'movie', viewCount: 2 },
-      ]);
-      const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
-
-      const result = await provider.enrich([item]);
-
-      expect(result.provider).toBe(MetadataProviderType.PLEX);
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].playCount).toBe(2);
-    });
-
-    it('omits and does not mutate an item whose key it does not speak', async () => {
-      vi.spyOn(provider, 'getAllItems').mockResolvedValue([
-        { ratingKey: 'plex-1', title: 'The Matrix', type: 'movie', viewCount: 2 },
-      ]);
-      const item: NormalizedMovie = { _sourceIds: { plex: 'plex-999' }, title: 'Unknown' };
-
-      const result = await provider.enrich([item]);
-
-      expect(result.items).toHaveLength(0);
-      expect(item.playCount).toBeUndefined();
-    });
   });
 });

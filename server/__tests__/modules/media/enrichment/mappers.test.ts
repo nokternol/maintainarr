@@ -1,14 +1,14 @@
+import {
+  mapOverseerr,
+  mapPlexItems,
+  mapTautulliHistory,
+} from '@server/modules/media/enrichment/mappers';
 import type {
   OverseerrIssue,
   OverseerrRequest,
   PlexMediaItem,
   TautulliHistoryItem,
 } from '@server/modules/providers';
-import {
-  mapOverseerr,
-  mapPlexItems,
-  mapTautulliHistory,
-} from '@server/modules/providers/enrichment/mappers';
 import { describe, expect, it } from 'vitest';
 
 function history(rating_key: string, played_at?: number): TautulliHistoryItem {

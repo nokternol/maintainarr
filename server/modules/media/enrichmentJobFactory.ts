@@ -3,6 +3,12 @@ import type { DrizzleDb } from '../../kernel/db';
 import { getChildLogger } from '../../kernel/logger';
 import type { EnrichmentJobFactoryLike } from '../../modules/system';
 import type { ProviderFactory, ProviderSettingsService } from '../providers';
+import {
+  overseerrEnricher,
+  plexEnricher,
+  tautulliEnricher,
+  tmdbEnricher,
+} from './enrichment/enricherAdapters';
 import { EnrichmentJob } from './enrichmentJob';
 
 const log = getChildLogger('EnrichmentJobFactory');
@@ -32,7 +38,12 @@ export class EnrichmentJobFactory implements EnrichmentJobFactoryLike {
       MetadataProviderType.TMDB,
     ]);
     const { tautulli, overseerr, plex, tmdb } = this.providerFactory.createMany(providers, log);
-    const enrichers = [tautulli, overseerr, plex, tmdb].filter((e) => e !== undefined);
+    const enrichers = [
+      tautulli && tautulliEnricher(tautulli),
+      overseerr && overseerrEnricher(overseerr),
+      plex && plexEnricher(plex),
+      tmdb && tmdbEnricher(tmdb),
+    ].filter((e) => e !== undefined);
     return new EnrichmentJob({ db: this.db, enrichers });
   }
 }
