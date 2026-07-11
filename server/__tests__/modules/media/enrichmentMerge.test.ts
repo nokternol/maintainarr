@@ -1,4 +1,10 @@
-import { mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import {
+  MetadataProviderType,
+  mediaEnrichment,
+  mediaIdentity,
+  mediaItems,
+  metadataProviders,
+} from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 /**
  * Phase 2 — Cycle 2.1. Shared identity→enrichment merge extracted from
@@ -30,8 +36,15 @@ function movie(id: number, title: string): NormalizedMovie {
 }
 
 describe('mergeEnrichment', () => {
+  let providerId: number;
+
   beforeEach(async () => {
     await initializeDatabase(testConfig);
+    const db = getDb();
+    [{ id: providerId }] = await db
+      .insert(metadataProviders)
+      .values({ type: MetadataProviderType.RADARR, name: 'Radarr', url: 'http://radarr' })
+      .returning({ id: metadataProviders.id });
   });
   afterEach(async () => {
     await _resetDatabase();
@@ -39,10 +52,8 @@ describe('mergeEnrichment', () => {
 
   it('maps enrichment onto the matching item by sourceType + sourceId', async () => {
     const db = getDb();
-    const [identity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1 })
-      .returning();
+    const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+    await db.insert(mediaItems).values({ providerId, externalId: 1, mediaIdentityId: identity.id });
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
       playCount: 3,
@@ -61,17 +72,15 @@ describe('mergeEnrichment', () => {
       overseerrHasIssue: true,
       tmdbStatus: 'Released',
     });
-    // No identity/enrichment for sourceId 2 → left untouched.
+    // No item/enrichment for sourceId 2 → left untouched.
     expect(items[1].playCount).toBeUndefined();
     expect(items[1].overseerrRequestStatus).toBeUndefined();
   });
 
   it('leaves fields undefined when the enrichment row holds null for them', async () => {
     const db = getDb();
-    const [identity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 5 })
-      .returning();
+    const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+    await db.insert(mediaItems).values({ providerId, externalId: 5, mediaIdentityId: identity.id });
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
       playCount: null,
@@ -94,6 +103,19 @@ describe('mergeEnrichment', () => {
     await expect(
       mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr)
     ).resolves.toBeUndefined();
+    expect(items[0].playCount).toBeUndefined();
+  });
+
+  it('no-ops when no instance of the source type is active', async () => {
+    const db = getDb();
+    await db.update(metadataProviders).set({ isActive: false });
+    const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+    await db.insert(mediaItems).values({ providerId, externalId: 1, mediaIdentityId: identity.id });
+    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, playCount: 3 });
+
+    const items = [movie(1, 'Enriched')];
+    await mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr);
+
     expect(items[0].playCount).toBeUndefined();
   });
 });

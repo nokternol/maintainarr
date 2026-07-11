@@ -6,6 +6,24 @@ assignee:
 blocked_by: [multi-instance-identity-model.ticket-01-authority-and-factory-surface.md, multi-instance-identity-model.ticket-02-schema-and-migration.md]
 ---
 
+## Starting point — the ticket-2 shim
+
+Ticket 2 landed the schema split, but `IdentityResolutionJob`/`IdentityJobFactory` compile against it via a
+**single-instance shim**, not this ticket's multi-instance design — do not mistake the shim for done work:
+
+- `IdentityJobFactory.create()` finds at most one Radarr/Sonarr/Plex instance each (`instances.find(...)`
+  over `createInstances`'s array) and passes a single `{ provider, providerId }` pair per type — never a
+  loop. This only stays correct because the single-active invariant is still global (ticket 6 hasn't run).
+- `IdentityResolutionJob.Deps` takes `radarrProvider`/`radarrProviderId` and
+  `sonarrProvider`/`sonarrProviderId` as single optional pairs (not the `movieSources`/`seriesSources`
+  arrays this ticket's §3 design calls for).
+- `runForMovies`/`runForSeries` already call `resolveGroup` (ticket 2) and upsert `media_item` on
+  `(providerId, externalId)` for that one instance — this part matches the design and does not need
+  redoing, only generalizing to a loop.
+- No pruning and no orphan sweep exist yet — both are new in this ticket.
+- `runForPlex` is unchanged from before ticket 2 (unscoped by kind) — the cross-namespace collision bug
+  is still open; this ticket closes it.
+
 ## Question
 
 Rewrite `IdentityJobFactory`/`IdentityResolutionJob` to loop every active instance per type instead of

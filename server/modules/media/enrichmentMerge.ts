@@ -1,15 +1,19 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { mediaEnrichment, mediaIdentity } from '../../database/schema';
+import { mediaEnrichment, mediaItems, metadataProviders } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
 
 /**
- * Maps `media_enrichment` rows onto Normalized* items, keyed by
- * `sourceType` + `sourceId`. The single source of truth for the
- * identity→enrichment merge, shared by the automation executor and the
- * media browse handler. Items without a matching identity/enrichment row
- * are left untouched; null enrichment columns leave their field undefined.
+ * Maps `media_enrichment` rows onto Normalized* items, keyed by `sourceType` +
+ * `sourceId` and resolved through the active instance's `media_item` copies to
+ * the enrichment's owning group. The single source of truth for the
+ * identity→enrichment merge, shared by the automation executor and the media
+ * browse handler. Items without a matching item/enrichment row are left
+ * untouched; null enrichment columns leave their field undefined.
+ *
+ * Assumes the single-active-provider invariant still holds for `sourceType`
+ * (pre-multi-instance): at most one active instance owns the lookup.
  */
 export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow>(
   db: DrizzleDb,
@@ -20,22 +24,34 @@ export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow
   const sourceIds = items.map(getSourceId).filter((id): id is number => id !== undefined);
   if (sourceIds.length === 0) return;
 
+  const activeProviders = await db
+    .select({ id: metadataProviders.id })
+    .from(metadataProviders)
+    .where(and(eq(metadataProviders.type, sourceType), eq(metadataProviders.isActive, true)));
+  if (activeProviders.length === 0) return;
+
   const identities = await db
     .select()
-    .from(mediaIdentity)
+    .from(mediaItems)
     .where(
-      and(eq(mediaIdentity.sourceType, sourceType), inArray(mediaIdentity.sourceId, sourceIds))
+      and(
+        inArray(
+          mediaItems.providerId,
+          activeProviders.map((p) => p.id)
+        ),
+        inArray(mediaItems.externalId, sourceIds)
+      )
     );
   if (identities.length === 0) return;
 
-  const identityIdToSourceId = new Map(identities.map((i) => [i.id, i.sourceId]));
+  const identityIdToSourceId = new Map(identities.map((i) => [i.mediaIdentityId, i.externalId]));
   const enrichments = await db
     .select()
     .from(mediaEnrichment)
     .where(
       inArray(
         mediaEnrichment.mediaIdentityId,
-        identities.map((i) => i.id)
+        identities.map((i) => i.mediaIdentityId)
       )
     );
 

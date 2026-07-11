@@ -4,6 +4,7 @@ import {
   automations,
   mediaEnrichment,
   mediaIdentity,
+  mediaItems,
 } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
@@ -906,11 +907,13 @@ describe('AutomationExecutor', () => {
         createRadarrMovie({ id: 2, title: 'Unwatched Movie', hasFile: true }),
       ];
 
-      // Seed media_identity + enrichment for movie 1 only (playCount=3)
-      const [identity] = await db
-        .insert(mediaIdentity)
-        .values({ sourceType: 'RADARR', sourceId: 1 })
-        .returning();
+      const provider = await seedRadarrProvider(providerSettingsService);
+
+      // Seed media_identity + a media_item copy for movie 1 + enrichment (playCount=3)
+      const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+      await db
+        .insert(mediaItems)
+        .values({ providerId: provider.id, externalId: 1, mediaIdentityId: identity.id });
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
         playCount: 3,
@@ -926,7 +929,6 @@ describe('AutomationExecutor', () => {
       });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
-      const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, [{ key: 'watched', value: true }]);
       const automation = await seedAutomation(automationService, {
         queryId: query.id,
@@ -960,10 +962,12 @@ describe('AutomationExecutor', () => {
         createRadarrMovie({ id: 12, title: 'Never Played', hasFile: true }),
       ];
 
-      const [id10] = await db
-        .insert(mediaIdentity)
-        .values({ sourceType: 'RADARR', sourceId: 10 })
-        .returning();
+      const provider = await seedRadarrProvider(providerSettingsService);
+
+      const [id10] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+      await db
+        .insert(mediaItems)
+        .values({ providerId: provider.id, externalId: 10, mediaIdentityId: id10.id });
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id10.id,
         lastWatchedAt: new Date(tenDaysAgoUnix * 1000).toISOString(),
@@ -971,10 +975,10 @@ describe('AutomationExecutor', () => {
       });
 
       const twoDaysAgoUnix = Math.floor((Date.now() - 2 * 86_400_000) / 1000);
-      const [id11] = await db
-        .insert(mediaIdentity)
-        .values({ sourceType: 'RADARR', sourceId: 11 })
-        .returning();
+      const [id11] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+      await db
+        .insert(mediaItems)
+        .values({ providerId: provider.id, externalId: 11, mediaIdentityId: id11.id });
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: id11.id,
         lastWatchedAt: new Date(twoDaysAgoUnix * 1000).toISOString(),
@@ -990,7 +994,6 @@ describe('AutomationExecutor', () => {
       });
       const mockFactory: IProviderFactory = { create: () => mockRadarr };
 
-      const provider = await seedRadarrProvider(providerSettingsService);
       const query = await seedMediaQuery(mediaQueryService, [
         { key: 'lastWatchedDaysAgo', value: { min: 7 } },
       ]);
@@ -1026,11 +1029,13 @@ describe('AutomationExecutor', () => {
         createSonarrSeries({ id: 2, title: 'Unwatched Show', status: 'ended' }),
       ];
 
-      // Seed media_identity + enrichment for series 1 only (playCount=5)
-      const [identity] = await db
-        .insert(mediaIdentity)
-        .values({ sourceType: 'SONARR', sourceId: 1 })
-        .returning();
+      const provider = await seedSonarrProvider(providerSettingsService);
+
+      // Seed media_identity + a media_item copy for series 1 + enrichment (playCount=5)
+      const [identity] = await db.insert(mediaIdentity).values({ kind: 'show' }).returning();
+      await db
+        .insert(mediaItems)
+        .values({ providerId: provider.id, externalId: 1, mediaIdentityId: identity.id });
       await db.insert(mediaEnrichment).values({
         mediaIdentityId: identity.id,
         playCount: 5,
@@ -1045,8 +1050,6 @@ describe('AutomationExecutor', () => {
         triggerSeriesSearch: async () => {},
       });
       const mockFactory: IProviderFactory = { create: () => mockSonarr };
-
-      const provider = await seedSonarrProvider(providerSettingsService);
       const query = await seedMediaQuery(
         mediaQueryService,
         [{ key: 'watched', value: true }],

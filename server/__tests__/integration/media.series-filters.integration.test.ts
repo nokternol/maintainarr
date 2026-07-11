@@ -1,5 +1,11 @@
 import { buildContainer } from '@server/container';
-import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import {
+  MetadataProviderType,
+  mediaEnrichment,
+  mediaIdentity,
+  mediaItems,
+  metadataProviders,
+} from '@server/database/schema';
 /**
  * Phase 2 — series browse predicates delegated to the registry.
  *
@@ -20,6 +26,7 @@ import { createMediaRoutes } from '@server/modules/media/media.routes';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectSuccessResponse } from '@tests/helpers/api';
 import { server } from '@tests/mocks/server';
+import { eq } from 'drizzle-orm';
 import express, { type Express } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { http, HttpResponse } from 'msw';
@@ -114,10 +121,14 @@ describe('Media browse — series registry predicates', () => {
 
   async function seedEnrichment(sourceId: number, fields: Record<string, unknown>): Promise<void> {
     const db = getDb();
-    const [identity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'SONARR', sourceId })
-      .returning();
+    const [sonarr] = await db
+      .select({ id: metadataProviders.id })
+      .from(metadataProviders)
+      .where(eq(metadataProviders.type, MetadataProviderType.SONARR));
+    const [identity] = await db.insert(mediaIdentity).values({ kind: 'show' }).returning();
+    await db
+      .insert(mediaItems)
+      .values({ providerId: sonarr.id, externalId: sourceId, mediaIdentityId: identity.id });
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
       enrichedAt: Math.floor(Date.now() / 1000),

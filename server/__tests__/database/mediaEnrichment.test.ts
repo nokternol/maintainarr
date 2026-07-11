@@ -29,7 +29,7 @@ describe('media_enrichment table', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 500 })
+      .values({ kind: 'movie', tmdbId: 500 })
       .returning();
 
     const now = Math.floor(Date.now() / 1000);
@@ -50,10 +50,7 @@ describe('media_enrichment table', () => {
 
   it('enforces UNIQUE on mediaIdentityId (one enrichment row per identity)', async () => {
     const db = getDb();
-    const [identity] = await db
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 2 })
-      .returning();
+    const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
 
     const now = Math.floor(Date.now() / 1000);
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: now });

@@ -53,7 +53,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'fresh' })
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'fresh' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: FRESH });
 
@@ -67,7 +67,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'abc123' })
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'abc123' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
@@ -85,7 +85,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100, plexRatingKey: 'k' })
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'k' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
@@ -101,7 +101,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, plexRatingKey: 'k' })
+      .values({ kind: 'movie', plexRatingKey: 'k' })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
@@ -117,7 +117,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 })
+      .values({ kind: 'movie', tmdbId: 100 })
       .returning();
     await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
@@ -133,7 +133,7 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, plexRatingKey: 'k' })
+      .values({ kind: 'movie', plexRatingKey: 'k' })
       .returning();
 
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ playCount: 7 }));
@@ -148,11 +148,11 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [id100] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 100 })
+      .values({ kind: 'movie', tmdbId: 100 })
       .returning();
     const [id200] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 200 })
+      .values({ kind: 'movie', tmdbId: 200 })
       .returning();
     await db.insert(mediaEnrichment).values([
       { mediaIdentityId: id100.id, enrichedAt: STALE },

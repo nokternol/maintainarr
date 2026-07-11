@@ -25,25 +25,22 @@ describe('media_identity table', () => {
     await _resetDatabase();
   });
 
-  it('survives a round-trip for a RADARR row', async () => {
+  it('survives a round-trip for a movie group', async () => {
     const db = getDb();
     const [row] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 42, tmdbId: 100, imdbId: 'tt1234567' })
+      .values({ kind: 'movie', tmdbId: 100, imdbId: 'tt1234567' })
       .returning();
 
-    expect(row.sourceType).toBe('RADARR');
-    expect(row.sourceId).toBe(42);
+    expect(row.kind).toBe('movie');
     expect(row.tmdbId).toBe(100);
     expect(row.imdbId).toBe('tt1234567');
     expect(row.id).toBeTypeOf('number');
   });
 
-  it('enforces UNIQUE(sourceType, sourceId)', async () => {
+  it('enforces one movie group per tmdbId', async () => {
     const db = getDb();
-    await db.insert(mediaIdentity).values({ sourceType: 'RADARR', sourceId: 1 });
-    await expect(
-      db.insert(mediaIdentity).values({ sourceType: 'RADARR', sourceId: 1 })
-    ).rejects.toThrow();
+    await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 1 });
+    await expect(db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 1 })).rejects.toThrow();
   });
 });

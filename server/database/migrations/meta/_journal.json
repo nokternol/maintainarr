@@ -99,6 +99,20 @@
       "when": 1783420000000,
       "tag": "0013_media_rule_range_collapse",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1783430000000,
+      "tag": "0014_media_identity_split",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1783431000000,
+      "tag": "0015_filter_value_provider_scope",
+      "breakpoints": true
     }
   ]
 }

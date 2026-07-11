@@ -1,8 +1,8 @@
 ---
 title: "Phase 2: Schema + migration"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: []
 ---
 

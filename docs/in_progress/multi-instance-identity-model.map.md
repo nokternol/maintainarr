@@ -46,6 +46,20 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
   invariant (Phase 3 replaces this with the real multi-instance loop). No observable behavior change;
   `dependency-cruiser` and full server suite stayed green throughout.
 
+- **Phase 2 (`ticket-02-schema-and-migration.md`) — closed.** `media_identity`/`media_item` schema split
+  landed in `server/database/schema.ts` (`0014_media_identity_split.sql`,
+  `0015_filter_value_provider_scope.sql`); `resolveGroup` (`providers/groupResolver.ts`) implements the
+  find-or-create/fallback-chain/fill-only-merge rules and is unit-tested against all five. **Landed with a
+  deliberate single-active-instance shim, not the full design**, to keep the schema change compiling and
+  the build green: `IdentityResolutionJob`/`IdentityJobFactory` write through `resolveGroup` + `media_item`
+  for at most one Radarr/Sonarr instance each (no loop, no pruning, no orphan sweep — all ticket 3);
+  `mergeEnrichment` keeps its old `(sourceType, getSourceId)` signature and resolves the single active
+  instance of that type internally (the `(providerId, externalId)`/`itemKey` rewrite is ticket 4);
+  `EnrichmentJob.hydrate` dropped the `radarr`/`sonarr` synthesized keys per §5 (this part is real, not
+  shimmed). Tickets 3 and 4 each carry a "Starting point" section naming exactly what the shim covers so
+  neither mistakes shimmed code for finished work. 658 tests green, typecheck clean, `dependency-cruiser`
+  clean.
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->
