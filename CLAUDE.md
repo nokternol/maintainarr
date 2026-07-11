@@ -32,7 +32,11 @@ Ladle story first, then in-place. (1) Create/update the component's `.stories.ts
 
 **Do not treat `docs/intent/` or `docs/in_progress/` as descriptions of what is built.** When implementing something described in either folder, update the doc status as part of completion — delete `in_progress` files, move `intent` files to `docs/architecture/`.
 
-**`docs/architecture/` staying "current fact" is an ongoing duty, not a one-time promotion.** Before relocating, renaming, or deleting a file or symbol, `grep -rl <old-path-or-symbol> docs/` and fix or triage every hit — not just the docs the change's own plan already names as related. Skipping this is how a doc silently goes stale one relocation at a time. Use the `docs-lifecycle` skill for the mechanics.
+**`docs/architecture/` staying "current fact" is an ongoing duty, not a one-time promotion.** A resolvable `ref:path:`/`ref:label:` link is not proof a doc is accurate — the target can still exist while the behavior it describes changed underneath it, and a valid-but-stale link is worse than a dangling one because nothing flags it as suspect. Two triggers, both required:
+- **Relocating, renaming, or deleting** a file or symbol: `grep -rl <old-path-or-symbol> docs/` and fix or triage every hit, not just the docs the change's own plan already names as related.
+- **Editing the behavior of a file** without moving it: `grep -rl <path> docs/architecture/`; if any doc links to it via `ref:path:`, re-read that doc's surrounding prose against your change, not just its link target.
+
+Skipping either is how a doc silently goes stale one change at a time. Use the `docs-lifecycle` skill for the mechanics.
 
 ## graphify
 
