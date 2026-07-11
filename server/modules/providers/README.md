@@ -1,7 +1,7 @@
 # Providers module
 
 The providers feature module — the first module converged on the North Star design
-(`docs/intent/server-architecture-north-star.md`): it owns everything for the provider domain, from
+(`docs/architecture/server-architecture-north-star.md`): it owns everything for the provider domain, from
 HTTP transport down to the system job, and exposes it through one crafted public interface.
 
 ## Layout
@@ -13,9 +13,8 @@ providers/
   providers.handler.ts        # Route handlers: actuator tasks, ad-hoc metadata, aggregated ratings
   providers.routes.ts         # HTTP wiring
   connections/                # BaseProviderConnection + one class per external system
-  roles.ts                    # Capability roles: MediaSource / MediaEnricher / MediaActuator
-  mediaSource.ts              # MediaItem / MediaItemSet / MediaSource — the canonical source shapes
-  mediaSourceFactory.ts       # ContentType → active owner bound as a MediaSource; sourceOwnership()
+  roles.ts                    # Capability role providers own: MediaActuator (task discovery)
+  ratingsAggregation.ts       # Cross-provider rating aggregation (Tmdb/Omdb/TvMaze), module-private
   providerFactory.ts          # Constructs the connection class for a stored provider row
   providerSettingsService.ts  # Persistence + projection of configured providers
   taskEnablement.ts           # Per-instance enabledTasks authority (readEnabledTaskIds)
@@ -41,8 +40,10 @@ pre-configured [`ky`](https://github.com/sindresorhus/ky) client (`prefixUrl` fr
 optional `urlBase` for reverse-proxy installs), a 10-second timeout, JSON `Accept` header, and error
 logging hooks. Connection config (URL, API key, settings) lives in the `metadata_providers` table.
 
-The capability roles a connection holds are declared by the role interfaces it `implements` from
-`roles.ts` (`MediaSource`, `MediaEnricher`, `MediaActuator`) — never by the base class. See
+A connection implements `MediaActuator` (`roles.ts`) directly when it exposes actions on media it owns —
+never by the base class. `MediaSource`/`MediaEnricher` are media-owned roles instead: media's
+`sourceAdapters.ts`/`enrichment/enricherAdapters.ts` bind a connection's native surface to those roles,
+so a connection implements nothing from media directly. See
 `docs/architecture/provider-roles-and-identity.md` for the role model.
 
 ### Auth patterns
