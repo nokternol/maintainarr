@@ -1,4 +1,4 @@
-import type { MetadataProviderType } from '@server/database/schema';
+import { MetadataProviderType } from '@server/database/schema';
 
 /**
  * The pure-data projection of an actuator task: how it is presented (`id`,
@@ -46,4 +46,30 @@ export interface MediaActuator {
 /** Whether a constructed provider plays the `MediaActuator` role. */
 export function isMediaActuator(provider: object): provider is MediaActuator {
   return typeof (provider as Partial<MediaActuator>).tasks === 'function';
+}
+
+export type MediaKind = 'movie' | 'show';
+
+/**
+ * The single authority for `MediaSource` role membership: which provider type
+ * owns which media kind's catalog. Every other surface derives from this map
+ * rather than re-declaring it.
+ */
+export const SOURCE_OWNER_BY_KIND: Record<MediaKind, MetadataProviderType> = {
+  movie: MetadataProviderType.RADARR,
+  show: MetadataProviderType.SONARR,
+};
+
+const SOURCE_TYPES = new Set<MetadataProviderType>(Object.values(SOURCE_OWNER_BY_KIND));
+
+/** Whether a provider type owns a media catalog (plays the `MediaSource` role). */
+export function isMediaSourceType(type: MetadataProviderType): boolean {
+  return SOURCE_TYPES.has(type);
+}
+
+/** The media kind a catalog-owning provider type owns, if any. */
+export function kindOfSourceType(type: MetadataProviderType): MediaKind | undefined {
+  return (Object.keys(SOURCE_OWNER_BY_KIND) as MediaKind[]).find(
+    (kind) => SOURCE_OWNER_BY_KIND[kind] === type
+  );
 }

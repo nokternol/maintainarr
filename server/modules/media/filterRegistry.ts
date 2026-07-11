@@ -1,11 +1,12 @@
 import { MetadataProviderType } from '../../database/schema';
+import type { MediaKind } from '../providers';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
 
 export type { NormalizedMovie } from './movie';
 export type { NormalizedShow } from './show';
 
-export type ContentType = 'movie' | 'show';
+export type ContentType = MediaKind;
 export type RangeValue = { min?: number; max?: number };
 export type FilterValue = string | number | boolean | RangeValue;
 

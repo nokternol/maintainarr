@@ -36,6 +36,16 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
 
 <!-- index of closed tickets — what got built, since this map is execution-carrying -->
 
+- **Phase 1 (`ticket-01-authority-and-factory-surface.md`) — closed.** `MediaKind`/`SOURCE_OWNER_BY_KIND`/
+  `isMediaSourceType`/`kindOfSourceType` added to `providers/roles.ts` and exported through
+  `providers/index.ts`; `OWNER_TYPE` deleted from `media/mediaSourceFactory.ts` (derives from
+  `SOURCE_OWNER_BY_KIND` instead); `ContentType = MediaKind` type alias in `media/filterRegistry.ts`;
+  `ProviderInstance`/`createInstances` added to `providers/providerFactory.ts`; `ProviderSet` slimmed
+  (no `radarr`/`sonarr` slots, `createMany` drops their branches); `identityJobFactory.ts` adapted to
+  `createInstances` + `instanceof` lookups to keep compiling under the still-global single-active
+  invariant (Phase 3 replaces this with the real multi-instance loop). No observable behavior change;
+  `dependency-cruiser` and full server suite stayed green throughout.
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->

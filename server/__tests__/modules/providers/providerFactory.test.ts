@@ -72,19 +72,40 @@ describe('ProviderFactory.createMany', () => {
 
   it('places each active provider into its typed slot, leaving absent types undefined', () => {
     const set = factory.createMany(
-      [
-        makeProvider(MetadataProviderType.RADARR),
-        makeProvider(MetadataProviderType.PLEX),
-        makeProvider(MetadataProviderType.TAUTULLI),
-      ],
+      [makeProvider(MetadataProviderType.PLEX), makeProvider(MetadataProviderType.TAUTULLI)],
       log
     );
 
-    expect(set.radarr).toBeInstanceOf(RadarrProvider);
     expect(set.plex).toBeInstanceOf(PlexProvider);
     expect(set.tautulli).toBeInstanceOf(TautulliProvider);
-    expect(set.sonarr).toBeUndefined();
     expect(set.overseerr).toBeUndefined();
+  });
+
+  it('has no radarr/sonarr slots — MediaSource instances are never collapsed to one', () => {
+    const set = factory.createMany(
+      [makeProvider(MetadataProviderType.RADARR), makeProvider(MetadataProviderType.SONARR)],
+      log
+    );
+
+    expect((set as Record<string, unknown>).radarr).toBeUndefined();
+    expect((set as Record<string, unknown>).sonarr).toBeUndefined();
+  });
+});
+
+describe('ProviderFactory.createInstances', () => {
+  const factory = new ProviderFactory();
+
+  it('constructs one instance per configured provider, never collapsing same-type entries', () => {
+    const first = makeProvider(MetadataProviderType.RADARR);
+    const second = { ...makeProvider(MetadataProviderType.RADARR), id: 2, name: '4k Radarr' };
+
+    const instances = factory.createInstances([first, second], log);
+
+    expect(instances).toHaveLength(2);
+    expect(instances[0].settings.id).toBe(first.id);
+    expect(instances[0].provider).toBeInstanceOf(RadarrProvider);
+    expect(instances[1].settings.id).toBe(second.id);
+    expect(instances[1].provider).toBeInstanceOf(RadarrProvider);
   });
 });
 

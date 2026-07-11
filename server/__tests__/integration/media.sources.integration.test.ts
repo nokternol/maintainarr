@@ -5,7 +5,7 @@ import { MetadataProviderType } from '@server/database/schema';
  *
  * The client must derive "which provider owns this content type, and is it
  * configured" from this projection, never from its own literal RADARR/SONARR
- * checks. The single authority is `OWNER_TYPE` in mediaSourceFactory.
+ * checks. The single authority is `SOURCE_OWNER_BY_KIND` in providers/roles.ts.
  *
  * Run: vitest run --project server
  */

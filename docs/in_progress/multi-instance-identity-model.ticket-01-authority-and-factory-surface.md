@@ -1,8 +1,8 @@
 ---
 title: "Phase 1: Authority + factory surface"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: []
 ---
 

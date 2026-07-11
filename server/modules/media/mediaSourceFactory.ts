@@ -1,22 +1,17 @@
-import { MetadataProviderType } from '@server/database/schema';
+import type { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-import type {
-  IProviderFactory,
-  ProviderSettingsService,
-  RadarrProvider,
-  SonarrProvider,
+import {
+  type IProviderFactory,
+  type ProviderSettingsService,
+  type RadarrProvider,
+  SOURCE_OWNER_BY_KIND,
+  type SonarrProvider,
 } from '@server/modules/providers';
 import type { ContentType } from './filterRegistry';
 import type { MediaSource } from './mediaSource';
 import { mediaSourceFor } from './sourceAdapters';
 
 const log = getChildLogger('MediaSourceFactory');
-
-/** The provider type that owns each content type under the single-active invariant. */
-const OWNER_TYPE: Record<ContentType, MetadataProviderType> = {
-  movie: MetadataProviderType.RADARR,
-  show: MetadataProviderType.SONARR,
-};
 
 interface Deps {
   providerSettingsService: ProviderSettingsService;
@@ -33,7 +28,7 @@ export class MediaSourceFactory {
 
   async forContentType(contentType: ContentType): Promise<MediaSource | undefined> {
     const [settings] = await this.deps.providerSettingsService.findActiveByTypes([
-      OWNER_TYPE[contentType],
+      SOURCE_OWNER_BY_KIND[contentType],
     ]);
     if (!settings) return undefined;
     const provider = this.deps.providerFactory.create(settings, log) as
@@ -51,12 +46,12 @@ export interface MediaSourceDescriptor {
 }
 
 /**
- * Projects `OWNER_TYPE` for the client: which provider type owns each content
- * type, and whether an active instance of it exists. The wire surface of the
- * single ownership authority — clients derive from this, never re-declare it.
+ * Projects `SOURCE_OWNER_BY_KIND` for the client: which provider type owns each
+ * content type, and whether an active instance of it exists. The wire surface of
+ * the single ownership authority — clients derive from this, never re-declare it.
  */
 export function sourceOwnership(configuredTypes: ReadonlySet<string>): MediaSourceDescriptor[] {
-  return (Object.entries(OWNER_TYPE) as [ContentType, MetadataProviderType][]).map(
+  return (Object.entries(SOURCE_OWNER_BY_KIND) as [ContentType, MetadataProviderType][]).map(
     ([contentType, ownerType]) => ({
       contentType,
       ownerType,
@@ -64,5 +59,3 @@ export function sourceOwnership(configuredTypes: ReadonlySet<string>): MediaSour
     })
   );
 }
-
-export { OWNER_TYPE };
