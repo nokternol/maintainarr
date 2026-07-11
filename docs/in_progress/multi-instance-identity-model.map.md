@@ -60,6 +60,18 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
   neither mistakes shimmed code for finished work. 658 tests green, typecheck clean, `dependency-cruiser`
   clean.
 
+- **Phase 3 (`ticket-03-identity-job.md`) — closed.** `IdentityResolutionJob.Deps` replaced the ticket-2
+  shim's single `radarrProvider`/`sonarrProvider` pair with `movieSources`/`seriesSources` arrays;
+  `runForMovies`/`runForSeries` loop every entry, upserting through `resolveGroup` + `media_item` per
+  instance, then prune that instance's stale `media_item` rows (externalId no longer in its fetched set)
+  and sweep any group left with zero items. `IdentityJobFactory.create()` builds the arrays via
+  `createInstances` (ticket 1) instead of `.find()`-ing one instance per type. `runForPlex` is now
+  kind-scoped (`WHERE kind = ? AND tmdbId/tvdbId = ?`), closing the cross-namespace collision bug. Verified
+  two active instances of the same type both resolve (no last-one-wins, tested by seeding a second active
+  row directly since the single-active gate itself is still ticket 6's job to relax); shared-group,
+  per-instance pruning, and orphan-sweep behavior are each unit-tested. `systemTaskRunner.ts`'s
+  `IdentityJobLike`/`IdentityJobFactoryLike` interfaces untouched, as designed.
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->

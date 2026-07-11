@@ -1,4 +1,9 @@
-import { MetadataProviderType, mediaIdentity, mediaItems } from '@server/database/schema';
+import {
+  MetadataProviderType,
+  mediaIdentity,
+  mediaItems,
+  metadataProviders,
+} from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { IdentityJobFactory } from '@server/modules/providers/identityJobFactory';
@@ -77,6 +82,51 @@ describe('IdentityJobFactory', () => {
     const items = await db.select().from(mediaItems);
     expect(items).toHaveLength(1);
     expect(items[0].externalId).toBe(1);
+  });
+
+  it('resolves every active Radarr instance, never collapsing to one', async () => {
+    const db = getDb();
+    // Two active Radarr rows inserted directly — the service-level single-active gate
+    // (relaxed only in a later phase) is out of scope here; this proves the factory's
+    // own wiring loops every active instance once the gate allows a second one through.
+    const radarr4kUrl = 'http://localhost:7879';
+    const [radarrA] = await db
+      .insert(metadataProviders)
+      .values({
+        type: MetadataProviderType.RADARR,
+        name: 'Radarr',
+        url: `${RADARR_URL}/api/v3`,
+        apiKey: 'test-api-key',
+      })
+      .returning();
+    const [radarrB] = await db
+      .insert(metadataProviders)
+      .values({
+        type: MetadataProviderType.RADARR,
+        name: 'Radarr 4k',
+        url: `${radarr4kUrl}/api/v3`,
+        apiKey: 'test-api-key',
+      })
+      .returning();
+    server.use(
+      http.get(`${RADARR_URL}/api/v3/movie`, () =>
+        HttpResponse.json([createRadarrMovie({ id: 1, tmdbId: 603 })])
+      ),
+      http.get(`${radarr4kUrl}/api/v3/movie`, () =>
+        HttpResponse.json([createRadarrMovie({ id: 55, tmdbId: 603 })])
+      )
+    );
+
+    const job = await makeFactory().create();
+    await job.runForMovies();
+
+    const identities = await db.select().from(mediaIdentity).where(eq(mediaIdentity.kind, 'movie'));
+    expect(identities).toHaveLength(1); // same tmdbId → one shared group
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.providerId).sort()).toEqual(
+      [radarrA.id, radarrB.id].sort((a, b) => a - b)
+    );
   });
 
   it('resolves the active Plex provider and writes plexRatingKey for matching identities', async () => {

@@ -9,6 +9,7 @@ import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import type { RadarrMovie } from '@server/modules/providers/connections/radarrProvider';
 import type { SonarrSeries } from '@server/modules/providers/connections/sonarrProvider';
 import { IdentityResolutionJob } from '@server/modules/providers/identityResolutionJob';
+import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -59,7 +60,9 @@ const makeSeries = (overrides: Partial<SonarrSeries> = {}): SonarrSeries => ({
 
 describe('IdentityResolutionJob', () => {
   let radarrProviderId: number;
+  let radarr4kProviderId: number;
   let sonarrProviderId: number;
+  let sonarr4kProviderId: number;
 
   beforeEach(async () => {
     await initializeDatabase(testConfig);
@@ -68,9 +71,17 @@ describe('IdentityResolutionJob', () => {
       .insert(metadataProviders)
       .values({ type: MetadataProviderType.RADARR, name: 'Radarr', url: 'http://radarr' })
       .returning({ id: metadataProviders.id });
+    [{ id: radarr4kProviderId }] = await db
+      .insert(metadataProviders)
+      .values({ type: MetadataProviderType.RADARR, name: 'Radarr 4k', url: 'http://radarr4k' })
+      .returning({ id: metadataProviders.id });
     [{ id: sonarrProviderId }] = await db
       .insert(metadataProviders)
       .values({ type: MetadataProviderType.SONARR, name: 'Sonarr', url: 'http://sonarr' })
+      .returning({ id: metadataProviders.id });
+    [{ id: sonarr4kProviderId }] = await db
+      .insert(metadataProviders)
+      .values({ type: MetadataProviderType.SONARR, name: 'Sonarr 4k', url: 'http://sonarr4k' })
       .returning({ id: metadataProviders.id });
   });
 
@@ -115,7 +126,10 @@ describe('IdentityResolutionJob', () => {
     const db = getDb();
     const radarrProvider = { getMovies: vi.fn().mockResolvedValue([makeMovie()]) };
 
-    const job = new IdentityResolutionJob({ db, radarrProvider, radarrProviderId });
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [{ providerId: radarrProviderId, provider: radarrProvider }],
+    });
     await job.runForMovies();
 
     const identities = await db.select().from(mediaIdentity);
@@ -131,11 +145,140 @@ describe('IdentityResolutionJob', () => {
     expect(items[0].mediaIdentityId).toBe(identities[0].id);
   });
 
+  it('resolves movies from every active Radarr instance, never collapsing to one', async () => {
+    const db = getDb();
+    const radarrA = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 100 })]) };
+    const radarrB = {
+      getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 200 })]),
+    };
+
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrA },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job.runForMovies();
+
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.providerId).sort()).toEqual(
+      [radarrProviderId, radarr4kProviderId].sort()
+    );
+    // Different tmdbIds → different groups, even though both instances used external id 1.
+    const identities = await db.select().from(mediaIdentity);
+    expect(identities).toHaveLength(2);
+  });
+
+  it('shares one group across two instances that report the same tmdbId', async () => {
+    const db = getDb();
+    const radarrA = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 603 })]) };
+    const radarrB = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 55, tmdbId: 603 })]) };
+
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrA },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job.runForMovies();
+
+    const identities = await db.select().from(mediaIdentity);
+    expect(identities).toHaveLength(1);
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(2);
+    expect(items.every((i) => i.mediaIdentityId === identities[0].id)).toBe(true);
+  });
+
+  it('prunes a media_item row no longer reported by its instance without touching other instances', async () => {
+    const db = getDb();
+    const radarrA = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 100 })]) };
+    const radarrB = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 2, tmdbId: 200 })]) };
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrA },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job.runForMovies();
+
+    // Movie 1 is removed from instance A's library; instance B is untouched.
+    const radarrANowEmpty = { getMovies: vi.fn().mockResolvedValue([]) };
+    const job2 = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrANowEmpty },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job2.runForMovies();
+
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(1);
+    expect(items[0].providerId).toBe(radarr4kProviderId);
+  });
+
+  it('sweeps a group left with zero media_item rows after pruning', async () => {
+    const db = getDb();
+    const radarrA = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 100 })]) };
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [{ providerId: radarrProviderId, provider: radarrA }],
+    });
+    await job.runForMovies();
+    expect(await db.select().from(mediaIdentity)).toHaveLength(1);
+
+    const radarrAEmpty = { getMovies: vi.fn().mockResolvedValue([]) };
+    const job2 = new IdentityResolutionJob({
+      db,
+      movieSources: [{ providerId: radarrProviderId, provider: radarrAEmpty }],
+    });
+    await job2.runForMovies();
+
+    expect(await db.select().from(mediaIdentity)).toHaveLength(0);
+    expect(await db.select().from(mediaItems)).toHaveLength(0);
+  });
+
+  it('does not sweep a group still held by another instance after one instance prunes its copy', async () => {
+    const db = getDb();
+    const radarrA = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 603 })]) };
+    const radarrB = { getMovies: vi.fn().mockResolvedValue([makeMovie({ id: 1, tmdbId: 603 })]) };
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrA },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job.runForMovies();
+
+    const radarrAEmpty = { getMovies: vi.fn().mockResolvedValue([]) };
+    const job2 = new IdentityResolutionJob({
+      db,
+      movieSources: [
+        { providerId: radarrProviderId, provider: radarrAEmpty },
+        { providerId: radarr4kProviderId, provider: radarrB },
+      ],
+    });
+    await job2.runForMovies();
+
+    expect(await db.select().from(mediaIdentity)).toHaveLength(1);
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(1);
+    expect(items[0].providerId).toBe(radarr4kProviderId);
+  });
+
   it('upserts a Sonarr series into media_identity (kind=show) and a media_item copy for the instance', async () => {
     const db = getDb();
     const sonarrProvider = { getSeries: vi.fn().mockResolvedValue([makeSeries()]) };
 
-    const job = new IdentityResolutionJob({ db, sonarrProvider, sonarrProviderId });
+    const job = new IdentityResolutionJob({
+      db,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrProvider }],
+    });
     await job.runForSeries();
 
     const identities = await db.select().from(mediaIdentity);
@@ -152,6 +295,87 @@ describe('IdentityResolutionJob', () => {
     expect(items[0].externalId).toBe(10);
   });
 
+  it('resolves series from every active Sonarr instance, never collapsing to one', async () => {
+    const db = getDb();
+    const sonarrA = {
+      getSeries: vi.fn().mockResolvedValue([makeSeries({ id: 10, tvdbId: 200 })]),
+    };
+    const sonarrB = {
+      getSeries: vi.fn().mockResolvedValue([makeSeries({ id: 10, tvdbId: 201 })]),
+    };
+
+    const job = new IdentityResolutionJob({
+      db,
+      seriesSources: [
+        { providerId: sonarrProviderId, provider: sonarrA },
+        { providerId: sonarr4kProviderId, provider: sonarrB },
+      ],
+    });
+    await job.runForSeries();
+
+    const items = await db.select().from(mediaItems);
+    expect(items).toHaveLength(2);
+    const identities = await db.select().from(mediaIdentity);
+    expect(identities).toHaveLength(2);
+  });
+
+  it('prunes a media_item row no longer reported by its Sonarr instance', async () => {
+    const db = getDb();
+    const sonarrA = {
+      getSeries: vi.fn().mockResolvedValue([makeSeries({ id: 10, tvdbId: 200 })]),
+    };
+    const job = new IdentityResolutionJob({
+      db,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrA }],
+    });
+    await job.runForSeries();
+    expect(await db.select().from(mediaItems)).toHaveLength(1);
+
+    const sonarrAEmpty = { getSeries: vi.fn().mockResolvedValue([]) };
+    const job2 = new IdentityResolutionJob({
+      db,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrAEmpty }],
+    });
+    await job2.runForSeries();
+
+    expect(await db.select().from(mediaItems)).toHaveLength(0);
+    expect(await db.select().from(mediaIdentity)).toHaveLength(0);
+  });
+
+  it('scopes the Plex stamp by kind — a movie tmdbId match never stamps a show group with the same numeric id', async () => {
+    const db = getDb();
+    const [movieGroup] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'movie', tmdbId: 603 })
+      .returning();
+    const [showGroup] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'show', tmdbId: 603 })
+      .returning();
+
+    const plexProvider = {
+      getAllItems: vi
+        .fn()
+        .mockResolvedValue([
+          { ratingKey: 'plex-movie', type: 'movie' as const, guids: [{ id: 'tmdb://603' }] },
+        ]),
+    };
+
+    const job = new IdentityResolutionJob({ db, plexProvider });
+    await job.runForPlex();
+
+    const [movieRow] = await db
+      .select()
+      .from(mediaIdentity)
+      .where(eq(mediaIdentity.id, movieGroup.id));
+    const [showRow] = await db
+      .select()
+      .from(mediaIdentity)
+      .where(eq(mediaIdentity.id, showGroup.id));
+    expect(movieRow.plexRatingKey).toBe('plex-movie');
+    expect(showRow.plexRatingKey).toBeNull();
+  });
+
   it('waits 500ms between consecutive TVMaze lookups', async () => {
     const db = getDb();
     const sonarrProvider = {
@@ -166,8 +390,7 @@ describe('IdentityResolutionJob', () => {
 
     const job = new IdentityResolutionJob({
       db,
-      sonarrProvider,
-      sonarrProviderId,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrProvider }],
       tvMazeLookup,
       delay,
     });
@@ -187,7 +410,11 @@ describe('IdentityResolutionJob', () => {
       lookupByTvdbId: vi.fn().mockResolvedValue({ id: 999 }),
     };
 
-    const job = new IdentityResolutionJob({ db, sonarrProvider, sonarrProviderId, tvMazeLookup });
+    const job = new IdentityResolutionJob({
+      db,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrProvider }],
+      tvMazeLookup,
+    });
     await job.runForSeries();
 
     const rows = await db.select().from(mediaIdentity);
@@ -195,7 +422,7 @@ describe('IdentityResolutionJob', () => {
     expect(rows[0].tvMazeId).toBe(999);
   });
 
-  it('runForMovies returns the number of movies it upserted', async () => {
+  it('runForMovies returns the total number of movies upserted across instances', async () => {
     const db = getDb();
     const radarrProvider = {
       getMovies: vi
@@ -203,19 +430,22 @@ describe('IdentityResolutionJob', () => {
         .mockResolvedValue([makeMovie({ id: 1, tmdbId: 100 }), makeMovie({ id: 2, tmdbId: 200 })]),
     };
 
-    const job = new IdentityResolutionJob({ db, radarrProvider, radarrProviderId });
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [{ providerId: radarrProviderId, provider: radarrProvider }],
+    });
 
     expect(await job.runForMovies()).toBe(2);
   });
 
-  it('runForMovies returns 0 when no Radarr provider is configured', async () => {
+  it('runForMovies returns 0 when no Radarr instance is configured', async () => {
     const db = getDb();
     const job = new IdentityResolutionJob({ db });
 
     expect(await job.runForMovies()).toBe(0);
   });
 
-  it('runForSeries returns the number of series it upserted', async () => {
+  it('runForSeries returns the total number of series upserted across instances', async () => {
     const db = getDb();
     const sonarrProvider = {
       getSeries: vi
@@ -226,12 +456,15 @@ describe('IdentityResolutionJob', () => {
         ]),
     };
 
-    const job = new IdentityResolutionJob({ db, sonarrProvider, sonarrProviderId });
+    const job = new IdentityResolutionJob({
+      db,
+      seriesSources: [{ providerId: sonarrProviderId, provider: sonarrProvider }],
+    });
 
     expect(await job.runForSeries()).toBe(2);
   });
 
-  it('runForSeries returns 0 when no Sonarr provider is configured', async () => {
+  it('runForSeries returns 0 when no Sonarr instance is configured', async () => {
     const db = getDb();
     const job = new IdentityResolutionJob({ db });
 
@@ -242,7 +475,10 @@ describe('IdentityResolutionJob', () => {
     const db = getDb();
     const radarrProvider = { getMovies: vi.fn().mockResolvedValue([makeMovie()]) };
 
-    const job = new IdentityResolutionJob({ db, radarrProvider, radarrProviderId });
+    const job = new IdentityResolutionJob({
+      db,
+      movieSources: [{ providerId: radarrProviderId, provider: radarrProvider }],
+    });
     await job.runForMovies();
     await job.runForMovies();
 

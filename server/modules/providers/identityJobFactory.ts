@@ -35,15 +35,17 @@ export class IdentityJobFactory implements IdentityJobFactoryLike {
       MetadataProviderType.PLEX,
     ]);
     const instances = this.providerFactory.createInstances(providers, log);
-    const radarr = instances.find((i) => i.provider instanceof RadarrProvider);
-    const sonarr = instances.find((i) => i.provider instanceof SonarrProvider);
+    const movieSources = instances
+      .filter((i) => i.provider instanceof RadarrProvider)
+      .map((i) => ({ providerId: i.settings.id, provider: i.provider as RadarrProvider }));
+    const seriesSources = instances
+      .filter((i) => i.provider instanceof SonarrProvider)
+      .map((i) => ({ providerId: i.settings.id, provider: i.provider as SonarrProvider }));
     const plex = instances.find((i) => i.provider instanceof PlexProvider);
     return new IdentityResolutionJob({
       db: this.db,
-      radarrProvider: radarr?.provider as RadarrProvider | undefined,
-      radarrProviderId: radarr?.settings.id,
-      sonarrProvider: sonarr?.provider as SonarrProvider | undefined,
-      sonarrProviderId: sonarr?.settings.id,
+      movieSources,
+      seriesSources,
       plexProvider: plex?.provider as PlexProvider | undefined,
       tvMazeLookup: this.providerFactory.createTvMaze(log),
     });

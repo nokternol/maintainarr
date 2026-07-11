@@ -1,8 +1,8 @@
 ---
 title: "Phase 3: Identity job"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: [multi-instance-identity-model.ticket-01-authority-and-factory-surface.md, multi-instance-identity-model.ticket-02-schema-and-migration.md]
 ---
 
