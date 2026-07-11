@@ -26,7 +26,7 @@ a renamed second vocabulary for an existing concept is a fracture
 | **MediaSourceDescriptor** | The wire projection of `OWNER_TYPE`: `{ contentType, ownerType, configured }` per content type, served by `GET /api/media/sources` and read via [`useMediaSources`](ref:path:src/hooks/useMediaSources.ts) — the client derives source-ownership gating from this, never from its own provider-type literals. | [`server/modules/media/mediaSourceFactory.ts`](ref:path:server/modules/media/mediaSourceFactory.ts) |
 
 A system plays **up to three independent roles** (Source, Enricher, Actuator), declared per system by
-the role interfaces it `implements`, never assumed from the connection base. As-built tiering:
+the role interfaces it `implements`, never assumed from the connection base. Source/enricher tiering:
 [`provider-roles-and-identity.md`](ref:path:docs/architecture/provider-roles-and-identity.md).
 
 ## Media & identity

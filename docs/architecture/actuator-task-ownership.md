@@ -1,4 +1,4 @@
-# MediaActuator task ownership (as-built)
+# MediaActuator task ownership
 
 Server-side spec: why the actuator half of the system-roles model is shaped the
 way the code is. Detailed spec of the **MediaActuator** role under the umbrella

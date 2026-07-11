@@ -5,7 +5,7 @@ server used to run three competing designs at once for "where does feature logic
 "clean architecture" the READMEs used to describe, a transport-modules + flat-services split, and the
 domain-module ambition `server/modules/README.md` always hinted at (see the fracture ledger's now-Healed
 "Server layering" entry, [`docs/architecture/fracture-ledger.md`](ref:path:docs/architecture/fracture-ledger.md),
-for the as-built history of how it converged). This doc describes the one design that won.
+for the history of how it converged). This doc describes the one design that won.
 
 ## The design
 

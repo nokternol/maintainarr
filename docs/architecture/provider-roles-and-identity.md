@@ -1,10 +1,10 @@
-# Provider Roles & the Media Identity Model (as-built)
+# Provider Roles & the Media Identity Model
 
 As of 2026-06-15, this documents the model the code *actually*
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 
-**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher role is the
+**Scope:** this covers the **MediaSource** and enricher roles, including their current limitations. (The enricher role is the
 `MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
 `docs/architecture/media-enricher-role.md`.) The third role a
 system can play — **MediaActuator** (tasks/actions) — is the role-owned task model in
@@ -86,7 +86,7 @@ back to the raw `.id`) so the engine evaluates the same list browse paginates.
   (`_sourceIds.plex`/`.tmdb`) and `resolvePrecedence` resolves per field at write time. An empty identity
   table means the enrichers are never even queried. See `docs/architecture/media-enricher-role.md`.
 
-## Known as-built limitations (the corrective targets)
+## Known limitations (the corrective targets)
 
 1. **`sourceType` conflates *type* with *instance*.** The identity key uses the provider type, not the
    configured instance, so **two instances of the same type collide**: a non-4k Radarr and a 4k Radarr

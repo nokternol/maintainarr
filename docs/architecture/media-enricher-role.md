@@ -1,4 +1,4 @@
-# MediaEnricher role (as-built)
+# MediaEnricher role
 
 Why the enricher half of the system-roles model is shaped the way the
 code is. Detailed spec of the **MediaEnricher** role under the umbrella
