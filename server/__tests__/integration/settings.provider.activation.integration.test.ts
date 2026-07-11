@@ -14,7 +14,7 @@ import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
 import { createSettingsRoutes } from '@server/modules/settings/settings.routes';
 import { createMockConfig } from '@tests/factories';
-import { createApiClient, expectValidationError } from '@tests/helpers/api';
+import { createApiClient, expectSuccessResponse, expectValidationError } from '@tests/helpers/api';
 import express, { type Express } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { afterAll, beforeAll, describe, it } from 'vitest';
@@ -68,6 +68,22 @@ describe('POST /api/settings/providers — single-active-provider-per-type (D8)'
 
   it('returns 400 VALIDATION_ERROR when creating a second active provider of an already-active type', async () => {
     await client.post('/api/settings/providers', {
+      type: MetadataProviderType.TMDB,
+      name: 'TMDB',
+      url: 'http://tmdb1',
+    });
+
+    const response = await client.post('/api/settings/providers', {
+      type: MetadataProviderType.TMDB,
+      name: 'TMDB 2',
+      url: 'http://tmdb2',
+    });
+
+    expectValidationError(response);
+  });
+
+  it('returns 200 when creating a second active Radarr instance — MediaSource role has no single-active invariant', async () => {
+    await client.post('/api/settings/providers', {
       type: MetadataProviderType.RADARR,
       name: 'Radarr 1080p',
       url: 'http://radarr1:7878/api/v3',
@@ -79,6 +95,6 @@ describe('POST /api/settings/providers — single-active-provider-per-type (D8)'
       url: 'http://radarr2:7878/api/v3',
     });
 
-    expectValidationError(response);
+    expectSuccessResponse(response);
   });
 });

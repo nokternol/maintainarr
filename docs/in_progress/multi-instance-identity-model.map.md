@@ -97,6 +97,20 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
   (`QuerySourceList`) needed no changes: it only reads `data.count`, unchanged in meaning; `instances` is
   strictly additive.
 
+- **Phase 6 (`ticket-06-relax-invariant.md`) — closed.** `assertNoActiveConflict` now early-returns for
+  `isMediaSourceType(type)` — Radarr/Sonarr may have any number of active instances; every other type
+  (TMDB, Overseerr, Tautulli, Plex-as-enricher, Jellyfin) keeps the existing single-active
+  `ValidationError`. A second active Radarr/Sonarr instance is genuinely reachable for the first time.
+  Added an end-to-end integration test (`media.multiInstance.integration.test.ts`) proving two active
+  Radarr instances both resolve through the identity job (sharing one group when they report the same
+  tmdbId, each keeping its own `media_item` row) and both appear correctly in preview fan-out. While
+  here, fixed two docs left stale by earlier phases per the docs-lifecycle rule:
+  `media-query-engine.md`'s "Current invariant" section and preview row (now false, not just
+  incomplete, after this phase), and `provider-roles-and-identity.md`, which still described the deleted
+  `media_identity(sourceType, sourceId)` schema and a dangling `MediaSourceFactory.forContentType`
+  reference (deleted in Phase 5) — brought current through Phase 6; the remaining full consolidation
+  across all phases is Phase 8's job.
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->

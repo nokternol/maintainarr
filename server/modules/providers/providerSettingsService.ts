@@ -9,6 +9,7 @@ import type { DrizzleDb } from '@server/kernel/db';
 import { NotFoundError, ValidationError } from '@server/kernel/errors';
 import { getChildLogger } from '@server/kernel/logger';
 import { and, eq, inArray } from 'drizzle-orm';
+import { isMediaSourceType } from './roles';
 
 const log = getChildLogger('ProviderSettingsService');
 
@@ -74,14 +75,17 @@ export class ProviderSettingsService {
   }
 
   /**
-   * Enforces the single-active-provider-per-type invariant (D8): rejects when an
-   * active provider of `type` already exists. `excludeId` omits the row being updated
-   * so re-saving an already-active provider is not treated as a conflict.
+   * Enforces the single-active-provider-per-type invariant (D8), role-scoped: types
+   * playing the `MediaSource` role (Radarr, Sonarr — see `isMediaSourceType`) may have
+   * any number of active instances; every other type still rejects when an active
+   * provider of `type` already exists. `excludeId` omits the row being updated so
+   * re-saving an already-active provider is not treated as a conflict.
    */
   private async assertNoActiveConflict(
     type: MetadataProviderType,
     excludeId?: number
   ): Promise<void> {
+    if (isMediaSourceType(type)) return;
     const active = await this.findActiveByTypes([type]);
     if (active.some((p) => p.id !== excludeId)) {
       throw new ValidationError(`An active ${type} provider already exists; deactivate it first`);

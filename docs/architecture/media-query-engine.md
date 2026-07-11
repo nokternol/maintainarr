@@ -28,7 +28,7 @@ builds the provider once, hands the instance to `evaluate`, and reuses the *same
 | Caller | Builds the provider via | Uses the result for |
 |---|---|---|
 | `AutomationExecutor.executeWithSources` | `providerFactory.create(providerSettings)` | project ids → `task.run` |
-| `GET /saved-queries/:id/preview` | active provider of the query's `contentType` (single-active invariant) | `{ count: set.length }` |
+| `GET /media-queries/:id/preview` | one active instance per `MediaSourceFactory.sourcesFor(contentType)` entry — no longer single-active for `movie`/`show` | `{ count, instances: [{ providerId, name, count }] }`, summed across instances |
 | `media.handler` browse (`listMovies`/`listSeries`) | a thin adapter over the cached library (`{ getMovies: async () => all }`) | id set → sort/paginate the raw library |
 
 The browse adapter lets the handler keep its cached multi-provider fetch (and `yearRange`/error
@@ -60,5 +60,9 @@ returns the engine's real count. All three sites now resolve through `evaluate` 
 
 ## Current invariant
 
-`MediaItemSet`'s element is the provider's normalized item, under the single-active-provider invariant:
-one active provider per `ContentType`, so a query's source is unambiguous.
+`MediaItemSet`'s element is the provider's normalized item, self-describing its provenance via
+`_sourceIds.providerId`. The single-active-provider invariant no longer holds for `movie`/`show`
+(`RADARR`/`SONARR` — the `MediaSource` role, `isMediaSourceType`): any number of instances may be active,
+and `evaluate` is called once per instance by each caller that fans out (preview, per-instance browse
+sublists). Every other provider type (TMDB, Overseerr, Tautulli, Plex-as-enricher, Jellyfin) keeps the
+invariant — at most one active instance, so those lookups stay unambiguous.

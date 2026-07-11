@@ -1,8 +1,8 @@
 ---
 title: "Phase 6: Relax the invariant"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: [multi-instance-identity-model.ticket-02-schema-and-migration.md, multi-instance-identity-model.ticket-03-identity-job.md, multi-instance-identity-model.ticket-04-enrichment-paths.md, multi-instance-identity-model.ticket-05-preview-fanout.md]
 ---
 
