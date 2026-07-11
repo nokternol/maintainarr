@@ -45,9 +45,10 @@ payload independently.
 The payload is **intentionally empty**. The event drives cache invalidation, and the enrichment cache
 it will feed (Phase 3) is whole-scope — so the event need only say *that* media changed, not which
 slice. A within-scope discriminator (e.g. `movie`/`show`) is added only if and when a consumer
-segments its cache and proves it needs one, expressed in that consumer's own vocabulary. See
-`docs/intent/domain-event-bus-hardening.md` for why a provider `sourceType` discriminator was
-deliberately *not* carried forward.
+segments its cache and proves it needs one, expressed in that consumer's own vocabulary. An earlier
+iteration carried a provider `sourceType` discriminator; it was removed before shipping because it
+conflated *provider* with *media kind* — the wrong axis for a consumer that would actually segment on
+kind, not on which provider produced the event.
 
 ## How a task declares it changed data — declarative + gated
 
@@ -81,5 +82,6 @@ Emit `media:changed` **iff** the task declares a media scope **and** `itemCount 
 - **Producer:** `AutomationExecutor.execute()`. Any future writer of media-relevant data (a
   Tautulli/Plex webhook, a manual re-enrich, a backfill) should emit `media:changed` directly —
   decoupled from run lifecycle so non-run writers invalidate caches too.
-- **Consumers:** none yet — Phases 3 (enrichment cache), 4 (SSE task stream), 5 (SSE data stream).
-  Known hardening required before consumers attach: see `docs/intent/domain-event-bus-hardening.md`.
+- **Consumers:** none yet. `EventEmitter.emit` is synchronous and re-throws a listener's exception into
+  the caller, so the bus does not yet isolate a throwing consumer from the producer — real hardening work
+  before any consumer attaches, not yet built.

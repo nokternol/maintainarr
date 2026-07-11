@@ -45,5 +45,12 @@ every phase that doesn't check — which is what a full audit later has to find 
 ## Rules
 
 - No "superseded by X" stubs — narrate history inside the new architecture doc instead.
-- Only `fracture-ledger.md`, only while Open, may cite intent/in_progress docs.
+- Only `fracture-ledger.md`, only while Open, may cite intent/in_progress docs. This means *any* mention
+  of a `docs/intent/`/`docs/in_progress/` path, not just a linked one — a plain-text cross-reference
+  ("see `docs/intent/x.md` for why") still makes an architecture doc's meaning lean on unshaped,
+  mutable content, and still goes stale silently when that doc moves or is deleted (verified: this
+  happened — an architecture doc cited an intent doc by name after that doc had already been deleted).
+  Check it mechanically: `grep -n 'docs/intent/\|docs/in_progress/' docs/architecture/*.md` — zero hits
+  outside `fracture-ledger.md`'s Healed entries (which cite unlinked, as historical narrative of a pot
+  the subject doc *used to* live in, never as a pointer to consult).
 - `VOCABULARY.md` trends code-only too; not enforced here.

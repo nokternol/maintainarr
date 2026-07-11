@@ -1,10 +1,9 @@
 # MediaEnricher role
 
 Why the enricher half of the system-roles model is shaped the way the
-code is. Detailed spec of the **MediaEnricher** role under the umbrella
-`docs/intent/system-roles-and-capabilities.md`; its sibling specs are `docs/intent/provider-source-model.md`
-(MediaSource) and `docs/architecture/actuator-task-ownership.md` (MediaActuator). The surrounding
-source/identity model is `docs/architecture/provider-roles-and-identity.md`.
+code is. Detailed spec of the **MediaEnricher** role, one of three roles a configured system can play;
+its sibling for the MediaActuator role is `docs/architecture/actuator-task-ownership.md`. The
+surrounding source/identity model (MediaSource) is `docs/architecture/provider-roles-and-identity.md`.
 
 ## The role
 

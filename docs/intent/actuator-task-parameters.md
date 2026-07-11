@@ -1,7 +1,8 @@
 # Parameterised actuator tasks (intent)
 
 **Status:** INTENT (not built). Future state for actuator tasks that require a *target* argument. Depends
-on Phase 3.5 (`MediaActuator` owns its tasks; `ActuatorTask.run(ids)`).
+on `MediaActuator` owning its tasks via `ActuatorTask.run(ids)` — shipped, as-built:
+`docs/architecture/actuator-task-ownership.md`.
 
 ## The gap
 
@@ -12,9 +13,10 @@ Some actuator tasks are not fully specified by `(instance, ids)`. They need a pe
 | `changeQualityProfile` | which quality profile (`qualityProfileId`) |
 | `addTag` / `removeTag` | which tag (`tagId` / label) |
 
-In Phase 3.5 these are **modelled tasks** — declared in the right shape but with a parameterless
-`run(ids)` that throws "not yet implemented". They prove discovery and enablement; they cannot perform the
-action because `run(ids)` has nowhere to carry the target.
+Today these are **modelled tasks** — declared in the right shape but with a parameterless
+`run(ids)` that throws "not yet implemented" (`modelledRun`, `server/modules/providers/roles.ts`). They
+prove discovery and enablement; they cannot perform the action because `run(ids)` has nowhere to carry
+the target.
 
 ## What this needs (unbuilt)
 
@@ -30,7 +32,7 @@ action because `run(ids)` has nowhere to carry the target.
 ## Why deferred
 
 The parameter model touches the `ActuatorTask` contract, the automation schema, create-validation, the
-executor dispatch, and the client builder at once — a coherent change of its own. Phase 3.5 deliberately
-keeps `run(ids)`-only so the role/ownership fracture closes without dragging the parameter model in. When
-built, the modelled `changeQualityProfile`/`addTag`/`removeTag` stubs become real, parameter-carrying
-tasks.
+executor dispatch, and the client builder at once — a coherent change of its own. The shipped role/
+ownership model deliberately kept `run(ids)`-only so that fracture closed without dragging the parameter
+model in. When built, the modelled `changeQualityProfile`/`addTag`/`removeTag` stubs become real,
+parameter-carrying tasks.

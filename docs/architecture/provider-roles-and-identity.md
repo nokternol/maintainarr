@@ -1,15 +1,14 @@
 # Provider Roles & the Media Identity Model
 
 As of 2026-06-15, this documents the model the code *actually*
-implements today, including its limits. The corrective target it is evolving toward lives in
-`docs/intent/provider-source-model.md`.
+implements today, including its limits — recorded as architecture rather than intent because the
+hierarchy described below is real and load-bearing, not an unstarted plan.
 
 **Scope:** this covers the **MediaSource** and enricher roles, including their current limitations. (The enricher role is the
 `MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
 `docs/architecture/media-enricher-role.md`.) The third role a
 system can play — **MediaActuator** (tasks/actions) — is the role-owned task model in
-`docs/architecture/actuator-task-ownership.md`. The unifying three-role model is
-`docs/intent/system-roles-and-capabilities.md`.
+`docs/architecture/actuator-task-ownership.md`.
 
 ## Why this is recorded as architecture, not intent
 

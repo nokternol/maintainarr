@@ -1,10 +1,9 @@
 # MediaActuator task ownership
 
 Server-side spec: why the actuator half of the system-roles model is shaped the
-way the code is. Detailed spec of the **MediaActuator** role under the umbrella
-`docs/intent/system-roles-and-capabilities.md`; siblings are `docs/architecture/media-enricher-role.md`
-(MediaEnricher) and `docs/intent/provider-source-model.md` (MediaSource). The deferred parameter-carrying
-follow-up is `docs/intent/actuator-task-parameters.md`.
+way the code is. Detailed spec of the **MediaActuator** role, one of three roles a configured system can
+play; its sibling for the MediaEnricher role is `docs/architecture/media-enricher-role.md`. The
+surrounding source/identity model (MediaSource) is `docs/architecture/provider-roles-and-identity.md`.
 
 ## The role owns its tasks
 
@@ -41,8 +40,8 @@ across every system at once rather than one provider at a time.
   / notify / …).
 - An action not yet wired is a **modelled task**: a first-class task in the right shape whose `run(ids)`
   throws via the shared `modelledRun(taskId)`. It is **parameterless**; tasks that will eventually need a
-  target (`changeQualityProfile`, `addTag`, `removeTag`) are modelled parameterless until
-  `docs/intent/actuator-task-parameters.md` lands.
+  target (`changeQualityProfile`, `addTag`, `removeTag`) are modelled parameterless until a
+  parameter-carrying task contract is designed and built.
 
 "Declared ⇒ has a run binding, possibly a stub." Honesty is kept by the explicit throw and by enablement
 defaulting off, so a modelled task is never reached by accident.
