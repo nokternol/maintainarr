@@ -1,31 +1,10 @@
 ---
 title: "Phase 4: Enrichment paths"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: [multi-instance-identity-model.ticket-02-schema-and-migration.md, multi-instance-identity-model.ticket-03-identity-job.md]
 ---
-
-## Starting point — the ticket-2 shim
-
-Ticket 2 landed a **single-active-instance shim** for `mergeEnrichment` and `EnrichmentJob.hydrate` to keep
-them compiling against the split schema — neither matches this ticket's design yet:
-
-- `mergeEnrichment` (`enrichmentMerge.ts`) keeps its ticket-1-era signature —
-  `(db, items, sourceType: 'RADARR' | 'SONARR', getSourceId)` — unchanged. Internally it now resolves the
-  *active* instance of `sourceType` (`metadataProviders` where `type = sourceType AND isActive`) and joins
-  through `media_item` on `(providerId, externalId)` instead of querying `media_identity` directly by the
-  now-removed `sourceType`/`sourceId` columns. It assumes exactly one active instance per type — this
-  ticket's `(providerId, externalId)`/`itemKey`-keyed rewrite is what removes that assumption and the
-  `sourceType`/`idOf` parameters.
-- `EnrichmentJob.hydrate` already dropped the `radarr`/`sonarr` synthesized keys and added `identity:
-  identity.id` to `_sourceIds` — this is exactly this ticket's §5 change and does not need redoing, only
-  the `identityKey` doc-comment/verification pass this ticket calls for.
-- `NormalizedMovie._sourceIds`/`NormalizedShow._sourceIds` do **not** yet carry `providerId`, and
-  `normalizeRadarrMovie`/`normalizeSonarrSeries`/`sourceAdapters.ts` do **not** yet thread it — that
-  thread-through is still entirely this ticket's work, not started.
-- `MediaSource.enrichmentSourceType` and `MediaQueryEngine.combine`'s `source.idOf`-keyed pooling are
-  unchanged from before ticket 2.
 
 ## Question
 

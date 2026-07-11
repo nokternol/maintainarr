@@ -2,24 +2,27 @@ import { RadarrProvider, type SonarrProvider } from '../providers';
 import type { MediaSource } from './mediaSource';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
 
-export function radarrMediaSource(radarr: RadarrProvider): MediaSource {
+export function radarrMediaSource(radarr: RadarrProvider, providerId: number): MediaSource {
   return {
-    getMediaItems: async () => (await radarr.getMovies()).map(normalizeRadarrMovie),
+    getMediaItems: async () =>
+      (await radarr.getMovies()).map((m) => normalizeRadarrMovie(m, providerId)),
     idOf: (item) => (item._sourceIds as { radarr?: number }).radarr,
-    enrichmentSourceType: 'RADARR',
   };
 }
 
-export function sonarrMediaSource(sonarr: SonarrProvider): MediaSource {
+export function sonarrMediaSource(sonarr: SonarrProvider, providerId: number): MediaSource {
   return {
-    getMediaItems: async () => (await sonarr.getSeries()).map(normalizeSonarrSeries),
+    getMediaItems: async () =>
+      (await sonarr.getSeries()).map((s) => normalizeSonarrSeries(s, providerId)),
     idOf: (item) => (item._sourceIds as { sonarr?: number }).sonarr,
-    enrichmentSourceType: 'SONARR',
   };
 }
 
-export function mediaSourceFor(provider: RadarrProvider | SonarrProvider): MediaSource {
+export function mediaSourceFor(
+  provider: RadarrProvider | SonarrProvider,
+  providerId: number
+): MediaSource {
   return provider instanceof RadarrProvider
-    ? radarrMediaSource(provider)
-    : sonarrMediaSource(provider);
+    ? radarrMediaSource(provider, providerId)
+    : sonarrMediaSource(provider, providerId);
 }

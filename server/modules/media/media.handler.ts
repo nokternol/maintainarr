@@ -240,7 +240,17 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
 
-  async function getMovies(): Promise<{ movies: RadarrMovie[]; errors: MediaError[] }> {
+  /**
+   * `providerId` is the single active Radarr instance's id — under the still-global
+   * single-active invariant, `providers` holds at most one row, so every movie in
+   * `movies` genuinely came from it. This flattens instance attribution the moment a
+   * second instance is reachable; per-instance sublists (Phase 7) replace it.
+   */
+  async function getMovies(): Promise<{
+    movies: RadarrMovie[];
+    providerId?: number;
+    errors: MediaError[];
+  }> {
     return moviesCache.getOrFetch('movies', async () => {
       const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
@@ -258,11 +268,16 @@ export function createMediaHandlers(cradle: MediaCradle) {
           }
         })
       );
-      return { movies, errors };
+      return { movies, providerId: providers[0]?.id, errors };
     });
   }
 
-  async function getSeries(): Promise<{ series: SonarrSeries[]; errors: MediaError[] }> {
+  /** See `getMovies`' `providerId` note — the same single-active bound applies here. */
+  async function getSeries(): Promise<{
+    series: SonarrSeries[];
+    providerId?: number;
+    errors: MediaError[];
+  }> {
     return seriesCache.getOrFetch('series', async () => {
       const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
@@ -280,7 +295,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
           }
         })
       );
-      return { series, errors };
+      return { series, providerId: providers[0]?.id, errors };
     });
   }
 
@@ -299,13 +314,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {
-        const { movies: all, errors } = await getMovies();
+        const { movies: all, providerId, errors } = await getMovies();
 
         const yearRange = computeYearRange(all);
         const source: MediaSource = {
-          getMediaItems: async () => all.map(normalizeRadarrMovie),
+          getMediaItems: async () => all.map((m) => normalizeRadarrMovie(m, providerId ?? -1)),
           idOf: (item) => (item as NormalizedMovie)._sourceIds.radarr,
-          enrichmentSourceType: 'RADARR',
         };
         const matched = await mediaQueryEngine.evaluate({
           source,
@@ -326,13 +340,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listSeries: defineRoute({
       schemas: { query: seriesQuerySchema },
       handler: async ({ query }) => {
-        const { series: all, errors } = await getSeries();
+        const { series: all, providerId, errors } = await getSeries();
 
         const yearRange = computeYearRange(all);
         const source: MediaSource = {
-          getMediaItems: async () => all.map(normalizeSonarrSeries),
+          getMediaItems: async () => all.map((s) => normalizeSonarrSeries(s, providerId ?? -1)),
           idOf: (item) => (item as NormalizedShow)._sourceIds.sonarr,
-          enrichmentSourceType: 'SONARR',
         };
         const matched = await mediaQueryEngine.evaluate({
           source,

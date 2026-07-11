@@ -72,6 +72,21 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
   per-instance pruning, and orphan-sweep behavior are each unit-tested. `systemTaskRunner.ts`'s
   `IdentityJobLike`/`IdentityJobFactoryLike` interfaces untouched, as designed.
 
+- **Phase 4 (`ticket-04-enrichment-paths.md`) — closed.** Removed the ticket-2 shim entirely:
+  `NormalizedMovie._sourceIds`/`NormalizedShow._sourceIds` gained `providerId`/`identity`;
+  `normalizeRadarrMovie`/`normalizeSonarrSeries` now take `providerId` and populate the logical
+  `tmdb`/`imdb`/`tvdb` keys; `sourceAdapters.ts`'s `radarrMediaSource`/`sonarrMediaSource`/`mediaSourceFor`
+  thread it through. Added `externalIdOf`/`itemKey` to `mediaItem.ts`. `mergeEnrichment` is now
+  `(db, items)` — no `sourceType`/`idOf` params — grouping a batch by each item's own `providerId` and
+  joining `media_item` per group, so a browse batch spanning instances resolves correctly without
+  cross-attribution (unit-tested directly, including the collision case two instances' distinct copies
+  sharing a raw external id). `MediaSource.enrichmentSourceType` is deleted from the contract;
+  `MediaQueryEngine.combine` now pools on `itemKey` instead of `source.idOf`. Call sites updated:
+  `MediaQueryEngine.evaluate`, `AutomationExecutor.executeWithSources`, `MediaSourceFactory.forContentType`,
+  and `media.handler.ts`'s two inline browse sources (the latter under a documented single-active-id bound
+  — real per-instance sublists are Phase 7's job, this ticket only had to keep them compiling and correct
+  under today's still-global invariant).
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->

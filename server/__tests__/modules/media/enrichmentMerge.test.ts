@@ -6,13 +6,6 @@ import {
   metadataProviders,
 } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
-/**
- * Phase 2 — Cycle 2.1. Shared identity→enrichment merge extracted from
- * AutomationExecutor.mergeEnrichment. One implementation, used by both the
- * executor and the media browse handler.
- *
- * Run: vitest run --project server
- */
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { mergeEnrichment } from '@server/modules/media/enrichmentMerge';
 import type { NormalizedMovie } from '@server/modules/media/movie';
@@ -31,29 +24,36 @@ const testConfig: AppConfig = {
   SESSION_SECRET: 'test-secret',
 };
 
-function movie(id: number, title: string): NormalizedMovie {
-  return { _sourceIds: { radarr: id }, title };
+function movie(providerId: number, externalId: number, title: string): NormalizedMovie {
+  return { _sourceIds: { radarr: externalId, providerId }, title };
 }
 
 describe('mergeEnrichment', () => {
-  let providerId: number;
+  let radarrId: number;
+  let radarr4kId: number;
 
   beforeEach(async () => {
     await initializeDatabase(testConfig);
     const db = getDb();
-    [{ id: providerId }] = await db
+    [{ id: radarrId }] = await db
       .insert(metadataProviders)
       .values({ type: MetadataProviderType.RADARR, name: 'Radarr', url: 'http://radarr' })
+      .returning({ id: metadataProviders.id });
+    [{ id: radarr4kId }] = await db
+      .insert(metadataProviders)
+      .values({ type: MetadataProviderType.RADARR, name: 'Radarr 4k', url: 'http://radarr4k' })
       .returning({ id: metadataProviders.id });
   });
   afterEach(async () => {
     await _resetDatabase();
   });
 
-  it('maps enrichment onto the matching item by sourceType + sourceId', async () => {
+  it('maps enrichment onto the matching item by (providerId, externalId)', async () => {
     const db = getDb();
     const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
-    await db.insert(mediaItems).values({ providerId, externalId: 1, mediaIdentityId: identity.id });
+    await db
+      .insert(mediaItems)
+      .values({ providerId: radarrId, externalId: 1, mediaIdentityId: identity.id });
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
       playCount: 3,
@@ -63,8 +63,8 @@ describe('mergeEnrichment', () => {
       enrichedAt: Math.floor(Date.now() / 1000),
     });
 
-    const items = [movie(1, 'Enriched'), movie(2, 'Bare')];
-    await mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr);
+    const items = [movie(radarrId, 1, 'Enriched'), movie(radarrId, 2, 'Bare')];
+    await mergeEnrichment(db, items);
 
     expect(items[0]).toMatchObject({
       playCount: 3,
@@ -72,7 +72,7 @@ describe('mergeEnrichment', () => {
       overseerrHasIssue: true,
       tmdbStatus: 'Released',
     });
-    // No item/enrichment for sourceId 2 → left untouched.
+    // No item/enrichment for externalId 2 → left untouched.
     expect(items[1].playCount).toBeUndefined();
     expect(items[1].overseerrRequestStatus).toBeUndefined();
   });
@@ -80,7 +80,9 @@ describe('mergeEnrichment', () => {
   it('leaves fields undefined when the enrichment row holds null for them', async () => {
     const db = getDb();
     const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
-    await db.insert(mediaItems).values({ providerId, externalId: 5, mediaIdentityId: identity.id });
+    await db
+      .insert(mediaItems)
+      .values({ providerId: radarrId, externalId: 5, mediaIdentityId: identity.id });
     await db.insert(mediaEnrichment).values({
       mediaIdentityId: identity.id,
       playCount: null,
@@ -89,33 +91,61 @@ describe('mergeEnrichment', () => {
       enrichedAt: Math.floor(Date.now() / 1000),
     });
 
-    const items = [movie(5, 'NullEnrichment')];
-    await mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr);
+    const items = [movie(radarrId, 5, 'NullEnrichment')];
+    await mergeEnrichment(db, items);
 
     expect(items[0].playCount).toBeUndefined();
     expect(items[0].overseerrRequestStatus).toBeUndefined();
     expect(items[0].tmdbStatus).toBeUndefined();
   });
 
-  it('no-ops when no items carry a source id', async () => {
+  it('no-ops when no items carry a providerId/externalId pair', async () => {
     const db = getDb();
     const items: NormalizedMovie[] = [{ _sourceIds: {}, title: 'No source id' }];
-    await expect(
-      mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr)
-    ).resolves.toBeUndefined();
+    await expect(mergeEnrichment(db, items)).resolves.toBeUndefined();
     expect(items[0].playCount).toBeUndefined();
   });
 
-  it('no-ops when no instance of the source type is active', async () => {
+  it('correctly attributes enrichment for a batch spanning two instances that share one group', async () => {
     const db = getDb();
-    await db.update(metadataProviders).set({ isActive: false });
     const [identity] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
-    await db.insert(mediaItems).values({ providerId, externalId: 1, mediaIdentityId: identity.id });
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, playCount: 3 });
+    // Both instances' copies resolve to the same group — group-level enrichment is
+    // read identically by both: watched-ness is a fact about the title, not the copy.
+    await db.insert(mediaItems).values([
+      { providerId: radarrId, externalId: 1, mediaIdentityId: identity.id },
+      { providerId: radarr4kId, externalId: 99, mediaIdentityId: identity.id },
+    ]);
+    await db.insert(mediaEnrichment).values({
+      mediaIdentityId: identity.id,
+      playCount: 4,
+      enrichedAt: Math.floor(Date.now() / 1000),
+    });
 
-    const items = [movie(1, 'Enriched')];
-    await mergeEnrichment(db, items, 'RADARR', (m) => m._sourceIds.radarr);
+    const items = [movie(radarrId, 1, 'SD copy'), movie(radarr4kId, 99, '4k copy')];
+    await mergeEnrichment(db, items);
 
-    expect(items[0].playCount).toBeUndefined();
+    expect(items[0].playCount).toBe(4);
+    expect(items[1].playCount).toBe(4);
+  });
+
+  it("does not cross-attribute enrichment between two instances' distinct copies with colliding external ids", async () => {
+    const db = getDb();
+    const [identityA] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+    const [identityB] = await db.insert(mediaIdentity).values({ kind: 'movie' }).returning();
+    // Both instances happen to use raw id 1 for unrelated titles.
+    await db.insert(mediaItems).values([
+      { providerId: radarrId, externalId: 1, mediaIdentityId: identityA.id },
+      { providerId: radarr4kId, externalId: 1, mediaIdentityId: identityB.id },
+    ]);
+    await db.insert(mediaEnrichment).values([
+      { mediaIdentityId: identityA.id, playCount: 1, enrichedAt: 0 },
+      { mediaIdentityId: identityB.id, playCount: 9, enrichedAt: 0 },
+    ]);
+
+    const items = [movie(radarrId, 1, 'A'), movie(radarr4kId, 1, 'B')];
+    await mergeEnrichment(db, items);
+
+    expect(items[0].playCount).toBe(1);
+    expect(items[1].playCount).toBe(9);
   });
 });

@@ -10,10 +10,9 @@ const radarrIds = (set: { _sourceIds: NormalizedMovie['_sourceIds'] }[]): (numbe
   set.map((m) => m._sourceIds.radarr);
 
 /** A `MediaSource` over raw Radarr movies — the read role the engine consumes. */
-const radarrSource = (movies: RadarrMovie[]): MediaSource => ({
-  getMediaItems: async () => movies.map(normalizeRadarrMovie),
+const radarrSource = (movies: RadarrMovie[], providerId = 1): MediaSource => ({
+  getMediaItems: async () => movies.map((m) => normalizeRadarrMovie(m, providerId)),
   idOf: (item) => (item as NormalizedMovie)._sourceIds.radarr,
-  enrichmentSourceType: 'RADARR',
 });
 
 describe('MediaQueryEngine', () => {

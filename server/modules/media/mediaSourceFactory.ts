@@ -34,7 +34,7 @@ export class MediaSourceFactory {
     const provider = this.deps.providerFactory.create(settings, log) as
       | RadarrProvider
       | SonarrProvider;
-    return mediaSourceFor(provider);
+    return mediaSourceFor(provider, settings.id);
   }
 }
 
