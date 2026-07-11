@@ -1,6 +1,6 @@
 ---
 name: docs-lifecycle
-description: "Move docs between the intent/, in_progress/, and architecture/ pots correctly — write fresh architecture content, never git-mv-and-retense. Use when closing an in_progress phase, promoting a shipped intent design, hitting a code/doc contradiction, closing a fracture-ledger entry to Healed, relocating/renaming/deleting a file or symbol that any doc references, or changing the behavior of a file that any doc's ref:path: links to."
+description: "Move docs between the intent/, in_progress/, and architecture/ pots correctly — write fresh architecture content, never git-mv-and-retense. Use when closing an in_progress phase, promoting a shipped intent design, hitting a code/doc contradiction, closing a fracture-ledger entry to Healed, relocating/renaming/deleting a file or symbol that any doc references, changing the behavior of a file that any doc's ref:path: links to, or landing any change that might incidentally solve a docs/intent/ doc's stated problem."
 ---
 
 # Docs lifecycle
@@ -41,6 +41,16 @@ prose. Two triggers, both required, both cheap per-change:
 
 Skipping either is how a doc-you-forgot-was-related silently goes stale, one change at a time, across
 every phase that doesn't check — which is what a full audit later has to find the expensive way.
+
+## Pruning `docs/intent/` — solved is not the same as done
+
+`docs/intent/` is the input queue for future `in_progress/` plans. A stale entry isn't harmless — it
+reads as "still worth picking up" to whoever browses the folder next, wasting their attention or getting
+rebuilt. An intent doc's problem can be solved without that doc ever being "implemented" as its own
+phase — a differently-scoped change can incidentally close it. When closing any phase, check whether it
+solved an *unrelated* intent doc's stated problem too, and delete that doc if so — don't wait for it to
+be the thing you're explicitly promoting. (Precedent: `filter-ui.md` said "delete when Phase 4 ships" in
+its own header; Phase 4 shipped; nobody deleted it until an explicit spring-clean caught it.)
 
 ## Rules
 
