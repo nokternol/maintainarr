@@ -61,7 +61,7 @@ Each `enrich` is a **thin shell over a pure mapper** ([`enrichment/mappers.ts`](
 
 Two enrichers can speak to one canonical field (`playCount` from Tautulli **or** Plex). A single global
 enricher ordering cannot express this, because precedence can differ per field — so it is a small
-declarative map consumed by a **pure** [`resolvePrecedence`](ref:label:resolvePrecedence) ([`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts)):
+declarative map consumed by a **pure** `resolvePrecedence` ([`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts)):
 
 ```ts
 const ENRICHMENT_POLICY = {

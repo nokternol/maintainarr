@@ -95,7 +95,7 @@ not actuator tasks, and absent from the discovery surface.
   executor consult.
 - [`server/modules/providers/providerFactory.ts`](ref:path:server/modules/providers/providerFactory.ts) — constructs every configured type so discovery can ask any
   instance for its role.
-- [`server/services/automationService.ts`](ref:path:server/services/automationService.ts), [`automationExecutor.ts`](ref:path:server/services/automationExecutor.ts) — create-time and run-time enablement.
+- [`server/modules/automations/automationService.ts`](ref:path:server/modules/automations/automationService.ts), [`automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts) — create-time and run-time enablement.
 - [`server/modules/providers/providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts) — instance-keyed discovery.
 
 ## The open issue this modelling unearthed

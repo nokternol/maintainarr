@@ -57,7 +57,7 @@ Scope lives **with the task definition**, so the executor never hard-codes which
   ([`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts), returned by each provider's `tasks()`). `unmonitorMovie` /
   `unmonitorSeries` declare `affects: 'media'`; `triggerSearch` declares nothing (its async *arr search
   flips `hasFile` out-of-band, so it does not synchronously change the displayed library).
-- **System data jobs** declare scope in `SYSTEM_TASKS` ([`automationExecutor.ts`](ref:path:server/services/automationExecutor.ts)): `system:enrichment`,
+- **System data jobs** declare scope in `SYSTEM_TASKS` ([`automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts)): `system:enrichment`,
   `system:identity-resolution` declare `affects: 'media'`.
 
 The gate and emit are unified in one private helper, [`AutomationExecutor`](ref:label:AutomationExecutor)`.emitDataChange(affects,

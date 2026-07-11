@@ -1,6 +1,6 @@
 # MediaQueryEngine — the single owner of "what does this query match"
 
-[`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts) realises the model formerly in
+[`server/modules/media/mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts) realises the model formerly in
 `docs/intent/media-query-engine.md`.
 
 ## The three concepts
@@ -42,7 +42,7 @@ aggregation) while the engine owns normalize → enrich → match → combine.
 - **`combine`** (private) — maps each source through `matchItems`, projects source ids, runs
   `evaluateCombination` (include union minus exclude), and returns the surviving normalized items.
 - Unknown `contentType` resolves to an empty `MediaItemSet`.
-- Depends on [`filterRegistry`](ref:label:filterRegistry) (rule set) and `combinationEvaluator` (combination contract) — both
+- Depends on [`filterRegistry`](ref:path:server/modules/media/filterRegistry.ts) (rule set) and `combinationEvaluator` (combination contract) — both
   internal domain, never mocked. DB enrichment (`mergeEnrichment`) runs when a `db` is injected.
 
 ## Registration

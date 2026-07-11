@@ -58,7 +58,7 @@ Warning = fully operational, under-configured.
 
 ## Location
 
-[`server/health/systemHealthCheck.ts`](ref:path:server/health/systemHealthCheck.ts) — exported as a single async function called from
+[`server/modules/system/systemHealthCheck.ts`](ref:path:server/modules/system/systemHealthCheck.ts) — exported as a single async function called from
 [`server/index.ts`](ref:path:server/index.ts) after `initDatabase()`. Each check is a named assertion. Critical failures
 throw. Recoverable conditions are fixed in place. Warnings are logged.
 
