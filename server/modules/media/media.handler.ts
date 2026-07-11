@@ -26,6 +26,7 @@ import type {
 } from './filterRegistry';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
+import { itemKey } from './mediaItem';
 import type { MediaQueryEngine } from './mediaQueryEngine';
 import type { MediaSource } from './mediaSource';
 import { sourceOwnership } from './mediaSourceFactory';
@@ -218,6 +219,67 @@ export interface MediaError {
   error: string;
 }
 
+interface MovieSublist {
+  providerId: number;
+  providerName: string;
+  movies: RadarrMovie[];
+}
+
+interface SeriesSublist {
+  providerId: number;
+  providerName: string;
+  series: SonarrSeries[];
+}
+
+interface DecoratedTag extends RadarrTag {
+  providerId: number;
+  providerName: string;
+}
+
+interface DecoratedProfile extends RadarrProfile {
+  providerId: number;
+  providerName: string;
+}
+
+/** A raw provider row carrying which instance it came from — internal grouping state only. */
+type Attributed<T> = T & { providerId: number };
+
+/** `itemKey`'s format (`${providerId}:${externalId}`) applied to a raw row's native id. */
+function rawItemKey(providerId: number, externalId: number): string {
+  return `${providerId}:${externalId}`;
+}
+
+/**
+ * Groups matched raw rows by native primary id (fallback `providerId:id` when absent),
+ * computed live per request — no DB join, no dependency on the identity job having run,
+ * the same key `resolveGroup` uses so browse and persistence agree by construction.
+ * Filter semantics are ANY: grouping happens after engine matching, so a title appears if
+ * at least one of its copies matched. The representative is the first matched copy in the
+ * current sort order; `sourceCount`/`sourceProviderIds` are additive — with one instance
+ * every group is a singleton, so the row is byte-identical apart from these two fields.
+ */
+function groupByPrimaryId<T extends { id: number }>(
+  sorted: Attributed<T>[],
+  primaryIdOf: (row: T) => number | null | undefined
+): Array<T & { sourceCount: number; sourceProviderIds: number[] }> {
+  const groups = new Map<string, Attributed<T>[]>();
+  for (const row of sorted) {
+    const primaryId = primaryIdOf(row);
+    const key = primaryId != null ? `primary:${primaryId}` : rawItemKey(row.providerId, row.id);
+    const copies = groups.get(key);
+    if (copies) copies.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.values()].map((copies) => {
+    const { providerId: _providerId, ...representative } = copies[0];
+    return {
+      ...representative,
+      sourceCount: copies.length,
+      sourceProviderIds: copies.map((c) => c.providerId),
+    } as unknown as T & { sourceCount: number; sourceProviderIds: number[] };
+  });
+}
+
 function toMediaError(providerName: string, err: unknown): MediaError {
   return {
     provider: providerName,
@@ -230,72 +292,64 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const factory = cradle.providerFactory ?? new ProviderFactory();
 
   // Caches are owned by this factory invocation — same inputs produce isolated state.
-  const moviesCache = new MediaCache<{ movies: RadarrMovie[]; errors: MediaError[] }>();
-  const seriesCache = new MediaCache<{ series: SonarrSeries[]; errors: MediaError[] }>();
-  const tagsCache = new MediaCache<{ radarr: RadarrTag[]; sonarr: SonarrTag[] }>();
+  const moviesCache = new MediaCache<{ sublists: MovieSublist[]; errors: MediaError[] }>();
+  const seriesCache = new MediaCache<{ sublists: SeriesSublist[]; errors: MediaError[] }>();
+  const tagsCache = new MediaCache<{
+    radarr: DecoratedTag[];
+    sonarr: DecoratedTag[];
+  }>();
   const qualityProfilesCache = new MediaCache<{
-    radarr: RadarrProfile[];
-    sonarr: SonarrProfile[];
+    radarr: DecoratedProfile[];
+    sonarr: DecoratedProfile[];
   }>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
 
-  /**
-   * `providerId` is the single active Radarr instance's id — under the still-global
-   * single-active invariant, `providers` holds at most one row, so every movie in
-   * `movies` genuinely came from it. This flattens instance attribution the moment a
-   * second instance is reachable; per-instance sublists (Phase 7) replace it.
-   */
-  async function getMovies(): Promise<{
-    movies: RadarrMovie[];
-    providerId?: number;
-    errors: MediaError[];
-  }> {
+  /** One active Radarr instance's library, kept separate so browse can attribute copies. */
+  async function getMovies(): Promise<{ sublists: MovieSublist[]; errors: MediaError[] }> {
     return moviesCache.getOrFetch('movies', async () => {
       const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
         MetadataProviderType.RADARR,
       ]);
-      const movies: RadarrMovie[] = [];
+      const sublists: MovieSublist[] = [];
       await Promise.all(
         providers.map(async (provider) => {
           try {
             const radarr = factory.create(provider, log) as RadarrProvider;
-            movies.push(...(await radarr.getMovies()));
+            const movies = await radarr.getMovies();
+            sublists.push({ providerId: provider.id, providerName: provider.name, movies });
           } catch (err) {
             log.warn('Radarr fetch failed', { provider: provider.name, err });
             errors.push(toMediaError(provider.name, err));
           }
         })
       );
-      return { movies, providerId: providers[0]?.id, errors };
+      return { sublists, errors };
     });
   }
 
-  /** See `getMovies`' `providerId` note — the same single-active bound applies here. */
-  async function getSeries(): Promise<{
-    series: SonarrSeries[];
-    providerId?: number;
-    errors: MediaError[];
-  }> {
+  /** One active Sonarr instance's library, kept separate so browse can attribute copies. */
+  async function getSeries(): Promise<{ sublists: SeriesSublist[]; errors: MediaError[] }> {
     return seriesCache.getOrFetch('series', async () => {
       const errors: MediaError[] = [];
       const providers = await providerSettingsService.findActiveByTypes([
         MetadataProviderType.SONARR,
       ]);
-      const series: SonarrSeries[] = [];
+      const sublists: SeriesSublist[] = [];
       await Promise.all(
         providers.map(async (provider) => {
           try {
             const sonarr = factory.create(provider, log) as SonarrProvider;
-            series.push(...(await sonarr.getSeries()));
+            const series = await sonarr.getSeries();
+            sublists.push({ providerId: provider.id, providerName: provider.name, series });
           } catch (err) {
             log.warn('Sonarr fetch failed', { provider: provider.name, err });
             errors.push(toMediaError(provider.name, err));
           }
         })
       );
-      return { series, providerId: providers[0]?.id, errors };
+      return { sublists, errors };
     });
   }
 
@@ -314,11 +368,15 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listMovies: defineRoute({
       schemas: { query: moviesQuerySchema },
       handler: async ({ query }) => {
-        const { movies: all, providerId, errors } = await getMovies();
+        const { sublists, errors } = await getMovies();
+        const all = sublists.flatMap((s) => s.movies);
 
         const yearRange = computeYearRange(all);
         const source: MediaSource = {
-          getMediaItems: async () => all.map((m) => normalizeRadarrMovie(m, providerId ?? -1)),
+          getMediaItems: async () =>
+            sublists.flatMap(({ providerId, movies }) =>
+              movies.map((m) => normalizeRadarrMovie(m, providerId))
+            ),
           idOf: (item) => (item as NormalizedMovie)._sourceIds.radarr,
         };
         const matched = await mediaQueryEngine.evaluate({
@@ -326,11 +384,16 @@ export function createMediaHandlers(cradle: MediaCradle) {
           contentType: 'movie',
           sources: [{ filterValues: toFilterValues(query, MOVIE_PARAM_TO_KEY), role: 'include' }],
         });
-        const matchedIds = new Set(matched.map((m) => source.idOf(m)));
-        const filtered = all.filter((m) => matchedIds.has(m.id));
-        const sorted = sortMedia(filtered, query.sort, (m) => m.hasFile);
+        const matchedKeys = new Set(matched.map((m) => itemKey(m)));
+        const matchedRaw: Attributed<RadarrMovie>[] = sublists.flatMap(({ providerId, movies }) =>
+          movies
+            .filter((m) => matchedKeys.has(rawItemKey(providerId, m.id)))
+            .map((m) => ({ ...m, providerId }))
+        );
+        const sorted = sortMedia(matchedRaw, query.sort, (m) => m.hasFile);
+        const grouped = groupByPrimaryId(sorted, (m) => m.tmdbId);
         return {
-          ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
+          ...paginateItems(grouped, { page: query.page, pageSize: query.pageSize }),
           yearRange,
           errors,
         };
@@ -340,11 +403,15 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listSeries: defineRoute({
       schemas: { query: seriesQuerySchema },
       handler: async ({ query }) => {
-        const { series: all, providerId, errors } = await getSeries();
+        const { sublists, errors } = await getSeries();
+        const all = sublists.flatMap((s) => s.series);
 
         const yearRange = computeYearRange(all);
         const source: MediaSource = {
-          getMediaItems: async () => all.map((s) => normalizeSonarrSeries(s, providerId ?? -1)),
+          getMediaItems: async () =>
+            sublists.flatMap(({ providerId, series }) =>
+              series.map((s) => normalizeSonarrSeries(s, providerId))
+            ),
           idOf: (item) => (item as NormalizedShow)._sourceIds.sonarr,
         };
         const matched = await mediaQueryEngine.evaluate({
@@ -352,11 +419,16 @@ export function createMediaHandlers(cradle: MediaCradle) {
           contentType: 'show',
           sources: [{ filterValues: toFilterValues(query, SERIES_PARAM_TO_KEY), role: 'include' }],
         });
-        const matchedIds = new Set(matched.map((s) => source.idOf(s)));
-        const filtered = all.filter((s) => matchedIds.has(s.id));
-        const sorted = sortMedia(filtered, query.sort, (s) => s.monitored);
+        const matchedKeys = new Set(matched.map((s) => itemKey(s)));
+        const matchedRaw: Attributed<SonarrSeries>[] = sublists.flatMap(({ providerId, series }) =>
+          series
+            .filter((s) => matchedKeys.has(rawItemKey(providerId, s.id)))
+            .map((s) => ({ ...s, providerId }))
+        );
+        const sorted = sortMedia(matchedRaw, query.sort, (s) => s.monitored);
+        const grouped = groupByPrimaryId(sorted, (s) => s.tvdbId);
         return {
-          ...paginateItems(sorted, { page: query.page, pageSize: query.pageSize }),
+          ...paginateItems(grouped, { page: query.page, pageSize: query.pageSize }),
           yearRange,
           errors,
         };
@@ -371,18 +443,32 @@ export function createMediaHandlers(cradle: MediaCradle) {
             MetadataProviderType.SONARR,
           ]);
 
-          const radarrTags: RadarrTag[] = [];
-          const sonarrTags: SonarrTag[] = [];
+          const radarrTags: DecoratedTag[] = [];
+          const sonarrTags: DecoratedTag[] = [];
 
           await Promise.all(
             providers.map(async (provider) => {
               try {
                 if (provider.type === MetadataProviderType.RADARR) {
                   const radarr = factory.create(provider, log) as RadarrProvider;
-                  radarrTags.push(...(await radarr.getTags()));
+                  const tags = await radarr.getTags();
+                  radarrTags.push(
+                    ...tags.map((t) => ({
+                      ...t,
+                      providerId: provider.id,
+                      providerName: provider.name,
+                    }))
+                  );
                 } else if (provider.type === MetadataProviderType.SONARR) {
                   const sonarr = factory.create(provider, log) as SonarrProvider;
-                  sonarrTags.push(...(await sonarr.getTags()));
+                  const tags = await sonarr.getTags();
+                  sonarrTags.push(
+                    ...tags.map((t) => ({
+                      ...t,
+                      providerId: provider.id,
+                      providerName: provider.name,
+                    }))
+                  );
                 }
               } catch (err) {
                 log.warn('Tags fetch failed', { provider: provider.name, err });
@@ -402,18 +488,32 @@ export function createMediaHandlers(cradle: MediaCradle) {
             MetadataProviderType.SONARR,
           ]);
 
-          const radarrProfiles: RadarrProfile[] = [];
-          const sonarrProfiles: SonarrProfile[] = [];
+          const radarrProfiles: DecoratedProfile[] = [];
+          const sonarrProfiles: DecoratedProfile[] = [];
 
           await Promise.all(
             providers.map(async (provider) => {
               try {
                 if (provider.type === MetadataProviderType.RADARR) {
                   const radarr = factory.create(provider, log) as RadarrProvider;
-                  radarrProfiles.push(...(await radarr.getProfiles()));
+                  const profiles = await radarr.getProfiles();
+                  radarrProfiles.push(
+                    ...profiles.map((p) => ({
+                      ...p,
+                      providerId: provider.id,
+                      providerName: provider.name,
+                    }))
+                  );
                 } else if (provider.type === MetadataProviderType.SONARR) {
                   const sonarr = factory.create(provider, log) as SonarrProvider;
-                  sonarrProfiles.push(...(await sonarr.getProfiles()));
+                  const profiles = await sonarr.getProfiles();
+                  sonarrProfiles.push(
+                    ...profiles.map((p) => ({
+                      ...p,
+                      providerId: provider.id,
+                      providerName: provider.name,
+                    }))
+                  );
                 }
               } catch (err) {
                 log.warn('Quality profiles fetch failed', { provider: provider.name, err });
@@ -428,7 +528,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listGenres: defineRoute({
       handler: () =>
         genresCache.getOrFetch('genres', async () => {
-          const [{ movies }, { series }] = await Promise.all([getMovies(), getSeries()]);
+          const [{ sublists: movieSublists }, { sublists: seriesSublists }] = await Promise.all([
+            getMovies(),
+            getSeries(),
+          ]);
+          const movies = movieSublists.flatMap((s) => s.movies);
+          const series = seriesSublists.flatMap((s) => s.series);
           return {
             movies: [...new Set(movies.flatMap((m) => m.genres ?? []))].sort(),
             series: [...new Set(series.flatMap((s) => s.genres ?? []))].sort(),
@@ -439,13 +544,17 @@ export function createMediaHandlers(cradle: MediaCradle) {
     listNetworks: defineRoute({
       handler: () =>
         networksCache.getOrFetch('networks', async () => {
-          const { series: all } = await getSeries();
+          const { sublists } = await getSeries();
+          const all = sublists.flatMap((s) => s.series);
           return [...new Set(all.map((s) => s.network).filter((n): n is string => !!n))].sort();
         }),
     }),
 
     listSources: defineRoute({
-      handler: async () => sourceOwnership(await providerSettingsService.activeTypes()),
+      handler: async () => {
+        const providers = await providerSettingsService.list();
+        return sourceOwnership(providers.filter((p) => p.isActive));
+      },
     }),
   };
 }

@@ -56,19 +56,26 @@ export interface MediaSourceDescriptor {
   contentType: ContentType;
   ownerType: MetadataProviderType;
   configured: boolean;
+  /** Every active instance owning this content type — lets the client label
+   *  per-instance options and know when instance qualification is needed. */
+  instances: Array<{ id: number; name: string }>;
 }
 
 /**
  * Projects `SOURCE_OWNER_BY_KIND` for the client: which provider type owns each
- * content type, and whether an active instance of it exists. The wire surface of
- * the single ownership authority — clients derive from this, never re-declare it.
+ * content type, whether an active instance of it exists, and every active instance
+ * (never collapsed to one). The wire surface of the single ownership authority —
+ * clients derive from this, never re-declare it.
  */
-export function sourceOwnership(configuredTypes: ReadonlySet<string>): MediaSourceDescriptor[] {
+export function sourceOwnership(
+  activeProviders: ReadonlyArray<{ id: number; name: string; type: MetadataProviderType }>
+): MediaSourceDescriptor[] {
   return (Object.entries(SOURCE_OWNER_BY_KIND) as [ContentType, MetadataProviderType][]).map(
-    ([contentType, ownerType]) => ({
-      contentType,
-      ownerType,
-      configured: configuredTypes.has(ownerType),
-    })
+    ([contentType, ownerType]) => {
+      const instances = activeProviders
+        .filter((p) => p.type === ownerType)
+        .map((p) => ({ id: p.id, name: p.name }));
+      return { contentType, ownerType, configured: instances.length > 0, instances };
+    }
   );
 }

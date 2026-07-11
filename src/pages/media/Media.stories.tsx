@@ -294,8 +294,18 @@ function Controlled({
       lookups={LOOKUPS}
       configuredTypes={ALL_PROVIDERS}
       sources={{
-        movie: { contentType: 'movie', ownerType: 'RADARR', configured: true },
-        show: { contentType: 'show', ownerType: 'SONARR', configured: true },
+        movie: {
+          contentType: 'movie',
+          ownerType: 'RADARR',
+          configured: true,
+          instances: [{ id: 1, name: 'Radarr' }],
+        },
+        show: {
+          contentType: 'show',
+          ownerType: 'SONARR',
+          configured: true,
+          instances: [{ id: 2, name: 'Sonarr' }],
+        },
       }}
       density="normal"
       onDensityChange={() => {}}

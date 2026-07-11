@@ -479,11 +479,13 @@ describe('Media Filter API', () => {
 
       expect(data.radarr).toEqual(
         expect.arrayContaining([
-          { id: 1, label: 'action' },
-          { id: 2, label: 'sci-fi' },
+          expect.objectContaining({ id: 1, label: 'action' }),
+          expect.objectContaining({ id: 2, label: 'sci-fi' }),
         ])
       );
-      expect(data.sonarr).toEqual(expect.arrayContaining([{ id: 1, label: 'drama' }]));
+      expect(data.sonarr).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: 1, label: 'drama' })])
+      );
     });
 
     it('returns 401 when unauthenticated', async () => {
@@ -504,14 +506,14 @@ describe('Media Filter API', () => {
 
       expect(data.radarr).toEqual(
         expect.arrayContaining([
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          expect.objectContaining({ id: 1, name: 'HD-1080p' }),
+          expect.objectContaining({ id: 2, name: 'Any' }),
         ])
       );
       expect(data.sonarr).toEqual(
         expect.arrayContaining([
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          expect.objectContaining({ id: 1, name: 'HD-1080p' }),
+          expect.objectContaining({ id: 2, name: 'Any' }),
         ])
       );
     });

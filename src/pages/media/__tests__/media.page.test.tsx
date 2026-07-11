@@ -81,8 +81,8 @@ describe('MediaPage', () => {
         HttpResponse.json({
           status: 'ok',
           data: [
-            { contentType: 'movie', ownerType: 'JELLYFIN', configured: false },
-            { contentType: 'show', ownerType: 'SONARR', configured: false },
+            { contentType: 'movie', ownerType: 'JELLYFIN', configured: false, instances: [] },
+            { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
           ],
         })
       ),
@@ -105,8 +105,8 @@ describe('MediaPage', () => {
         HttpResponse.json({
           status: 'ok',
           data: [
-            { contentType: 'movie', ownerType: 'RADARR', configured: false },
-            { contentType: 'show', ownerType: 'SONARR', configured: false },
+            { contentType: 'movie', ownerType: 'RADARR', configured: false, instances: [] },
+            { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
           ],
         })
       ),

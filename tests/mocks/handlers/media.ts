@@ -108,8 +108,13 @@ export const mediaHandlers = [
     return HttpResponse.json({
       status: 'ok',
       data: [
-        { contentType: 'movie', ownerType: 'RADARR', configured: true },
-        { contentType: 'show', ownerType: 'SONARR', configured: false },
+        {
+          contentType: 'movie',
+          ownerType: 'RADARR',
+          configured: true,
+          instances: [{ id: 1, name: 'Radarr' }],
+        },
+        { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
       ],
     });
   }),
