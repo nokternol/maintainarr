@@ -24,9 +24,17 @@ export interface ProviderStatus {
   affectedFilterKeys: string[];
 }
 
+/** A filter entry's `providerId` qualification the engine cannot honor. */
+export interface QualificationIssue {
+  filterKey: string;
+  providerId: number;
+  reason: 'not_active' | 'wrong_automation_provider';
+}
+
 export interface QueryHealth {
   status: 'healthy' | 'degraded' | 'unavailable';
   providerStatus: ProviderStatus[];
+  qualificationIssues: QualificationIssue[];
 }
 
 /**
@@ -65,10 +73,26 @@ function isRangeShaped(value: FilterValue): boolean {
 function computeHealth(
   filterEntries: FilterValueEntry[],
   contentType: ContentType,
-  activeProviderTypes: Set<MetadataProviderType>
+  activeProviderTypes: Set<MetadataProviderType>,
+  activeProviderIds: Set<number>,
+  automationProviderId?: number
 ): QueryHealth {
+  const qualificationIssues: QualificationIssue[] = [];
+  for (const { key, providerId } of filterEntries) {
+    if (providerId === undefined) continue;
+    if (!activeProviderIds.has(providerId)) {
+      qualificationIssues.push({ filterKey: key, providerId, reason: 'not_active' });
+    } else if (automationProviderId !== undefined && providerId !== automationProviderId) {
+      qualificationIssues.push({
+        filterKey: key,
+        providerId,
+        reason: 'wrong_automation_provider',
+      });
+    }
+  }
+
   if (filterEntries.length === 0) {
-    return { status: 'healthy', providerStatus: [] };
+    return { status: 'healthy', providerStatus: [], qualificationIssues: [] };
   }
 
   // Collect per-providerType requirements across all filter keys
@@ -101,8 +125,10 @@ function computeHealth(
     }
   }
 
+  if (qualificationIssues.length > 0) hasDegraded = true;
+
   const status = hasUnavailable ? 'unavailable' : hasDegraded ? 'degraded' : 'healthy';
-  return { status, providerStatus };
+  return { status, providerStatus, qualificationIssues };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -114,15 +140,26 @@ export class MediaQueryService {
     this.db = db;
   }
 
+  /** Active provider types and ids together — one query, feeds `computeHealth`'s two axes. */
+  private async activeProviders(): Promise<{
+    types: Set<MetadataProviderType>;
+    ids: Set<number>;
+  }> {
+    const activeRows = await this.db
+      .select({ id: metadataProviders.id, type: metadataProviders.type })
+      .from(metadataProviders)
+      .where(eq(metadataProviders.isActive, true));
+    return {
+      types: new Set(activeRows.map((r) => r.type as MetadataProviderType)),
+      ids: new Set(activeRows.map((r) => r.id)),
+    };
+  }
+
   async list(): Promise<MediaQueryRecord[]> {
     const rows = await this.db.select().from(mediaQueries).orderBy(mediaQueries.createdAt);
     const fvRows = await this.db.select().from(mediaQueryFilterValues);
 
-    const activeRows = await this.db
-      .select({ type: metadataProviders.type })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.isActive, true));
-    const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
+    const { types: activeProviderTypes, ids: activeProviderIds } = await this.activeProviders();
 
     const contentTypeByQueryId = new Map<number, ContentType>(
       rows.map((row) => [row.id, row.contentType as ContentType])
@@ -135,6 +172,7 @@ export class MediaQueryService {
       const rule = contentType ? getRule(fv.filterKey, contentType) : undefined;
       const dataType = rule?.dataType ?? 'string';
       const entry: FilterValueEntry = { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
+      if (fv.providerId !== null) entry.providerId = fv.providerId;
       const arr = fvByQueryId.get(fv.mediaQueryId) ?? [];
       arr.push(entry);
       fvByQueryId.set(fv.mediaQueryId, arr);
@@ -145,7 +183,8 @@ export class MediaQueryService {
       const health = computeHealth(
         filterValues,
         row.contentType as ContentType,
-        activeProviderTypes
+        activeProviderTypes,
+        activeProviderIds
       );
       return {
         id: row.id,
@@ -186,21 +225,23 @@ export class MediaQueryService {
 
     if (draft.filterValues.length > 0) {
       await this.db.insert(mediaQueryFilterValues).values(
-        draft.filterValues.map(({ key, value }) => ({
+        draft.filterValues.map(({ key, value, providerId }) => ({
           mediaQueryId: row.id,
           filterKey: key,
           value: serializeValue(value),
+          providerId: providerId ?? null,
         }))
       );
     }
 
-    const activeRows = await this.db
-      .select({ type: metadataProviders.type })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.isActive, true));
-    const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
+    const { types: activeProviderTypes, ids: activeProviderIds } = await this.activeProviders();
 
-    const health = computeHealth(draft.filterValues, draft.contentType, activeProviderTypes);
+    const health = computeHealth(
+      draft.filterValues,
+      draft.contentType,
+      activeProviderTypes,
+      activeProviderIds
+    );
 
     return {
       id: row.id,
@@ -221,19 +262,22 @@ export class MediaQueryService {
       .from(mediaQueryFilterValues)
       .where(eq(mediaQueryFilterValues.mediaQueryId, id));
 
-    const activeRows = await this.db
-      .select({ type: metadataProviders.type })
-      .from(metadataProviders)
-      .where(eq(metadataProviders.isActive, true));
-    const activeProviderTypes = new Set(activeRows.map((r) => r.type as MetadataProviderType));
+    const { types: activeProviderTypes, ids: activeProviderIds } = await this.activeProviders();
 
     const filterValues: FilterValueEntry[] = fvRows.map((fv) => {
       const rule = getRule(fv.filterKey, row.contentType as ContentType);
       const dataType = rule?.dataType ?? 'string';
-      return { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
+      const entry: FilterValueEntry = { key: fv.filterKey, value: coerceValue(fv.value, dataType) };
+      if (fv.providerId !== null) entry.providerId = fv.providerId;
+      return entry;
     });
 
-    const health = computeHealth(filterValues, row.contentType as ContentType, activeProviderTypes);
+    const health = computeHealth(
+      filterValues,
+      row.contentType as ContentType,
+      activeProviderTypes,
+      activeProviderIds
+    );
 
     return {
       id: row.id,
@@ -243,6 +287,27 @@ export class MediaQueryService {
       health,
       createdAt: row.createdAt.toISOString(),
     };
+  }
+
+  /**
+   * Health as seen from a specific automation binding: on top of the usual provider-configured
+   * checks, an entry qualified to a `providerId` other than the automation's own is flagged —
+   * by the `matchItems` gate it matches nothing, so this is misconfiguration made visible
+   * rather than a silent no-op.
+   */
+  async getHealthForAutomation(
+    queryId: number,
+    automationProviderId: number
+  ): Promise<QueryHealth> {
+    const record = await this.getById(queryId);
+    const { types: activeProviderTypes, ids: activeProviderIds } = await this.activeProviders();
+    return computeHealth(
+      record.filterValues,
+      record.contentType,
+      activeProviderTypes,
+      activeProviderIds,
+      automationProviderId
+    );
   }
 
   async delete(id: number): Promise<void> {

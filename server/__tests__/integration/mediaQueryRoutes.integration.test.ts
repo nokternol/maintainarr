@@ -1,4 +1,5 @@
 import { buildContainer } from '@server/container';
+import { MetadataProviderType, metadataProviders } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { createApiRouter } from '@server/modules';
@@ -42,5 +43,24 @@ describe('media query routes', () => {
     const res = await supertest(app).get('/api/media-queries');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('accepts and round-trips a providerId-qualified filter value entry', async () => {
+    const db = getDb();
+    const [provider] = await db
+      .insert(metadataProviders)
+      .values({ type: MetadataProviderType.RADARR, name: 'Radarr', url: 'http://radarr' })
+      .returning();
+
+    const res = await supertest(app)
+      .post('/api/media-queries')
+      .send({
+        name: 'Qualified',
+        contentType: 'movie',
+        filterValues: [{ key: 'qualityProfileIds', value: '5', providerId: provider.id }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.filterValues[0].providerId).toBe(provider.id);
   });
 });

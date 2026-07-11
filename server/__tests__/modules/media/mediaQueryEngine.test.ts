@@ -1,4 +1,5 @@
 import type { MediaSource } from '@server/modules/media';
+import { matchItems } from '@server/modules/media/mediaQueryEngine';
 import { MediaQueryEngine } from '@server/modules/media/mediaQueryEngine';
 import type { NormalizedMovie } from '@server/modules/media/movie';
 import { normalizeRadarrMovie } from '@server/modules/media/normalizeMedia';
@@ -72,5 +73,42 @@ describe('MediaQueryEngine', () => {
 
       expect(radarrIds(result as NormalizedMovie[])).toEqual([1, 2]);
     });
+  });
+});
+
+describe('matchItems — per-entry provider gate', () => {
+  const items = [
+    normalizeRadarrMovie(
+      createRadarrMovie({ id: 1, title: 'SD copy', qualityProfileId: 5 }),
+      1 // providerId 1
+    ),
+    normalizeRadarrMovie(
+      createRadarrMovie({ id: 1, title: '4k copy', qualityProfileId: 5 }),
+      2 // providerId 2 — same raw id and profile id, different instance
+    ),
+  ];
+
+  it('an unqualified entry (no providerId) matches items regardless of instance', () => {
+    const result = matchItems(items, [{ key: 'qualityProfileIds', value: '5' }], 'movie');
+    expect(result).toHaveLength(2);
+  });
+
+  it('a qualified entry matches only the items from that provider', () => {
+    const result = matchItems(
+      items,
+      [{ key: 'qualityProfileIds', value: '5', providerId: 1 }],
+      'movie'
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]._sourceIds.providerId).toBe(1);
+  });
+
+  it('a qualified entry rejects an item from another instance even when the predicate would pass', () => {
+    const result = matchItems(
+      items,
+      [{ key: 'qualityProfileIds', value: '5', providerId: 999 }],
+      'movie'
+    );
+    expect(result).toHaveLength(0);
   });
 });

@@ -23,6 +23,9 @@ export const FilterValueEntrySchema = z
   .object({
     key: z.string(),
     value: FilterValueSchema,
+    // Namespace qualification for provider-defined id spaces (quality profiles, tags) —
+    // not targeting (see automations.providerId for that). Undefined means unqualified.
+    providerId: z.number().int().positive().optional(),
   })
   .strict();
 
@@ -35,10 +38,19 @@ export const ProviderStatusSchema = z
   })
   .strict();
 
+export const QualificationIssueSchema = z
+  .object({
+    filterKey: z.string(),
+    providerId: z.number(),
+    reason: z.enum(['not_active', 'wrong_automation_provider']),
+  })
+  .strict();
+
 export const QueryHealthSchema = z
   .object({
     status: z.enum(['healthy', 'degraded', 'unavailable']),
     providerStatus: z.array(ProviderStatusSchema),
+    qualificationIssues: z.array(QualificationIssueSchema),
   })
   .strict();
 

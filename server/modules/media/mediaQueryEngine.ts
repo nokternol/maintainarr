@@ -41,6 +41,9 @@ export type { MediaItemSet };
 /**
  * The engine's match primitive: the subset of `items` satisfying every predicate
  * in `filterValues` under the registry for `contentType`. Unknown keys pass through.
+ * An entry qualified with `providerId` is a claim about one instance's namespace — an
+ * item from another instance cannot satisfy it, so it fails the entry outright rather
+ * than falling through to the predicate.
  */
 export function matchItems<T extends NormalizedMovie | NormalizedShow>(
   items: T[],
@@ -48,9 +51,10 @@ export function matchItems<T extends NormalizedMovie | NormalizedShow>(
   contentType: 'movie' | 'show'
 ): T[] {
   return items.filter((item) =>
-    filterValues.every(({ key, value }) => {
+    filterValues.every(({ key, value, providerId }) => {
       const rule = getRule(key, contentType);
       if (!rule) return true;
+      if (providerId !== undefined && item._sourceIds.providerId !== providerId) return false;
       return rule.predicate(item, value);
     })
   );

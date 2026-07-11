@@ -11,6 +11,9 @@ export interface MediaRuleDescriptor {
   dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings' | 'range';
   sourceProviders: string[];
   required: boolean;
+  /** True for rules whose values are a provider-defined id space (quality profiles, tags) —
+   *  the client must qualify these per instance when more than one is active. */
+  instanceScoped?: boolean;
 }
 
 const KEY = '/api/filter-fields';

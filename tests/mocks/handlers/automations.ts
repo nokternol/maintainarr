@@ -68,7 +68,7 @@ export const automationsHandlers = [
   }),
 ];
 
-const MOCK_HEALTH = { status: 'healthy' as const, providerStatus: [] };
+const MOCK_HEALTH = { status: 'healthy' as const, providerStatus: [], qualificationIssues: [] };
 
 export const MOCK_MEDIA_QUERIES = [
   {
