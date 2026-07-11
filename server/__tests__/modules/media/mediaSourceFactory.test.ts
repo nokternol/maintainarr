@@ -6,16 +6,17 @@ import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
 
-const settings = (type: MetadataProviderType): MetadataProvider => ({
+const settings = (overrides: Partial<MetadataProvider> = {}): MetadataProvider => ({
   id: 1,
-  type,
-  name: type,
+  type: MetadataProviderType.RADARR,
+  name: 'Radarr',
   url: 'http://localhost/api/v3',
   apiKey: 'k',
   settings: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
+  ...overrides,
 });
 
 const settingsServiceReturning = (active: MetadataProvider[]) =>
@@ -27,21 +28,40 @@ const buildFactory = (active: MetadataProvider[]) =>
     providerFactory: new ProviderFactory(),
   });
 
-describe('MediaSourceFactory.forContentType', () => {
+describe('MediaSourceFactory.sourcesFor', () => {
   afterEach(() => server.resetHandlers());
 
-  it('binds the active owner provider for a content type as a MediaSource carrying its providerId', async () => {
+  it('returns one entry per active instance owning the content type, each carrying its providerId', async () => {
+    server.use(
+      http.get('http://localhost/api/v3/movie', () => HttpResponse.json([])),
+      http.get('http://4k.local/api/v3/movie', () => HttpResponse.json([]))
+    );
+
+    const entries = await buildFactory([
+      settings({ id: 1, name: 'Radarr' }),
+      settings({ id: 2, name: 'Radarr 4k', url: 'http://4k.local/api/v3' }),
+    ]).sourcesFor('movie');
+
+    expect(entries).toHaveLength(2);
+    expect(entries.map((e) => e.providerId).sort()).toEqual([1, 2]);
+    expect(entries.map((e) => e.name).sort()).toEqual(['Radarr', 'Radarr 4k']);
+  });
+
+  it("constructs each entry's source with its own providerId threaded through", async () => {
     server.use(
       http.get('http://localhost/api/v3/movie', () =>
         HttpResponse.json([{ id: 1, title: 'M', hasFile: true, monitored: true, tmdbId: 1 }])
       )
     );
 
-    const source = await buildFactory([settings(MetadataProviderType.RADARR)]).forContentType(
-      'movie'
-    );
+    const [entry] = await buildFactory([settings({ id: 7 })]).sourcesFor('movie');
 
-    const [item] = await source!.getMediaItems();
-    expect(item._sourceIds.providerId).toBe(1);
+    const [item] = await entry.source.getMediaItems();
+    expect(item._sourceIds.providerId).toBe(7);
+  });
+
+  it('returns an empty array when no instance owns the content type', async () => {
+    const entries = await buildFactory([]).sourcesFor('movie');
+    expect(entries).toEqual([]);
   });
 });

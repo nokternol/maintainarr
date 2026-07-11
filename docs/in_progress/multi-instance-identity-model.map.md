@@ -87,6 +87,16 @@ phase (its own docs-lifecycle bullet) has executed: the spec deleted, the decide
   — real per-instance sublists are Phase 7's job, this ticket only had to keep them compiling and correct
   under today's still-global invariant).
 
+- **Phase 5 (`ticket-05-preview-fanout.md`) — closed.** `MediaSourceFactory.forContentType` (single
+  active-instance lookup) is replaced by `sourcesFor(contentType): Promise<MediaSourceEntry[]>` — one
+  `{ providerId, name, source }` entry per active instance owning that content type, never collapsed. The
+  preview handler (`GET /api/media-queries/:id/preview`) evaluates the query spec once per instance and
+  returns `{ count, instances: [{ providerId, name, count }] }`, `count` being the sum across instances;
+  zero active instances returns `{ count: 0, instances: [] }`. `MediaQuery`/`MediaQuerySpec` in
+  `mediaQueryEngine.ts` are untouched — fan-out is the handler's own loop. The client
+  (`QuerySourceList`) needed no changes: it only reads `data.count`, unchanged in meaning; `instances` is
+  strictly additive.
+
 ## Not yet specified
 
 <!-- empty: the spec resolved every design question in scope of this destination -->

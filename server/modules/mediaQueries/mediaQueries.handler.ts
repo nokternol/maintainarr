@@ -53,19 +53,32 @@ export function createMediaQueryHandlers(cradle: Cradle) {
       defineRoute({
         schemas: {
           params: mediaQuerySchemas.delete.params,
-          response: z.object({ count: z.number() }),
+          response: z.object({
+            count: z.number(),
+            instances: z.array(
+              z.object({ providerId: z.number(), name: z.string(), count: z.number() })
+            ),
+          }),
         },
         handler: async ({ params }) => {
           const query = await mediaQueryService.getById(params.id);
-          const source = await mediaSourceFactory.forContentType(query.contentType);
-          if (!source) return { count: 0 };
+          const entries = await mediaSourceFactory.sourcesFor(query.contentType);
 
-          const set = await mediaQueryEngine.evaluate({
-            source,
-            contentType: query.contentType,
-            sources: [{ filterValues: query.filterValues, role: 'include' }],
-          });
-          return { count: set.length };
+          const instances = await Promise.all(
+            entries.map(async ({ providerId, name, source }) => {
+              const set = await mediaQueryEngine.evaluate({
+                source,
+                contentType: query.contentType,
+                sources: [{ filterValues: query.filterValues, role: 'include' }],
+              });
+              return { providerId, name, count: set.length };
+            })
+          );
+
+          return {
+            count: instances.reduce((sum, i) => sum + i.count, 0),
+            instances,
+          };
         },
       }),
     ],

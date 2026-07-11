@@ -23,18 +23,31 @@ interface Deps {
  * Consolidates owner-type lookup, active-settings resolution, and provider
  * construction so handlers ask only "give me the source for this content type".
  */
+/** One active instance owning a content type, bound as a `MediaSource`. */
+export interface MediaSourceEntry {
+  providerId: number;
+  name: string;
+  source: MediaSource;
+}
+
 export class MediaSourceFactory {
   constructor(private readonly deps: Deps) {}
 
-  async forContentType(contentType: ContentType): Promise<MediaSource | undefined> {
-    const [settings] = await this.deps.providerSettingsService.findActiveByTypes([
+  /** One entry per active instance owning `contentType`. Never collapsed to one. */
+  async sourcesFor(contentType: ContentType): Promise<MediaSourceEntry[]> {
+    const settingsList = await this.deps.providerSettingsService.findActiveByTypes([
       SOURCE_OWNER_BY_KIND[contentType],
     ]);
-    if (!settings) return undefined;
-    const provider = this.deps.providerFactory.create(settings, log) as
-      | RadarrProvider
-      | SonarrProvider;
-    return mediaSourceFor(provider, settings.id);
+    return settingsList.map((settings) => {
+      const provider = this.deps.providerFactory.create(settings, log) as
+        | RadarrProvider
+        | SonarrProvider;
+      return {
+        providerId: settings.id,
+        name: settings.name,
+        source: mediaSourceFor(provider, settings.id),
+      };
+    });
   }
 }
 

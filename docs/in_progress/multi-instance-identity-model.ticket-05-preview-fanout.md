@@ -1,8 +1,8 @@
 ---
 title: "Phase 5: Preview fan-out"
 labels: [wayfinder:task]
-status: open
-assignee:
+status: closed
+assignee: claude
 blocked_by: [multi-instance-identity-model.ticket-01-authority-and-factory-surface.md, multi-instance-identity-model.ticket-04-enrichment-paths.md]
 ---
 
