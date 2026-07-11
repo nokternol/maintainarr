@@ -25,9 +25,9 @@ not about which fields are the "real" item. Both contribute fields; the item is 
 
 ## Today's state (the fracture)
 
-`server/providers/mediaSource.ts`: `MediaItem = NormalizedMovie | NormalizedShow`. Each
-(`server/domain/movie.ts`, `show.ts`) is `_sourceIds` + ~20 hardcoded optional fields. This half-expresses
-the model — identity is separated and fields are already all-optional/sparse — but:
+`server/modules/media/mediaItem.ts`: `MediaItem = NormalizedMovie | NormalizedShow`. Each
+(`server/modules/media/movie.ts`, `show.ts`) is `_sourceIds` + ~20 hardcoded optional fields. This
+half-expresses the model — identity is separated and fields are already all-optional/sparse — but:
 
 - It is a **closed typed union.** Every enricher field (`tmdbStatus?`, `overseerrHasIssue?`, `imdbRating?`,
   `playCount?`) is baked into the canonical type, so adding an enricher field means editing the core item —
@@ -50,9 +50,9 @@ This is the call to make with `/plan-and-go:plan-with-docs` before TDD.
 
 ## Relationship to the rest
 
-- **Phase 4** (`docs/in_progress/phase-4-client-query-alignment.md`) closes the *vocabulary* fracture
-  (the client re-declares rules). It is independent of this *shape* fracture and reads fields by today's
-  keys regardless.
+- The *vocabulary* fracture (the client re-declaring rules) is already closed — see the fracture ledger's
+  "Filter/rule vocabulary" Healed entry. It is independent of this *shape* fracture and reads fields by
+  today's keys regardless.
 - A `MediaRule.predicate` reads one field and already tolerates absence (`=== undefined → false`); its
   `sourceProviders` names who can supply that field — the provenance axis surfaced for gating.
 - This lands with the `media_item` / `media_identity` migration

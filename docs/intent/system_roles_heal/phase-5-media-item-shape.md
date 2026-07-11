@@ -33,9 +33,9 @@ file is the placeholder for that design's output.
 
 | File | Role |
 |---|---|
-| `server/providers/mediaSource.ts`, `server/domain/movie.ts`, `show.ts` | `MediaItem` definition — the shape under decision. |
-| `server/services/enrichmentMerge.ts` (`mergeEnrichment`) | Where contributions combine — gains the provenance axis. |
-| `server/utils/filterRegistry.ts` (`MEDIA_RULES` after Phase 4) | Predicates read fields — affected by how fields are accessed. |
+| `server/modules/media/mediaItem.ts`, `server/modules/media/movie.ts`, `show.ts` | `MediaItem` definition — the shape under decision. |
+| `server/modules/media/enrichmentMerge.ts` (`mergeEnrichment`) | Where contributions combine — gains the provenance axis. |
+| `server/modules/media/filterRegistry.ts` (`MEDIA_RULES`) | Predicates read fields — affected by how fields are accessed. |
 | `docs/intent/provider-source-model.md` | The `media_item` / `media_identity` migration this lands with. |
 
 ## Done when
