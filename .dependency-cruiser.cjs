@@ -1,0 +1,102 @@
+/**
+ * Enforces the server-architecture North Star's module boundaries
+ * (docs/architecture/server-architecture-north-star.md): a module's
+ * internals are reachable only through its own index.ts, and cross-module
+ * imports may only follow the declared direction graph. Both rule families
+ * are deny-by-default — a module omitted from another's allow-list is
+ * forbidden as a target, not enumerated as a violation to avoid.
+ *
+ * Scope is server/ only, matching the North Star's own scope; server/__tests__/
+ * is excluded because tests legitimately reach into a module's own internals
+ * to unit-test them.
+ */
+
+const MODULES = [
+  'auth',
+  'automations',
+  'media',
+  'mediaQueries',
+  'providers',
+  'settings',
+  'system',
+];
+
+// The North Star's declared direction graph. A module may always import
+// kernel; kernel imports no module. Anything not listed here for a module
+// is a forbidden cross-module target.
+const ALLOWED_TARGETS = {
+  providers: [],
+  media: ['providers'],
+  mediaQueries: ['media', 'providers'],
+  automations: ['media', 'mediaQueries', 'providers'],
+  auth: ['providers'],
+  system: [],
+  settings: ['providers'],
+};
+
+const directionRules = MODULES.map((mod) => {
+  const forbiddenTargets = MODULES.filter(
+    (other) => other !== mod && !(ALLOWED_TARGETS[mod] || []).includes(other)
+  );
+  return {
+    name: `direction-${mod}`,
+    severity: 'error',
+    comment:
+      `server/modules/${mod}/ may only cross into ` +
+      `[${(ALLOWED_TARGETS[mod] || []).join(', ') || 'kernel only'}] plus kernel, ` +
+      "per the North Star's declared direction graph (docs/architecture/server-architecture-north-star.md). " +
+      "Type-only imports are exempt — they're the sanctioned dependency-inversion pattern " +
+      '(system declares an interface, another module implements it by importing only the type).',
+    from: { path: `^server/modules/${mod}/` },
+    to: {
+      path: `^server/modules/(${forbiddenTargets.join('|')})/`,
+      dependencyTypesNot: ['type-only'],
+    },
+  };
+});
+
+module.exports = {
+  forbidden: [
+    {
+      name: 'no-module-internal-reach-in',
+      severity: 'error',
+      comment:
+        "A module's internals are private — other modules may only import its public " +
+        'index.ts, never a deep path inside it.',
+      from: { path: '^server/modules/([^/]+)/' },
+      to: {
+        path: '^server/modules/(?!$1/)[^/]+/(?!index\\.ts$).+',
+      },
+    },
+    {
+      name: 'no-root-deep-import-into-module',
+      severity: 'error',
+      comment:
+        "Server-root files (container.ts, index.ts, kernel/) may only import a module's " +
+        'public index.ts, never a deep path inside it.',
+      from: { path: '^server/(?!modules/)' },
+      to: { path: '^server/modules/[^/]+/(?!index\\.ts$).+' },
+    },
+    {
+      name: 'kernel-imports-no-module',
+      severity: 'error',
+      comment:
+        "The kernel is infrastructure with no domain meaning — it may not import any " +
+        'feature module.',
+      from: { path: '^server/kernel/' },
+      to: { path: '^server/modules/' },
+    },
+    ...directionRules,
+  ],
+  options: {
+    doNotFollow: { path: 'node_modules' },
+    exclude: { path: '^server/__tests__/' },
+    includeOnly: { path: '^server/' },
+    tsPreCompilationDeps: true,
+    tsConfig: { fileName: require('path').join(__dirname, 'server/tsconfig.json') },
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'require', 'node', 'default'],
+    },
+  },
+};
