@@ -1,49 +1,42 @@
-# Automation Archive & Restore (Soft Delete)
+# Automation archive & restore (soft delete)
 
-**Status:** INTENT — not yet built. Independent of the event bus; can slot any time.
+**Status:** INTENT — not yet built. Independent of the event-driven cache/realtime work; can be picked up
+on its own.
 
-## Model: archive + manual purge
+## The problem
 
-Delete becomes **Archive** (soft, restorable). A permanent delete survives but is demoted to a
-deliberate two-step from the Archived view. Nothing is auto-purged.
+Deleting an automation today is a single, permanent, irreversible action. There's no undo, and no record
+kept once a user hits delete — including for automations a user is actively iterating on, or deleted by
+mistake. Run history for a deleted automation goes with it.
 
-- **`automations.archivedAt`** — nullable timestamp. The presence of a value = archived.
-- **Archive** sets `archivedAt` and **unschedules** the automation (same scheduler effect delete has
-  today).
-- **Restore** clears `archivedAt` and **reschedules iff `status='active'`** (mirrors the existing
-  `updateStatus` scheduling logic); a disabled automation restores to disabled (unscheduled).
-- **Archived automations are inert:** unscheduled, and `POST /:id/run` is **rejected** — to run one,
-  restore it first.
-- **System automations cannot be archived** (invariants — consistent with their Run-Now-only model).
-- **Run history is retained** for archived automations (audit; `automation_runs` already keys on
-  `automationId`).
-- **No auto-purge in v1.** Manual purge only; revisit a retention window only if the table actually
-  bloats. (Auto-purge would silently destroy recoverable data on a timer.)
+## Why it needs solving
 
-## API
+Automations are configuration a user tunes over time (query, task, schedule) — the kind of thing people
+delete experimentally and regret, or delete and later want to reference the run history of. A destructive,
+one-step, unrecoverable delete is the wrong default for that usage pattern. It also has no place for
+system automations, which are invariant by design and should never be deletable by a user at all.
 
-- `POST /api/automations/:id/archive` — set `archivedAt`, unschedule.
-- `POST /api/automations/:id/restore` — clear `archivedAt`, reschedule iff active.
-- `GET /api/automations?archived=true` — list archived (default excludes archived; composes with the
-  existing `kind` param).
-- `DELETE /api/automations/:id` — hard delete, **rejected unless already archived.**
+## The shape of the fix
 
-### The enforced two-step
+- **Delete becomes Archive**, a soft, restorable state — not a new destination screen, just a filterable
+  state on the existing Automations view. An archived automation is inert (unscheduled, not runnable) but
+  its run history is retained and remains inspectable.
+- **Permanent delete survives, but only as a deliberate second step**, reachable only from the archived
+  state. This makes archive-before-delete an actual invariant rather than a UI convention — no path
+  exists to hard-delete a live automation directly.
+- **No auto-purge.** Archived items stay until a user explicitly deletes them. Auto-purging on a timer
+  would silently destroy recoverable data — the entire point of archiving — so it's deferred indefinitely
+  unless the archived-table size ever actually becomes a problem in practice.
+- **System automations are exempt.** They cannot be archived or deleted at all, consistent with their
+  existing Run-Now-only invariants.
 
-`DELETE` rejecting non-archived automations is what makes archive-before-delete an **invariant**, not
-a UI convention — an API client cannot hard-delete a live automation in one call. This is a
-**behaviour change to an existing endpoint**: today the dashboard trash button (and tests) hard-delete
-directly; they must be rewired to archive first, with permanent delete moved to the Archived view.
+## Blockers / friction
 
-## UI surface
-
-Archived items appear via a **filter/section on the Automations screen** (`?archived=true`), not a
-dedicated route — archive applies to user automations only, so it lives where they do. The Archived
-view offers **Restore** and **Delete permanently**. A separate `/automations/archived` route was
-considered and rejected as heavier than warranted for current archive volumes.
-
-## Verb alignment
-
-This is the **Archive** verb from `automation-verbs-and-separation.md` (archive icon, not a bare
-trash). The destructive control on a user `AutomationRow` becomes Archive; permanent Delete lives only
-in the Archived view.
+- This is a genuine behaviour change to an existing endpoint: today's delete path (dashboard trash
+  button, and the tests around it) hard-deletes directly. Making archive-before-delete a real invariant
+  means rewiring that existing control, not just adding a new one alongside it.
+- The verb this introduces ("Archive," not a bare trash icon) needs to land consistently with any other
+  automation-verb relabeling happening elsewhere (see `docs/intent/realtime-event-driven-cache.md`'s
+  visual pass) — shipping this in isolation risks a mismatched icon/verb vocabulary if the other lands
+  later with different naming.
+</content>
