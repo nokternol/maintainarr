@@ -32,6 +32,8 @@ Ladle story first, then in-place. (1) Create/update the component's `.stories.ts
 
 **Do not treat `docs/intent/` or `docs/in_progress/` as descriptions of what is built.** When implementing something described in either folder, update the doc status as part of completion — delete `in_progress` files, move `intent` files to `docs/architecture/`.
 
+**`docs/architecture/` staying "current fact" is an ongoing duty, not a one-time promotion.** Before relocating, renaming, or deleting a file or symbol, `grep -rl <old-path-or-symbol> docs/` and fix or triage every hit — not just the docs the change's own plan already names as related. Skipping this is how a doc silently goes stale one relocation at a time. Use the `docs-lifecycle` skill for the mechanics.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

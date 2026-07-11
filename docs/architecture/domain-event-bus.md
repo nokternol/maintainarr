@@ -10,7 +10,7 @@ deployment). Horizontal scaling is the boundary to revisit.
 ## The bus
 
 `DomainEventBus` ([`server/kernel/eventBus.ts`](ref:path:server/kernel/eventBus.ts)) wraps a Node `EventEmitter` with a typed event map
-(`DomainEvents`). It is registered as a singleton in the awilix cradle ([`server/container.ts`](ref:path:server/container.ts),
+(`DomainEvents`). It is registered as a singleton in the awilix cradle ([`server/kernel/container.ts`](ref:path:server/kernel/container.ts),
 `eventBus`). `on`/`off`/`emit` are generic over the event-name keys so payloads are checked against
 the map at compile time.
 
@@ -54,9 +54,10 @@ deliberately *not* carried forward.
 Scope lives **with the task definition**, so the executor never hard-codes which tasks touch the cache:
 
 - **Actuator tasks** carry `affects` on the `ActuatorTaskDescriptor` the `MediaActuator` role declares
-  ([`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts), returned by each provider's `tasks()`). `unmonitorMovie` /
-  `unmonitorSeries` declare `affects: 'media'`; `triggerSearch` declares nothing (its async *arr search
-  flips `hasFile` out-of-band, so it does not synchronously change the displayed library).
+  ([`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts), returned by each provider's `tasks()`). Several tasks declare
+  `affects: 'media'` (`unmonitorMovie`, `deleteMovieWithFiles`, `deleteMovieKeepFiles`,
+  `changeQualityProfile`, and their Sonarr equivalents); `triggerSearch` declares nothing (its async *arr
+  search flips `hasFile` out-of-band, so it does not synchronously change the displayed library).
 - **System data jobs** declare scope in `SYSTEM_TASKS` ([`automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts)): `system:enrichment`,
   `system:identity-resolution` declare `affects: 'media'`.
 
