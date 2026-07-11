@@ -16,10 +16,11 @@ Three boundary behaviours, each assertable by counting DB round-trips (spy on th
 
 ## Problem
 
-`listMovies`/`listSeries` serve provider lists from `MediaCache` (`server/modules/media/media.cache.ts`
-— `moviesCache`/`seriesCache`, 60s TTL + `invalidate()` + in-flight dedup), but `mergeEnrichment`
-(`server/services/enrichmentMerge.ts`) issues **two DB queries (identity + enrichment) on every
-request** regardless of cache state. The old `watchedTitlesCache` that softened this was removed and
+`listMovies`/`listSeries` serve provider lists from `MediaCache` (`server/kernel/cache.ts`, instantiated
+as `moviesCache`/`seriesCache` in `server/modules/media/media.handler.ts` — 60s TTL + `invalidate()` +
+in-flight dedup), but `mergeEnrichment` (`server/modules/media/enrichmentMerge.ts`) issues **two DB
+queries (identity + enrichment) on every request** regardless of cache state. The old
+`watchedTitlesCache` that softened this was removed and
 nothing replaced it.
 
 ## What we cache: the lookup maps (not the merged result)

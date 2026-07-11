@@ -1,6 +1,6 @@
 # Domain Event Bus
 
-**Status:** IMPLEMENTED — 2026-06-15 (Phase 2 of the Realtime & Event-Driven Cache plan).
+Shipped 2026-06-15 as Phase 2 of the Realtime & Event-Driven Cache plan.
 
 A single in-process, typed event bus that decouples "something happened inside the
 scheduler/executor" from "something outside must react." Producers publish; consumers subscribe.
@@ -10,7 +10,7 @@ deployment). Horizontal scaling is the boundary to revisit.
 ## The bus
 
 `DomainEventBus` ([`server/kernel/eventBus.ts`](ref:path:server/kernel/eventBus.ts)) wraps a Node `EventEmitter` with a typed event map
-(`DomainEvents`). It is registered as a singleton in the awilix cradle ([`server/container.ts`](ref:path:server/container.ts),
+(`DomainEvents`). It is registered as a singleton in the awilix cradle ([`server/kernel/container.ts`](ref:path:server/kernel/container.ts),
 `eventBus`). `on`/`off`/`emit` are generic over the event-name keys so payloads are checked against
 the map at compile time.
 
@@ -45,19 +45,21 @@ payload independently.
 The payload is **intentionally empty**. The event drives cache invalidation, and the enrichment cache
 it will feed (Phase 3) is whole-scope — so the event need only say *that* media changed, not which
 slice. A within-scope discriminator (e.g. `movie`/`show`) is added only if and when a consumer
-segments its cache and proves it needs one, expressed in that consumer's own vocabulary. See
-`docs/intent/domain-event-bus-hardening.md` for why a provider `sourceType` discriminator was
-deliberately *not* carried forward.
+segments its cache and proves it needs one, expressed in that consumer's own vocabulary. An earlier
+iteration carried a provider `sourceType` discriminator; it was removed before shipping because it
+conflated *provider* with *media kind* — the wrong axis for a consumer that would actually segment on
+kind, not on which provider produced the event.
 
 ## How a task declares it changed data — declarative + gated
 
 Scope lives **with the task definition**, so the executor never hard-codes which tasks touch the cache:
 
 - **Actuator tasks** carry `affects` on the `ActuatorTaskDescriptor` the `MediaActuator` role declares
-  ([`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts), returned by each provider's `tasks()`). `unmonitorMovie` /
-  `unmonitorSeries` declare `affects: 'media'`; `triggerSearch` declares nothing (its async *arr search
-  flips `hasFile` out-of-band, so it does not synchronously change the displayed library).
-- **System data jobs** declare scope in `SYSTEM_TASKS` ([`automationExecutor.ts`](ref:path:server/services/automationExecutor.ts)): `system:enrichment`,
+  ([`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts), returned by each provider's `tasks()`). Several tasks declare
+  `affects: 'media'` (`unmonitorMovie`, `deleteMovieWithFiles`, `deleteMovieKeepFiles`,
+  `changeQualityProfile`, and their Sonarr equivalents); `triggerSearch` declares nothing (its async *arr
+  search flips `hasFile` out-of-band, so it does not synchronously change the displayed library).
+- **System data jobs** declare scope in `SYSTEM_TASKS` ([`automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts)): `system:enrichment`,
   `system:identity-resolution` declare `affects: 'media'`.
 
 The gate and emit are unified in one private helper, [`AutomationExecutor`](ref:label:AutomationExecutor)`.emitDataChange(affects,
@@ -80,5 +82,6 @@ Emit `media:changed` **iff** the task declares a media scope **and** `itemCount 
 - **Producer:** `AutomationExecutor.execute()`. Any future writer of media-relevant data (a
   Tautulli/Plex webhook, a manual re-enrich, a backfill) should emit `media:changed` directly —
   decoupled from run lifecycle so non-run writers invalidate caches too.
-- **Consumers:** none yet — Phases 3 (enrichment cache), 4 (SSE task stream), 5 (SSE data stream).
-  Known hardening required before consumers attach: see `docs/intent/domain-event-bus-hardening.md`.
+- **Consumers:** none yet. `EventEmitter.emit` is synchronous and re-throws a listener's exception into
+  the caller, so the bus does not yet isolate a throwing consumer from the producer — real hardening work
+  before any consumer attaches, not yet built.

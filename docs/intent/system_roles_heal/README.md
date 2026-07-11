@@ -53,8 +53,11 @@ invocation is sufficient.
 - `docs/architecture/actuator-task-ownership.md` — the as-built **MediaActuator** role-owned task model
   (Phase 3). `docs/intent/actuator-task-parameters.md` — the deferred per-task parameter-injection
   requirement.
-- `docs/intent/system-roles-and-capabilities.md` — the three-role model Phases 2–3 realised; this doc's
-  remaining phases build on top of that shipped model, not toward it.
+- The three-role model Phases 2–3 realised is fully shipped and as-built — see
+  `docs/architecture/provider-roles-and-identity.md`, `docs/architecture/media-enricher-role.md`,
+  `docs/architecture/actuator-task-ownership.md`. This program's remaining phases build on top of that
+  shipped model, not toward it. (`docs/intent/system-roles-and-capabilities.md` now tracks one narrower,
+  unrelated open question — non-source actuators deriving ids to run against.)
 - When a phase ships, move its durable pattern to `docs/architecture/` and delete its spec here.
 
 ## Not in this program

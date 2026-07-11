@@ -1,19 +1,20 @@
 # Realtime & Event-Driven Cache — phased TDD plan
 
-**Status:** INTENT — **reverted from in-flight.** P1 and P2 shipped; P3–P6 were paused mid-plan and
-moved back here from `docs/in_progress/` because they ride on the executor and automation create/run
-path that the System-Roles & MediaQueryEngine heal (`docs/in_progress/`) rewrites. They resume — phase
-numbers, index, and shipped/pending state unchanged — once that heal lands. One target (the domain event
-bus and everything that rides on it) broken into six phases. Each backend phase is a full TDD phase
+**Status:** INTENT — **resumable.** P1 and P2 shipped. P3–P6 were paused mid-plan because they ride on
+seams (the executor's resolution logic, the automation create-path validation) that a separate program —
+the System-Roles & MediaQueryEngine heal — was rewriting at the time. That heal's relevant phases have
+since shipped: `MediaQueryEngine` (`server/modules/media/mediaQueryEngine.ts`) now owns query evaluation,
+and the automation create-path is stable (`docs/architecture/media-query-engine.md`,
+`docs/architecture/actuator-task-ownership.md`). **Nothing currently blocks resuming P3–P6** — the North
+Star server-layering program that ran after this plan was paused only relocated files
+(`server/services/` → `server/modules/automations/`, etc.), it did not touch the executor/create-path
+seams these phases extend, so the original pause reason no longer applies. If P3–P6 are still
+deprioritized, that's a separate, current decision, not a standing dependency. One target (the domain
+event bus and everything that rides on it) broken into six phases. Each backend phase is a full TDD phase
 (RED/GREEN/REFACTOR) with enumerated cycles and a single observable behaviour; the final phase is a
-frontend visual pass run through the `impeccable` skill, not TDD. When resumed, move each phase's spec
-back to `docs/in_progress/` as it is picked up, and move any durable implemented pattern to
+frontend visual pass run through the `impeccable` skill, not TDD. When picked back up, move each phase's
+spec to `docs/in_progress/` as it is picked up, and move any durable implemented pattern to
 `docs/architecture/` when it ships.
-
-**Why paused:** P3 caches the enrichment merge and subscribes to `media:changed`; P4/P5 stream off the
-executor's run lifecycle. The heal extracts the executor's resolution half into `MediaQueryEngine` and
-changes the automation create-path validation — the exact seams these phases extend. Building them first
-would mean reworking them. See `docs/in_progress/README.md`.
 
 ## The target
 
@@ -53,9 +54,9 @@ backend-only, clears the standing enrichment-cache perf debt, and makes P5's gri
 ## Why this shape (boundaries redrawn from the original 4 docs)
 
 - **P1 split out of the bus doc.** The bus's `itemCount > 0` gate is only honest if data jobs report a
-  real count, but `automationExecutor.ts:90` hardcodes `0` for *every* system task and the job chain
-  returns `Promise<void>`. Threading a real count (job → `SystemTaskRunner` → executor → run record)
-  is its own observable behaviour and a prerequisite, so it is its own phase, not a buried footnote.
+  real count; before P1 shipped, the executor hardcoded `0` for *every* system task and the job chain
+  returned `Promise<void>`. Threading a real count (job → `SystemTaskRunner` → executor → run record)
+  was its own observable behaviour and a prerequisite, so it was its own phase, not a buried footnote.
 - **The SSE doc split into P4 + P5.** Two streams, two consumers, two screens, two distinct observable
   behaviours; P5 also depends on P3 while P4 does not. P4 establishes the shared SSE-hook + resync
   pattern that P5 reuses.
@@ -83,5 +84,3 @@ Emit the namespaced `media:changed` (no payload) **iff** the task declares a med
 
 - `automation-archive.md` — soft delete / restore; independent of the bus, slot any time. Its Archive
   *verb visual* folds into P6 only if both are ready together.
-- `filter-ui.md` — provider-gating + prop-accumulation cleanup; a separate Phase-4-combination-builder
-  concern needing its own design pass.

@@ -1,11 +1,11 @@
 # Fracture ledger — two-designs-for-one-process, tracked to code
 
-**Status:** AS-BUILT (current fact) — a living ledger, not a plan. Extended as each fracture heals or a new
-one is found; entries move from Open to Healed, never deleted. Companion to two documents that do *not*
-overlap with it: `docs/in_progress/README.md` (the phase-by-phase *plan* for healing what's still Open here)
-and the vocabulary in [`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)
-(the settled *names* for concepts once healed). This doc answers a narrower question than either: **for a
-named fracture, what surfaces actually exist in code right now** — verified directly against source, not
+A living ledger, not a plan. Extended as each fracture heals or a new
+one is found; entries move from Open to Healed, never deleted. Companion to
+[`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)
+(the settled *names* for concepts once healed), and to whatever `docs/in_progress/` plan is currently
+healing an Open entry, when one exists. This doc answers a narrower question than either: **for a named
+fracture, what surfaces actually exist in code right now** — verified directly against source, not
 against what a plan document claims.
 
 ## Why this exists
@@ -95,6 +95,130 @@ is graphed, dated, and verified against code, not inferred from a plan.
   server-provided `sourceProviders`, a naming-convention dependency rather than a duplicated authority.
   Worth the next person's awareness, not necessarily a fix.
 
+### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07 — healed 2026-07-10, North Star Phase 8)
+
+- **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answered the
+  structural question "which layer owns this code," so every new feature re-litigated it. The surfaces,
+  verified against the tree as each phase shipped:
+  - **Doc fiction as a third design (pruned 2026-07-07):** the server READMEs and the deleted
+    `docs/agent/architecture.md` described a boilerplate "clean architecture" on TypeORM —
+    `DataSource`, entities, repositories — while the code was Drizzle (`server/database/index.ts`:
+    `DrizzleDb`, `getDb()`). Agents reading those docs built against an ORM that wasn't installed.
+- **Healed by — infrastructure has one home (North Star Phase 2, 2026-07-08):** `server/kernel/` became
+  the sole home for everything infrastructural with no domain meaning: `config`, `env`, `errors`,
+  `logger`, `eventBus`, `defineRoute`, `middleware/`, and `db.ts` — the database-handle surface
+  re-exporting the `DrizzleDb` contract from `server/database/`, which stayed the schema + migrations
+  home. Zero imports from the old locations remained (`server/config.ts`, `server/errors.ts`,
+  `server/logger.ts`, `server/env.ts`, `server/middleware/`, `server/services/eventBus.ts`,
+  `server/utils/defineRoute.ts` are gone); the direction rule held — kernel imports no service or
+  module. `server/container.ts` — the app's assembly layer — was rebuilt on `server/kernel/container.ts`'s
+  `createKernelContainer()` mechanism rather than duplicating config/db/eventBus registration itself
+  (closed 2026-07-09).
+- **Healed by — providers is the first full feature module (North Star Phase 3, 2026-07-08):**
+  `server/modules/providers/` took on the provider domain end to end beside the transport files it
+  already had: the connections (`connections/` — the base plus one class per external system), `roles.ts`,
+  `mediaSource.ts` (relocated again in Phase 8, see below), `mediaSourceFactory.ts`, `providerFactory.ts`,
+  `taskEnablement.ts`, the provider settings service, `plexService`, `tmdbService`, `keyResolver`, and the
+  identity-resolution job + factory. Everything outside the module imported only the crafted public
+  interface (`index.ts`); zero old-path imports remained.
+- **Healed by — media is the second full feature module (North Star Phase 4, 2026-07-09):**
+  `server/modules/media/` took on normalize, the domain shapes, the rule registry, the query engine, and
+  enrichment: `movie.ts`/`show.ts`, `mediaItem.ts`, `normalizeMedia.ts`, `filterRegistry.ts`,
+  `mediaQueryEngine.ts`, `enrichmentMerge.ts`, `enrichmentJob.ts` + `enrichmentJobFactory.ts`, and absorbed
+  the three route-drawn `filterFields`/`backdrops`/`search` modules as `media.filterFields.*`/
+  `media.backdrops.*`/`media.search.*` beside the pre-existing `media.handler.ts`. `server/domain/`,
+  `server/utils/filterRegistry.ts`, `server/utils/ratingsAggregation.ts`, `server/providers/normalizeMedia.ts`,
+  and `server/jobs/` were deleted. `index.ts` became the crafted public interface.
+
+  A code-review gap closed 2026-07-09: `ratingsAggregation.ts` was flagged as misplaced — it aggregates
+  ratings from `TmdbProvider`/`OmdbProvider`/`TvMazeProvider` DTOs and has no dependency on any media
+  type, so it moved to `server/modules/providers/ratingsAggregation.ts`, module-private there.
+
+  **Correction (dated addendum, 2026-07-10):** this paragraph originally recorded, as current fact, that
+  the enrichment mechanics needing only providers' own vocabulary moved to
+  `server/modules/providers/enrichment/`, and that `MediaSource`/`MediaEnricher` stayed in
+  `providers/mediaSource.ts` and `providers/roles.ts` as a deliberate, narrow `providers → media`
+  exception. Both were true when Phase 4 shipped (2026-07-09) and false the next day: commit `d944ea7`
+  relocated both role contracts and their enrichment mechanics into `modules/media/`, eliminating the
+  exception. See the dedicated entry below, "North Star exception vs. shipped code," for the full
+  account of how that was caught and corrected.
+- **Healed by — mediaQueries is the third full feature module (North Star Phase 5, 2026-07-09):**
+  `server/modules/mediaQueries/` took on the construction of filters over enriched source data:
+  `mediaQueryService.ts` (`MediaQueryRecord` CRUD, filter-value persistence, query health), beside the
+  transport files it already had. `index.ts` became the crafted public interface — `MediaQueryService`,
+  `MediaQueryRecord`, `MediaQueryValue`, the health types, `createMediaQueryRoutes`; `server/services/`
+  no longer had a `mediaQueryService.ts`. Added `mediaQueries.registrations.ts`.
+
+  This surfaced a pre-existing, un-flagged direction violation: `media/mediaQueryEngine.ts` imported
+  `FilterValueEntry` from `services/mediaQueryService.ts` — `media → mediaQueries`, backwards from the
+  declared `mediaQueries → media` direction, invisible before mediaQueryService had a module boundary to
+  cross. `FilterValueEntry` moved to `filterRegistry.ts` beside `FilterValue` and joined media's crafted
+  interface.
+- **Healed by — automations is the fourth full feature module (North Star Phase 6, 2026-07-09):**
+  `server/modules/automations/` took on `automationService.ts`, `automationExecutor.ts`,
+  `automationRunService.ts`, and `automationScheduler.ts` (formerly `server/cron/`, now dissolved),
+  beside the transport files it already had. `index.ts` became the crafted public interface. Verified the
+  dependency direction held: automations imported only the `media`, `mediaQueries`, `providers`
+  interfaces and kernel, never query internals.
+
+  `combinationEvaluator.ts` was planned to move to `modules/automations/` too, but its only consumer was
+  `media/mediaQueryEngine.ts` — moving it would have created a real `media → automations`
+  reverse-direction violation the moment it crossed a module boundary, mirroring the
+  `ratingsAggregation.ts` (Phase 4) and `FilterValueEntry` (Phase 5) corrections. It moved to
+  `server/modules/media/combinationEvaluator.ts` instead, module-private there.
+- **Healed by — auth and system are the fifth and sixth full feature modules (North Star Phase 7,
+  2026-07-09):** `server/modules/auth/` took on `authService.ts` and `drizzleStore.ts` (the session
+  store; schema/migrations stayed in `server/database/`), beside its transport files.
+  `server/modules/system/` resolved the "one name, two homes" collision — HTTP liveness
+  (`server/modules/health/`) and system self-healing (`server/health/`: `ensureSystemJobs`,
+  `failedStateMiddleware`, `systemHealthCheck`) merged with `systemTaskRunner.ts` under one module and one
+  name. Both added a `<module>.registrations.ts`; `server/container.ts`'s inline registration block
+  became empty — every `Cradle` entry came from `KernelCradle` or a module's `<Module>Cradle`.
+  `server/services/`, `server/health/`, `server/domain/`, `server/utils/`, `server/jobs/`, and
+  `server/cron/` were all deleted. `server/modules/settings/` got a minimal `index.ts` too, for
+  consistency — it has no domain logic of its own, only `providerSettingsService` from providers.
+- **Healed by — enforcement and closure (North Star Phase 8, 2026-07-10):** the eight-module surface
+  converged on by Phases 2–7 — `kernel`, `providers`, `media`, `mediaQueries`, `automations`, `auth`,
+  `system`, `settings` — is now mechanically enforced, not just documented. A repo-root
+  `.dependency-cruiser.cjs` config, run in CI via `yarn depcruise:ci` alongside `lint:ci`/`typecheck`/
+  `test:run`, fails on any cross-module import that bypasses a module's `index.ts` or crosses in a
+  direction the design doesn't declare. This is what keeps the fracture from reopening: the next
+  boundary-crossing import fails at PR time instead of surviving to the next manual review, which is how
+  Phases 4, 5, and 6 each found their own direction violations. Full design:
+  `docs/architecture/server-architecture-north-star.md`.
+
+### North Star exception vs. shipped code — `providers → media` exception eliminated, doc didn't follow (recorded and healed 2026-07-10)
+
+- **Fracture:** the North Star declared one narrow, deliberate exception to its default
+  `media → providers` direction — providers' `MediaSource`/`MediaEnricher` role contracts referenced
+  media's `MediaItem` type directly, because a role contract has to name the shape it operates on.
+  Commit `d944ea7` ("Provider/media boundary: media owns MediaSource/MediaEnricher, providers stop
+  importing media") relocated both role contracts into `modules/media/` and inverted their adapters to
+  import provider connection classes instead, eliminating the exception entirely — the direction became
+  plain `media → providers` with nothing left to except. The North Star doc
+  (`docs/intent/server-architecture-north-star.md` at the time), `VOCABULARY.md`'s `MediaSource`/
+  `MediaEnricher`/`MediaItem` rows, `docs/architecture/media-enricher-role.md`'s code snippet and file
+  references, and this very ledger's Phase 4 "Healed by" paragraph above all kept describing the old
+  exception and the old file locations as current fact after the code had already changed underneath
+  them, until Phase 8 caught and corrected all four.
+- **How it misled:** this is the same "doc infected by drift" failure mode this ledger's own "Why this
+  exists" section names (the `SavedMediaQuery` vocabulary table going stale) — except this instance was
+  inside the ledger itself, in the entry whose stated job is "what surfaces actually exist in code right
+  now — verified directly against source." Anyone, human or a `graphify query`, trusting the Phase 4
+  paragraph or any of the three docs above got a wrong file path and a design principle that no longer
+  held.
+- **Healed by:** `docs/architecture/server-architecture-north-star.md` (promoted from `docs/intent/` in
+  the same phase) now describes the shipped, exception-free state: `MediaSource`/`MediaEnricher` are
+  media-owned role contracts (`modules/media/mediaSource.ts`, `modules/media/enrichment/enricher.ts`);
+  provider connection classes implement nothing directly, they are bound to these roles by media-owned
+  adapters (`sourceAdapters.ts`, `enrichment/enricherAdapters.ts`) that import the provider connection
+  classes from providers' public interface. `VOCABULARY.md` and `media-enricher-role.md` were corrected
+  to the same real locations and direction in the same phase, and the Phase 4 paragraph above carries a
+  dated addendum pointing here rather than being silently rewritten with no trace that it once said
+  something else. The dependency-cruiser check added in this phase (see the "Server layering" entry
+  above) now makes a reverse `providers → media` edge, sanctioned or not, fail CI — the doc and the code
+  can no longer drift apart silently the way they did here.
+
 ### MediaQuery naming residue — the `SavedMediaQuery` second vocabulary (recorded 2026-07-07 — healed 2026-07-09, North Star Phase 0)
 
 - **Fracture:** one concept, two names at the HTTP/client boundary. The settled vocabulary (see
@@ -119,130 +243,4 @@ is graphed, dated, and verified against code, not inferred from a plan.
 
 ## Open
 
-### Server layering — three designs for "where does feature logic live" (recorded 2026-07-07, healing surface-by-surface)
-
-- **Healed so far — infrastructure has one home (North Star Phase 2, 2026-07-08):**
-  [`server/kernel/`](ref:path:server/kernel/db.ts) now owns everything infrastructural with no domain
-  meaning: `config`, `env`, `errors`, `logger`, `eventBus`, `defineRoute`, `middleware/`, and `db.ts` —
-  the database-handle surface re-exporting the `DrizzleDb` contract from
-  [`server/database/`](ref:path:server/database/index.ts), which stays the schema + migrations home.
-  Zero imports from the old locations remain (`server/config.ts`, `server/errors.ts`,
-  `server/logger.ts`, `server/env.ts`, `server/middleware/`, `server/services/eventBus.ts`,
-  `server/utils/defineRoute.ts` are gone); the direction rule holds — kernel imports no service or
-  module. [`server/container.ts`](ref:path:server/container.ts) — the app's assembly layer — builds on
-  [`server/kernel/container.ts`](ref:path:server/kernel/container.ts)'s `createKernelContainer()`
-  mechanism rather than duplicating config/db/eventBus registration itself (closed 2026-07-09).
-- **Healed so far — providers is the first full feature module (North Star Phase 3, 2026-07-08):**
-  [`server/modules/providers/`](ref:path:server/modules/providers/index.ts) owns the provider domain
-  end to end beside the transport files it already had: the connections
-  ([`connections/`](ref:path:server/modules/providers/connections/baseProviderConnection.ts) — the
-  base plus one class per external system), [`roles.ts`](ref:path:server/modules/providers/roles.ts),
-  [`mediaSource.ts`](ref:path:server/modules/providers/mediaSource.ts),
-  [`mediaSourceFactory.ts`](ref:path:server/modules/providers/mediaSourceFactory.ts),
-  [`providerFactory.ts`](ref:path:server/modules/providers/providerFactory.ts),
-  [`taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts), the provider settings
-  service, `plexService`, `tmdbService`, `keyResolver`, and the identity-resolution job + factory.
-  Everything outside the module imports only the crafted public interface
-  ([`index.ts`](ref:path:server/modules/providers/index.ts)); zero old-path imports remain.
-  `server/providers/` keeps only `normalizeMedia.ts` — a media concern the media-module phase
-  relocates. The remaining surfaces below are still open.
-- **Healed so far — media is the second full feature module (North Star Phase 4, 2026-07-09):**
-  [`server/modules/media/`](ref:path:server/modules/media/index.ts) owns normalize, the domain shapes,
-  the rule registry, the query engine, and enrichment: `movie.ts`/`show.ts`, `mediaItem.ts`,
-  [`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts),
-  [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts),
-  [`mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts),
-  `enrichmentMerge.ts`, `enrichmentJob.ts` + `enrichmentJobFactory.ts`, and absorbs the three
-  route-drawn `filterFields`/`backdrops`/`search` modules as `media.filterFields.*`/`media.backdrops.*`/
-  `media.search.*` beside the pre-existing `media.handler.ts`. `server/domain/`, `server/utils/
-  filterRegistry.ts`, `server/utils/ratingsAggregation.ts`, `server/providers/normalizeMedia.ts`, and
-  `server/jobs/` are gone. `index.ts` is the crafted public interface; `mediaQueryService.ts`
-  (Phase 5) and `automationExecutor.ts` (still open, Phase 6) consume only that interface.
-  Per-provider enrichment mechanics that only need providers' own vocabulary — the
-  `decorate()` join and the `mapTautulliHistory`/`mapPlexItems`/`mapOverseerr` DTO translators — moved to
-  [`server/modules/providers/enrichment/`](ref:path:server/modules/providers/enrichment/decorate.ts)
-  instead, typed as `Pick<MediaItem, ...>` subsets of media's canonical shape rather than a
-  hand-duplicated field list; `resolvePrecedence` (needs cross-provider precedence over the canonical
-  item) stays media-owned. This is the one deliberate, narrow exception to "media → providers, never the
-  reverse": the `MediaSource`/`MediaEnricher` role contracts in `providers/mediaSource.ts` and
-  `providers/roles.ts` reference media's `MediaItem` directly, because a role contract has to name the
-  shape it operates on — recorded in `VOCABULARY.md`'s MediaItem entry rather than left implicit.
-
-  **Gap closed 2026-07-09:** a code-review pass flagged `ratingsAggregation.ts` as misplaced — it
-  aggregates ratings from `TmdbProvider`/`OmdbProvider`/`TvMazeProvider` DTOs and has no dependency on
-  any media type, so it moved to
-  [`server/modules/providers/ratingsAggregation.ts`](ref:path:server/modules/providers/ratingsAggregation.ts).
-  It stays module-private (only `providers.handler.ts` and the client's `RatingsDisplay` — a documented
-  leaf-type cross-boundary import — consume it), so it is not part of `providers/index.ts`'s crafted
-  interface.
-- **Healed so far — mediaQueries is the third full feature module (North Star Phase 5, 2026-07-09):**
-  [`server/modules/mediaQueries/`](ref:path:server/modules/mediaQueries/index.ts) owns the construction
-  of filters over enriched source data:
-  [`mediaQueryService.ts`](ref:path:server/modules/mediaQueries/mediaQueryService.ts) (`MediaQueryRecord`
-  CRUD, filter-value persistence, query health), beside the transport files it already had
-  (`mediaQueries.handler.ts`/`.routes.ts`/`.schemas.ts`). `index.ts` is the crafted public interface —
-  `MediaQueryService`, `MediaQueryRecord`, `MediaQueryValue`, the health types, `createMediaQueryRoutes`
-  — that automations (still open, Phase 6) and the HTTP layer consume; `server/services/` no longer has
-  a `mediaQueryService.ts`. Added `mediaQueries.registrations.ts`: `MediaQueriesCradle`
-  (`mediaQueryService`) and `registerMediaQueriesDependencies()`, composed into `server/container.ts`
-  alongside the kernel, media, and providers registrations.
-
-  This surfaced a pre-existing, un-flagged direction violation: `media/mediaQueryEngine.ts` imported
-  `FilterValueEntry` from `services/mediaQueryService.ts` — `media → mediaQueries`, backwards from the
-  declared `mediaQueries → media` direction, invisible before mediaQueryService had a module boundary to
-  cross. `FilterValueEntry` (`{ key, value }`, one predicate application) is structurally a media concept
-  — it pairs with `FilterValue` and is the element type of `MediaQuerySource.filterValues`, which
-  `mediaQueryEngine.ts` already owns — so it moved to
-  [`filterRegistry.ts`](ref:path:server/modules/media/filterRegistry.ts) beside `FilterValue` and is now
-  part of media's crafted interface; `mediaQueryService.ts` imports it from there like any other
-  mediaQueries → media consumer.
-- **Healed so far — automations is the fourth full feature module (North Star Phase 6, 2026-07-09):**
-  [`server/modules/automations/`](ref:path:server/modules/automations/index.ts) owns
-  [`automationService.ts`](ref:path:server/modules/automations/automationService.ts),
-  `automationExecutor.ts`, `automationRunService.ts`, and `automationScheduler.ts` (formerly
-  `server/cron/`, now dissolved), beside the transport files it already had
-  (`automations.handler.ts`/`.routes.ts`/`.schemas.ts`). `index.ts` is the crafted public interface —
-  currently just `createAutomationRoutes` and the container contribution, since no other module consumes
-  automations' own DTOs yet. Added `automations.registrations.ts`: `AutomationsCradle`
-  (`automationService`, `automationRunService`, `automationExecutor`, `automationScheduler`) and
-  `registerAutomationsDependencies()`, composed into `server/container.ts`. Verified the dependency
-  direction holds: automations imports only the `media`, `mediaQueries`, `providers` interfaces and
-  kernel, never query internals.
-
-  **Deviation from the plan's file list:** the plan listed `combinationEvaluator.ts` as moving to
-  `modules/automations/` alongside the other four files, but tracing its only consumer found
-  `media/mediaQueryEngine.ts` — nothing automations-domain ever imports it. Moving it to automations
-  would have created a real `media → automations` reverse-direction violation the moment it crossed a
-  module boundary, mirroring the `ratingsAggregation.ts` (Phase 4) and `FilterValueEntry` (Phase 5)
-  corrections. It moved to
-  [`server/modules/media/combinationEvaluator.ts`](ref:path:server/modules/media/combinationEvaluator.ts)
-  instead, where its only consumer already lives; it stays module-private (not part of media's crafted
-  interface) since nothing outside `mediaQueryEngine.ts` needs it.
-- **Healed so far — auth and system are the fifth and sixth full feature modules (North Star Phase 7,
-  2026-07-09):** [`server/modules/auth/`](ref:path:server/modules/auth/index.ts) owns
-  [`authService.ts`](ref:path:server/modules/auth/authService.ts) and
-  [`drizzleStore.ts`](ref:path:server/modules/auth/drizzleStore.ts) (the session store; schema/migrations
-  stay in `server/database/`), beside its transport files.
-  [`server/modules/system/`](ref:path:server/modules/system/index.ts) resolves the "one name, two homes"
-  collision — HTTP liveness (`server/modules/health/`) and system self-healing (`server/health/`:
-  `ensureSystemJobs`, `failedStateMiddleware`, `systemHealthCheck`) merge with
-  [`systemTaskRunner.ts`](ref:path:server/modules/system/systemTaskRunner.ts) under one module and one
-  name. Both add a `<module>.registrations.ts`; `server/container.ts`'s inline registration block is now
-  empty — every `Cradle` entry comes from `KernelCradle` or a module's `<Module>Cradle`.
-  `server/services/`, `server/health/`, `server/domain/`, `server/utils/`, `server/jobs/`, and
-  `server/cron/` are all gone. `server/modules/settings/` gets a minimal `index.ts` too, for
-  consistency — it has no domain logic of its own, only `providerSettingsService` from providers.
-  `server/modules/README.md`'s stale intro (still describing "providers is the first module converged")
-  and its "register a service" walkthrough (hand-editing `server/container.ts`, predating the
-  registrations pattern) are corrected to match the shipped convention.
-- **Fracture:** not a vocabulary split but the same shape one level up — multiple designs answer the
-  structural question "which layer owns this code," so every new feature re-litigates it. The surfaces,
-  verified against the tree:
-  - **Doc fiction as a third design (pruned 2026-07-07):** the server READMEs and the deleted
-    `docs/agent/architecture.md` described a boilerplate "clean architecture" on TypeORM —
-    `DataSource`, entities, repositories — while the code is Drizzle
-    ([`server/database/index.ts`](ref:path:server/database/index.ts): `DrizzleDb`, `getDb()`). Agents
-    reading those docs built against an ORM that isn't installed.
-- **Direction:** a single target design is declared in `docs/intent/` (the server-architecture North
-  Star). This entry tracks only what exists; it heals surface-by-surface as relocations ship and gets
-  verified here against the tree, not against the plan.
+No fracture is currently open.

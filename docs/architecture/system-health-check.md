@@ -11,12 +11,13 @@ valid state without manual intervention.
 ## Startup sequence
 
 ```
-initDatabase()
-  → systemHealthCheck()
-    → ensureSystemJobs()     — upserts missing system automations
+initializeDatabase()
+  → systemHealthCheck(db)
+    → ensureSystemJobs(db)   — upserts missing system automations
     → (future checks)
-  → AutomationScheduler.seed()
-  → listen()
+  → buildContainer(...)
+  → automationService.listActive() + automationScheduler.schedule(a) per automation (seed loop)
+  → server.listen()
 ```
 
 ## Failure classification
@@ -58,8 +59,8 @@ Warning = fully operational, under-configured.
 
 ## Location
 
-[`server/health/systemHealthCheck.ts`](ref:path:server/health/systemHealthCheck.ts) — exported as a single async function called from
-[`server/index.ts`](ref:path:server/index.ts) after `initDatabase()`. Each check is a named assertion. Critical failures
+[`server/modules/system/systemHealthCheck.ts`](ref:path:server/modules/system/systemHealthCheck.ts) — exported as a single async function called from
+[`server/index.ts`](ref:path:server/index.ts) after `initializeDatabase()`. Each check is a named assertion. Critical failures
 throw. Recoverable conditions are fixed in place. Warnings are logged.
 
 ## Why

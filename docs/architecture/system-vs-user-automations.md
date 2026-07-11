@@ -28,7 +28,7 @@ infrastructure for what is fundamentally the same operation with different owner
 ## System automations
 
 System automations are invariants — they must always exist for Warden to function. The
-startup health check ([`server/health/systemHealthCheck.ts`](ref:path:server/health/systemHealthCheck.ts)) upserts them on every boot.
+startup health check ([`server/modules/system/systemHealthCheck.ts`](ref:path:server/modules/system/systemHealthCheck.ts)) upserts them on every boot.
 If a container restarts and a system job is missing, it is restored automatically.
 
 Current system automations (added in Phase 2):

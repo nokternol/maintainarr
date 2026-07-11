@@ -8,7 +8,7 @@ emits into the void, so none of these can manifest yet.
 
 ## Reversed decision: namespaced events vs. generic `data:changed`
 
-The original plan (`docs/in_progress/README.md`) **decided** a single generic
+The original plan **decided** a single generic
 `data:changed { scope, sourceType? }` event "so non-media domains can be added without a new event."
 Phase 2 **overturned** this: the event name is namespaced per scope (`media:changed`, future
 `library:changed`), derived from the task's `affects` declaration as `` `${affects}:changed` ``.

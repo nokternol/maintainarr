@@ -1,7 +1,7 @@
 # MediaQueryEngine — the single owner of "what does this query match"
 
-**Status:** IMPLEMENTED. [`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts). Realised the model formerly in
-`docs/intent/media-query-engine.md`.
+[`server/modules/media/mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts) is the single owner of query
+evaluation.
 
 ## The three concepts
 
@@ -42,7 +42,7 @@ aggregation) while the engine owns normalize → enrich → match → combine.
 - **`combine`** (private) — maps each source through `matchItems`, projects source ids, runs
   `evaluateCombination` (include union minus exclude), and returns the surviving normalized items.
 - Unknown `contentType` resolves to an empty `MediaItemSet`.
-- Depends on [`filterRegistry`](ref:label:filterRegistry) (rule set) and `combinationEvaluator` (combination contract) — both
+- Depends on [`filterRegistry`](ref:path:server/modules/media/filterRegistry.ts) (rule set) and `combinationEvaluator` (combination contract) — both
   internal domain, never mocked. DB enrichment (`mergeEnrichment`) runs when a `db` is injected.
 
 ## Registration
@@ -58,9 +58,7 @@ the executor's private `applyFilters`, the browse handler's duplicated `filterVi
 `/preview` that returned a hardcoded `{ count: 0 }`. Both duplicated loops are deleted; `/preview`
 returns the engine's real count. All three sites now resolve through `evaluate` and cannot diverge.
 
-## Sequencing note
+## Current invariant
 
-`MediaItemSet`'s element is the provider's normalized item today, under the single-active-provider
-invariant. When the `media_item` migration (`docs/intent/provider-source-model.md`) lands, the element
-becomes `media_item` and preview/browse gain a provider-instance axis — and the engine is the single
-place that change lands.
+`MediaItemSet`'s element is the provider's normalized item, under the single-active-provider invariant:
+one active provider per `ContentType`, so a query's source is unambiguous.

@@ -1,15 +1,14 @@
-# Provider Roles & the Media Identity Model (as-built)
+# Provider Roles & the Media Identity Model
 
-**Status:** AS-BUILT (current fact) — 2026-06-15. This documents the model the code *actually*
-implements today, including its limits. The corrective target it is evolving toward lives in
-`docs/intent/provider-source-model.md`.
+As of 2026-06-15, this documents the model the code *actually*
+implements today, including its limits — recorded as architecture rather than intent because the
+hierarchy described below is real and load-bearing, not an unstarted plan.
 
-**Scope:** this covers the **MediaSource** and enricher roles as built. (The enricher role is the
+**Scope:** this covers the **MediaSource** and enricher roles, including their current limitations. (The enricher role is the
 `MediaEnricher` contract — `enrich(items): EnrichmentResult` — re-grounded in Phase 2.5; its full spec is
 `docs/architecture/media-enricher-role.md`.) The third role a
 system can play — **MediaActuator** (tasks/actions) — is the role-owned task model in
-`docs/architecture/actuator-task-ownership.md`. The unifying three-role model is
-`docs/intent/system-roles-and-capabilities.md`.
+`docs/architecture/actuator-task-ownership.md`.
 
 ## Why this is recorded as architecture, not intent
 
@@ -42,7 +41,7 @@ derive from the same two types. Enrichment is then merged *onto* those owner row
 
 ## The MediaSource read contract
 
-The source role is a typed read contract ([`server/modules/providers/mediaSource.ts`](ref:path:server/modules/providers/mediaSource.ts)), not duck-typed access to
+The source role is a typed read contract ([`server/modules/media/mediaSource.ts`](ref:path:server/modules/media/mediaSource.ts)), not duck-typed access to
 `getMovies`/`getSeries`:
 
 ```ts
@@ -59,7 +58,7 @@ movies and Sonarr serves shows, but `MediaQueryEngine.evaluate` never branches o
 `source.idOf` on a single path. `idOf` is the polymorphic answer that removed the per-variant
 `MediaItemSet` id-projection casts.
 
-`MediaSourceFactory.forContentType(contentType)` ([`server/modules/providers/mediaSourceFactory.ts`](ref:path:server/modules/providers/mediaSourceFactory.ts)) resolves a
+`MediaSourceFactory.forContentType(contentType)` ([`server/modules/media/mediaSourceFactory.ts`](ref:path:server/modules/media/mediaSourceFactory.ts)) resolves a
 `ContentType` to its active owner provider bound as a `MediaSource` — used by `/preview` and browse. The
 executor instead binds a specific provider by `automation.provider.id`, since it needs the actuator role
 on the same instance for `task.run`.
@@ -86,7 +85,7 @@ back to the raw `.id`) so the engine evaluates the same list browse paginates.
   (`_sourceIds.plex`/`.tmdb`) and `resolvePrecedence` resolves per field at write time. An empty identity
   table means the enrichers are never even queried. See `docs/architecture/media-enricher-role.md`.
 
-## Known as-built limitations (the corrective targets)
+## Known limitations (the corrective targets)
 
 1. **`sourceType` conflates *type* with *instance*.** The identity key uses the provider type, not the
    configured instance, so **two instances of the same type collide**: a non-4k Radarr and a 4k Radarr
