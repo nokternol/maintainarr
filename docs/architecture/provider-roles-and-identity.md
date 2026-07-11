@@ -1,6 +1,6 @@
 # Provider Roles & the Media Identity Model (as-built)
 
-**Status:** AS-BUILT (current fact) — 2026-06-15. This documents the model the code *actually*
+As of 2026-06-15, this documents the model the code *actually*
 implements today, including its limits. The corrective target it is evolving toward lives in
 `docs/intent/provider-source-model.md`.
 

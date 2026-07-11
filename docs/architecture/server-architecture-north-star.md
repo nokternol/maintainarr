@@ -1,6 +1,6 @@
 # Server architecture North Star — full DDD feature modules
 
-**Status:** AS-BUILT (current fact). This is the design every server-side file now lives under. The
+This is the design every server-side file now lives under. The
 server used to run three competing designs at once for "where does feature logic live" — a boilerplate
 "clean architecture" the READMEs used to describe, a transport-modules + flat-services split, and the
 domain-module ambition `server/modules/README.md` always hinted at (see the fracture ledger's now-Healed

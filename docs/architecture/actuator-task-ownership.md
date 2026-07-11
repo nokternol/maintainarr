@@ -1,6 +1,6 @@
 # MediaActuator task ownership (as-built)
 
-**Status:** AS-BUILT (current fact) — server. Why the actuator half of the system-roles model is shaped the
+Server-side spec: why the actuator half of the system-roles model is shaped the
 way the code is. Detailed spec of the **MediaActuator** role under the umbrella
 `docs/intent/system-roles-and-capabilities.md`; siblings are `docs/architecture/media-enricher-role.md`
 (MediaEnricher) and `docs/intent/provider-source-model.md` (MediaSource). The deferred parameter-carrying

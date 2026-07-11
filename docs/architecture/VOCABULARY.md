@@ -1,6 +1,6 @@
 # Vocabulary — the product's Ubiquitous Language
 
-**Status:** AS-BUILT (current fact). The canonical name for each crystallized product concept, what it
+The canonical name for each crystallized product concept, what it
 means, and where it binds in code. **The TypeScript type is the binding source of truth**; this table is
 the discoverable index into it. When a concept gets a settled name, record it here and stop writing the
 deprecated names in new code. Formerly a section of

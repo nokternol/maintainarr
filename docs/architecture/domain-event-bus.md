@@ -1,6 +1,6 @@
 # Domain Event Bus
 
-**Status:** IMPLEMENTED — 2026-06-15 (Phase 2 of the Realtime & Event-Driven Cache plan).
+Shipped 2026-06-15 as Phase 2 of the Realtime & Event-Driven Cache plan.
 
 A single in-process, typed event bus that decouples "something happened inside the
 scheduler/executor" from "something outside must react." Producers publish; consumers subscribe.

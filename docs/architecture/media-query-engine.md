@@ -1,6 +1,6 @@
 # MediaQueryEngine — the single owner of "what does this query match"
 
-**Status:** IMPLEMENTED. [`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts). Realised the model formerly in
+[`server/services/mediaQueryEngine.ts`](ref:path:server/services/mediaQueryEngine.ts) realises the model formerly in
 `docs/intent/media-query-engine.md`.
 
 ## The three concepts

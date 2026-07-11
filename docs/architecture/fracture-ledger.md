@@ -1,6 +1,6 @@
 # Fracture ledger — two-designs-for-one-process, tracked to code
 
-**Status:** AS-BUILT (current fact) — a living ledger, not a plan. Extended as each fracture heals or a new
+A living ledger, not a plan. Extended as each fracture heals or a new
 one is found; entries move from Open to Healed, never deleted. Companion to
 [`docs/architecture/VOCABULARY.md`](ref:path:docs/architecture/VOCABULARY.md)
 (the settled *names* for concepts once healed), and to whatever `docs/in_progress/` plan is currently
