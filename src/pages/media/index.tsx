@@ -9,7 +9,12 @@ import TopBar from '@app/components/TopBar';
 import { VirtualMediaGrid } from '@app/components/VirtualMediaGrid';
 import type { CardDensity } from '@app/hooks/useCardDensity';
 import { useCardDensity } from '@app/hooks/useCardDensity';
-import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
+import type {
+  ContentScope,
+  FilterState,
+  FilterValue,
+  QualifierScope,
+} from '@app/hooks/useMediaFilters';
 import { useMediaFilters } from '@app/hooks/useMediaFilters';
 import { useMediaLookups } from '@app/hooks/useMediaLookups';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
@@ -420,6 +425,7 @@ export interface MediaContentProps {
   rules: MediaRuleDescriptor[];
   values: FilterState;
   onRuleChange: (scope: ContentScope, key: string, value: FilterValue | undefined) => void;
+  onQualifierChange: (scope: QualifierScope, key: string, providerId: number | undefined) => void;
   clearAll: () => void;
   isActive: boolean;
   activeFilterCount: number;
@@ -452,6 +458,7 @@ export function MediaContent({
   rules,
   values,
   onRuleChange,
+  onQualifierChange,
   clearAll,
   onSaveQuery,
   isActive,
@@ -483,6 +490,7 @@ export function MediaContent({
         rules={rules}
         values={values}
         onRuleChange={onRuleChange}
+        onQualifierChange={onQualifierChange}
         clearAll={clearAll}
         onSaveQuery={onSaveQuery}
         isActive={isActive}
@@ -490,6 +498,7 @@ export function MediaContent({
         seriesYearRange={series.yearRange}
         lookups={lookups}
         configuredTypes={configuredTypes}
+        sources={sources}
         activeTab={activeTab}
         mobileOpen={filtersOpen}
         onMobileClose={onFiltersClose}
@@ -697,6 +706,7 @@ export default function MediaPage() {
     filterState: values,
     debouncedFilters,
     setValue: onRuleChange,
+    setQualifier: onQualifierChange,
     setMovieSort,
     setSeriesSort,
     clearAll,
@@ -804,6 +814,7 @@ export default function MediaPage() {
           rules={rules}
           values={values}
           onRuleChange={onRuleChange}
+          onQualifierChange={onQualifierChange}
           clearAll={clearAll}
           onSaveQuery={isActive ? () => setSaveDialogOpen(true) : undefined}
           isActive={isActive}

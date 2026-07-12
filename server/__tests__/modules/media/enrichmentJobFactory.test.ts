@@ -53,7 +53,7 @@ describe('EnrichmentJobFactory', () => {
     });
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 603, plexRatingKey: '1', resolvedAt: 0 })
+      .values({ kind: 'movie', tmdbId: 603, plexRatingKey: '1', resolvedAt: 0 })
       .returning();
     server.use(
       http.get(`${TAUTULLI_URL}/api/v2`, () =>
@@ -77,9 +77,7 @@ describe('EnrichmentJobFactory', () => {
   });
 
   it('returns a runnable job when no enrichment providers are active', async () => {
-    await getDb()
-      .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 2, tmdbId: 604, resolvedAt: 0 });
+    await getDb().insert(mediaIdentity).values({ kind: 'movie', tmdbId: 604, resolvedAt: 0 });
 
     const job = await makeFactory().create();
 

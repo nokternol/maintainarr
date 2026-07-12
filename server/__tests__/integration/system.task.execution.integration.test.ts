@@ -51,7 +51,7 @@ describe('system task execution via container — system:enrichment', () => {
   it('executes the seeded system:enrichment automation and writes media_enrichment', async () => {
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 1, tmdbId: 603, resolvedAt: 0 })
+      .values({ kind: 'movie', tmdbId: 603, resolvedAt: 0 })
       .returning();
 
     const [enrichmentAutomation] = await db
@@ -94,7 +94,7 @@ describe('system task execution via container — system:enrichment', () => {
     });
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ sourceType: 'RADARR', sourceId: 7, tmdbId: 700, resolvedAt: 0 })
+      .values({ kind: 'movie', tmdbId: 700, resolvedAt: 0 })
       .returning();
     const [enrichmentAutomation] = await db
       .select({ id: automations.id })

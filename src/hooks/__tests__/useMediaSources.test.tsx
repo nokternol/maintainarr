@@ -16,8 +16,13 @@ describe('useMediaSources', () => {
         HttpResponse.json({
           status: 'ok',
           data: [
-            { contentType: 'movie', ownerType: 'RADARR', configured: true },
-            { contentType: 'show', ownerType: 'SONARR', configured: false },
+            {
+              contentType: 'movie',
+              ownerType: 'RADARR',
+              configured: true,
+              instances: [{ id: 1, name: 'Radarr' }],
+            },
+            { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
           ],
         })
       )
@@ -27,8 +32,13 @@ describe('useMediaSources', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.sources).toEqual({
-      movie: { contentType: 'movie', ownerType: 'RADARR', configured: true },
-      show: { contentType: 'show', ownerType: 'SONARR', configured: false },
+      movie: {
+        contentType: 'movie',
+        ownerType: 'RADARR',
+        configured: true,
+        instances: [{ id: 1, name: 'Radarr' }],
+      },
+      show: { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
     });
   });
 });

@@ -1,18 +1,26 @@
 import { MetadataProviderType } from '../../database/schema';
+import type { MediaKind } from '../providers';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
 
 export type { NormalizedMovie } from './movie';
 export type { NormalizedShow } from './show';
 
-export type ContentType = 'movie' | 'show';
+export type ContentType = MediaKind;
 export type RangeValue = { min?: number; max?: number };
 export type FilterValue = string | number | boolean | RangeValue;
 
-/** One predicate application: a registry key paired with the value to test it against. */
+/**
+ * One predicate application: a registry key paired with the value to test it against.
+ * `providerId` qualifies which instance's namespace the value belongs to — set only on
+ * `instanceScoped` rules; namespace qualification, not targeting (see `automations.providerId`
+ * for that). Undefined means unqualified: the native id is interpreted in each item's own
+ * instance namespace, today's behavior.
+ */
 export interface FilterValueEntry {
   key: string;
   value: FilterValue;
+  providerId?: number;
 }
 
 export type Predicate<
@@ -28,6 +36,11 @@ export interface MediaRule<
   dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings' | 'range';
   sourceProviders: MetadataProviderType[];
   required: boolean;
+  /** True for rules whose values are a provider-*defined* id space (a quality profile id is
+   *  minted by one instance) — the client must qualify these per instance when more than one
+   *  is active. Flows into `MediaRuleDescriptor` automatically; the client learns the class
+   *  from the registry projection instead of keeping its own list. */
+  instanceScoped?: boolean;
   predicate: Predicate<T>;
 }
 
@@ -184,6 +197,7 @@ export const MEDIA_RULES: MediaRule[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.RADARR],
     required: false,
+    instanceScoped: true,
     predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return ids.some((id) => (item.tags ?? []).includes(id));
@@ -196,6 +210,7 @@ export const MEDIA_RULES: MediaRule[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.RADARR],
     required: false,
+    instanceScoped: true,
     predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return item.qualityProfileId !== undefined && ids.includes(item.qualityProfileId);
@@ -256,6 +271,7 @@ export const MEDIA_RULES: MediaRule[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
+    instanceScoped: true,
     predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return ids.some((id) => (item.tags ?? []).includes(id));
@@ -268,6 +284,7 @@ export const MEDIA_RULES: MediaRule[] = [
     dataType: 'csv-ids',
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
+    instanceScoped: true,
     predicate: (item, value) => {
       const ids = parseCsvIds(value);
       return item.qualityProfileId !== undefined && ids.includes(item.qualityProfileId);

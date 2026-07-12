@@ -21,13 +21,14 @@ export { registerProvidersDependencies } from './providers.registrations';
 export type { ProvidersCradle } from './providers.registrations';
 
 // Provider roles — the capability vocabulary connections implement.
-export type { ActuatorTask, ActuatorTaskDescriptor, MediaActuator } from './roles';
+export type { ActuatorTask, ActuatorTaskDescriptor, MediaActuator, MediaKind } from './roles';
+export { SOURCE_OWNER_BY_KIND, isMediaSourceType, kindOfSourceType } from './roles';
 
 // Factories: connections from stored settings, sources from connections.
 // ProviderFactory keeps a value export because consumers construct it as an
 // injection fallback; the container-only classes are types here.
 export { ProviderFactory } from './providerFactory';
-export type { IProviderFactory } from './providerFactory';
+export type { IProviderFactory, ProviderInstance } from './providerFactory';
 
 // Provider settings — persistence and projection of configured providers.
 export { ProviderSettingsService } from './providerSettingsService';

@@ -5,7 +5,7 @@ import { MetadataProviderType } from '@server/database/schema';
  *
  * The client must derive "which provider owns this content type, and is it
  * configured" from this projection, never from its own literal RADARR/SONARR
- * checks. The single authority is `OWNER_TYPE` in mediaSourceFactory.
+ * checks. The single authority is `SOURCE_OWNER_BY_KIND` in providers/roles.ts.
  *
  * Run: vitest run --project server
  */
@@ -47,12 +47,18 @@ describe('GET /api/media/sources — ownership projection', () => {
     const config = loadConfig();
     const db = await initializeDatabase(config);
     const container = buildContainer({ config, db });
-    // Radarr configured and active; no Sonarr instance exists.
+    // Two active Radarr instances; no Sonarr instance exists.
     await container.cradle.providerSettingsService.create({
       type: MetadataProviderType.RADARR,
       name: 'Radarr',
       url: 'http://localhost:7878/api/v3',
       apiKey: 'fake-key',
+    });
+    await container.cradle.providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Radarr 4k',
+      url: 'http://localhost:7879/api/v3',
+      apiKey: 'fake-key-2',
     });
 
     const app: Express = express();
@@ -71,13 +77,21 @@ describe('GET /api/media/sources — ownership projection', () => {
     await closeDatabase();
   });
 
-  it('projects each content type with its owner type and configured state', async () => {
+  it('projects each content type with its owner type, configured state, and every active instance', async () => {
     const res = await client.get('/api/media/sources');
     const data = expectSuccessResponse(res);
 
-    expect(data).toEqual([
-      { contentType: 'movie', ownerType: 'RADARR', configured: true },
-      { contentType: 'show', ownerType: 'SONARR', configured: false },
+    const movie = data.find((d: { contentType: string }) => d.contentType === 'movie');
+    expect(movie.ownerType).toBe('RADARR');
+    expect(movie.configured).toBe(true);
+    expect(movie.instances.map((i: { name: string }) => i.name).sort()).toEqual([
+      'Radarr',
+      'Radarr 4k',
     ]);
+
+    const show = data.find((d: { contentType: string }) => d.contentType === 'show');
+    expect(show.ownerType).toBe('SONARR');
+    expect(show.configured).toBe(false);
+    expect(show.instances).toEqual([]);
   });
 });

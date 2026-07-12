@@ -147,7 +147,7 @@ export class AutomationExecutor {
       );
     }
 
-    const mediaSource = mediaSourceFor(source);
+    const mediaSource = mediaSourceFor(source, providerSettings.id);
     const matched = await this.mediaQueryEngine.evaluate({
       source: mediaSource,
       contentType,

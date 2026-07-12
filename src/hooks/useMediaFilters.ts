@@ -14,9 +14,16 @@ export interface FilterState {
   shared: Record<string, FilterValue>;
   movie: Record<string, FilterValue>;
   show: Record<string, FilterValue>;
+  /** Instance qualification for movie/show-scoped `instanceScoped` rule values (`tagIds`,
+   *  `qualityProfileIds`) — ruleKey -> providerId. Absent key means unqualified, exactly
+   *  today's semantics. Never populated for `shared` rules, which are never instance-scoped. */
+  movieQualifiers: Record<string, number>;
+  showQualifiers: Record<string, number>;
   movieSort: string;
   seriesSort: string;
 }
+
+export type QualifierScope = 'movie' | 'show';
 
 const SORT_DEFAULT = 'title_asc';
 
@@ -24,6 +31,8 @@ const EMPTY_FILTER_STATE: FilterState = {
   shared: { title: '' },
   movie: {},
   show: {},
+  movieQualifiers: {},
+  showQualifiers: {},
   movieSort: SORT_DEFAULT,
   seriesSort: SORT_DEFAULT,
 };
@@ -90,6 +99,8 @@ export function computeFieldIndex(rules: MediaRuleDescriptor[]): FieldIndex {
   };
 }
 
+const QUALIFIER_SUFFIX = 'ProviderId';
+
 function parseQuery(
   query: Record<string, string | string[] | undefined>,
   index: FieldIndex | undefined
@@ -98,6 +109,8 @@ function parseQuery(
     shared: { title: '' },
     movie: {},
     show: {},
+    movieQualifiers: {},
+    showQualifiers: {},
     movieSort: SORT_DEFAULT,
     seriesSort: SORT_DEFAULT,
   };
@@ -106,6 +119,14 @@ function parseQuery(
     if (typeof raw !== 'string') continue;
     if (param === 'movieSort' || param === 'seriesSort') {
       state[param] = raw;
+      continue;
+    }
+    if (param.endsWith(QUALIFIER_SUFFIX)) {
+      const meta = index?.reverse.get(param.slice(0, -QUALIFIER_SUFFIX.length));
+      if (!meta || meta.scope === 'shared') continue;
+      const n = Number(raw);
+      if (Number.isNaN(n)) continue;
+      state[meta.scope === 'movie' ? 'movieQualifiers' : 'showQualifiers'][meta.key] = n;
       continue;
     }
     const meta = index?.reverse.get(param);
@@ -145,6 +166,15 @@ function buildQuery(state: FilterState, index: FieldIndex | undefined): Record<s
       }
     }
   }
+
+  for (const scope of ['movie', 'show'] as const) {
+    const qualifiers = state[scope === 'movie' ? 'movieQualifiers' : 'showQualifiers'];
+    for (const [key, providerId] of Object.entries(qualifiers)) {
+      const paramBase = index?.paramNameFor(scope, key) ?? key;
+      q[`${paramBase}${QUALIFIER_SUFFIX}`] = String(providerId);
+    }
+  }
+
   return q;
 }
 
@@ -221,7 +251,13 @@ export function useMediaFilters() {
   const debouncedFilters = useMemo(() => {
     const shared: MediaFilters = { ...(filterState.shared as MediaFilters) };
     shared.title = debouncedTitle || undefined;
-    return { shared, movie: filterState.movie, show: filterState.show };
+    return {
+      shared,
+      movie: filterState.movie,
+      show: filterState.show,
+      movieQualifiers: filterState.movieQualifiers,
+      showQualifiers: filterState.showQualifiers,
+    };
   }, [debouncedTitle, filterState]);
 
   const setValue = (scope: ContentScope, key: string, value: FilterValue | undefined) => {
@@ -229,7 +265,28 @@ export function useMediaFilters() {
       const bucket = { ...s[scope] };
       if (value === undefined) delete bucket[key];
       else bucket[key] = value;
-      return { ...s, [scope]: bucket };
+      const next = { ...s, [scope]: bucket };
+      // Clearing a value clears its qualification too — a stale providerId
+      // pointing at an empty selection has nothing left to qualify.
+      if (value === undefined && (scope === 'movie' || scope === 'show')) {
+        const qualifiersKey = scope === 'movie' ? 'movieQualifiers' : 'showQualifiers';
+        if (key in next[qualifiersKey]) {
+          const qualifiers = { ...next[qualifiersKey] };
+          delete qualifiers[key];
+          next[qualifiersKey] = qualifiers;
+        }
+      }
+      return next;
+    });
+  };
+
+  const setQualifier = (scope: QualifierScope, key: string, providerId: number | undefined) => {
+    setFilterState((s) => {
+      const qualifiersKey = scope === 'movie' ? 'movieQualifiers' : 'showQualifiers';
+      const qualifiers = { ...s[qualifiersKey] };
+      if (providerId === undefined) delete qualifiers[key];
+      else qualifiers[key] = providerId;
+      return { ...s, [qualifiersKey]: qualifiers };
     });
   };
 
@@ -242,6 +299,7 @@ export function useMediaFilters() {
     filterState,
     debouncedFilters,
     setValue,
+    setQualifier,
     setMovieSort,
     setSeriesSort,
     clearAll,

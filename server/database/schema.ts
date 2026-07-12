@@ -1,4 +1,5 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { bit } from './columns/bit';
 import { createdAt, updatedAt } from './columns/datetime';
 export { createdAt, updatedAt };
@@ -128,6 +129,13 @@ export const mediaQueryFilterValues = sqliteTable(
       .references(() => mediaQueries.id, { onDelete: 'cascade' }),
     filterKey: text('filterKey').notNull(),
     value: text('value').notNull(),
+    /** Namespace qualification for provider-defined id spaces (quality profiles, tags).
+     *  Null means unqualified — the native id is interpreted in each item's own instance
+     *  namespace. SET NULL on provider deletion: deleting a provider must not silently
+     *  change what a query matches. */
+    providerId: integer('providerId').references(() => metadataProviders.id, {
+      onDelete: 'set null',
+    }),
   },
   (table) => [index('IDX_mqfv_queryId').on(table.mediaQueryId)]
 );
@@ -211,23 +219,34 @@ export type AutomationRun = typeof automationRuns.$inferSelect;
 export type NewAutomationRun = typeof automationRuns.$inferInsert;
 
 // ---------------------------------------------------------------------------
-// mediaIdentity
+// mediaIdentity — the logical group: one row per title, no per-source coordinate.
 // ---------------------------------------------------------------------------
 export const mediaIdentity = sqliteTable(
   'media_identity',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    sourceType: text('sourceType').notNull(), // 'RADARR' | 'SONARR'
-    sourceId: integer('sourceId').notNull(),
+    /** MediaKind — 'movie' | 'show'. Scopes the primary-id namespace: a TMDB
+     *  movie id and a TMDB tv id with the same number are different titles. */
+    kind: text('kind').notNull(),
     tmdbId: integer('tmdbId'),
     imdbId: text('imdbId'),
     tvdbId: integer('tvdbId'),
     tvMazeId: integer('tvMazeId'),
     plexRatingKey: text('plexRatingKey'),
     jellyfinItemId: text('jellyfinItemId'),
+    /** Fallback grouping keys for items with no primary id; also the future
+     *  manual-correction layer's input. Populated on group creation. */
+    title: text('title'),
+    year: integer('year'),
     resolvedAt: integer('resolvedAt'),
   },
   (table) => [
+    uniqueIndex('ux_media_identity_movie_tmdb')
+      .on(table.tmdbId)
+      .where(sql`kind = 'movie' AND tmdbId IS NOT NULL`),
+    uniqueIndex('ux_media_identity_show_tvdb')
+      .on(table.tvdbId)
+      .where(sql`kind = 'show' AND tvdbId IS NOT NULL`),
     index('idx_media_identity_tmdb').on(table.tmdbId),
     index('idx_media_identity_tvdb').on(table.tvdbId),
     index('idx_media_identity_imdb').on(table.imdbId),
@@ -236,6 +255,32 @@ export const mediaIdentity = sqliteTable(
 
 export type MediaIdentity = typeof mediaIdentity.$inferSelect;
 export type NewMediaIdentity = typeof mediaIdentity.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// mediaItems — one row per concrete source copy: the provider IS the source.
+// ---------------------------------------------------------------------------
+export const mediaItems = sqliteTable(
+  'media_item',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    providerId: integer('providerId')
+      .notNull()
+      .references(() => metadataProviders.id, { onDelete: 'cascade' }),
+    /** That provider's native id for the item. */
+    externalId: integer('externalId').notNull(),
+    mediaIdentityId: integer('mediaIdentityId')
+      .notNull()
+      .references(() => mediaIdentity.id, { onDelete: 'cascade' }),
+    resolvedAt: integer('resolvedAt'),
+  },
+  (table) => [
+    uniqueIndex('ux_media_item_provider_external').on(table.providerId, table.externalId),
+    index('idx_media_item_identity').on(table.mediaIdentityId),
+  ]
+);
+
+export type MediaItem = typeof mediaItems.$inferSelect;
+export type NewMediaItem = typeof mediaItems.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // mediaEnrichment

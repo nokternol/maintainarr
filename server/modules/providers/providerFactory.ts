@@ -25,14 +25,23 @@ export type AnyProvider =
   | TmdbProvider
   | OmdbProvider;
 
-/** Active providers resolved into typed, named slots — absent types stay undefined. */
+/**
+ * Active providers resolved into typed, named slots — absent types stay undefined.
+ * Carries only the types the single-active invariant still guarantees are singular;
+ * `MediaSource` types (Radarr, Sonarr) are constructed via `createInstances` instead,
+ * which never collapses same-type instances into one slot.
+ */
 export interface ProviderSet {
-  radarr?: RadarrProvider;
-  sonarr?: SonarrProvider;
   plex?: PlexProvider;
   tautulli?: TautulliProvider;
   overseerr?: OverseerrProvider;
   tmdb?: TmdbProvider;
+}
+
+/** A constructed provider paired with the settings row it came from (`settings.id` is the providerId). */
+export interface ProviderInstance<T extends AnyProvider = AnyProvider> {
+  settings: MetadataProvider;
+  provider: T;
 }
 
 export interface IProviderFactory {
@@ -69,14 +78,17 @@ export class ProviderFactory implements IProviderFactory {
     const set: ProviderSet = {};
     for (const settings of providers) {
       const provider = this.create(settings, logger);
-      if (provider instanceof RadarrProvider) set.radarr = provider;
-      else if (provider instanceof SonarrProvider) set.sonarr = provider;
-      else if (provider instanceof PlexProvider) set.plex = provider;
+      if (provider instanceof PlexProvider) set.plex = provider;
       else if (provider instanceof TautulliProvider) set.tautulli = provider;
       else if (provider instanceof OverseerrProvider) set.overseerr = provider;
       else if (provider instanceof TmdbProvider) set.tmdb = provider;
     }
     return set;
+  }
+
+  /** Construct every provider, one entry per configured instance. Never collapses. */
+  createInstances(providers: MetadataProvider[], logger: Logger): ProviderInstance[] {
+    return providers.map((settings) => ({ settings, provider: this.create(settings, logger) }));
   }
 
   /** The keyless TVmaze lookup provider, configured for the public TVmaze API. */

@@ -124,6 +124,26 @@ describe('getRule', () => {
   });
 });
 
+// ─── instanceScoped classification ─────────────────────────────────────────────
+// Rules whose values are provider-*defined* id spaces (a quality profile id is
+// minted by one instance) must be flagged so the client knows to qualify them
+// per instance rather than treating them as universal.
+
+describe('instanceScoped classification', () => {
+  it('flags qualityProfileIds and tagIds as instance-scoped for both content types', () => {
+    expect(getRule('qualityProfileIds', 'movie')!.instanceScoped).toBe(true);
+    expect(getRule('qualityProfileIds', 'show')!.instanceScoped).toBe(true);
+    expect(getRule('tagIds', 'movie')!.instanceScoped).toBe(true);
+    expect(getRule('tagIds', 'show')!.instanceScoped).toBe(true);
+  });
+
+  it('leaves universal rules unscoped', () => {
+    expect(getRule('genres', 'movie')!.instanceScoped).toBeFalsy();
+    expect(getRule('certification', 'movie')!.instanceScoped).toBeFalsy();
+    expect(getRule('network', 'show')!.instanceScoped).toBeFalsy();
+  });
+});
+
 // ─── Movie predicates ────────────────────────────────────────────────────────
 
 describe('movie predicates', () => {

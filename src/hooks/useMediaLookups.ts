@@ -3,11 +3,17 @@ import useSWR from 'swr';
 export interface MediaTag {
   id: number;
   label: string;
+  /** The instance this tag was fetched from — always set by the server (`listTags`). */
+  providerId: number;
+  providerName: string;
 }
 
 export interface MediaQualityProfile {
   id: number;
   name: string;
+  /** The instance this profile was fetched from — always set by the server (`listQualityProfiles`). */
+  providerId: number;
+  providerName: string;
 }
 
 interface TagsResponse {

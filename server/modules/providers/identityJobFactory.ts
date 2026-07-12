@@ -2,6 +2,9 @@ import { MetadataProviderType } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { getChildLogger } from '@server/kernel/logger';
 import type { IdentityJobFactoryLike } from '@server/modules/system';
+import { PlexProvider } from './connections/plexProvider';
+import { RadarrProvider } from './connections/radarrProvider';
+import { SonarrProvider } from './connections/sonarrProvider';
 import { IdentityResolutionJob } from './identityResolutionJob';
 import type { ProviderFactory } from './providerFactory';
 import type { ProviderSettingsService } from './providerSettingsService';
@@ -31,12 +34,19 @@ export class IdentityJobFactory implements IdentityJobFactoryLike {
       MetadataProviderType.SONARR,
       MetadataProviderType.PLEX,
     ]);
-    const { radarr, sonarr, plex } = this.providerFactory.createMany(providers, log);
+    const instances = this.providerFactory.createInstances(providers, log);
+    const movieSources = instances
+      .filter((i) => i.provider instanceof RadarrProvider)
+      .map((i) => ({ providerId: i.settings.id, provider: i.provider as RadarrProvider }));
+    const seriesSources = instances
+      .filter((i) => i.provider instanceof SonarrProvider)
+      .map((i) => ({ providerId: i.settings.id, provider: i.provider as SonarrProvider }));
+    const plex = instances.find((i) => i.provider instanceof PlexProvider);
     return new IdentityResolutionJob({
       db: this.db,
-      radarrProvider: radarr,
-      sonarrProvider: sonarr,
-      plexProvider: plex,
+      movieSources,
+      seriesSources,
+      plexProvider: plex?.provider as PlexProvider | undefined,
       tvMazeLookup: this.providerFactory.createTvMaze(log),
     });
   }

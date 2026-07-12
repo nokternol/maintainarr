@@ -12,16 +12,24 @@ interface Deps {
   enrichers?: MediaEnricher[];
 }
 
-/** A stable identity for a hydrated item — matches `resolvePrecedence`'s grouping key. */
+/**
+ * A stable identity for a hydrated item — matches `resolvePrecedence`'s grouping key.
+ * Collision-free by construction: `hydrate` always sets `_sourceIds.identity` to the
+ * group's own surrogate id, so two kind-scoped groups that happen to share a numeric
+ * `tmdbId` (a movie and a tv show with the same TMDB id) never hydrate to identical
+ * keys and collide here.
+ */
 function identityKey(item: MediaItem): string {
   return JSON.stringify(item._sourceIds);
 }
 
-/** Project an identity row into the canonical item the enrichers match and decorate. */
+/**
+ * Project a group row into the canonical item the enrichers match and decorate.
+ * No `radarr`/`sonarr` key: the group carries no per-instance coordinate, and no
+ * enricher ever matched on those keys (verified in `enricherAdapters.ts`).
+ */
 function hydrate(identity: typeof mediaIdentity.$inferSelect): MediaItem {
-  const ids: Record<string, number | string> = {};
-  if (identity.sourceType === 'RADARR') ids.radarr = identity.sourceId;
-  else if (identity.sourceType === 'SONARR') ids.sonarr = identity.sourceId;
+  const ids: Record<string, number | string> = { identity: identity.id };
   if (identity.tmdbId != null) ids.tmdb = identity.tmdbId;
   if (identity.plexRatingKey != null) ids.plex = identity.plexRatingKey;
   if (identity.imdbId != null) ids.imdb = identity.imdbId;

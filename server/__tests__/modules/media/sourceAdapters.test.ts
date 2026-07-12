@@ -48,43 +48,49 @@ const series: SonarrSeries = {
 };
 
 describe('radarrMediaSource', () => {
-  it('adapts a RadarrProvider into a MediaSource over normalized items', async () => {
+  it('adapts a RadarrProvider into a MediaSource over normalized items carrying providerId', async () => {
     const radarr = new RadarrProvider(mockConfig, mockLogger);
     vi.spyOn(radarr, 'getMovies').mockResolvedValue([movie]);
 
-    const source = radarrMediaSource(radarr);
+    const source = radarrMediaSource(radarr, 5);
     const items = await source.getMediaItems();
 
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe('The Matrix');
     expect(source.idOf(items[0])).toBe(1);
-    expect(source.enrichmentSourceType).toBe('RADARR');
+    expect(items[0]._sourceIds.providerId).toBe(5);
   });
 });
 
 describe('sonarrMediaSource', () => {
-  it('adapts a SonarrProvider into a MediaSource over normalized items', async () => {
+  it('adapts a SonarrProvider into a MediaSource over normalized items carrying providerId', async () => {
     const sonarr = new SonarrProvider(mockConfig, mockLogger);
     vi.spyOn(sonarr, 'getSeries').mockResolvedValue([series]);
 
-    const source = sonarrMediaSource(sonarr);
+    const source = sonarrMediaSource(sonarr, 6);
     const items = await source.getMediaItems();
 
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe('Breaking Bad');
     expect(source.idOf(items[0])).toBe(1);
-    expect(source.enrichmentSourceType).toBe('SONARR');
+    expect(items[0]._sourceIds.providerId).toBe(6);
   });
 });
 
 describe('mediaSourceFor', () => {
-  it('dispatches a RadarrProvider to radarrMediaSource', () => {
+  it('dispatches a RadarrProvider to radarrMediaSource, threading providerId', async () => {
     const radarr = new RadarrProvider(mockConfig, mockLogger);
-    expect(mediaSourceFor(radarr).enrichmentSourceType).toBe('RADARR');
+    vi.spyOn(radarr, 'getMovies').mockResolvedValue([movie]);
+    const source = mediaSourceFor(radarr, 5);
+    const [item] = await source.getMediaItems();
+    expect(item._sourceIds.providerId).toBe(5);
   });
 
-  it('dispatches a SonarrProvider to sonarrMediaSource', () => {
+  it('dispatches a SonarrProvider to sonarrMediaSource, threading providerId', async () => {
     const sonarr = new SonarrProvider(mockConfig, mockLogger);
-    expect(mediaSourceFor(sonarr).enrichmentSourceType).toBe('SONARR');
+    vi.spyOn(sonarr, 'getSeries').mockResolvedValue([series]);
+    const source = mediaSourceFor(sonarr, 6);
+    const [item] = await source.getMediaItems();
+    expect(item._sourceIds.providerId).toBe(6);
   });
 });

@@ -105,6 +105,22 @@ describe('ProviderSettingsService', () => {
 
   it('rejects creating a second active provider of an already-active type', async () => {
     await service.create({
+      type: MetadataProviderType.TMDB,
+      name: 'TMDB',
+      url: 'http://tmdb1',
+    });
+
+    await expect(
+      service.create({
+        type: MetadataProviderType.TMDB,
+        name: 'TMDB 2',
+        url: 'http://tmdb2',
+      })
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('allows creating a second active Radarr instance — MediaSource role has no single-active invariant', async () => {
+    await service.create({
       type: MetadataProviderType.RADARR,
       name: 'Radarr 1080p',
       url: 'http://radarr1:7878/api/v3',
@@ -116,7 +132,23 @@ describe('ProviderSettingsService', () => {
         name: 'Radarr 4K',
         url: 'http://radarr2:7878/api/v3',
       })
-    ).rejects.toThrow(ValidationError);
+    ).resolves.toMatchObject({ isActive: true });
+  });
+
+  it('allows creating a second active Sonarr instance — MediaSource role has no single-active invariant', async () => {
+    await service.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Sonarr',
+      url: 'http://sonarr1:8989/api/v3',
+    });
+
+    await expect(
+      service.create({
+        type: MetadataProviderType.SONARR,
+        name: 'Sonarr 4K',
+        url: 'http://sonarr2:8989/api/v3',
+      })
+    ).resolves.toMatchObject({ isActive: true });
   });
 
   // -------------------------------------------------------------------------
@@ -124,6 +156,22 @@ describe('ProviderSettingsService', () => {
   // -------------------------------------------------------------------------
 
   it('rejects activating a provider when a different active provider of its type exists (D8)', async () => {
+    await service.create({
+      type: MetadataProviderType.TMDB,
+      name: 'Active TMDB',
+      url: 'http://tmdb1',
+    });
+    const inactive = await service.create({
+      type: MetadataProviderType.TMDB,
+      name: 'Spare TMDB',
+      url: 'http://tmdb2',
+      isActive: false,
+    });
+
+    await expect(service.update(inactive.id, { isActive: true })).rejects.toThrow(ValidationError);
+  });
+
+  it('allows activating a second Radarr instance — MediaSource role has no single-active invariant', async () => {
     await service.create({
       type: MetadataProviderType.RADARR,
       name: 'Active Radarr',
@@ -136,14 +184,16 @@ describe('ProviderSettingsService', () => {
       isActive: false,
     });
 
-    await expect(service.update(inactive.id, { isActive: true })).rejects.toThrow(ValidationError);
+    await expect(service.update(inactive.id, { isActive: true })).resolves.toMatchObject({
+      isActive: true,
+    });
   });
 
   it('allows re-saving an already-active provider with isActive:true (self-exclusion, D8)', async () => {
     const active = await service.create({
-      type: MetadataProviderType.RADARR,
-      name: 'Active Radarr',
-      url: 'http://radarr1:7878/api/v3',
+      type: MetadataProviderType.TMDB,
+      name: 'Active TMDB',
+      url: 'http://tmdb1',
     });
 
     const result = await service.update(active.id, { isActive: true, name: 'Renamed' });

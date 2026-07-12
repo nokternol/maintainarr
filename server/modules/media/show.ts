@@ -1,5 +1,15 @@
 export interface NormalizedShow {
-  _sourceIds: { sonarr?: number; plex?: string; tmdb?: number; tvdb?: number; tvmaze?: number };
+  _sourceIds: {
+    sonarr?: number;
+    plex?: string;
+    tmdb?: number;
+    tvdb?: number;
+    tvmaze?: number;
+    /** The configured instance this item came from — set by every source-produced item. */
+    providerId?: number;
+    /** The group this item was hydrated from — set only on enrichment-job hydrated items. */
+    identity?: number;
+  };
   title: string;
   year?: number;
   hasFile?: boolean;

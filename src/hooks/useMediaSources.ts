@@ -10,6 +10,8 @@ export interface MediaSourceDescriptor {
   contentType: ContentType;
   ownerType: string;
   configured: boolean;
+  /** Every active instance owning this content type — never collapsed to one. */
+  instances: Array<{ id: number; name: string }>;
 }
 
 const KEY = '/api/media/sources';

@@ -60,10 +60,10 @@ export const mediaHandlers = [
       status: 'ok',
       data: {
         radarr: [
-          { id: 1, label: 'action' },
-          { id: 2, label: 'sci-fi' },
+          { id: 1, label: 'action', providerId: 1, providerName: 'Radarr' },
+          { id: 2, label: 'sci-fi', providerId: 1, providerName: 'Radarr' },
         ],
-        sonarr: [{ id: 1, label: 'drama' }],
+        sonarr: [{ id: 1, label: 'drama', providerId: 2, providerName: 'Sonarr' }],
       },
     });
   }),
@@ -73,12 +73,12 @@ export const mediaHandlers = [
       status: 'ok',
       data: {
         radarr: [
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          { id: 1, name: 'HD-1080p', providerId: 1, providerName: 'Radarr' },
+          { id: 2, name: 'Any', providerId: 1, providerName: 'Radarr' },
         ],
         sonarr: [
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          { id: 1, name: 'HD-1080p', providerId: 2, providerName: 'Sonarr' },
+          { id: 2, name: 'Any', providerId: 2, providerName: 'Sonarr' },
         ],
       },
     });
@@ -108,8 +108,13 @@ export const mediaHandlers = [
     return HttpResponse.json({
       status: 'ok',
       data: [
-        { contentType: 'movie', ownerType: 'RADARR', configured: true },
-        { contentType: 'show', ownerType: 'SONARR', configured: false },
+        {
+          contentType: 'movie',
+          ownerType: 'RADARR',
+          configured: true,
+          instances: [{ id: 1, name: 'Radarr' }],
+        },
+        { contentType: 'show', ownerType: 'SONARR', configured: false, instances: [] },
       ],
     });
   }),

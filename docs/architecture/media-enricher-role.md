@@ -45,9 +45,12 @@ it touched**, decorated with **only its fields**, tagged with its provider. The 
 
 The reason there is no separate enrichment transport type is that the canonical `MediaItem`
 (`NormalizedMovie`/`NormalizedShow`) already carries **both halves** enrichment needs: the match keys
-(`_sourceIds: { radarr?, plex?, tmdb?, imdb? }`) and the fill slots (`playCount`, `lastWatchedAt`,
-`overseerrHasIssue`, `overseerrRequestStatus`, `tmdbStatus`, …). The item **is** the contract — each
-enricher owns its own match-and-decorate, so no central lingua franca has to carry fragments between them.
+(`_sourceIds: { radarr?, plex?, tmdb?, imdb?, providerId?, identity? }` — `providerId` on
+source-produced items identifies the instance; `identity` on job-hydrated items is the group's own
+surrogate id, set only by `hydrate` below, never by a source) and the fill slots (`playCount`,
+`lastWatchedAt`, `overseerrHasIssue`, `overseerrRequestStatus`, `tmdbStatus`, …). The item **is** the
+contract — each enricher owns its own match-and-decorate, so no central lingua franca has to carry
+fragments between them.
 
 `EnrichmentResult` is internal to the enrichment job: it carries provenance (which provider produced the
 items) for write-time precedence resolution, and never persists nor crosses a read boundary.

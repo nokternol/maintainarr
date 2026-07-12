@@ -17,8 +17,10 @@ import type {
   ContentScope,
   FilterState,
   FilterValue,
+  QualifierScope,
   RangeValue,
 } from '@app/hooks/useMediaFilters';
+import type { FilterValueEntry } from '@app/hooks/useMediaQueries';
 import type { MediaFilters } from '@app/types/media';
 
 type Bound = 'min' | 'max';
@@ -69,7 +71,13 @@ const BROWSE_PARAM_BINDINGS = {
   sonarrPercentEpisodesLte: { scope: 'show', key: 'episodePercentage', bound: 'max' },
 } as const;
 
-type ScopedBuckets = Record<'shared' | 'movie' | 'show', Record<string, FilterValue | undefined>>;
+type ScopedBuckets = Record<
+  'shared' | 'movie' | 'show',
+  Record<string, FilterValue | undefined>
+> & {
+  movieQualifiers?: Record<string, number>;
+  showQualifiers?: Record<string, number>;
+};
 
 function readBinding(buckets: ScopedBuckets, binding: Binding): FilterValue | undefined {
   const value = buckets[binding.scope][binding.key];
@@ -81,17 +89,30 @@ function scopesFor(contentType: 'movie' | 'show'): ContentScope[] {
   return ['shared', contentType];
 }
 
+function qualifierFor(
+  buckets: ScopedBuckets,
+  scope: QualifierScope,
+  key: string
+): number | undefined {
+  const qualifiers = scope === 'movie' ? buckets.movieQualifiers : buckets.showQualifiers;
+  return qualifiers?.[key];
+}
+
 export function toBrowseParams(
   buckets: ScopedBuckets,
   contentType: 'movie' | 'show'
 ): MediaFilters {
   const relevantScopes = new Set(scopesFor(contentType));
   const params: MediaFilters = {};
-  for (const [name, binding] of Object.entries(BROWSE_PARAM_BINDINGS)) {
+  for (const [name, binding] of Object.entries(BROWSE_PARAM_BINDINGS) as [string, Binding][]) {
     if (!relevantScopes.has(binding.scope)) continue;
     const value = readBinding(buckets, binding);
     if (value === undefined) continue;
     params[name] = value as string | number | boolean;
+    if (binding.bound) continue;
+    if (binding.scope !== 'movie' && binding.scope !== 'show') continue;
+    const providerId = qualifierFor(buckets, binding.scope, binding.key);
+    if (providerId !== undefined) params[`${name}ProviderId`] = providerId;
   }
   return params;
 }
@@ -99,8 +120,15 @@ export function toBrowseParams(
 export function toSaveValues(
   filterState: FilterState,
   contentType: 'movie' | 'show'
-): Record<string, FilterValue> {
+): FilterValueEntry[] {
   const scoped = contentType === 'movie' ? filterState.movie : filterState.show;
+  const qualifiers =
+    contentType === 'movie' ? filterState.movieQualifiers : filterState.showQualifiers;
   const merged: Record<string, FilterValue> = { ...filterState.shared, ...scoped };
-  return Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
+  return Object.entries(merged)
+    .filter((entry): entry is [string, FilterValue] => entry[1] !== undefined)
+    .map(([key, value]) => {
+      const providerId = qualifiers[key];
+      return providerId === undefined ? { key, value } : { key, value, providerId };
+    });
 }

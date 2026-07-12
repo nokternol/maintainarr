@@ -1,22 +1,17 @@
-import { MetadataProviderType } from '@server/database/schema';
+import type { MetadataProviderType } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
-import type {
-  IProviderFactory,
-  ProviderSettingsService,
-  RadarrProvider,
-  SonarrProvider,
+import {
+  type IProviderFactory,
+  type ProviderSettingsService,
+  type RadarrProvider,
+  SOURCE_OWNER_BY_KIND,
+  type SonarrProvider,
 } from '@server/modules/providers';
 import type { ContentType } from './filterRegistry';
 import type { MediaSource } from './mediaSource';
 import { mediaSourceFor } from './sourceAdapters';
 
 const log = getChildLogger('MediaSourceFactory');
-
-/** The provider type that owns each content type under the single-active invariant. */
-const OWNER_TYPE: Record<ContentType, MetadataProviderType> = {
-  movie: MetadataProviderType.RADARR,
-  show: MetadataProviderType.SONARR,
-};
 
 interface Deps {
   providerSettingsService: ProviderSettingsService;
@@ -28,18 +23,31 @@ interface Deps {
  * Consolidates owner-type lookup, active-settings resolution, and provider
  * construction so handlers ask only "give me the source for this content type".
  */
+/** One active instance owning a content type, bound as a `MediaSource`. */
+export interface MediaSourceEntry {
+  providerId: number;
+  name: string;
+  source: MediaSource;
+}
+
 export class MediaSourceFactory {
   constructor(private readonly deps: Deps) {}
 
-  async forContentType(contentType: ContentType): Promise<MediaSource | undefined> {
-    const [settings] = await this.deps.providerSettingsService.findActiveByTypes([
-      OWNER_TYPE[contentType],
+  /** One entry per active instance owning `contentType`. Never collapsed to one. */
+  async sourcesFor(contentType: ContentType): Promise<MediaSourceEntry[]> {
+    const settingsList = await this.deps.providerSettingsService.findActiveByTypes([
+      SOURCE_OWNER_BY_KIND[contentType],
     ]);
-    if (!settings) return undefined;
-    const provider = this.deps.providerFactory.create(settings, log) as
-      | RadarrProvider
-      | SonarrProvider;
-    return mediaSourceFor(provider);
+    return settingsList.map((settings) => {
+      const provider = this.deps.providerFactory.create(settings, log) as
+        | RadarrProvider
+        | SonarrProvider;
+      return {
+        providerId: settings.id,
+        name: settings.name,
+        source: mediaSourceFor(provider, settings.id),
+      };
+    });
   }
 }
 
@@ -48,21 +56,26 @@ export interface MediaSourceDescriptor {
   contentType: ContentType;
   ownerType: MetadataProviderType;
   configured: boolean;
+  /** Every active instance owning this content type — lets the client label
+   *  per-instance options and know when instance qualification is needed. */
+  instances: Array<{ id: number; name: string }>;
 }
 
 /**
- * Projects `OWNER_TYPE` for the client: which provider type owns each content
- * type, and whether an active instance of it exists. The wire surface of the
- * single ownership authority — clients derive from this, never re-declare it.
+ * Projects `SOURCE_OWNER_BY_KIND` for the client: which provider type owns each
+ * content type, whether an active instance of it exists, and every active instance
+ * (never collapsed to one). The wire surface of the single ownership authority —
+ * clients derive from this, never re-declare it.
  */
-export function sourceOwnership(configuredTypes: ReadonlySet<string>): MediaSourceDescriptor[] {
-  return (Object.entries(OWNER_TYPE) as [ContentType, MetadataProviderType][]).map(
-    ([contentType, ownerType]) => ({
-      contentType,
-      ownerType,
-      configured: configuredTypes.has(ownerType),
-    })
+export function sourceOwnership(
+  activeProviders: ReadonlyArray<{ id: number; name: string; type: MetadataProviderType }>
+): MediaSourceDescriptor[] {
+  return (Object.entries(SOURCE_OWNER_BY_KIND) as [ContentType, MetadataProviderType][]).map(
+    ([contentType, ownerType]) => {
+      const instances = activeProviders
+        .filter((p) => p.type === ownerType)
+        .map((p) => ({ id: p.id, name: p.name }));
+      return { contentType, ownerType, configured: instances.length > 0, instances };
+    }
   );
 }
-
-export { OWNER_TYPE };

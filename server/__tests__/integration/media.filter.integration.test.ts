@@ -375,6 +375,38 @@ describe('Media Filter API', () => {
     });
   });
 
+  // ─── Instance qualification (§10) ──────────────────────────────────────────
+
+  describe('GET /api/media/movies — movieTagIdsProviderId qualification', () => {
+    it('matches when the ProviderId names the active Radarr instance', async () => {
+      const sourcesRes = await client.get('/api/media/sources');
+      const sources = expectSuccessResponse(sourcesRes) as Array<{
+        contentType: string;
+        instances: Array<{ id: number; name: string }>;
+      }>;
+      const radarrId = sources.find((s) => s.contentType === 'movie')?.instances[0]?.id;
+      expect(radarrId).toBeDefined();
+
+      const res = await client.get(
+        `/api/media/movies?movieTagIds=1&movieTagIdsProviderId=${radarrId}`
+      );
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(2); // Batman Begins [1,2], Batman Returns [1]
+    });
+
+    it('matches nothing when the ProviderId names a different instance', async () => {
+      const res = await client.get('/api/media/movies?movieTagIds=1&movieTagIdsProviderId=999999');
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(0);
+    });
+
+    it("is unqualified (today's behavior) when the ProviderId param is omitted", async () => {
+      const res = await client.get('/api/media/movies?movieTagIds=1');
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(2);
+    });
+  });
+
   describe('GET /api/media/series — seriesTagIds filter', () => {
     it('returns only series with the specified tag', async () => {
       const res = await client.get('/api/media/series?seriesTagIds=1');
@@ -479,11 +511,13 @@ describe('Media Filter API', () => {
 
       expect(data.radarr).toEqual(
         expect.arrayContaining([
-          { id: 1, label: 'action' },
-          { id: 2, label: 'sci-fi' },
+          expect.objectContaining({ id: 1, label: 'action' }),
+          expect.objectContaining({ id: 2, label: 'sci-fi' }),
         ])
       );
-      expect(data.sonarr).toEqual(expect.arrayContaining([{ id: 1, label: 'drama' }]));
+      expect(data.sonarr).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: 1, label: 'drama' })])
+      );
     });
 
     it('returns 401 when unauthenticated', async () => {
@@ -504,14 +538,14 @@ describe('Media Filter API', () => {
 
       expect(data.radarr).toEqual(
         expect.arrayContaining([
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          expect.objectContaining({ id: 1, name: 'HD-1080p' }),
+          expect.objectContaining({ id: 2, name: 'Any' }),
         ])
       );
       expect(data.sonarr).toEqual(
         expect.arrayContaining([
-          { id: 1, name: 'HD-1080p' },
-          { id: 2, name: 'Any' },
+          expect.objectContaining({ id: 1, name: 'HD-1080p' }),
+          expect.objectContaining({ id: 2, name: 'Any' }),
         ])
       );
     });

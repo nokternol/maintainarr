@@ -4,6 +4,7 @@ import { mergeEnrichment } from './enrichmentMerge';
 import type { FilterValueEntry } from './filterRegistry';
 import { getRule } from './filterRegistry';
 import type { MediaItemSet } from './mediaItem';
+import { itemKey } from './mediaItem';
 import type { MediaSource } from './mediaSource';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
@@ -40,6 +41,9 @@ export type { MediaItemSet };
 /**
  * The engine's match primitive: the subset of `items` satisfying every predicate
  * in `filterValues` under the registry for `contentType`. Unknown keys pass through.
+ * An entry qualified with `providerId` is a claim about one instance's namespace — an
+ * item from another instance cannot satisfy it, so it fails the entry outright rather
+ * than falling through to the predicate.
  */
 export function matchItems<T extends NormalizedMovie | NormalizedShow>(
   items: T[],
@@ -47,9 +51,10 @@ export function matchItems<T extends NormalizedMovie | NormalizedShow>(
   contentType: 'movie' | 'show'
 ): T[] {
   return items.filter((item) =>
-    filterValues.every(({ key, value }) => {
+    filterValues.every(({ key, value, providerId }) => {
       const rule = getRule(key, contentType);
       if (!rule) return true;
+      if (providerId !== undefined && item._sourceIds.providerId !== providerId) return false;
       return rule.predicate(item, value);
     })
   );
@@ -71,23 +76,31 @@ export class MediaQueryEngine {
     const { source } = query;
     const items = await source.getMediaItems();
     if (this.db) {
-      await mergeEnrichment(this.db, items, source.enrichmentSourceType, (i) => source.idOf(i));
+      await mergeEnrichment(this.db, items);
     }
-    return this.combine(items, query.sources, query.contentType, (i) => source.idOf(i));
+    return this.combine(items, query.sources, query.contentType);
   }
 
-  /** Match every source, project ids, combine include/exclude, return survivors. */
+  /**
+   * Match every source, pool by `itemKey` (collision-free across instances — a batch
+   * spanning two providers never collides on provider-native id alone), combine
+   * include/exclude, return survivors.
+   */
   private combine<T extends NormalizedMovie | NormalizedShow>(
     normalized: T[],
     sources: MediaQuerySource[],
-    contentType: 'movie' | 'show',
-    idOf: (item: T) => number | undefined
+    contentType: 'movie' | 'show'
   ): T[] {
     const queryResults: QueryResult[] = sources.map((s) => ({
       role: s.role,
-      items: matchItems(normalized, s.filterValues, contentType).map((i) => idOf(i)!),
+      items: matchItems(normalized, s.filterValues, contentType)
+        .map((i) => itemKey(i))
+        .filter((k): k is string => k !== undefined),
     }));
-    const finalIds = new Set(evaluateCombination(queryResults));
-    return normalized.filter((i) => finalIds.has(idOf(i)!));
+    const finalKeys = new Set(evaluateCombination(queryResults));
+    return normalized.filter((i) => {
+      const key = itemKey(i);
+      return key !== undefined && finalKeys.has(key);
+    });
   }
 }

@@ -1,5 +1,14 @@
 export interface NormalizedMovie {
-  _sourceIds: { radarr?: number; plex?: string; tmdb?: number; imdb?: string };
+  _sourceIds: {
+    radarr?: number;
+    plex?: string;
+    tmdb?: number;
+    imdb?: string;
+    /** The configured instance this item came from — set by every source-produced item. */
+    providerId?: number;
+    /** The group this item was hydrated from — set only on enrichment-job hydrated items. */
+    identity?: number;
+  };
   title: string;
   year?: number;
   hasFile?: boolean;

@@ -8,9 +8,9 @@ import type { NormalizedShow } from './show';
  * browse handler so both filter against the same projection. `_sourceIds` keeps
  * the provider id so matched items can be mapped back to their raw DTO.
  */
-export function normalizeRadarrMovie(m: RadarrMovie): NormalizedMovie {
+export function normalizeRadarrMovie(m: RadarrMovie, providerId: number): NormalizedMovie {
   return {
-    _sourceIds: { radarr: m.id },
+    _sourceIds: { radarr: m.id, providerId, tmdb: m.tmdbId, imdb: m.imdbId },
     title: m.title,
     year: m.year,
     hasFile: m.hasFile,
@@ -25,9 +25,9 @@ export function normalizeRadarrMovie(m: RadarrMovie): NormalizedMovie {
   };
 }
 
-export function normalizeSonarrSeries(s: SonarrSeries): NormalizedShow {
+export function normalizeSonarrSeries(s: SonarrSeries, providerId: number): NormalizedShow {
   return {
-    _sourceIds: { sonarr: s.id },
+    _sourceIds: { sonarr: s.id, providerId, tvdb: s.tvdbId, tmdb: s.tmdbId },
     title: s.title,
     year: s.year,
     monitored: s.monitored,
