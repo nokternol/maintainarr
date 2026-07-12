@@ -147,14 +147,53 @@ count }] }`. The executor instead binds a specific provider by `automation.provi
 the actuator role on the same instance for `task.run` — an automation targets one instance; running the
 same saved query against two instances is two automations sharing that query record.
 
-**Browse still flattens instances (pending Phase 7).** `media.handler.ts` fetches raw
-`RadarrMovie[]`/`SonarrSeries[]` via `getMovies()`/`getSeries()`, looping every active instance but
-concatenating their results into one flat array before wrapping it in an inline `MediaSource` — under
-today's still-real single-active invariant for browse *display* (not identity/enrichment, which are
-already fully multi-instance), this is unobservable, but it means browse does not yet dedupe two
-instances' copies of the same title into one row, nor label which instance a copy came from. That
-per-instance sublist / live display-grouping rewrite, and per-instance filter-value qualification
-(`qualityProfileIds`/`tagIds`), are Phase 7's job.
+## Browse: per-instance sublists, live display dedup, and instance-qualified filters
+
+`media.handler.ts`'s `getMovies()`/`getSeries()` fetch every active instance's raw
+`RadarrMovie[]`/`SonarrSeries[]` into **per-instance sublists** (`{ providerId, providerName, movies }`),
+never flattened into one array before matching. The inline `MediaSource` normalizes each sublist's rows
+with their own `providerId` (`normalizeRadarrMovie(m, providerId)`), so every item pooled into
+`MediaQueryEngine.evaluate` self-describes which instance produced it. Raw-row recovery after matching
+keys on `itemKey(item)` (`${providerId}:${externalId}`), so two instances' rows sharing a raw provider id
+are never conflated.
+
+**Display dedup** groups the matched raw rows by native primary id (`tmdbId` for movies, `tvdbId` for
+series; a row with no primary id falls back to `${providerId}:${id}`, its own singleton group) —
+computed live per request over provider data, no DB join, no dependency on the identity job having run,
+the same key `resolveGroup` uses so the live browse view and the persisted `media_identity` grouping
+agree by construction. Grouping happens **after** engine matching, so filter semantics are ANY: a title
+appears if at least one of its copies matched (the motivating case — "do I have this in 4k?"). The
+representative row is the first matched copy in sort order, decorated with additive `sourceCount` and
+`sourceProviderIds` fields; pagination and totals operate on the grouped rows. With exactly one active
+instance every group is a singleton, so every row is byte-identical to the single-instance shape apart
+from the two additive fields. `listTags`/`listQualityProfiles` decorate each returned tag/profile with
+`{ providerId, providerName }`, and `MediaSourceDescriptor.instances` (`GET /api/media/sources`) lists
+every active instance — the provenance the client needs to label per-instance options.
+
+**Instance-qualified filter values.** `qualityProfileIds` and `tagIds` are provider-*minted* numeric id
+spaces — each instance numbers its own profiles/tags independently, so instance A's id `1` and instance
+B's id `1` are two unrelated things. `MediaRule.instanceScoped` (`filterRegistry.ts`) marks exactly these
+four rule variants (movie/show × tags/profiles); every other rule (strings, universal facts, computed
+measures) is unaffected. `FilterValueEntry` carries an optional `providerId`
+(`media_query_filter_values.providerId`, migration `0015`) that qualifies which instance's namespace the
+paired ids belong to — `undefined` means unqualified (today's pre-multi-instance semantics: the id is
+interpreted in each matched item's own namespace, which is exactly correct whenever evaluation is bound
+to one instance, i.e. every automation and every single-instance deployment). The gate lives once, in
+`matchItems`'s predicate loop
+([`server/modules/media/mediaQueryEngine.ts`](ref:path:server/modules/media/mediaQueryEngine.ts)): a
+qualified entry only matches items whose `_sourceIds.providerId` equals the entry's — it never
+pass-throughs to a different instance's coincidentally-matching id. `computeHealth`
+(`mediaQueryService.ts`) surfaces two misconfiguration cases as `QueryHealth` degradations rather than
+silent mismatches: an entry qualified to a `providerId` that is not an active instance, and — on the
+automation surface — an entry qualified to a provider other than the automation's own bound instance
+(which the gate above would otherwise make match nothing with no visible signal).
+
+The client (`MediaFilterBar`) mirrors this: when a rule's owning content type has more than one active
+instance (`useMediaSources()`), its dropdown renders options grouped into labeled per-instance sections
+and, if every currently-selected option resolves to exactly one instance, emits a qualified entry; a
+selection spanning instances (or none) falls back to the unqualified interpretation. With exactly one
+active instance the control renders flat and emits unqualified entries — the wire shape of a
+single-instance deployment is unchanged.
 
 ## Remaining limitations
 
@@ -165,4 +204,3 @@ per-instance sublist / live display-grouping rewrite, and per-instance filter-va
 2. **Media servers cannot own.** Plex only enriches; Jellyfin is wired only into connection-test and
    search (`providers.handler.ts`, `search.handler.ts`) and its `jellyfinItemId` column is never
    populated by any job.
-3. **Browse does not yet dedupe or label instances** — see the Phase 7 note above.
