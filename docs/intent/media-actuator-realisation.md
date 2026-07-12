@@ -4,9 +4,8 @@
 `server/modules/providers/roles.ts`, `docs/architecture/actuator-task-ownership.md`. This document covers
 making the *non-source* actuators (Plex, Jellyfin, Tautulli) actually execute their declared tasks instead
 of rejecting with "not yet implemented," plus the parameter contract several tasks need regardless of
-provider. It's a distinct theme from `docs/intent/provider-media-identity-model.md` (how identity/shape
-should evolve) — this work consumes whatever identity model exists today; it does not require that model
-to change first.
+provider. It's a distinct theme from `docs/intent/media-item-field-registry.md` (`MediaItem`'s open field shape) —
+this work consumes whatever identity model exists today; it does not require that model to change first.
 
 ## The problem
 
@@ -91,13 +90,14 @@ seam matters — it changes how many real problems there are to solve:
   its enrichment) only resolves anything if Plex is *also* configured — but nothing in the provider model
   declares, validates, or represents "this provider requires that provider." If a user configures Tautulli
   without Plex, its actuator task silently resolves zero ids every time, with no error surfaced anywhere.
-  This is a generic providers-can-depend-on-providers gap, not Tautulli-specific — recorded here and in
-  `docs/intent/provider-media-identity-model.md`'s blockers, but its own investigation, out of scope to
+  This is a generic providers-can-depend-on-providers gap, not Tautulli-specific — recorded here and, as
+  its own document, `docs/intent/inter-provider-dependency.md` — its own investigation, out of scope to
   solve inside this document.
 - Confirming Plex's seam actually covers every id-bearing case `runForPlex` is expected to handle (movies
   and series both use the same guid-matching loop) needs verification before relying on it as "the
   already-built half" of the translation work.
-- This work can proceed against today's identity model as-is; it does not need to wait on
-  `docs/intent/provider-media-identity-model.md`'s instance/type split or field-shape rework, though a
-  `MediaItem` shape change would touch how ids are read out of a resolved query result.
+- This work can proceed against today's identity model as-is — the multi-instance `media_identity`/
+  `media_item` split has already shipped (`docs/architecture/provider-roles-and-identity.md`) — though a
+  `MediaItem` shape change (`docs/intent/media-item-field-registry.md`, not yet built) would touch how
+  ids are read out of a resolved query result.
 </content>
