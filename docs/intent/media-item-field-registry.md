@@ -31,45 +31,104 @@ direction throughout; only media-owned adapters bind a provider connection to th
 **Fields must be defined by the owner, not looked up by name.** A `fields: readonly string[]` property
 (this doc's earlier sketch) is wrong: naming a field by string implies its real type is defined
 *elsewhere*, reachable by that string key — which is precisely the ownership break this design exists to
-close (`EnrichmentResult<TField extends string>`'s same failure, discussed earlier). The owner must
-declare the field's actual shape at the point of ownership:
+close (`EnrichmentResult<TField extends string>`'s same failure, discussed earlier).
+
+**Two distinct shapes, not one, because a real transform sits between them.** A provider's own
+representation of a field (`MediaField` — e.g. Tautulli's raw bitfield) is not always the same *type* as
+`MediaItem`'s canonical, post-precedence representation of that field (`EnrichmentField` — e.g. a
+boolean). Collapsing both into one shared type (`Pick<MediaItem, ...>`, or a single `TFields` checked
+against both ends) forces a cast to fake agreement at exactly the point where a real, meaningful
+conversion needs to happen — and casts are TypeScript's mechanism for overriding inference, which is the
+opposite of what's needed to prove the conversion correct. The two shapes let a genuine value-changing
+transform (bitfield → boolean) be modelled and checked on its own terms, so a bug in that transform
+surfaces as an ordinary return-type mismatch at the transform itself, not as a silently-accepted cast
+somewhere upstream or downstream of it.
+
+`EnrichmentFields` is a single, central, hand-authored, **type-only** mapped type — the canonical
+field-name → internal-type dictionary every adapter's output is checked against. It is not a runtime
+lookup table (that's exactly the rejected `FIELD_REGISTRY` shape, see below) and it is not derived by
+unioning every provider's own declared shape — that union approach was tried and rejected here (see
+"Why not derive the canonical type by unioning provider shapes," below). A provider's own `MediaField`
+shape needs no central type at all: it's adapter-local, since nobody outside that adapter needs to know
+Tautulli represents watched-state as a bitfield.
 
 ```ts
-// media/mediaFieldProvider.ts — illustrative, not reviewed
-export interface MediaFieldProvider<TFields extends Record<string, unknown>> {
-  readonly fieldShape: TFields; // type-only witness, never constructed with real values
+// media/mediaFieldProvider.ts — illustrative, not reviewed. Exact file placement follows
+// the existing providers/media import-graph rules at implementation time, not fixed here.
+export type EnrichmentFields = {
+  playCount: number;
+  lastWatchedAt?: string;
+  // ... one canonical entry per enrichable field, hand-authored
+};
+
+export interface MediaFieldProvider<TMediaField, TFields extends Partial<EnrichmentFields>> {
+  // Provider's own native shape — adapter-local, no central type.
+  visit(raw: unknown[]): Map<string, TMediaField>;
+  // Explicit, checked transform: this is where a bitfield->boolean bug would surface
+  // as a real type error, not a cast.
+  toEnrichmentFields(native: TMediaField): TFields;
 }
 ```
 
 ```ts
 // media/enrichment/enricherAdapters.ts — illustrative
-export interface TautulliFields {
-  playCount: number;
-  lastWatchedAt: string;
+interface TautulliMediaField {
+  watchedBits: number; // Tautulli's own representation
 }
-export const tautulliFieldProvider: MediaFieldProvider<TautulliFields> = { fieldShape: null as never };
+
+export const tautulliFieldProvider: MediaFieldProvider<
+  TautulliMediaField,
+  Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>
+> = {
+  visit(history) {
+    /* replaces the standalone mapTautulliHistory function — the mapper logic now
+       lives on the adapter, alongside the field declaration it produces */
+  },
+  toEnrichmentFields(native) {
+    /* the real, checked transform */
+  },
+};
 ```
 
-`EnrichableField`/`MediaItem`'s enrichable slice become `keyof` the union of every registered owner's own
-declared shape (`TautulliFields & PlexFields & OverseerrFields & TmdbFields & …`), not a lookup against a
-shared table. This also buys a real check for free: if two owners both declare `playCount` with
-conflicting types, the union fails to compile — TS enforces field-type agreement across owners, which no
-version of the string-list sketch could express.
+There is no separate `fieldShape` witness property (an earlier sketch here had one). A prototype
+(`docs/plans/media-item-field-registry-ticket-01-fields-mapper-prototype.md`) confirmed it does zero
+enforcement work on its own — a type-only property, constructed via an `as unknown as TFields` cast,
+checked against nothing. All the real enforcement comes from `visit()`/`toEnrichmentFields()`'s ordinary
+declared return types; dropping the redundant, unenforced property removes an attractive nuisance rather
+than losing any real check. (Wrapping a `toEnrichmentFields` return in an `as` cast still defeats that
+check, same as any TS cast — this is treated as an ordinary, already-understood TS sharp edge, not one
+needing a new lint rule, since nothing in today's `mappers.ts` reaches for casts either.)
+
+Because every adapter's output is a `Pick`/`Partial<Pick>` **of the same central `EnrichmentFields`**,
+two adapters declaring conflicting types for the same field is not just caught — it's inexpressible. (An
+earlier version of this design unioned each adapter's own bespoke shape instead
+(`TautulliFields & PlexFields & …`) and relied on the union failing to compile to catch conflicts; the
+prototype found that claim true only in the narrow case where a real value is *constructed* at the
+conflicting shape — the union itself compiles fine, and a conflicting field collapses silently to
+`never` rather than raising a clear error. Checking every adapter against one shared `EnrichmentFields`
+instead avoids relying on that narrow case entirely.)
 
 A provider connection can play more than one role at once, same as `RadarrProvider` already playing both
 `MediaActuator` (implemented directly on the connection class) and `MediaSource` (bound via
 `sourceAdapters.ts`, never implemented directly — a provider connection class never references the media
 contract itself). `MediaFieldProvider` follows `MediaSource`'s pattern: a media-owned adapter binds each
-provider connection to it, the connection class itself stays unaware of the role. Concretely: Radarr's
-adapter also declares `MediaFieldProvider<{ title, tags, qualityProfileId, … }>`; Tautulli/Plex/Overseerr/
-TMDB's enricher adapters declare `MediaFieldProvider<{ playCount, lastWatchedAt, … }>`/etc. Source fields
-and enrichment fields don't need separate mechanisms — they're the same role, bound by different adapters.
+provider connection to it, the connection class itself stays unaware of the role. Source fields and
+enrichment fields don't need separate mechanisms — they're the same role, bound by different adapters.
 
 **Why this and not a static global map.** A hardcoded table (`FIELD_REGISTRY = { playCount: { owners:
-[TAUTULLI, PLEX] } }`) is exactly `ENRICHMENT_POLICY` relocated — still a location that can drift from
-what `mappers.ts` actually sets, and (per the correction above) still names fields by string rather than
-defining them at the owner. Declaring the field's real shape on the provider itself, next to the mapper
-that produces it, closes both problems at once.
+[TAUTULLI, PLEX] } }`) is a *runtime* lookup that can drift from what the adapter's transform actually
+sets, and still names fields by string rather than checking them structurally. `EnrichmentFields` is
+type-only — it exists purely to constrain `TFields` at compile time, never read or branched on at
+runtime — so it doesn't reintroduce the drift risk a runtime table has.
+
+**Why not derive the canonical type by unioning provider shapes.** The original sketch of this design
+tried to avoid a central type entirely, letting `EnrichmentFields` (then `EnrichableField`) fall out of
+`TautulliFields & PlexFields & …` — every provider owning its field's type outright, nothing central.
+This doesn't hold up: a provider's own field type and `MediaItem`'s canonical, post-precedence type for
+that field are genuinely different types when a real transform sits between them (the bitfield/boolean
+case above), so unioning providers' own shapes was never actually computing the right thing. A central,
+hand-authored `EnrichmentFields` was unavoidable — even in a design that set out specifically to avoid
+one — because it's needed for type enforcement regardless of who "owns" a field's meaning.
 
 ## Related, deferred, not part of this design
 
@@ -117,8 +176,8 @@ room for it later; it's just not part of this scope.
 
 | Area | Change |
 |---|---|
-| `media/mediaFieldProvider.ts` (new) | `MediaFieldProvider<TFields>` interface + `isMediaFieldProvider` — media-owned |
-| `enrichment/enricherAdapters.ts`, `media/sourceAdapters.ts` | Each adapter also implements `MediaFieldProvider`, declaring its provider's owned field shape inline |
+| `media/mediaFieldProvider.ts` (new) | `MediaFieldProvider<TMediaField, TFields>` interface, the central `EnrichmentFields` type, + `isMediaFieldProvider` — media-owned |
+| `enrichment/enricherAdapters.ts`, `media/sourceAdapters.ts` | Each adapter also implements `MediaFieldProvider`: `visit()` (the mapper logic currently in `enrichment/mappers.ts`, relocated here) plus an explicit `toEnrichmentFields()` transform |
 | `enrichment/precedence.ts` | `ENRICHMENT_POLICY`'s per-field type/owner duplication is removed; precedence *ordering* itself still needs a home — see "Open design problem" above, not resolved by this table |
 | `movie.ts`/`show.ts` | Enrichable field block becomes derived from the union of all `MediaFieldProvider` declared shapes, not hand-listed |
 | `enrichment/enricher.ts` | `EnrichableField` becomes derived from the same union; `EnrichmentResult<TField>` becomes a checkable claim against a real declaration |
@@ -159,14 +218,19 @@ from a live per-request intersection to a read of the cached active field set.
 1. **Precedence ordering's design** — the hard problem. Needs its own pass and a fairly high number of
    unit tests, since `mappers.ts`/`resolvePrecedence` currently own this outright and this design directly
    impacts that ownership (see "Open design problem," above).
-2. Whether `.fieldShape`'s consistency with what a provider's mapper actually sets needs an explicit test,
-   or whether sharing one type parameter across `MediaFieldProvider<TFields>` and `MediaEnricher<TFields>`
-   gives enough compiler pressure on its own.
-3. Whether instance-scoping (`instanceScoped`-style, shipped for `tagIds`/`qualityProfileIds` in the
+2. Whether instance-scoping (`instanceScoped`-style, shipped for `tagIds`/`qualityProfileIds` in the
    multi-instance model) needs to be expressed per-field here too, or stays a separate concern.
 
 **Decided, not open:** `MediaFieldProvider` is media-owned, mirroring `MediaSource`/`MediaEnricher`
 (providers own configuration/CRUD, media owns usage — not a new boundary, the existing one). Fields are
 defined by their owner directly (a concrete TS shape), never referenced by string name. Field-inclusion
 signal is provider-configured only; data presence is a separate, future, independently-scoped concern
-(see "The active field set," above).
+(see "The active field set," above). A provider's own field representation (`MediaField`) and `MediaItem`'s
+canonical post-precedence representation (`EnrichmentField`) are distinct types with an explicit, checked
+transform between them — not one shared type — and the canonical side is checked against one central,
+hand-authored, type-only `EnrichmentFields` dictionary rather than derived by unioning every provider's
+own declared shape (see "The role: `MediaFieldProvider`," above, for why the union approach doesn't hold
+up). There is no separate `fieldShape` witness property; `visit()`/`toEnrichmentFields()`'s ordinary
+return types carry all the enforcement. `TFields extends Record<string, unknown>` (this doc's earlier
+constraint) is corrected to `TFields extends Partial<EnrichmentFields>`, since `Record<string, unknown>`
+rejects any concrete interface lacking an index signature.
