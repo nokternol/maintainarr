@@ -13,6 +13,8 @@ const EMPTY_FILTER_STATE: FilterState = {
   shared: { title: '' },
   movie: {},
   show: {},
+  movieQualifiers: {},
+  showQualifiers: {},
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
 };
@@ -213,23 +215,23 @@ function emptySlice<T>(): MediaSlice<T> {
 const LOOKUPS = {
   tags: {
     radarr: [
-      { id: 1, label: '4K' },
-      { id: 2, label: 'Remux' },
-      { id: 3, label: 'HDR' },
+      { id: 1, label: '4K', providerId: 1, providerName: 'Radarr' },
+      { id: 2, label: 'Remux', providerId: 1, providerName: 'Radarr' },
+      { id: 3, label: 'HDR', providerId: 1, providerName: 'Radarr' },
     ],
     sonarr: [
-      { id: 1, label: 'Anime' },
-      { id: 2, label: 'Ongoing' },
+      { id: 1, label: 'Anime', providerId: 2, providerName: 'Sonarr' },
+      { id: 2, label: 'Ongoing', providerId: 2, providerName: 'Sonarr' },
     ],
   },
   qualityProfiles: {
     radarr: [
-      { id: 1, name: 'Ultra-HD' },
-      { id: 2, name: 'HD-1080p' },
+      { id: 1, name: 'Ultra-HD', providerId: 1, providerName: 'Radarr' },
+      { id: 2, name: 'HD-1080p', providerId: 1, providerName: 'Radarr' },
     ],
     sonarr: [
-      { id: 1, name: 'Ultra-HD' },
-      { id: 2, name: 'HD-720p/1080p' },
+      { id: 1, name: 'Ultra-HD', providerId: 2, providerName: 'Sonarr' },
+      { id: 2, name: 'HD-720p/1080p', providerId: 2, providerName: 'Sonarr' },
     ],
   },
   genres: {
@@ -269,6 +271,7 @@ function Controlled({
       else bucket[key] = value;
       return { ...s, [scope]: bucket };
     });
+  const onQualifierChange = () => {};
   const isActive =
     isBucketActive(values.shared, true) ||
     isBucketActive(values.movie) ||
@@ -279,6 +282,7 @@ function Controlled({
       rules={FIXTURE_RULES}
       values={values}
       onRuleChange={onRuleChange}
+      onQualifierChange={onQualifierChange}
       clearAll={() => setValues(EMPTY_FILTER_STATE)}
       isActive={isActive}
       activeFilterCount={0}

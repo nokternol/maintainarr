@@ -248,6 +248,52 @@ describe('useMediaFilters — sort keys are not rules', () => {
   });
 });
 
+describe('useMediaFilters — instance qualifiers', () => {
+  it('starts with no qualifiers', async () => {
+    const { result } = await renderReady();
+    expect(result.current.filterState.movieQualifiers).toEqual({});
+    expect(result.current.filterState.showQualifiers).toEqual({});
+  });
+
+  it('setQualifier scopes to movie/show independently', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setQualifier('movie', 'tagIds', 5));
+    expect(result.current.filterState.movieQualifiers.tagIds).toBe(5);
+    expect(result.current.filterState.showQualifiers.tagIds).toBeUndefined();
+  });
+
+  it('setQualifier(undefined) clears the qualifier', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setQualifier('movie', 'tagIds', 5));
+    act(() => result.current.setQualifier('movie', 'tagIds', undefined));
+    expect(result.current.filterState.movieQualifiers.tagIds).toBeUndefined();
+  });
+
+  it('clearing a value drops its qualifier too', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'tagIds', '1,2'));
+    act(() => result.current.setQualifier('movie', 'tagIds', 5));
+    act(() => result.current.setValue('movie', 'tagIds', undefined));
+    expect(result.current.filterState.movieQualifiers.tagIds).toBeUndefined();
+  });
+
+  it('round-trips a qualifier through the URL as a ProviderId sibling param', async () => {
+    const { result } = await renderReady();
+    act(() => result.current.setValue('movie', 'tagIds', '1,2'));
+    act(() => result.current.setQualifier('movie', 'tagIds', 5));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+    const query = mockReplace.mock.calls.at(-1)![0].query as Record<string, string>;
+    expect(query.movieTagIdsProviderId).toBe('5');
+  });
+
+  it('parses a ProviderId param back into the qualifiers bucket', async () => {
+    mockRouterQuery = { movieTagIds: '1,2', movieTagIdsProviderId: '5' };
+    const { result } = await renderReady();
+    expect(result.current.filterState.movieQualifiers.tagIds).toBe(5);
+  });
+});
+
 describe('useMediaFilters — isActive', () => {
   it('is false with nothing set', async () => {
     const { result } = await renderReady();

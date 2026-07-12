@@ -46,7 +46,10 @@ describe('useMediaQueries — save', () => {
     const { result } = renderHook(() => useMediaQueries(), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await result.current.save('My query', 'movie', { tagIds: '1,2', hasFile: true });
+    await result.current.save('My query', 'movie', [
+      { key: 'tagIds', value: '1,2' },
+      { key: 'hasFile', value: true },
+    ]);
 
     expect(body).toEqual({
       name: 'My query',
@@ -55,6 +58,32 @@ describe('useMediaQueries — save', () => {
         { key: 'tagIds', value: '1,2' },
         { key: 'hasFile', value: true },
       ],
+    });
+  });
+
+  it('posts a providerId qualification through untouched', async () => {
+    let body: unknown;
+    server.use(
+      http.post('/api/media-queries', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          data: { id: 1, name: 'My query', contentType: 'movie', filterValues: [], health: 'ok' },
+        });
+      }),
+      http.get('/api/media-queries', () => HttpResponse.json({ data: [] }))
+    );
+
+    const { result } = renderHook(() => useMediaQueries(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await result.current.save('4k query', 'movie', [
+      { key: 'qualityProfileIds', value: '5', providerId: 3 },
+    ]);
+
+    expect(body).toEqual({
+      name: '4k query',
+      contentType: 'movie',
+      filterValues: [{ key: 'qualityProfileIds', value: '5', providerId: 3 }],
     });
   });
 });

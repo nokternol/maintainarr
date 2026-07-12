@@ -2,11 +2,13 @@ import type {
   ContentScope,
   FilterState,
   FilterValue,
+  QualifierScope,
   RangeValue,
 } from '@app/hooks/useMediaFilters';
 import { scopeOf } from '@app/hooks/useMediaFilters';
 import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
+import type { MediaSourceDescriptor } from '@app/hooks/useMediaSources';
 import { cn } from '@app/lib/utils/cn';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { OptionFilter } from '../filters/OptionFilter';
@@ -30,6 +32,9 @@ export interface MediaFilterBarProps {
   rules: MediaRuleDescriptor[];
   values: FilterState;
   onRuleChange: (scope: ContentScope, key: string, value: FilterValue | undefined) => void;
+  /** Sets the instance qualification for an `instanceScoped` rule's current value (§10) —
+   *  called alongside `onRuleChange` whenever a grouped, per-instance control changes. */
+  onQualifierChange: (scope: QualifierScope, key: string, providerId: number | undefined) => void;
   clearAll: () => void;
   onSaveQuery?: () => void;
   isActive: boolean;
@@ -38,6 +43,10 @@ export interface MediaFilterBarProps {
   lookups: Lookups;
   /** Disambiguates which group(s) a shared, multi-provider rule renders in (see `groupsFor`) — not used for gating, which `rules` already handles. */
   configuredTypes: Set<string>;
+  /** Active-instance counts per content type — drives grouped, instance-qualified rendering
+   *  for `instanceScoped` rules (§10). With zero or one instance every rule renders exactly
+   *  as it did before this existed. */
+  sources?: Record<'movie' | 'show', MediaSourceDescriptor>;
   /** Scopes visible filter groups to the active tab. Omit to show all. */
   activeTab?: 'movies' | 'series';
   /** Mobile bottom sheet open state */
@@ -82,16 +91,52 @@ function ChipX() {
 
 // ─── MultiSelectDropdown ──────────────────────────────────────────────────────
 
+interface QualifiableOption {
+  id: number;
+  displayName: string;
+  providerId: number;
+  providerName: string;
+}
+
+/** Groups options by `providerId`, preserving each group's first-seen order —
+ *  the shape a grouped dropdown menu renders as labeled sections. */
+function groupByProvider(options: QualifiableOption[]): Array<[string, QualifiableOption[]]> {
+  const groups = new Map<string, QualifiableOption[]>();
+  for (const opt of options) {
+    const key = opt.providerName;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(opt);
+  }
+  return Array.from(groups.entries());
+}
+
+/** The single providerId every selected option shares, or `undefined` if the
+ *  selection spans zero or more than one instance — mixed/empty selections
+ *  fall back to today's unqualified interpretation (native id space of each
+ *  item's own instance), the same degrade the design document accepts for
+ *  cross-instance picks that can't be qualified to one namespace. */
+function providerIdOf(options: QualifiableOption[], selectedIds: number[]): number | undefined {
+  const providerIds = new Set(
+    options.filter((o) => selectedIds.includes(o.id)).map((o) => o.providerId)
+  );
+  return providerIds.size === 1 ? Array.from(providerIds)[0] : undefined;
+}
+
 function MultiSelectDropdown({
   label,
   options,
   selectedIds,
   onChange,
+  grouped = false,
 }: {
   label: string;
-  options: Array<{ id: number; displayName: string }>;
+  options: Array<{ id: number; displayName: string; providerId?: number; providerName?: string }>;
   selectedIds: number[];
-  onChange: (ids: number[]) => void;
+  onChange: (ids: number[], providerId: number | undefined) => void;
+  /** Renders options in labeled per-instance sections and reports the
+   *  qualified `providerId` on every change — set when the owning content
+   *  type has more than one active instance (see `MediaFilterBar`). */
+  grouped?: boolean;
 }) {
   const id = useId();
   const menuId = `${id}-menu`;
@@ -119,14 +164,21 @@ function MultiSelectDropdown({
 
   if (options.length === 0) return null;
 
+  const qualifiable = options as QualifiableOption[];
+
   const toggle = (optId: number) => {
     const next = selectedIds.includes(optId)
       ? selectedIds.filter((x) => x !== optId)
       : [...selectedIds, optId];
-    onChange(next);
+    onChange(next, grouped ? providerIdOf(qualifiable, next) : undefined);
   };
 
   const activeCount = selectedIds.length;
+  const menuGroups = grouped ? groupByProvider(qualifiable) : null;
+  // Flattened in the same order the menu renders (grouped or not) so
+  // keyboard-nav indices line up with the labeled sections below.
+  const renderOrder = menuGroups ? menuGroups.flatMap(([, opts]) => opts) : options;
+  const indexById = new Map(renderOrder.map((opt, index) => [opt.id, index]));
 
   return (
     <div ref={containerRef} className="relative">
@@ -182,71 +234,94 @@ function MultiSelectDropdown({
           aria-label={label}
           className="absolute top-full left-0 mt-1 min-w-40 max-h-60 overflow-y-auto bg-surface-panel border border-border rounded-lg shadow-lg py-1 z-20"
         >
-          {options.map((opt, index) => {
-            const checked = selectedIds.includes(opt.id);
-            return (
-              <div
-                key={`${id}-${opt.id}`}
-                ref={(el) => {
-                  itemRefs.current[index] = el;
-                }}
-                role="menuitemcheckbox"
-                aria-checked={checked}
-                tabIndex={-1}
-                onClick={() => toggle(opt.id)}
-                onKeyDown={(e) => {
-                  switch (e.key) {
-                    case 'Escape':
-                      e.preventDefault();
-                      setIsOpen(false);
-                      triggerRef.current?.focus();
-                      break;
-                    case 'ArrowDown':
-                      e.preventDefault();
-                      itemRefs.current[Math.min(index + 1, options.length - 1)]?.focus();
-                      break;
-                    case 'ArrowUp':
-                      e.preventDefault();
-                      if (index === 0) triggerRef.current?.focus();
-                      else itemRefs.current[index - 1]?.focus();
-                      break;
-                    case 'Enter':
-                    case ' ':
-                      e.preventDefault();
-                      toggle(opt.id);
-                      break;
-                  }
-                }}
-                className="flex items-center gap-2 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer select-none"
-              >
-                <span
+          {(menuGroups ?? ([[undefined, options]] as const)).map(([providerName, groupOptions]) => (
+            <div key={providerName ?? 'ungrouped'}>
+              {providerName !== undefined && (
+                <div
+                  className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted select-none first:pt-1.5"
                   aria-hidden="true"
-                  className={cn(
-                    'w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center',
-                    checked ? 'bg-primary border-primary' : 'border-border bg-surface-bg'
-                  )}
                 >
-                  {checked && (
-                    <svg
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      className="w-full h-full p-0.5"
+                  {providerName}
+                </div>
+              )}
+              {groupOptions.map((opt) => {
+                const index = indexById.get(opt.id)!;
+                const checked = selectedIds.includes(opt.id);
+                return (
+                  <div
+                    key={`${id}-${opt.id}`}
+                    ref={(el) => {
+                      itemRefs.current[index] = el;
+                    }}
+                    role="menuitemcheckbox"
+                    aria-checked={checked}
+                    tabIndex={-1}
+                    onClick={() => toggle(opt.id)}
+                    onKeyDown={(e) => {
+                      switch (e.key) {
+                        case 'Escape':
+                          e.preventDefault();
+                          setIsOpen(false);
+                          triggerRef.current?.focus();
+                          break;
+                        case 'ArrowDown':
+                          e.preventDefault();
+                          itemRefs.current[Math.min(index + 1, renderOrder.length - 1)]?.focus();
+                          break;
+                        case 'ArrowUp':
+                          e.preventDefault();
+                          if (index === 0) triggerRef.current?.focus();
+                          else itemRefs.current[index - 1]?.focus();
+                          break;
+                        case 'Enter':
+                        case ' ':
+                          e.preventDefault();
+                          toggle(opt.id);
+                          break;
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer select-none"
+                  >
+                    <span
                       aria-hidden="true"
+                      className={cn(
+                        'w-3.5 h-3.5 flex-shrink-0 rounded-sm border flex items-center justify-center',
+                        checked ? 'bg-primary border-primary' : 'border-border bg-surface-bg'
+                      )}
                     >
-                      <path
-                        d="M2 6l3 3 5-5"
-                        stroke="white"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-                {opt.displayName}
+                      {checked && (
+                        <svg
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          className="w-full h-full p-0.5"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M2 6l3 3 5-5"
+                            stroke="white"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </span>
+                    {opt.displayName}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          {grouped &&
+            selectedIds.length > 0 &&
+            providerIdOf(qualifiable, selectedIds) === undefined && (
+              <div
+                role="note"
+                className="border-t border-border mt-1 px-3 pt-2 pb-1.5 text-[11px] leading-snug text-text-muted"
+              >
+                Spans multiple instances — matches within each item&apos;s own instance.
               </div>
-            );
-          })}
+            )}
         </div>
       )}
     </div>
@@ -832,17 +907,37 @@ function csvIdOptions(
   rule: MediaRuleDescriptor,
   scope: ContentScope,
   lookups: Lookups
-): Array<{ id: number; displayName: string }> | null {
+): Array<{ id: number; displayName: string; providerId: number; providerName: string }> | null {
   if (rule.key === 'tagIds') {
     const list = scope === 'movie' ? lookups.tags.radarr : lookups.tags.sonarr;
-    return list.map((t) => ({ id: t.id, displayName: t.label }));
+    return list.map((t) => ({
+      id: t.id,
+      displayName: t.label,
+      providerId: t.providerId,
+      providerName: t.providerName,
+    }));
   }
   if (rule.key === 'qualityProfileIds') {
     const list =
       scope === 'movie' ? lookups.qualityProfiles.radarr : lookups.qualityProfiles.sonarr;
-    return list.map((p) => ({ id: p.id, displayName: p.name }));
+    return list.map((p) => ({
+      id: p.id,
+      displayName: p.name,
+      providerId: p.providerId,
+      providerName: p.providerName,
+    }));
   }
   return null;
+}
+
+/** Whether the rule's owning content type currently has more than one active
+ *  instance — the trigger for grouped, instance-qualified rendering (§10). */
+function hasMultipleInstances(
+  scope: ContentScope,
+  sources: Record<'movie' | 'show', MediaSourceDescriptor> | undefined
+): boolean {
+  if (scope === 'shared') return false;
+  return (sources?.[scope]?.instances.length ?? 0) > 1;
 }
 
 function csvStringOptions(
@@ -928,7 +1023,9 @@ function RuleControl({
   scope,
   values,
   onRuleChange,
+  onQualifierChange,
   lookups,
+  sources,
   variant = 'segment',
   dataMin,
   dataMax,
@@ -937,7 +1034,9 @@ function RuleControl({
   scope: ContentScope;
   values: FilterState;
   onRuleChange: MediaFilterBarProps['onRuleChange'];
+  onQualifierChange: MediaFilterBarProps['onQualifierChange'];
   lookups: Lookups;
+  sources: MediaFilterBarProps['sources'];
   variant?: 'segment' | 'chips';
   dataMin?: number | null;
   dataMax?: number | null;
@@ -1007,12 +1106,19 @@ function RuleControl({
     case 'csv-ids': {
       const options = csvIdOptions(rule, scope, lookups);
       if (!options) return null;
+      const grouped = rule.instanceScoped === true && hasMultipleInstances(scope, sources);
       return (
         <MultiSelectDropdown
           label={rule.label}
           options={options}
           selectedIds={parseCsvIds(value as string | undefined)}
-          onChange={(ids) => onRuleChange(scope, rule.key, toCsvOrUndefined(ids))}
+          grouped={grouped}
+          onChange={(ids, providerId) => {
+            onRuleChange(scope, rule.key, toCsvOrUndefined(ids));
+            if (rule.instanceScoped && (scope === 'movie' || scope === 'show')) {
+              onQualifierChange(scope, rule.key, providerId);
+            }
+          }}
         />
       );
     }
@@ -1041,6 +1147,7 @@ export function MediaFilterBar({
   rules,
   values,
   onRuleChange,
+  onQualifierChange,
   clearAll,
   onSaveQuery,
   isActive,
@@ -1048,6 +1155,7 @@ export function MediaFilterBar({
   seriesYearRange,
   lookups,
   configuredTypes,
+  sources,
   activeTab,
   mobileOpen = false,
   onMobileClose,
@@ -1184,6 +1292,8 @@ export function MediaFilterBar({
       scope="shared"
       values={values}
       onRuleChange={onRuleChange}
+      onQualifierChange={onQualifierChange}
+      sources={sources}
       lookups={lookups}
       dataMin={dataMin}
       dataMax={dataMax}
@@ -1200,6 +1310,8 @@ export function MediaFilterBar({
             scope={scope}
             values={values}
             onRuleChange={onRuleChange}
+            onQualifierChange={onQualifierChange}
+            sources={sources}
             lookups={lookups}
           />
         ))}
@@ -1216,6 +1328,8 @@ export function MediaFilterBar({
             scope={scope}
             values={values}
             onRuleChange={onRuleChange}
+            onQualifierChange={onQualifierChange}
+            sources={sources}
             lookups={lookups}
           />
         ))}
@@ -1231,6 +1345,8 @@ export function MediaFilterBar({
           scope={scope}
           values={values}
           onRuleChange={onRuleChange}
+          onQualifierChange={onQualifierChange}
+          sources={sources}
           lookups={lookups}
         />
       ))}
@@ -1246,6 +1362,8 @@ export function MediaFilterBar({
           scope={scope}
           values={values}
           onRuleChange={onRuleChange}
+          onQualifierChange={onQualifierChange}
+          sources={sources}
           lookups={lookups}
         />
       ))}
@@ -1261,6 +1379,8 @@ export function MediaFilterBar({
           scope={scope}
           values={values}
           onRuleChange={onRuleChange}
+          onQualifierChange={onQualifierChange}
+          sources={sources}
           lookups={lookups}
         />
       ))}
@@ -1458,6 +1578,8 @@ export function MediaFilterBar({
                       scope={scope}
                       values={values}
                       onRuleChange={onRuleChange}
+                      onQualifierChange={onQualifierChange}
+                      sources={sources}
                       lookups={lookups}
                       variant={rule.dataType === 'boolean' ? 'chips' : 'segment'}
                     />
@@ -1478,6 +1600,8 @@ export function MediaFilterBar({
                       scope={scope}
                       values={values}
                       onRuleChange={onRuleChange}
+                      onQualifierChange={onQualifierChange}
+                      sources={sources}
                       lookups={lookups}
                       variant={
                         rule.dataType === 'boolean' || rule.dataType === 'string'
@@ -1502,6 +1626,8 @@ export function MediaFilterBar({
                       scope={scope}
                       values={values}
                       onRuleChange={onRuleChange}
+                      onQualifierChange={onQualifierChange}
+                      sources={sources}
                       lookups={lookups}
                       variant={rule.dataType === 'boolean' ? 'chips' : 'segment'}
                     />

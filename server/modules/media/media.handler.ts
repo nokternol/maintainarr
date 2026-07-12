@@ -71,11 +71,17 @@ const sharedFilterFields = {
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
 
+// Positive-int qualifier for an instance-scoped rule's sibling `*ProviderId` param —
+// which instance's namespace the paired id list belongs to (§10). Absent means unqualified.
+const providerIdParam = () => z.coerce.number().int().positive().optional();
+
 const moviesQuerySchema = paginationQuerySchema.extend({
   ...sharedFilterFields,
   hasFile: bool3(),
   movieTagIds: z.string().optional(),
+  movieTagIdsProviderId: providerIdParam(),
   movieQualityProfileIds: z.string().optional(),
+  movieQualityProfileIdsProviderId: providerIdParam(),
   movieGenres: z.string().optional(),
   radarrImdbRatingGte: num(),
   radarrImdbRatingLte: num(),
@@ -86,7 +92,9 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   monitored: bool3(),
   seriesStatus: z.string().optional(),
   seriesTagIds: z.string().optional(),
+  seriesTagIdsProviderId: providerIdParam(),
   seriesQualityProfileIds: z.string().optional(),
+  seriesQualityProfileIdsProviderId: providerIdParam(),
   seriesGenres: z.string().optional(),
   seriesType: z.string().optional(),
   network: z.string().optional(),
@@ -109,6 +117,9 @@ const seriesQuerySchema = paginationQuerySchema.extend({
 interface ParamMapping {
   key: string;
   bound?: 'min' | 'max';
+  /** Name of this param's sibling instance-qualifier param (§10), for `instanceScoped`
+   *  rules only — `movieTagIds` pairs with `movieTagIdsProviderId`, for example. */
+  providerIdParam?: string;
 }
 
 const MOVIE_PARAM_TO_KEY: Record<string, ParamMapping> = {
@@ -116,8 +127,11 @@ const MOVIE_PARAM_TO_KEY: Record<string, ParamMapping> = {
   yearMin: { key: 'year', bound: 'min' },
   yearMax: { key: 'year', bound: 'max' },
   hasFile: { key: 'hasFile' },
-  movieTagIds: { key: 'tagIds' },
-  movieQualityProfileIds: { key: 'qualityProfileIds' },
+  movieTagIds: { key: 'tagIds', providerIdParam: 'movieTagIdsProviderId' },
+  movieQualityProfileIds: {
+    key: 'qualityProfileIds',
+    providerIdParam: 'movieQualityProfileIdsProviderId',
+  },
   movieGenres: { key: 'genres' },
   tautulliWatched: { key: 'watched' },
   certification: { key: 'certification' },
@@ -140,8 +154,11 @@ const SERIES_PARAM_TO_KEY: Record<string, ParamMapping> = {
   yearMax: { key: 'year', bound: 'max' },
   monitored: { key: 'monitored' },
   seriesStatus: { key: 'seriesStatus' },
-  seriesTagIds: { key: 'tagIds' },
-  seriesQualityProfileIds: { key: 'qualityProfileIds' },
+  seriesTagIds: { key: 'tagIds', providerIdParam: 'seriesTagIdsProviderId' },
+  seriesQualityProfileIds: {
+    key: 'qualityProfileIds',
+    providerIdParam: 'seriesQualityProfileIdsProviderId',
+  },
   seriesGenres: { key: 'genres' },
   seriesType: { key: 'seriesType' },
   network: { key: 'network' },
@@ -175,7 +192,7 @@ function toFilterValues(
   const entries: FilterValueEntry[] = [];
   const ranges = new Map<string, RangeValue>();
 
-  for (const [param, { key, bound }] of Object.entries(paramMap)) {
+  for (const [param, { key, bound, providerIdParam }] of Object.entries(paramMap)) {
     const raw = query[param];
     if (raw === undefined) continue;
     if (bound) {
@@ -183,7 +200,10 @@ function toFilterValues(
       range[bound] = Number(raw);
       ranges.set(key, range);
     } else {
-      entries.push({ key, value: raw as FilterValue });
+      const entry: FilterValueEntry = { key, value: raw as FilterValue };
+      const rawProviderId = providerIdParam ? query[providerIdParam] : undefined;
+      if (rawProviderId !== undefined) entry.providerId = Number(rawProviderId);
+      entries.push(entry);
     }
   }
   for (const [key, value] of ranges) {

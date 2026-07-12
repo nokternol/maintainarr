@@ -61,9 +61,8 @@ export function useMediaQueries() {
   const save = async (
     name: string,
     contentType: ContentType,
-    values: Record<string, FilterValue | undefined>
+    filterValues: FilterValueEntry[]
   ): Promise<MediaQueryRecord> => {
-    const filterValues = toFilterValues(values);
     const q = await triggerCreate({ name, contentType, filterValues });
     await mutate();
     return q!;

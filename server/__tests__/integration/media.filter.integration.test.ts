@@ -375,6 +375,38 @@ describe('Media Filter API', () => {
     });
   });
 
+  // ─── Instance qualification (§10) ──────────────────────────────────────────
+
+  describe('GET /api/media/movies — movieTagIdsProviderId qualification', () => {
+    it('matches when the ProviderId names the active Radarr instance', async () => {
+      const sourcesRes = await client.get('/api/media/sources');
+      const sources = expectSuccessResponse(sourcesRes) as Array<{
+        contentType: string;
+        instances: Array<{ id: number; name: string }>;
+      }>;
+      const radarrId = sources.find((s) => s.contentType === 'movie')?.instances[0]?.id;
+      expect(radarrId).toBeDefined();
+
+      const res = await client.get(
+        `/api/media/movies?movieTagIds=1&movieTagIdsProviderId=${radarrId}`
+      );
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(2); // Batman Begins [1,2], Batman Returns [1]
+    });
+
+    it('matches nothing when the ProviderId names a different instance', async () => {
+      const res = await client.get('/api/media/movies?movieTagIds=1&movieTagIdsProviderId=999999');
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(0);
+    });
+
+    it("is unqualified (today's behavior) when the ProviderId param is omitted", async () => {
+      const res = await client.get('/api/media/movies?movieTagIds=1');
+      const data = expectSuccessResponse(res);
+      expect(data.totalCount).toBe(2);
+    });
+  });
+
   describe('GET /api/media/series — seriesTagIds filter', () => {
     it('returns only series with the specified tag', async () => {
       const res = await client.get('/api/media/series?seriesTagIds=1');

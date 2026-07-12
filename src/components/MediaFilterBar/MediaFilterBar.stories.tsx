@@ -1,5 +1,11 @@
-import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
+import type {
+  ContentScope,
+  FilterState,
+  FilterValue,
+  QualifierScope,
+} from '@app/hooks/useMediaFilters';
 import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
+import type { MediaSourceDescriptor } from '@app/hooks/useMediaSources';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
 import { MediaFilterBar } from './index';
@@ -8,28 +14,78 @@ import { MediaFilterBar } from './index';
 
 const TAGS = {
   radarr: [
-    { id: 1, label: '4K' },
-    { id: 2, label: 'Remux' },
-    { id: 3, label: 'HDR' },
-    { id: 4, label: 'BluRay' },
+    { id: 1, label: '4K', providerId: 1, providerName: 'Radarr' },
+    { id: 2, label: 'Remux', providerId: 1, providerName: 'Radarr' },
+    { id: 3, label: 'HDR', providerId: 1, providerName: 'Radarr' },
+    { id: 4, label: 'BluRay', providerId: 1, providerName: 'Radarr' },
   ],
   sonarr: [
-    { id: 1, label: 'Anime' },
-    { id: 2, label: 'Ongoing' },
-    { id: 3, label: 'Kids' },
+    { id: 1, label: 'Anime', providerId: 2, providerName: 'Sonarr' },
+    { id: 2, label: 'Ongoing', providerId: 2, providerName: 'Sonarr' },
+    { id: 3, label: 'Kids', providerId: 2, providerName: 'Sonarr' },
   ],
 };
 
 const QUALITY_PROFILES = {
   radarr: [
-    { id: 1, name: 'Ultra-HD' },
-    { id: 2, name: 'HD-1080p' },
-    { id: 3, name: 'SD' },
+    { id: 1, name: 'Ultra-HD', providerId: 1, providerName: 'Radarr' },
+    { id: 2, name: 'HD-1080p', providerId: 1, providerName: 'Radarr' },
+    { id: 3, name: 'SD', providerId: 1, providerName: 'Radarr' },
   ],
   sonarr: [
-    { id: 1, name: 'Ultra-HD' },
-    { id: 2, name: 'HD-720p/1080p' },
+    { id: 1, name: 'Ultra-HD', providerId: 2, providerName: 'Sonarr' },
+    { id: 2, name: 'HD-720p/1080p', providerId: 2, providerName: 'Sonarr' },
   ],
+};
+
+// Two active Radarr instances — a 4k-only library and a standard-quality one —
+// exercising the grouped, instance-qualified dropdown (§10). Sonarr stays
+// single-instance so the Series group renders exactly as it does today.
+const MULTI_INSTANCE_TAGS = {
+  radarr: [
+    { id: 1, label: '4K', providerId: 1, providerName: 'Radarr 4K' },
+    { id: 2, label: 'Remux', providerId: 1, providerName: 'Radarr 4K' },
+    { id: 1, label: 'Anime', providerId: 3, providerName: 'Radarr Standard' },
+    { id: 2, label: 'Kids', providerId: 3, providerName: 'Radarr Standard' },
+  ],
+  sonarr: TAGS.sonarr,
+};
+
+const MULTI_INSTANCE_QUALITY_PROFILES = {
+  radarr: [
+    { id: 1, name: 'Ultra-HD', providerId: 1, providerName: 'Radarr 4K' },
+    { id: 2, name: 'HD-1080p', providerId: 3, providerName: 'Radarr Standard' },
+    { id: 3, name: 'SD', providerId: 3, providerName: 'Radarr Standard' },
+  ],
+  sonarr: QUALITY_PROFILES.sonarr,
+};
+
+const SINGLE_INSTANCE_SOURCES: Record<'movie' | 'show', MediaSourceDescriptor> = {
+  movie: {
+    contentType: 'movie',
+    ownerType: 'RADARR',
+    configured: true,
+    instances: [{ id: 1, name: 'Radarr' }],
+  },
+  show: {
+    contentType: 'show',
+    ownerType: 'SONARR',
+    configured: true,
+    instances: [{ id: 2, name: 'Sonarr' }],
+  },
+};
+
+const MULTI_INSTANCE_SOURCES: Record<'movie' | 'show', MediaSourceDescriptor> = {
+  movie: {
+    contentType: 'movie',
+    ownerType: 'RADARR',
+    configured: true,
+    instances: [
+      { id: 1, name: 'Radarr 4K' },
+      { id: 3, name: 'Radarr Standard' },
+    ],
+  },
+  show: SINGLE_INSTANCE_SOURCES.show,
 };
 
 const GENRES = {
@@ -51,6 +107,13 @@ const EMPTY_LOOKUPS = {
 const RICH_LOOKUPS = {
   tags: TAGS,
   qualityProfiles: QUALITY_PROFILES,
+  genres: GENRES,
+  networks: NETWORKS,
+};
+
+const MULTI_INSTANCE_LOOKUPS = {
+  tags: MULTI_INSTANCE_TAGS,
+  qualityProfiles: MULTI_INSTANCE_QUALITY_PROFILES,
   genres: GENRES,
   networks: NETWORKS,
 };
@@ -113,6 +176,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     dataType: 'csv-ids',
     sourceProviders: ['RADARR'],
     required: false,
+    instanceScoped: true,
   },
   {
     key: 'qualityProfileIds',
@@ -121,6 +185,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     dataType: 'csv-ids',
     sourceProviders: ['RADARR'],
     required: false,
+    instanceScoped: true,
   },
   {
     key: 'genres',
@@ -161,6 +226,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     dataType: 'csv-ids',
     sourceProviders: ['SONARR'],
     required: false,
+    instanceScoped: true,
   },
   {
     key: 'qualityProfileIds',
@@ -169,6 +235,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     dataType: 'csv-ids',
     sourceProviders: ['SONARR'],
     required: false,
+    instanceScoped: true,
   },
   {
     key: 'genres',
@@ -244,6 +311,8 @@ const EMPTY_FILTER_STATE: FilterState = {
   shared: { title: '' },
   movie: {},
   show: {},
+  movieQualifiers: {},
+  showQualifiers: {},
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
 };
@@ -271,12 +340,14 @@ type WrapperArgs = {
   configuredTypes: keyof typeof CONFIGURED_TYPE_OPTIONS;
   richLookups: boolean;
   mobileOpen: boolean;
+  multiInstance?: boolean;
 };
 
 function FilterBarWrapper({
   configuredTypes = 'All providers',
   richLookups = true,
   mobileOpen: initialMobileOpen = false,
+  multiInstance = false,
 }: WrapperArgs) {
   const [values, setValues] = useState<FilterState>(EMPTY_FILTER_STATE);
   const [mobileOpen, setMobileOpen] = useState(initialMobileOpen);
@@ -294,9 +365,28 @@ function FilterBarWrapper({
       return { ...s, [scope]: bucket };
     });
 
+  const onQualifierChange = (scope: QualifierScope, key: string, providerId: number | undefined) =>
+    setValues((s) => {
+      const qualifiersKey = scope === 'movie' ? 'movieQualifiers' : 'showQualifiers';
+      const qualifiers = { ...s[qualifiersKey] };
+      if (providerId === undefined) delete qualifiers[key];
+      else qualifiers[key] = providerId;
+      return { ...s, [qualifiersKey]: qualifiers };
+    });
+
   const types =
     CONFIGURED_TYPE_OPTIONS[configuredTypes] ?? CONFIGURED_TYPE_OPTIONS['All providers'];
-  const lookups = richLookups ? RICH_LOOKUPS : EMPTY_LOOKUPS;
+  const lookups = multiInstance
+    ? MULTI_INSTANCE_LOOKUPS
+    : richLookups
+      ? RICH_LOOKUPS
+      : EMPTY_LOOKUPS;
+  const sources = multiInstance ? MULTI_INSTANCE_SOURCES : SINGLE_INSTANCE_SOURCES;
+
+  const activeQualifier = values.movieQualifiers.tagIds ?? values.movieQualifiers.qualityProfileIds;
+  const activeInstanceName = activeQualifier
+    ? MULTI_INSTANCE_SOURCES.movie.instances.find((i) => i.id === activeQualifier)?.name
+    : undefined;
 
   return (
     <div className="bg-surface-bg min-h-screen">
@@ -309,12 +399,17 @@ function FilterBarWrapper({
           {values.shared.title && (
             <span className="ml-2 text-text-secondary">title="{String(values.shared.title)}"</span>
           )}
+          {activeInstanceName && (
+            <span className="ml-2 text-text-secondary">qualified to: {activeInstanceName}</span>
+          )}
         </span>
       </div>
 
       <MediaFilterBar
         rules={rulesFor(types)}
         values={values}
+        onQualifierChange={onQualifierChange}
+        sources={sources}
         onRuleChange={onRuleChange}
         clearAll={() => setValues(EMPTY_FILTER_STATE)}
         isActive={isActive}
@@ -345,6 +440,10 @@ const sharedArgTypes = {
     control: { type: 'boolean' as const },
     description: 'Open the mobile filter sheet',
   },
+  multiInstance: {
+    control: { type: 'boolean' as const },
+    description: 'Simulate two active Radarr instances (grouped, qualified tag/profile options)',
+  },
 };
 
 // ─── Stories ──────────────────────────────────────────────────────────────────
@@ -369,11 +468,28 @@ export const MobileSheet: Story<WrapperArgs> = (args) => <FilterBarWrapper {...a
 MobileSheet.args = { configuredTypes: 'All providers', richLookups: true, mobileOpen: true };
 MobileSheet.argTypes = sharedArgTypes;
 
+// Two active Radarr instances ("Radarr 4K" / "Radarr Standard") — Tags and
+// Quality profile render as labeled per-instance sections, and picking values
+// from only one section qualifies the entry to that instance (§10). Sonarr
+// stays single-instance, so the Series group renders exactly as it does
+// today — the byte-identical-with-one-instance guarantee, visible side by
+// side in the same story.
+export const MultiInstance: Story<WrapperArgs> = (args) => <FilterBarWrapper {...args} />;
+MultiInstance.args = {
+  configuredTypes: 'All providers',
+  richLookups: true,
+  mobileOpen: false,
+  multiInstance: true,
+};
+MultiInstance.argTypes = sharedArgTypes;
+
 export const WithActiveFilters: Story = () => {
   const [values, setValues] = useState<FilterState>({
     shared: { title: '', watched: 'false', year: { min: 2010 }, hasFile: 'true' },
     movie: {},
     show: { seriesStatus: 'continuing', seriesType: 'anime' },
+    movieQualifiers: {},
+    showQualifiers: {},
     movieSort: 'title_asc',
     seriesSort: 'title_asc',
   });
@@ -384,6 +500,7 @@ export const WithActiveFilters: Story = () => {
       else bucket[key] = value;
       return { ...s, [scope]: bucket };
     });
+  const onQualifierChange = () => {};
 
   return (
     <div className="bg-surface-bg min-h-screen">
@@ -399,12 +516,14 @@ export const WithActiveFilters: Story = () => {
         rules={ALL_RULES}
         values={values}
         onRuleChange={onRuleChange}
+        onQualifierChange={onQualifierChange}
         clearAll={() => setValues(EMPTY_FILTER_STATE)}
         isActive={true}
         movieYearRange={YEAR_RANGE}
         seriesYearRange={YEAR_RANGE}
         lookups={RICH_LOOKUPS}
         configuredTypes={new Set(['RADARR', 'SONARR', 'TAUTULLI'])}
+        sources={SINGLE_INSTANCE_SOURCES}
         mobileOpen={false}
         onMobileClose={() => {}}
       />

@@ -221,6 +221,8 @@ const DEFAULT_VALUES: FilterState = {
   shared: { title: '' },
   movie: {},
   show: {},
+  movieQualifiers: {},
+  showQualifiers: {},
   movieSort: 'title_asc',
   seriesSort: 'title_asc',
 };
@@ -228,22 +230,22 @@ const DEFAULT_VALUES: FilterState = {
 const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
   tags: {
     radarr: [
-      { id: 1, label: '4K' },
-      { id: 2, label: 'Remux' },
+      { id: 1, label: '4K', providerId: 1, providerName: 'Radarr' },
+      { id: 2, label: 'Remux', providerId: 1, providerName: 'Radarr' },
     ],
     sonarr: [
-      { id: 1, label: 'Anime' },
-      { id: 2, label: 'Ongoing' },
+      { id: 1, label: 'Anime', providerId: 2, providerName: 'Sonarr' },
+      { id: 2, label: 'Ongoing', providerId: 2, providerName: 'Sonarr' },
     ],
   },
   qualityProfiles: {
     radarr: [
-      { id: 1, name: 'HD-1080p' },
-      { id: 2, name: 'Any' },
+      { id: 1, name: 'HD-1080p', providerId: 1, providerName: 'Radarr' },
+      { id: 2, name: 'Any', providerId: 1, providerName: 'Radarr' },
     ],
     sonarr: [
-      { id: 1, name: 'HD-1080p' },
-      { id: 2, name: 'Any' },
+      { id: 1, name: 'HD-1080p', providerId: 2, providerName: 'Sonarr' },
+      { id: 2, name: 'Any', providerId: 2, providerName: 'Sonarr' },
     ],
   },
   genres: {
@@ -265,6 +267,7 @@ function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBar
     rules: rulesFor(new Set(['RADARR', 'SONARR', 'TAUTULLI'])),
     values: DEFAULT_VALUES,
     onRuleChange: vi.fn(),
+    onQualifierChange: vi.fn(),
     clearAll: vi.fn(),
     isActive: false,
     movieYearRange: { min: 1990, max: 2024 },
