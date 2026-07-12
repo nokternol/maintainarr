@@ -26,7 +26,7 @@ import type {
 } from './filterRegistry';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
-import { itemKey } from './mediaItem';
+import { itemKey, rawItemKey } from './mediaItem';
 import type { MediaQueryEngine } from './mediaQueryEngine';
 import type { MediaSource } from './mediaSource';
 import { sourceOwnership } from './mediaSourceFactory';
@@ -263,11 +263,6 @@ interface DecoratedProfile extends RadarrProfile {
 
 /** A raw provider row carrying which instance it came from — internal grouping state only. */
 type Attributed<T> = T & { providerId: number };
-
-/** `itemKey`'s format (`${providerId}:${externalId}`) applied to a raw row's native id. */
-function rawItemKey(providerId: number, externalId: number): string {
-  return `${providerId}:${externalId}`;
-}
 
 /**
  * Groups matched raw rows by native primary id (fallback `providerId:id` when absent),

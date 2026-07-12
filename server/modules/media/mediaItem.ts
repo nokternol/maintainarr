@@ -17,9 +17,13 @@ export function externalIdOf(item: MediaItem): number | undefined {
  * Collision-free key for pooled matching: `${providerId}:${externalId}`. An internal
  * map/set key only — never an id that leaves the process (task.run speaks `idOf`).
  */
+export function rawItemKey(providerId: number, externalId: number): string {
+  return `${providerId}:${externalId}`;
+}
+
 export function itemKey(item: MediaItem): string | undefined {
   const providerId = item._sourceIds.providerId;
   const externalId = externalIdOf(item);
   if (providerId === undefined || externalId === undefined) return undefined;
-  return `${providerId}:${externalId}`;
+  return rawItemKey(providerId, externalId);
 }

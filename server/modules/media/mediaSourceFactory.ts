@@ -18,11 +18,6 @@ interface Deps {
   providerFactory: IProviderFactory;
 }
 
-/**
- * Resolves a content type to the active owner provider bound as a `MediaSource`.
- * Consolidates owner-type lookup, active-settings resolution, and provider
- * construction so handlers ask only "give me the source for this content type".
- */
 /** One active instance owning a content type, bound as a `MediaSource`. */
 export interface MediaSourceEntry {
   providerId: number;
