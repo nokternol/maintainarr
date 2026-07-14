@@ -4,7 +4,8 @@
 `server/modules/providers/roles.ts`, `docs/architecture/actuator-task-ownership.md`. This document covers
 making the *non-source* actuators (Plex, Jellyfin, Tautulli) actually execute their declared tasks instead
 of rejecting with "not yet implemented," plus the parameter contract several tasks need regardless of
-provider. It's a distinct theme from `docs/intent/media-item-field-registry.md` (`MediaItem`'s open field shape) —
+provider. It's a distinct theme from the `MediaFieldProvider`/`MediaFieldSource` field-ownership model
+(`docs/architecture/media-field-provider-role.md`, shipped) —
 this work consumes whatever identity model exists today; it does not require that model to change first.
 
 ## The problem
@@ -97,7 +98,8 @@ seam matters — it changes how many real problems there are to solve:
   and series both use the same guid-matching loop) needs verification before relying on it as "the
   already-built half" of the translation work.
 - This work can proceed against today's identity model as-is — the multi-instance `media_identity`/
-  `media_item` split has already shipped (`docs/architecture/provider-roles-and-identity.md`) — though a
-  `MediaItem` shape change (`docs/intent/media-item-field-registry.md`, not yet built) would touch how
-  ids are read out of a resolved query result.
+  `media_item` split has already shipped (`docs/architecture/provider-roles-and-identity.md`) — the
+  `MediaItem` shape change once tracked as unbuilt has also since shipped
+  (`docs/architecture/media-field-provider-role.md`) and would touch how ids are read out of a
+  resolved query result if revisited.
 </content>

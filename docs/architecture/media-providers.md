@@ -8,7 +8,8 @@ what it is, which role(s) it plays in the shipped role model
 [`actuator-task-ownership.md`](ref:path:docs/architecture/actuator-task-ownership.md)), what its connection
 class actually implements today, and whether that capability is wired into the media-item pipeline
 (`MediaEnricher`/filter gating) or just sits unused. This is a survey of what exists, not a design — see
-the closing note for how it relates to `docs/intent/media-item-field-registry.md`.
+the closing note for how it relates to
+[`docs/architecture/media-field-provider-role.md`](ref:path:docs/architecture/media-field-provider-role.md).
 
 Every provider authenticates via the single `apiKey` column on `metadata_provider`
 ([`server/database/schema.ts`](ref:path:server/database/schema.ts)) — a per-instance credential string,
@@ -71,10 +72,11 @@ implemented against Tautulli's API.
 
 **Wired into the media-item pipeline?** Yes — `tautulliEnricher`
 ([`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts)) calls
-`getHistory()`, maps it via `mapTautulliHistory`
-([`enrichment/mappers.ts`](ref:path:server/modules/media/enrichment/mappers.ts)) into `playCount`/
-`lastWatchedAt` keyed by `plexRatingKey`, and wins precedence over Plex for both fields in
-`ENRICHMENT_POLICY`. Gated into `filterRegistry.ts` (`watched`, `lastWatchedDaysAgo`).
+`getHistory()`, runs it through `tautulliFieldProvider`
+([`mediaFieldProvider.ts`](ref:path:server/modules/media/mediaFieldProvider.ts),
+see [`docs/architecture/media-field-provider-role.md`](ref:path:docs/architecture/media-field-provider-role.md))
+into `playCount`/`lastWatchedAt` keyed by `plexRatingKey`, and wins precedence over Plex for both
+fields in `contestedFieldPrecedence`. Gated into `filterRegistry.ts` (`watched`, `lastWatchedDaysAgo`).
 
 ## Plex
 
@@ -94,9 +96,11 @@ modelled-only.
 
 **Wired into the media-item pipeline?** Yes — `plexEnricher`
 ([`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts)) calls
-`getAllItems()`, maps via `mapPlexItems` into `playCount`/`lastWatchedAt` keyed by `ratingKey`, loses
-precedence to Tautulli when both are configured. Also stamped onto `media_identity` groups by the
-identity job (`runForPlex`) for `plexRatingKey` matching — never inserts a group of its own.
+`getAllItems()`, runs it through `plexFieldProvider`
+([`mediaFieldProvider.ts`](ref:path:server/modules/media/mediaFieldProvider.ts)) into `playCount`/
+`lastWatchedAt` keyed by `ratingKey`, loses precedence to Tautulli when both are configured. Also
+stamped onto `media_identity` groups by the identity job (`runForPlex`) for `plexRatingKey` matching —
+never inserts a group of its own.
 
 ## Jellyfin
 
@@ -131,8 +135,8 @@ consumed by any media pipeline).
 
 **Wired into the media-item pipeline?** Yes — `overseerrEnricher`
 ([`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts)) calls
-`getRequests()`+`getIssues()`, maps via `mapOverseerr`
-([`enrichment/mappers.ts`](ref:path:server/modules/media/enrichment/mappers.ts)) into
+`getRequests()`+`getIssues()`, runs them through `overseerrFieldProvider`
+([`mediaFieldProvider.ts`](ref:path:server/modules/media/mediaFieldProvider.ts)) into
 `overseerrRequestStatus`/`overseerrHasIssue` keyed by `tmdbId`. Gated into `filterRegistry.ts`.
 
 ## Seerr
@@ -246,15 +250,16 @@ returns per-show `network` data) that simply has no enricher built yet — unlik
 | OMDB | inert | No — ratings aggregation only |
 | TVMaze | inert | No — ratings aggregation only; `network` data is real and buildable |
 
-## Relationship to `docs/intent/media-item-field-registry.md`
+## Relationship to `MediaFieldProvider`/`MediaFieldSource`
 
-This catalog is a ground-truth input for that design, not part of it. `MediaFieldProvider` (the intent
-doc's proposed fourth role) needs real, buildable field sources to bind adapters to — this doc is where
-to check which providers actually expose data today (and via which connection method) before assuming a
-new enrichable field is easy to add. In particular: TVMaze's `network` data is real and already
-half-declared in `filterRegistry.ts` but has no adapter; TMDB and OMDB's ratings/details surfaces are
-fully implemented in their connection classes but sit behind the separate ratings-aggregation feature,
-not the enrichment job, so wiring them into `MediaFieldProvider` is plausible future work, not a rebuild
-from nothing; Seerr has no adapter at all despite sharing Overseerr's exact API — the cheapest of all
-these gaps to close, since `overseerrEnricher` would work unmodified against a Seerr-typed instance if
-`ProviderFactory` and `enricherAdapters.ts` were extended to construct and bind one.
+This catalog is the ground-truth input
+[`docs/architecture/media-field-provider-role.md`](ref:path:docs/architecture/media-field-provider-role.md)'s
+adapters bind to — this doc is where to check which providers actually expose data today (and via which
+connection method) before assuming a new enrichable field is easy to add. In particular: TVMaze's
+`network` data is real and already half-declared in `filterRegistry.ts` but has no adapter; TMDB and
+OMDB's ratings/details surfaces are fully implemented in their connection classes but sit behind the
+separate ratings-aggregation feature, not the enrichment job, so wiring them into a
+`MediaFieldProvider` is plausible future work, not a rebuild from nothing; Seerr has no adapter at all
+despite sharing Overseerr's exact API — the cheapest of all these gaps to close, since `overseerrEnricher`
+would work unmodified against a Seerr-typed instance if `ProviderFactory` and `enricherAdapters.ts` were
+extended to construct and bind one.

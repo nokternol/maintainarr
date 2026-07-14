@@ -2,8 +2,8 @@
 
 **Status:** INTENT (future state, not built). Discovered while examining actuator translation (see
 `docs/intent/media-actuator-realisation.md`) and originally recorded alongside the media identity model's
-open items — reclassified here on its own: this is an **identity/provider-configuration** issue, not a
-`MediaItem` field-shape one (see `docs/intent/media-item-field-registry.md` for that, unrelated theme).
+open items — reclassified here on its own: this is an **identity/provider-configuration** issue, not the
+`MediaItem` field-shape one (`docs/architecture/media-field-provider-role.md`, shipped, unrelated theme).
 
 ## The problem
 
