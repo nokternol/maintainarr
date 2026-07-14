@@ -46,6 +46,11 @@ describe('normalizeRadarrMovie', () => {
     expect(item._sourceIds.tmdb).toBe(27205);
     expect(item._sourceIds.imdb).toBe('tt1375666');
   });
+
+  it('carries Radarr tags through to the canonical tags field', () => {
+    const item = normalizeRadarrMovie({ ...baseMovie, tags: [10, 20] }, 7);
+    expect(item.tags).toEqual([10, 20]);
+  });
 });
 
 describe('normalizeSonarrSeries', () => {

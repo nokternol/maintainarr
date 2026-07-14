@@ -112,8 +112,26 @@ A provider connection can play more than one role at once, same as `RadarrProvid
 `MediaActuator` (implemented directly on the connection class) and `MediaSource` (bound via
 `sourceAdapters.ts`, never implemented directly — a provider connection class never references the media
 contract itself). `MediaFieldProvider` follows `MediaSource`'s pattern: a media-owned adapter binds each
-provider connection to it, the connection class itself stays unaware of the role. Source fields and
-enrichment fields don't need separate mechanisms — they're the same role, bound by different adapters.
+provider connection to it, the connection class itself stays unaware of the role.
+
+**Source fields need a distinct, smaller interface — `MediaFieldSource` — not `MediaFieldProvider`
+itself.** Both express the same structural-mapping principle (a provider's own field shape and
+`MediaItem`'s canonical shape kept distinct, joined by an explicit checked transform), but the
+*mechanisms* differ because the shapes of construction differ. `MediaFieldProvider`'s
+`visit()`/`toEnrichmentFields()` exists to decorate fields onto an *already-existing* item, joined
+by key across a batch (`decorate()`) — the right shape for `MediaEnricher`-style adapters
+(Tautulli, Plex, Overseerr, TMDB), which only ever add fields to items a `MediaSource` already
+produced. Source construction (`normalizeRadarrMovie`/`normalizeSonarrSeries`) has no existing item
+to decorate and no batch to join — it builds the entire canonical item from one raw item, always
+1:1. Forcing `MediaFieldProvider`'s `visit()`/`Map<key, ...>`/join machinery onto that context buys
+no extra safety: a prototype
+(`docs/plans/media-item-field-registry-ticket-09-source-field-provider-mechanism.md`) confirmed
+both shapes catch a provider field rename (e.g. Radarr's `tags` → `labels`) identically — the catch
+comes from the raw→native transform's ordinary type checking, not from `visit()`/`decorate()`.
+`MediaFieldSource<TMediaField, TFields extends Partial<EnrichmentFields>>` keeps only the checked
+transform: `toEnrichmentFields(native: TMediaField): TFields`. Both interfaces are checked against
+the same central `EnrichmentFields`, so a source field and an enrichment field can never disagree
+on type regardless of which interface declares them.
 
 **Why this and not a static global map.** A hardcoded table (`FIELD_REGISTRY = { playCount: { owners:
 [TAUTULLI, PLEX] } }`) is a *runtime* lookup that can drift from what the adapter's transform actually
@@ -139,17 +157,53 @@ duplicate/failed groups actually accumulate enough to need one; the surrogate-id
 the shipped model already has exists precisely so that layer can be added later without a rewrite. Loosely
 related to this doc (both touch how `MediaItem`/group data is shaped), but not blocking or blocked by it.
 
-## Open design problem: precedence is a cross-owner relation, not a per-owner fact
+## Precedence is a cross-owner relation, not a per-owner fact
 
 Field *type* can be defined entirely by one owner (above). Field *precedence* can't — `playCount` is
 legitimately owned by both Tautulli and Plex, and today's `ENRICHMENT_POLICY` states Tautulli wins (it
 tracks completed plays, not opens). That ranking is a relationship *between* two owners of the same
-field, so it cannot live on either owner's own declaration alone the way `fieldShape` does — some
-mechanism still has to exist that knows, for a field with more than one declared owner, which one wins.
-`mappers.ts`/`resolvePrecedence` currently own this outright; this design directly impacts that ownership
-and needs its own careful pass — likely a fairly high number of unit tests, since precedence bugs are
-silent (wrong data, not a crash). Not solved here; flagged as the design's hardest remaining problem,
-deliberately not resolved by the `fieldShape` mechanism above.
+field, so it cannot live on either owner's own declaration alone the way a `MediaFieldProvider`'s own
+`TFields` does — some mechanism still has to exist that knows, for a field with more than one configured
+producer, which one wins.
+
+**Precedence exists to encode a deliberate trust/stability judgment, not to break a race.** Tautulli
+outranks Plex for `playCount` because it tracks completed plays rather than opens — a considered call
+about which source is more correct, not an arbitrary tiebreak. A consequence follows directly: **a tie is
+never a valid state.** If two configured providers both produce the same field, precedence between
+*exactly that pair* must always be declared — there is no such thing as "leaving it undecided," and no
+runtime fallback (first-configured wins, last-processed wins) is acceptable, because that would silently
+replace the deliberate judgment precedence is supposed to represent with an accident of ordering.
+
+**Decided shape.** Prototyped (`docs/plans/media-item-field-registry-ticket-03-precedence-prototype.md`)
+against three candidates — a central ordered list per field (today's shape), a pairwise wins-over
+relation, and precedence declared per-adapter as a freely-chosen numeric rank. The numeric-rank shape was
+rejected specifically because "a tie is never valid" demands the mechanism make a tie *structurally
+unrepresentable*, and nothing stops two adapters independently choosing the same number — that only ever
+catches a collision after the fact, the same shape of problem `EnrichmentFields` was built to avoid for
+field types (see "The role: `MediaFieldProvider`," above). An explicit **total order**, declared once per
+contested field, has no such gap — an array's positions can't collide:
+
+```ts
+// separate from MediaFieldProvider — precedence is business logic, not the DataMapper concern
+// above. File placement follows the same import-graph rule as EnrichmentFields, not fixed here.
+export const contestedFieldPrecedence: Partial<{
+  [K in keyof EnrichmentFields]: readonly [Provider, ...Provider[]]; // ordered, first wins
+}> = {
+  playCount: ['TAUTULLI', 'PLEX'],
+};
+```
+
+Scoped only to fields with more than one actual competing producer — a field only one configured adapter
+produces needs no entry, since there's nothing to order. Whenever the set of configured providers
+competing on a field changes (a new provider starts producing a field two others already contested, or a
+previously-uncontested field gains a second producer), the field's entry must cover exactly that
+configured set; an uncovered contested field is a configuration mistake that needs to surface, not pass
+silently. The precise trigger and failure mechanism for that check (most likely alongside the same
+provider-config-change event the active field set's cache invalidation already reacts to, see below) is
+left for implementation to pin down rather than fixed here.
+
+A clean migration plan off `ENRICHMENT_POLICY`'s current shape to `contestedFieldPrecedence` is separate,
+unticketed follow-on work — not resolved by this decision.
 
 ## The active field set: computed once, not re-derived per consumer
 
@@ -178,7 +232,7 @@ room for it later; it's just not part of this scope.
 |---|---|
 | `media/mediaFieldProvider.ts` (new) | `MediaFieldProvider<TMediaField, TFields>` interface, the central `EnrichmentFields` type, + `isMediaFieldProvider` — media-owned |
 | `enrichment/enricherAdapters.ts`, `media/sourceAdapters.ts` | Each adapter also implements `MediaFieldProvider`: `visit()` (the mapper logic currently in `enrichment/mappers.ts`, relocated here) plus an explicit `toEnrichmentFields()` transform |
-| `enrichment/precedence.ts` | `ENRICHMENT_POLICY`'s per-field type/owner duplication is removed; precedence *ordering* itself still needs a home — see "Open design problem" above, not resolved by this table |
+| `enrichment/precedence.ts` | `ENRICHMENT_POLICY` replaced by `contestedFieldPrecedence` (see "Precedence is a cross-owner relation," above); migration off the old shape is separate, unticketed follow-on work |
 | `movie.ts`/`show.ts` | Enrichable field block becomes derived from the union of all `MediaFieldProvider` declared shapes, not hand-listed |
 | `enrichment/enricher.ts` | `EnrichableField` becomes derived from the same union; `EnrichmentResult<TField>` becomes a checkable claim against a real declaration |
 | `media.filterFields.handler.ts` | `gatedDescriptors` reads the cached active field set instead of intersecting `sourceProviders`/`configuredTypes` per request |
@@ -195,8 +249,10 @@ room for it later; it's just not part of this scope.
   closes the ownership duplication; it doesn't and shouldn't try to auto-generate rules from field
   declarations — that would be a different, riskier design (implicit UI from data shape) than what's being
   proposed here.
-- **Precedence ordering needs a design pass of its own** — see "Open design problem" above. This is the
-  one place the guardrail isn't "don't reintroduce the old problem," it's "this problem isn't solved yet."
+- **Precedence's exact fail-fast trigger mechanism is still an implementation detail, not fixed here** —
+  see "Precedence is a cross-owner relation," above. The shape (a total order per contested field, ties
+  structurally unrepresentable) is decided; precisely when/how an uncovered contested field is asserted
+  is left for implementation.
 - **Data presence stays explicitly out of scope, not implicitly deferred.** Nothing in this design should
   grow a partial, ad hoc data-presence check later without that being its own reviewed decision — see
   above.
@@ -215,13 +271,20 @@ from a live per-request intersection to a read of the cached active field set.
 
 ## Remaining open questions before this can move to `docs/in_progress/`
 
-1. **Precedence ordering's design** — the hard problem. Needs its own pass and a fairly high number of
-   unit tests, since `mappers.ts`/`resolvePrecedence` currently own this outright and this design directly
-   impacts that ownership (see "Open design problem," above).
-2. Whether instance-scoping (`instanceScoped`-style, shipped for `tagIds`/`qualityProfileIds` in the
-   multi-instance model) needs to be expressed per-field here too, or stays a separate concern.
+(none currently — see `docs/plans/media-item-field-registry-ticket-05-instance-scoping-decision.md`
+for the resolution of the last one below)
 
-**Decided, not open:** `MediaFieldProvider` is media-owned, mirroring `MediaSource`/`MediaEnricher`
+**Decided, not open:** Instance-scoping (`instanceScoped`-style, shipped for `tagIds`/
+`qualityProfileIds` in the multi-instance model) stays fully orthogonal to `MediaFieldProvider` —
+no equivalent expression needed here. `MediaFieldProvider`'s scope does cover `MediaSource`-produced
+fields like `tags`/`qualityProfileId` (not just `MediaEnricher`-style enrichment fields), since the
+active field set must be a true aggregate of every configured provider's declared fields to avoid a
+second, parallel gating mechanism for source fields. But `instanceScoped` is a fact about how a
+field's *value* is interpreted/compared at predicate-match time, not about a field's existence or
+type — the only things `MediaFieldProvider` declares — so it stays a hand-authored `MediaRule` fact,
+same bucket as the already-manual predicate/label/dataType authorship, untouched by this design.
+
+`MediaFieldProvider` is media-owned, mirroring `MediaSource`/`MediaEnricher`
 (providers own configuration/CRUD, media owns usage — not a new boundary, the existing one). Fields are
 defined by their owner directly (a concrete TS shape), never referenced by string name. Field-inclusion
 signal is provider-configured only; data presence is a separate, future, independently-scoped concern
@@ -233,4 +296,8 @@ own declared shape (see "The role: `MediaFieldProvider`," above, for why the uni
 up). There is no separate `fieldShape` witness property; `visit()`/`toEnrichmentFields()`'s ordinary
 return types carry all the enforcement. `TFields extends Record<string, unknown>` (this doc's earlier
 constraint) is corrected to `TFields extends Partial<EnrichmentFields>`, since `Record<string, unknown>`
-rejects any concrete interface lacking an index signature.
+rejects any concrete interface lacking an index signature. Precedence is a total order declared once per
+contested field (`contestedFieldPrecedence`), never a numeric rank — ties are not a valid state in this
+system, so the mechanism must make them structurally unrepresentable rather than merely catch them (see
+"Precedence is a cross-owner relation," above); the exact fail-fast trigger for an uncovered contested
+field is left as an implementation detail.
