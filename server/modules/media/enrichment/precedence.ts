@@ -1,28 +1,30 @@
 import { MetadataProviderType } from '../../../database/schema';
+import type { EnrichmentFields } from '../mediaFieldProvider';
 import type { MediaItem } from '../mediaItem';
 import type { EnrichableField, EnrichmentResult } from './enricher';
 
 export type { EnrichableField };
 
 /**
- * Per-field precedence: for each canonical field, the providers that may set it,
- * highest priority first. Two enrichers can speak to one field (play count from
- * Tautulli or Plex); precedence can differ per field, so this is a per-field map,
- * not a global enricher ordering.
+ * Per-field precedence, declared once per *contested* field only — a field
+ * with a single real producer needs no entry, since there is nothing to
+ * order. Ordered as a non-empty readonly tuple rather than a freely-ranked
+ * number: two positions in an array can't collide, so a tie is structurally
+ * unrepresentable instead of merely forbidden by convention.
  */
-export type PrecedencePolicy = Partial<Record<EnrichableField, MetadataProviderType[]>>;
+export type ContestedFieldPrecedence = Partial<{
+  [K in keyof EnrichmentFields]: readonly [MetadataProviderType, ...MetadataProviderType[]];
+}>;
 
 /**
- * The enrichment precedence in force. Play count and last-watched can come from
- * Tautulli or Plex — Tautulli wins (it tracks completed plays, not opens). The
- * remaining fields have a single authoritative enricher each.
+ * The enrichment precedence in force. Play count and last-watched are the only
+ * fields with more than one real producer today — Tautulli or Plex — and
+ * Tautulli wins (it tracks completed plays, not opens). Every other field has
+ * exactly one producer and so carries through `resolvePrecedence` unlisted.
  */
-export const ENRICHMENT_POLICY: PrecedencePolicy = {
+export const contestedFieldPrecedence: ContestedFieldPrecedence = {
   playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
   lastWatchedAt: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
-  overseerrHasIssue: [MetadataProviderType.OVERSEERR],
-  overseerrRequestStatus: [MetadataProviderType.OVERSEERR],
-  tmdbStatus: [MetadataProviderType.TMDB],
 };
 
 /** A stable identity for a canonical item across results — its cross-provider keys. */
@@ -32,14 +34,14 @@ function identityKey(item: MediaItem): string {
 
 /**
  * Merge every enricher's contributions into one canonical item set. Items are
- * grouped by identity across results; each field in the policy is taken from the
- * highest-precedence provider that set it. Fields outside the policy carry their
- * decorated value through. Pure: the write-time replacement for read-time `??`
- * precedence chains.
+ * grouped by identity across results; each contested field is taken from the
+ * highest-precedence provider that set it. Fields with no entry (single
+ * producer, nothing to order) carry their decorated value through unchanged.
+ * Pure: the write-time replacement for read-time `??` precedence chains.
  */
 export function resolvePrecedence(
   results: EnrichmentResult[],
-  policy: PrecedencePolicy
+  precedence: ContestedFieldPrecedence
 ): MediaItem[] {
   const groups = new Map<
     string,
@@ -59,9 +61,9 @@ export function resolvePrecedence(
 
   return [...groups.values()].map(({ base, byProvider }) => {
     const resolved: MediaItem = { ...base };
-    for (const [field, order] of Object.entries(policy) as [
+    for (const [field, order] of Object.entries(precedence) as [
       EnrichableField,
-      MetadataProviderType[],
+      readonly MetadataProviderType[],
     ][]) {
       for (const provider of order) {
         const contributor = byProvider.get(provider);

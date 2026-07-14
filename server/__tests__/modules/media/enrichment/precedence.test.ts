@@ -9,7 +9,7 @@ function result(provider: MetadataProviderType, item: NormalizedMovie): Enrichme
 }
 
 describe('resolvePrecedence', () => {
-  it('resolves a field to the highest-precedence provider that set it', () => {
+  it('resolves a contested field to the provider first in contestedFieldPrecedence', () => {
     const tautulli = result(MetadataProviderType.TAUTULLI, {
       _sourceIds: { radarr: 1 },
       title: 'M',
@@ -22,11 +22,23 @@ describe('resolvePrecedence', () => {
     });
 
     const resolved = resolvePrecedence([plex, tautulli], {
-      playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+      playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX] as const,
     });
 
     expect(resolved).toHaveLength(1);
     expect(resolved[0].playCount).toBe(5);
+  });
+
+  it('passes through a field with no contestedFieldPrecedence entry from its sole contributor', () => {
+    const tmdb = result(MetadataProviderType.TMDB, {
+      _sourceIds: { radarr: 1 },
+      title: 'M',
+      tmdbStatus: 'Released',
+    });
+
+    const resolved = resolvePrecedence([tmdb], {});
+
+    expect(resolved[0].tmdbStatus).toBe('Released');
   });
 
   it('falls through to the next provider when the higher one did not set the field', () => {
