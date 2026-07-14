@@ -161,4 +161,19 @@ describe('GET /api/filter-fields', () => {
     const res = await supertest(app).get('/api/filter-fields?contentType=invalid');
     expect(res.status).toBe(400);
   });
+
+  it('reflects a provider created between two requests — cache invalidates on provider:changed', async () => {
+    const before = await supertest(app).get('/api/filter-fields');
+    expect(before.body.map((f: { key: string }) => f.key)).not.toContain('monitored');
+
+    await providerSettingsService.create({
+      type: MetadataProviderType.SONARR,
+      name: 'Test Sonarr',
+      url: 'http://localhost:8989/api/v3',
+      apiKey: 'test-api-key',
+    });
+
+    const after = await supertest(app).get('/api/filter-fields');
+    expect(after.body.map((f: { key: string }) => f.key)).toContain('monitored');
+  });
 });

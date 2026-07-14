@@ -68,4 +68,15 @@ describe('ActiveFieldSetCache', () => {
 
     expect(activeTypes).toHaveBeenCalledTimes(2);
   });
+
+  it('getActiveTypes() returns the underlying active provider-type set, cached', async () => {
+    const activeTypes = vi.fn().mockResolvedValue(new Set([MetadataProviderType.RADARR]));
+    const cache = new ActiveFieldSetCache({ providerSettingsService: { activeTypes } });
+
+    const result = await cache.getActiveTypes();
+    await cache.getActiveTypes();
+
+    expect(result).toEqual(new Set([MetadataProviderType.RADARR]));
+    expect(activeTypes).toHaveBeenCalledTimes(1);
+  });
 });

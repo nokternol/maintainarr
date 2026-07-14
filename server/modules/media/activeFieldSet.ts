@@ -53,18 +53,29 @@ export interface ActiveTypesSource {
 export class ActiveFieldSetCache {
   private readonly source: ActiveTypesSource;
   private cached: Set<keyof EnrichmentFields> | null = null;
+  private cachedActiveTypes: Set<MetadataProviderType> | null = null;
 
   constructor(deps: { providerSettingsService: ActiveTypesSource; eventBus?: DomainEventBus }) {
     this.source = deps.providerSettingsService;
     deps.eventBus?.on('provider:changed', () => {
       this.cached = null;
+      this.cachedActiveTypes = null;
     });
   }
 
   async get(): Promise<Set<keyof EnrichmentFields>> {
     if (this.cached === null) {
-      this.cached = activeFieldSet(await this.source.activeTypes());
+      this.cached = activeFieldSet(await this.getActiveTypes());
     }
     return this.cached;
+  }
+
+  /** The underlying active provider-type set, cached alongside `get()`'s field set —
+   *  sharing one fetch when a caller needs both. */
+  async getActiveTypes(): Promise<Set<MetadataProviderType>> {
+    if (this.cachedActiveTypes === null) {
+      this.cachedActiveTypes = await this.source.activeTypes();
+    }
+    return this.cachedActiveTypes;
   }
 }
