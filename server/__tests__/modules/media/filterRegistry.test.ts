@@ -146,6 +146,10 @@ describe('deriveSourceProviders', () => {
       MetadataProviderType.PLEX,
     ]);
   });
+
+  it('derives tags to [RADARR]', () => {
+    expect(deriveSourceProviders('tags')).toEqual([MetadataProviderType.RADARR]);
+  });
 });
 
 // ─── getRule lookup ──────────────────────────────────────────────────────

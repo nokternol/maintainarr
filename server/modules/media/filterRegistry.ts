@@ -211,7 +211,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Tags',
     contentTypes: ['movie'],
     dataType: 'csv-ids',
-    sourceProviders: [MetadataProviderType.RADARR],
+    sourceProviders: deriveSourceProviders('tags'),
     required: false,
     instanceScoped: true,
     predicate: (item, value) => {

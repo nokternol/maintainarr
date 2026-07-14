@@ -1,4 +1,25 @@
-export interface NormalizedShow {
+import type { EnrichmentFields } from './mediaFieldProvider';
+
+/**
+ * The 6 `EnrichmentFields`-tracked properties (`tags`, `playCount`,
+ * `lastWatchedAt`, `overseerrHasIssue`, `overseerrRequestStatus`,
+ * `tmdbStatus`) are derived from `EnrichmentFields`, not hand-typed — a
+ * field-type change there now breaks this interface's consumers
+ * (`enrichmentMerge.ts`'s direct assignments in particular) at compile
+ * time instead of silently diverging.
+ */
+export interface NormalizedShow
+  extends Partial<
+    Pick<
+      EnrichmentFields,
+      | 'tags'
+      | 'playCount'
+      | 'lastWatchedAt'
+      | 'overseerrHasIssue'
+      | 'overseerrRequestStatus'
+      | 'tmdbStatus'
+    >
+  > {
   _sourceIds: {
     sonarr?: number;
     plex?: string;
@@ -15,7 +36,6 @@ export interface NormalizedShow {
   hasFile?: boolean;
   monitored?: boolean;
   qualityProfileId?: number;
-  tags?: number[];
   genres?: string[];
   addedDate?: string;
   sizeOnDiskBytes?: number;
@@ -27,9 +47,4 @@ export interface NormalizedShow {
   episodePercentage?: number;
   lastAiredAt?: string;
   communityRating?: number;
-  playCount?: number;
-  lastWatchedAt?: string;
-  overseerrHasIssue?: boolean;
-  overseerrRequestStatus?: number;
-  tmdbStatus?: string;
 }
