@@ -5,16 +5,32 @@ import type {
   TautulliProvider,
   TmdbProvider,
 } from '../../providers';
-import { tautulliFieldProvider } from '../mediaFieldProvider';
+import type { EnrichmentFields, MediaFieldProvider } from '../mediaFieldProvider';
+import {
+  overseerrFieldProvider,
+  plexFieldProvider,
+  tautulliFieldProvider,
+} from '../mediaFieldProvider';
 import type { MediaItem } from '../mediaItem';
 import { decorate } from './decorate';
 import type { EnrichmentResult, MediaEnricher } from './enricher';
-import { mapOverseerr, mapPlexItems } from './mappers';
+
+/** Runs a `MediaFieldProvider`'s two-step visit→transform pipeline over one raw payload. */
+function toFieldsByKey<
+  TRaw,
+  TMediaField,
+  TFields extends Partial<EnrichmentFields>,
+  TKey extends string | number,
+>(provider: MediaFieldProvider<TRaw, TMediaField, TFields, TKey>, raw: TRaw): Map<TKey, TFields> {
+  return new Map(
+    [...provider.visit(raw)].map(([key, native]) => [key, provider.toEnrichmentFields(native)])
+  );
+}
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
-      const fieldsByKey = mapPlexItems(await plex.getAllItems());
+      const fieldsByKey = toFieldsByKey(plexFieldProvider, await plex.getAllItems());
       return {
         provider: MetadataProviderType.PLEX,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
@@ -34,7 +50,7 @@ export function overseerrEnricher(
         overseerr.getRequests(),
         overseerr.getIssues(),
       ]);
-      const fieldsByKey = mapOverseerr(requests, issues);
+      const fieldsByKey = toFieldsByKey(overseerrFieldProvider, [requests, issues]);
       return {
         provider: MetadataProviderType.OVERSEERR,
         items: decorate(items, (i) => i._sourceIds.tmdb, fieldsByKey),
@@ -66,10 +82,7 @@ export function tautulliEnricher(
 ): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
-      const native = tautulliFieldProvider.visit(await tautulli.getHistory());
-      const fieldsByKey = new Map(
-        [...native].map(([key, value]) => [key, tautulliFieldProvider.toEnrichmentFields(value)])
-      );
+      const fieldsByKey = toFieldsByKey(tautulliFieldProvider, await tautulli.getHistory());
       return {
         provider: MetadataProviderType.TAUTULLI,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),

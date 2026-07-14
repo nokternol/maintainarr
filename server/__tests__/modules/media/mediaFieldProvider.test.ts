@@ -1,8 +1,15 @@
 import {
+  overseerrFieldProvider,
+  plexFieldProvider,
   radarrTagsFieldSource,
   tautulliFieldProvider,
 } from '@server/modules/media/mediaFieldProvider';
-import type { TautulliHistoryItem } from '@server/modules/providers';
+import type {
+  OverseerrIssue,
+  OverseerrRequest,
+  PlexMediaItem,
+  TautulliHistoryItem,
+} from '@server/modules/providers';
 import { describe, expect, it } from 'vitest';
 
 describe('radarrTagsFieldSource', () => {
@@ -56,5 +63,44 @@ describe('tautulliFieldProvider.toEnrichmentFields', () => {
     const result = tautulliFieldProvider.toEnrichmentFields(native);
 
     expect(result).not.toHaveProperty('lastWatchedAt');
+  });
+});
+
+function overseerrRequest(tmdbId: number, status: number): OverseerrRequest {
+  return {
+    id: 1,
+    status,
+    type: 'movie',
+    requestedBy: { id: 1, displayName: 'u', email: 'u@u.com' },
+    media: { tmdbId, title: 'T' },
+    createdAt: '',
+  };
+}
+
+function overseerrIssue(tmdbId: number): OverseerrIssue {
+  return { id: 1, status: 1, media: { tmdbId } };
+}
+
+describe('overseerrFieldProvider.visit', () => {
+  it('maps request status and issue presence by tmdbId', () => {
+    const result = overseerrFieldProvider.visit([
+      [overseerrRequest(100, 2), overseerrRequest(999, 3)],
+      [overseerrIssue(100)],
+    ]);
+
+    expect(result.get(100)).toEqual({ requestStatus: 2, hasIssue: true });
+    expect(result.get(999)).toEqual({ requestStatus: 3 });
+  });
+});
+
+describe('plexFieldProvider.visit', () => {
+  it('maps view count and last-viewed timestamp per ratingKey', () => {
+    const items: PlexMediaItem[] = [
+      { ratingKey: 'plex-101', title: 'M', type: 'movie', viewCount: 5, lastViewedAt: 1700000000 },
+    ];
+
+    const result = plexFieldProvider.visit(items);
+
+    expect(result.get('plex-101')).toEqual({ playCount: 5, lastPlayedUnix: 1700000000 });
   });
 });

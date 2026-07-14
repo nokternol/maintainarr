@@ -1,4 +1,9 @@
-import type { TautulliHistoryItem } from '../providers';
+import type {
+  OverseerrIssue,
+  OverseerrRequest,
+  PlexMediaItem,
+  TautulliHistoryItem,
+} from '../providers';
 
 /**
  * The canonical fields any provider may contribute, whether by decorating an
@@ -12,6 +17,8 @@ export interface EnrichmentFields {
   tags: number[];
   playCount: number;
   lastWatchedAt: string;
+  overseerrRequestStatus: number;
+  overseerrHasIssue: boolean;
 }
 
 /**
@@ -30,8 +37,13 @@ export interface MediaFieldSource<TMediaField, TFields extends Partial<Enrichmen
  * `toEnrichmentFields` is the same checked transform `MediaFieldSource` uses,
  * applied per matched item.
  */
-export interface MediaFieldProvider<TRaw, TMediaField, TFields extends Partial<EnrichmentFields>> {
-  visit(raw: TRaw): Map<string, TMediaField>;
+export interface MediaFieldProvider<
+  TRaw,
+  TMediaField,
+  TFields extends Partial<EnrichmentFields>,
+  TKey extends string | number = string,
+> {
+  visit(raw: TRaw): Map<TKey, TMediaField>;
   toEnrichmentFields(native: TMediaField): TFields;
 }
 
@@ -39,21 +51,35 @@ export const radarrTagsFieldSource: MediaFieldSource<number[], Pick<EnrichmentFi
   toEnrichmentFields: (tags) => ({ tags }),
 };
 
-/** Tautulli's own representation: play count plus the last play as a unix timestamp. */
-interface TautulliNativeFields {
+/**
+ * The play-history shape Tautulli and Plex both natively report: play count
+ * plus the last play as a unix timestamp. Shared because it's genuinely the
+ * same representation for both, not merely a coincidence of two adapters.
+ */
+interface PlayHistoryFields {
   playCount: number;
   lastPlayedUnix?: number;
 }
 
 const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
 
+/** The `toEnrichmentFields` transform every play-history provider shares. */
+function playHistoryToEnrichmentFields(
+  native: PlayHistoryFields
+): Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>> {
+  return {
+    playCount: native.playCount,
+    ...(native.lastPlayedUnix !== undefined ? { lastWatchedAt: toIso(native.lastPlayedUnix) } : {}),
+  };
+}
+
 export const tautulliFieldProvider: MediaFieldProvider<
   TautulliHistoryItem[],
-  TautulliNativeFields,
+  PlayHistoryFields,
   Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>>
 > = {
   visit: (history) => {
-    const byKey = new Map<string, TautulliNativeFields>();
+    const byKey = new Map<string, PlayHistoryFields>();
     for (const item of history) {
       const existing = byKey.get(item.rating_key);
       const playCount = (existing?.playCount ?? 0) + 1;
@@ -66,8 +92,55 @@ export const tautulliFieldProvider: MediaFieldProvider<
     }
     return byKey;
   },
+  toEnrichmentFields: playHistoryToEnrichmentFields,
+};
+
+/** Overseerr's own representation: request status and whether an issue is open. */
+interface OverseerrNativeFields {
+  requestStatus?: number;
+  hasIssue?: boolean;
+}
+
+export const overseerrFieldProvider: MediaFieldProvider<
+  [OverseerrRequest[], OverseerrIssue[]],
+  OverseerrNativeFields,
+  Partial<Pick<EnrichmentFields, 'overseerrRequestStatus' | 'overseerrHasIssue'>>,
+  number
+> = {
+  visit: ([requests, issues]) => {
+    const byTmdbId = new Map<number, OverseerrNativeFields>();
+    const get = (tmdbId: number): OverseerrNativeFields => {
+      let f = byTmdbId.get(tmdbId);
+      if (!f) {
+        f = {};
+        byTmdbId.set(tmdbId, f);
+      }
+      return f;
+    };
+    for (const req of requests) get(req.media.tmdbId).requestStatus = req.status;
+    for (const issue of issues) get(issue.media.tmdbId).hasIssue = true;
+    return byTmdbId;
+  },
   toEnrichmentFields: (native) => ({
-    playCount: native.playCount,
-    ...(native.lastPlayedUnix !== undefined ? { lastWatchedAt: toIso(native.lastPlayedUnix) } : {}),
+    ...(native.requestStatus !== undefined ? { overseerrRequestStatus: native.requestStatus } : {}),
+    ...(native.hasIssue !== undefined ? { overseerrHasIssue: native.hasIssue } : {}),
   }),
+};
+
+export const plexFieldProvider: MediaFieldProvider<
+  PlexMediaItem[],
+  PlayHistoryFields,
+  Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>>
+> = {
+  visit: (items) => {
+    const byKey = new Map<string, PlayHistoryFields>();
+    for (const item of items) {
+      byKey.set(item.ratingKey, {
+        playCount: item.viewCount ?? 0,
+        lastPlayedUnix: item.lastViewedAt,
+      });
+    }
+    return byKey;
+  },
+  toEnrichmentFields: playHistoryToEnrichmentFields,
 };
