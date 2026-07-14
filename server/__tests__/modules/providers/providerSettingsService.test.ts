@@ -411,4 +411,27 @@ describe('ProviderSettingsService', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  // -------------------------------------------------------------------------
+  // precedenceCoverageValidator — injected fail-fast hook, called with the
+  // prospective active-type set at the same point assertNoActiveConflict runs.
+  // -------------------------------------------------------------------------
+
+  it('rejects create when the injected precedenceCoverageValidator throws', async () => {
+    const precedenceCoverageValidator = vi.fn(() => {
+      throw new ValidationError('TAUTULLI covers playCount but PLEX does not');
+    });
+    const withValidator = new ProviderSettingsService({
+      db: getDb(),
+      precedenceCoverageValidator,
+    });
+
+    await expect(
+      withValidator.create({
+        type: MetadataProviderType.PLEX,
+        name: 'Plex',
+        url: 'http://localhost:32400',
+      })
+    ).rejects.toThrow(ValidationError);
+  });
 });

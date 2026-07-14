@@ -1,4 +1,5 @@
 import { MetadataProviderType } from '../../../database/schema';
+import { ValidationError } from '../../../kernel/errors';
 import type { EnrichmentFields } from '../mediaFieldProvider';
 import type { MediaItem } from '../mediaItem';
 import type { EnrichableField, EnrichmentResult } from './enricher';
@@ -26,6 +27,37 @@ export const contestedFieldPrecedence: ContestedFieldPrecedence = {
   playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
   lastWatchedAt: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
 };
+
+/**
+ * Fail-fast guardrail hooked into `assertNoActiveConflict`'s call site
+ * (provider create/update): for every contested field, every active
+ * provider type that produces it must be covered by that field's
+ * `contestedFieldPrecedence` order. An active producer left out would
+ * silently default to an accident of ordering instead of the deliberate
+ * trust judgment precedence is meant to encode — this makes the gap loud
+ * at provider-activation time instead. Takes `precedence`/`fieldsByType`
+ * as parameters (not the module's own constants) so it stays pure and
+ * testable against synthetic data, not just today's fixed 2-provider set.
+ */
+export function assertContestedFieldsCovered(
+  activeTypes: Set<MetadataProviderType>,
+  precedence: ContestedFieldPrecedence,
+  fieldsByType: Partial<Record<MetadataProviderType, readonly (keyof EnrichmentFields)[]>>
+): void {
+  for (const [field, order] of Object.entries(precedence) as [
+    keyof EnrichmentFields,
+    readonly MetadataProviderType[],
+  ][]) {
+    for (const type of activeTypes) {
+      const producesField = (fieldsByType[type] ?? []).includes(field);
+      if (producesField && !order.includes(type)) {
+        throw new ValidationError(
+          `${type} produces the contested field "${field}" but is not covered by its contestedFieldPrecedence order — add it before activating this provider`
+        );
+      }
+    }
+  }
+}
 
 /** A stable identity for a canonical item across results — its cross-provider keys. */
 function identityKey(item: MediaItem): string {
