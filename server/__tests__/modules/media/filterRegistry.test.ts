@@ -3,6 +3,7 @@ import {
   MEDIA_RULES,
   type NormalizedMovie,
   type NormalizedShow,
+  deriveSourceProviders,
   getRule,
 } from '@server/modules/media/filterRegistry';
 import { describe, expect, it } from 'vitest';
@@ -106,6 +107,13 @@ describe('dataType classification', () => {
 // that doesn't exist in this deployment.
 
 describe('sourceProviders accuracy', () => {
+  it('watched is derived from playCount — Tautulli before Plex, matching the field it reads', () => {
+    expect(getRule('watched', 'movie')!.sourceProviders).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
+    ]);
+  });
+
   it('genres (movie) is Radarr-only — no TMDB genres call is wired', () => {
     expect(getRule('genres', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
   });
@@ -117,6 +125,25 @@ describe('sourceProviders accuracy', () => {
   it('communityRating is Sonarr-only — Sonarr ratings is a single aggregate, no TMDB key configured', () => {
     expect(getRule('communityRating', 'show')!.sourceProviders).toEqual([
       MetadataProviderType.SONARR,
+    ]);
+  });
+});
+
+// ─── deriveSourceProviders ─────────────────────────────────────────────────
+// For a rule backed by an EnrichmentFields-tracked field, sourceProviders is
+// derived from fieldsByProviderType (the same declaration MediaFieldProvider/
+// MediaFieldSource adapters are checked against) instead of hand-listed —
+// a provider rename/removal there can't silently leave a rule's gating stale.
+
+describe('deriveSourceProviders', () => {
+  it('derives tmdbStatus to [TMDB]', () => {
+    expect(deriveSourceProviders('tmdbStatus')).toEqual([MetadataProviderType.TMDB]);
+  });
+
+  it('derives playCount to both Tautulli and Plex — a contested field', () => {
+    expect(deriveSourceProviders('playCount')).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
     ]);
   });
 });

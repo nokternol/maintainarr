@@ -1,5 +1,7 @@
 import { MetadataProviderType } from '../../database/schema';
 import type { MediaKind } from '../providers';
+import { fieldsByProviderType } from './activeFieldSet';
+import type { EnrichmentFields } from './mediaFieldProvider';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
 
@@ -86,6 +88,20 @@ function inRange(actual: number, value: FilterValue): boolean {
   return true;
 }
 
+/**
+ * A rule's `sourceProviders` for a field `MediaFieldProvider`/`MediaFieldSource`
+ * tracks — every provider type whose `fieldsByProviderType` entry includes it,
+ * the inverse lookup of that declaration. Rules backed by a source-owned field
+ * outside `EnrichmentFields` (most of `NormalizedMovie`/`NormalizedShow`) still
+ * hand-list `sourceProviders` until `movie.ts`/`show.ts` derive from
+ * `EnrichmentFields` too (see spec's Risks section).
+ */
+export function deriveSourceProviders(field: keyof EnrichmentFields): MetadataProviderType[] {
+  return (Object.entries(fieldsByProviderType) as [MetadataProviderType, readonly string[]][])
+    .filter(([, fields]) => fields.includes(field))
+    .map(([type]) => type);
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const MEDIA_RULES: MediaRule[] = [
@@ -122,7 +138,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Watched',
     contentTypes: ['movie', 'show'],
     dataType: 'boolean',
-    sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+    sourceProviders: deriveSourceProviders('playCount'),
     required: false,
     predicate: (item, value) => {
       const watched = (item.playCount ?? 0) > 0;
@@ -383,7 +399,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'TMDB status',
     contentTypes: ['movie', 'show'],
     dataType: 'string',
-    sourceProviders: [MetadataProviderType.TMDB],
+    sourceProviders: deriveSourceProviders('tmdbStatus'),
     required: false,
     predicate: (item, value) => {
       if (!item.tmdbStatus) return false;
@@ -395,7 +411,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Overseerr request status',
     contentTypes: ['movie', 'show'],
     dataType: 'number',
-    sourceProviders: [MetadataProviderType.OVERSEERR],
+    sourceProviders: deriveSourceProviders('overseerrRequestStatus'),
     required: false,
     predicate: (item, value) => {
       if (item.overseerrRequestStatus === undefined) return false;
@@ -407,7 +423,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Overseerr has issue',
     contentTypes: ['movie', 'show'],
     dataType: 'boolean',
-    sourceProviders: [MetadataProviderType.OVERSEERR],
+    sourceProviders: deriveSourceProviders('overseerrHasIssue'),
     required: false,
     // Truthy/falsy: "has issue" treats unknown (null/undefined) and false alike as "no issue".
     predicate: (item, value) => Boolean(item.overseerrHasIssue) === asBool(value),
@@ -417,7 +433,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Last watched (days ago)',
     contentTypes: ['movie', 'show'],
     dataType: 'range',
-    sourceProviders: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+    sourceProviders: deriveSourceProviders('lastWatchedAt'),
     required: false,
     predicate: (item, value) => {
       if (!item.lastWatchedAt) return false;
