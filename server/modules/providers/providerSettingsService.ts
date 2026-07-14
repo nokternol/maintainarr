@@ -7,6 +7,7 @@ import {
 } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { NotFoundError, ValidationError } from '@server/kernel/errors';
+import type { DomainEventBus } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
 import { and, eq, inArray } from 'drizzle-orm';
 import { isMediaSourceType } from './roles';
@@ -58,9 +59,11 @@ function redact(provider: MetadataProvider): ProviderSummary {
 
 export class ProviderSettingsService {
   private readonly db: DrizzleDb;
+  private readonly eventBus?: DomainEventBus;
 
-  constructor({ db }: { db: DrizzleDb }) {
+  constructor({ db, eventBus }: { db: DrizzleDb; eventBus?: DomainEventBus }) {
     this.db = db;
+    this.eventBus = eventBus;
   }
 
   async list(): Promise<ProviderSummary[]> {
@@ -107,6 +110,7 @@ export class ProviderSettingsService {
     };
 
     const [raw] = await this.db.insert(metadataProviders).values(insert).returning();
+    this.eventBus?.emit('provider:changed', {});
     log.debug('Provider created', { id: raw.id, type: raw.type });
     return redact(parseRaw(raw));
   }
@@ -136,6 +140,7 @@ export class ProviderSettingsService {
       throw new NotFoundError(`Provider with id ${id} not found`);
     }
 
+    this.eventBus?.emit('provider:changed', {});
     log.debug('Provider updated', { id });
     return redact(parseRaw(raw));
   }

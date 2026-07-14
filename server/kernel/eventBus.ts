@@ -25,6 +25,11 @@ export interface DomainEvents {
   // event only needs to say *that* media changed, not which slice. A discriminator
   // is added only if/when a consumer segments its cache and proves it needs one.
   'media:changed': Record<string, never>;
+  // Emitted by ProviderSettingsService.create/update wherever a provider's active-type
+  // membership can change — the trigger media's active-field-set cache invalidates on.
+  // Lives on the kernel bus (not a media import into providers) so providers stays
+  // ignorant of media's EnrichmentFields/field-ownership concerns.
+  'provider:changed': Record<string, never>;
 }
 
 export class DomainEventBus {

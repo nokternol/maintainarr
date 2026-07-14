@@ -1,0 +1,71 @@
+import { MetadataProviderType } from '@server/database/schema';
+import { DomainEventBus } from '@server/kernel/eventBus';
+import {
+  ActiveFieldSetCache,
+  activeFieldSet,
+  fieldsByProviderType,
+} from '@server/modules/media/activeFieldSet';
+import { describe, expect, it, vi } from 'vitest';
+
+describe('fieldsByProviderType', () => {
+  it('declares tags as the field Radarr produces', () => {
+    expect(fieldsByProviderType[MetadataProviderType.RADARR]).toEqual(['tags']);
+  });
+
+  it('declares playCount and lastWatchedAt for Tautulli and Plex', () => {
+    expect(fieldsByProviderType[MetadataProviderType.TAUTULLI]).toEqual([
+      'playCount',
+      'lastWatchedAt',
+    ]);
+    expect(fieldsByProviderType[MetadataProviderType.PLEX]).toEqual(['playCount', 'lastWatchedAt']);
+  });
+
+  it('declares overseerrRequestStatus and overseerrHasIssue for Overseerr', () => {
+    expect(fieldsByProviderType[MetadataProviderType.OVERSEERR]).toEqual([
+      'overseerrRequestStatus',
+      'overseerrHasIssue',
+    ]);
+  });
+
+  it('declares tmdbStatus for TMDB', () => {
+    expect(fieldsByProviderType[MetadataProviderType.TMDB]).toEqual(['tmdbStatus']);
+  });
+
+  it('has no entry for Sonarr — no MediaFieldProvider/MediaFieldSource adapter exists yet', () => {
+    expect(fieldsByProviderType[MetadataProviderType.SONARR]).toBeUndefined();
+  });
+});
+
+describe('activeFieldSet', () => {
+  it('unions the fields of every active provider type', () => {
+    const result = activeFieldSet(
+      new Set([MetadataProviderType.RADARR, MetadataProviderType.TAUTULLI])
+    );
+
+    expect(result).toEqual(new Set(['tags', 'playCount', 'lastWatchedAt']));
+  });
+});
+
+describe('ActiveFieldSetCache', () => {
+  it('computes once and reuses the cached value on a second get()', async () => {
+    const activeTypes = vi.fn().mockResolvedValue(new Set([MetadataProviderType.RADARR]));
+    const cache = new ActiveFieldSetCache({ providerSettingsService: { activeTypes } });
+
+    await cache.get();
+    await cache.get();
+
+    expect(activeTypes).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-queries after a provider:changed event invalidates the cache', async () => {
+    const activeTypes = vi.fn().mockResolvedValue(new Set([MetadataProviderType.RADARR]));
+    const eventBus = new DomainEventBus();
+    const cache = new ActiveFieldSetCache({ providerSettingsService: { activeTypes }, eventBus });
+
+    await cache.get();
+    eventBus.emit('provider:changed', {});
+    await cache.get();
+
+    expect(activeTypes).toHaveBeenCalledTimes(2);
+  });
+});

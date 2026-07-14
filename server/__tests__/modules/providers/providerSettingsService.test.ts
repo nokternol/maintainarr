@@ -10,8 +10,9 @@ import { MetadataProviderType } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { ValidationError } from '@server/kernel/errors';
+import { DomainEventBus } from '@server/kernel/eventBus';
 import { ProviderSettingsService } from '@server/modules/providers/providerSettingsService';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {
   NODE_ENV: 'test',
@@ -372,5 +373,42 @@ describe('ProviderSettingsService', () => {
 
     expect(updated.updatedAt).toBeInstanceOf(Date);
     expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.createdAt.getTime());
+  });
+
+  // -------------------------------------------------------------------------
+  // provider:changed event — emitted on create/update for cross-module cache
+  // invalidation (e.g. media's active-field-set cache), without providers
+  // importing anything from media.
+  // -------------------------------------------------------------------------
+
+  it('emits provider:changed on create', async () => {
+    const events = new DomainEventBus();
+    const withBus = new ProviderSettingsService({ db: getDb(), eventBus: events });
+    const listener = vi.fn();
+    events.on('provider:changed', listener);
+
+    await withBus.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Radarr',
+      url: 'http://localhost:7878/api/v3',
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('emits provider:changed on update', async () => {
+    const events = new DomainEventBus();
+    const withBus = new ProviderSettingsService({ db: getDb(), eventBus: events });
+    const created = await withBus.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Radarr',
+      url: 'http://localhost:7878/api/v3',
+    });
+    const listener = vi.fn();
+    events.on('provider:changed', listener);
+
+    await withBus.update(created.id, { name: 'Renamed' });
+
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,5 @@
 import { type AwilixContainer, type NameAndRegistrationPair, asClass } from 'awilix';
+import { ActiveFieldSetCache } from './activeFieldSet';
 import { EnrichmentJobFactory } from './enrichmentJobFactory';
 import { MediaQueryEngine } from './mediaQueryEngine';
 import { MediaSourceFactory } from './mediaSourceFactory';
@@ -12,6 +13,7 @@ export interface MediaCradle {
   mediaQueryEngine: MediaQueryEngine;
   enrichmentJobFactory: EnrichmentJobFactory;
   mediaSourceFactory: MediaSourceFactory;
+  activeFieldSetCache: ActiveFieldSetCache;
 }
 
 /**
@@ -26,6 +28,7 @@ export function registerMediaDependencies<TCradle extends MediaCradle>(
     mediaQueryEngine: asClass(MediaQueryEngine).singleton(),
     enrichmentJobFactory: asClass(EnrichmentJobFactory).singleton(),
     mediaSourceFactory: asClass(MediaSourceFactory).singleton(),
+    activeFieldSetCache: asClass(ActiveFieldSetCache).singleton(),
   };
   // TCradle extends MediaCradle, so the slice's keys and resolver types
   // are a subset of the app pair type.
