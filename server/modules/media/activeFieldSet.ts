@@ -15,6 +15,7 @@ export const fieldsByProviderType: Partial<
   Record<MetadataProviderType, readonly (keyof EnrichmentFields)[]>
 > = {
   [MetadataProviderType.RADARR]: ['tags'],
+  [MetadataProviderType.SONARR]: ['tags'],
   [MetadataProviderType.TAUTULLI]: ['playCount', 'lastWatchedAt'],
   [MetadataProviderType.PLEX]: ['playCount', 'lastWatchedAt'],
   [MetadataProviderType.OVERSEERR]: ['overseerrRequestStatus', 'overseerrHasIssue'],

@@ -2,6 +2,7 @@ import {
   overseerrFieldProvider,
   plexFieldProvider,
   radarrTagsFieldSource,
+  sonarrTagsFieldSource,
   tautulliFieldProvider,
   tmdbFieldSource,
 } from '@server/modules/media/mediaFieldProvider';
@@ -18,6 +19,14 @@ describe('radarrTagsFieldSource', () => {
     const result = radarrTagsFieldSource.toEnrichmentFields([10, 20]);
 
     expect(result).toEqual({ tags: [10, 20] });
+  });
+});
+
+describe('sonarrTagsFieldSource', () => {
+  it('transforms Sonarr tags into the canonical tags field', () => {
+    const result = sonarrTagsFieldSource.toEnrichmentFields([30, 40]);
+
+    expect(result).toEqual({ tags: [30, 40] });
   });
 });
 

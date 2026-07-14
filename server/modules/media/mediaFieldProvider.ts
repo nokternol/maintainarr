@@ -48,8 +48,21 @@ export interface MediaFieldProvider<
   toEnrichmentFields(native: TMediaField): TFields;
 }
 
+/**
+ * Both Radarr and Sonarr report tags as a native `number[]` with no
+ * transform needed — the same `MediaFieldSource` shape, kept as two named
+ * exports (not one shared constant) because callers care which provider's
+ * adapter they're wiring, even though today's transform happens to be
+ * identical.
+ */
+const tagsIdentitySource = (tags: number[]): Pick<EnrichmentFields, 'tags'> => ({ tags });
+
 export const radarrTagsFieldSource: MediaFieldSource<number[], Pick<EnrichmentFields, 'tags'>> = {
-  toEnrichmentFields: (tags) => ({ tags }),
+  toEnrichmentFields: tagsIdentitySource,
+};
+
+export const sonarrTagsFieldSource: MediaFieldSource<number[], Pick<EnrichmentFields, 'tags'>> = {
+  toEnrichmentFields: tagsIdentitySource,
 };
 
 /**

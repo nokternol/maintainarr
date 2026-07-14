@@ -65,4 +65,9 @@ describe('normalizeSonarrSeries', () => {
     expect(item._sourceIds.tvdb).toBe(81189);
     expect(item._sourceIds.tmdb).toBe(1396);
   });
+
+  it('carries Sonarr tags through to the canonical tags field', () => {
+    const item = normalizeSonarrSeries({ ...baseSeries, tags: [30, 40] }, 9);
+    expect(item.tags).toEqual([30, 40]);
+  });
 });

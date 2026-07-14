@@ -95,6 +95,12 @@ function inRange(actual: number, value: FilterValue): boolean {
  * outside `EnrichmentFields` (most of `NormalizedMovie`/`NormalizedShow`) still
  * hand-list `sourceProviders` until `movie.ts`/`show.ts` derive from
  * `EnrichmentFields` too (see spec's Risks section).
+ *
+ * Not content-type-scoped: a field produced by two providers who never both
+ * apply to the same rule (`tags`: Radarr for movies, Sonarr for shows) derives
+ * to *both*, which is wrong for a content-type-scoped rule. Safe to call only
+ * when the field's producer set doesn't vary by content type — see the
+ * movie/show `tagIds` rules, which stay hand-listed for exactly this reason.
  */
 export function deriveSourceProviders(field: keyof EnrichmentFields): MetadataProviderType[] {
   return (Object.entries(fieldsByProviderType) as [MetadataProviderType, readonly string[]][])
@@ -211,7 +217,12 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Tags',
     contentTypes: ['movie'],
     dataType: 'csv-ids',
-    sourceProviders: deriveSourceProviders('tags'),
+    // Hand-listed, not deriveSourceProviders('tags'): tags is now produced by
+    // both Radarr and Sonarr, one per content type — deriving here would
+    // wrongly list Sonarr on a movie-only rule. deriveSourceProviders has no
+    // content-type scoping; only safe for a field with one producer regardless
+    // of content type (see the show-side tagIds rule for the same reasoning).
+    sourceProviders: [MetadataProviderType.RADARR],
     required: false,
     instanceScoped: true,
     predicate: (item, value) => {
@@ -285,6 +296,8 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Tags',
     contentTypes: ['show'],
     dataType: 'csv-ids',
+    // Hand-listed for the same reason as the movie-side tagIds rule above —
+    // deriveSourceProviders('tags') would wrongly include Radarr here.
     sourceProviders: [MetadataProviderType.SONARR],
     required: false,
     instanceScoped: true,

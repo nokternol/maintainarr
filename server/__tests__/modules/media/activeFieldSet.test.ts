@@ -31,8 +31,8 @@ describe('fieldsByProviderType', () => {
     expect(fieldsByProviderType[MetadataProviderType.TMDB]).toEqual(['tmdbStatus']);
   });
 
-  it('has no entry for Sonarr — no MediaFieldProvider/MediaFieldSource adapter exists yet', () => {
-    expect(fieldsByProviderType[MetadataProviderType.SONARR]).toBeUndefined();
+  it('declares tags as the field Sonarr produces', () => {
+    expect(fieldsByProviderType[MetadataProviderType.SONARR]).toEqual(['tags']);
   });
 });
 

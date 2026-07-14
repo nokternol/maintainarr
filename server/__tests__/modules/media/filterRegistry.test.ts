@@ -107,6 +107,14 @@ describe('dataType classification', () => {
 // that doesn't exist in this deployment.
 
 describe('sourceProviders accuracy', () => {
+  it('tagIds (movie) lists only Radarr — Sonarr cannot produce a movie tag', () => {
+    expect(getRule('tagIds', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('tagIds (show) lists only Sonarr — Radarr cannot produce a show tag', () => {
+    expect(getRule('tagIds', 'show')!.sourceProviders).toEqual([MetadataProviderType.SONARR]);
+  });
+
   it('watched is derived from playCount — Tautulli before Plex, matching the field it reads', () => {
     expect(getRule('watched', 'movie')!.sourceProviders).toEqual([
       MetadataProviderType.TAUTULLI,
@@ -147,8 +155,11 @@ describe('deriveSourceProviders', () => {
     ]);
   });
 
-  it('derives tags to [RADARR]', () => {
-    expect(deriveSourceProviders('tags')).toEqual([MetadataProviderType.RADARR]);
+  it('derives tags to both Radarr and Sonarr — each owns tags on its own kind', () => {
+    expect(deriveSourceProviders('tags')).toEqual([
+      MetadataProviderType.RADARR,
+      MetadataProviderType.SONARR,
+    ]);
   });
 });
 
