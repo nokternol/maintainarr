@@ -1,3 +1,4 @@
+import { MetadataProviderType } from '@server/database/schema';
 import {
   MEDIA_RULES,
   type NormalizedMovie,
@@ -96,6 +97,27 @@ describe('dataType classification', () => {
     expect(getRule('year', 'movie')!.dataType).toBe('range');
     expect(getRule('addedDaysAgo', 'movie')!.dataType).toBe('range');
     expect(getRule('imdbRating', 'movie')!.dataType).toBe('range');
+  });
+});
+
+// ─── sourceProviders accuracy ───────────────────────────────────────────────
+// sourceProviders must reflect the real owner of a field, confirmed against
+// docs/architecture/media-providers.md — a stale entry implies an integration
+// that doesn't exist in this deployment.
+
+describe('sourceProviders accuracy', () => {
+  it('genres (movie) is Radarr-only — no TMDB genres call is wired', () => {
+    expect(getRule('genres', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('imdbRating is Radarr-only — no OMDB integration exists in this deployment', () => {
+    expect(getRule('imdbRating', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('communityRating is Sonarr-only — Sonarr ratings is a single aggregate, no TMDB key configured', () => {
+    expect(getRule('communityRating', 'show')!.sourceProviders).toEqual([
+      MetadataProviderType.SONARR,
+    ]);
   });
 });
 

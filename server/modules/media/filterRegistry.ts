@@ -221,7 +221,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Genres',
     contentTypes: ['movie'],
     dataType: 'csv-strings',
-    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.TMDB],
+    sourceProviders: [MetadataProviderType.RADARR],
     required: false,
     predicate: (item, value) => {
       const genres = parseCsvStrings(value);
@@ -233,7 +233,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'IMDB rating',
     contentTypes: ['movie'],
     dataType: 'range',
-    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.OMDB],
+    sourceProviders: [MetadataProviderType.RADARR],
     required: false,
     predicate: (item, value) => {
       const movie = item as NormalizedMovie;
@@ -332,7 +332,7 @@ export const MEDIA_RULES: MediaRule[] = [
     label: 'Community rating',
     contentTypes: ['show'],
     dataType: 'range',
-    sourceProviders: [MetadataProviderType.SONARR, MetadataProviderType.TMDB],
+    sourceProviders: [MetadataProviderType.SONARR],
     required: false,
     predicate: (item, value) => {
       const show = item as NormalizedShow;
