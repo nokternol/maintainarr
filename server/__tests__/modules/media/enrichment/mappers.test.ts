@@ -1,44 +1,6 @@
-import {
-  mapOverseerr,
-  mapPlexItems,
-  mapTautulliHistory,
-} from '@server/modules/media/enrichment/mappers';
-import type {
-  OverseerrIssue,
-  OverseerrRequest,
-  PlexMediaItem,
-  TautulliHistoryItem,
-} from '@server/modules/providers';
+import { mapOverseerr, mapPlexItems } from '@server/modules/media/enrichment/mappers';
+import type { OverseerrIssue, OverseerrRequest, PlexMediaItem } from '@server/modules/providers';
 import { describe, expect, it } from 'vitest';
-
-function history(rating_key: string, played_at?: number): TautulliHistoryItem {
-  return {
-    rating_key,
-    title: 'T',
-    watched_status: 1,
-    duration: 3600,
-    play_duration: 3600,
-    user: 'u',
-    ...(played_at !== undefined ? { played_at } : {}),
-  } as TautulliHistoryItem;
-}
-
-describe('mapTautulliHistory', () => {
-  it('maps canonical play count and ISO most-recent watch per rating_key', () => {
-    const older = 1000;
-    const newer = 2000;
-    const result = mapTautulliHistory([
-      history('abc123', older),
-      history('abc123', newer),
-      history('other', 3000),
-    ]);
-
-    expect(result.get('abc123')).toEqual({
-      playCount: 2,
-      lastWatchedAt: new Date(newer * 1000).toISOString(),
-    });
-  });
-});
 
 describe('mapPlexItems', () => {
   it('maps canonical play count and ISO last-viewed per ratingKey', () => {

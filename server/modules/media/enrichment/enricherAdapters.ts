@@ -5,10 +5,11 @@ import type {
   TautulliProvider,
   TmdbProvider,
 } from '../../providers';
+import { tautulliFieldProvider } from '../mediaFieldProvider';
 import type { MediaItem } from '../mediaItem';
 import { decorate } from './decorate';
 import type { EnrichmentResult, MediaEnricher } from './enricher';
-import { mapOverseerr, mapPlexItems, mapTautulliHistory } from './mappers';
+import { mapOverseerr, mapPlexItems } from './mappers';
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
@@ -65,7 +66,10 @@ export function tautulliEnricher(
 ): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
-      const fieldsByKey = mapTautulliHistory(await tautulli.getHistory());
+      const native = tautulliFieldProvider.visit(await tautulli.getHistory());
+      const fieldsByKey = new Map(
+        [...native].map(([key, value]) => [key, tautulliFieldProvider.toEnrichmentFields(value)])
+      );
       return {
         provider: MetadataProviderType.TAUTULLI,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),

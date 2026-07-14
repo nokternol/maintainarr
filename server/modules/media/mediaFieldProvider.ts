@@ -50,7 +50,7 @@ const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
 export const tautulliFieldProvider: MediaFieldProvider<
   TautulliHistoryItem[],
   TautulliNativeFields,
-  Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>
+  Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt'>>
 > = {
   visit: (history) => {
     const byKey = new Map<string, TautulliNativeFields>();
@@ -68,6 +68,6 @@ export const tautulliFieldProvider: MediaFieldProvider<
   },
   toEnrichmentFields: (native) => ({
     playCount: native.playCount,
-    lastWatchedAt: native.lastPlayedUnix !== undefined ? toIso(native.lastPlayedUnix) : '',
+    ...(native.lastPlayedUnix !== undefined ? { lastWatchedAt: toIso(native.lastPlayedUnix) } : {}),
   }),
 };

@@ -1,40 +1,7 @@
-import type {
-  OverseerrIssue,
-  OverseerrRequest,
-  PlexMediaItem,
-  TautulliHistoryItem,
-} from '../../providers';
+import type { OverseerrIssue, OverseerrRequest, PlexMediaItem } from '../../providers';
 import type { MediaItem } from '../mediaItem';
 
 const toIso = (unix: number): string => new Date(unix * 1000).toISOString();
-
-/**
- * Pure: Tautulli history rows → canonical fields keyed by plexRatingKey — play
- * count (row count) and the ISO timestamp of the most-recent play. The functional
- * core of `TautulliProvider.enrich`, ready for `decorate`.
- */
-export function mapTautulliHistory(
-  history: TautulliHistoryItem[]
-): Map<string, Pick<MediaItem, 'playCount' | 'lastWatchedAt'>> {
-  const playCount = new Map<string, number>();
-  const lastPlayed = new Map<string, number>();
-  for (const item of history) {
-    playCount.set(item.rating_key, (playCount.get(item.rating_key) ?? 0) + 1);
-    if (item.played_at !== undefined) {
-      const current = lastPlayed.get(item.rating_key) ?? 0;
-      if (item.played_at > current) lastPlayed.set(item.rating_key, item.played_at);
-    }
-  }
-  const fields = new Map<string, Pick<MediaItem, 'playCount' | 'lastWatchedAt'>>();
-  for (const [plexRatingKey, count] of playCount) {
-    const last = lastPlayed.get(plexRatingKey);
-    fields.set(plexRatingKey, {
-      playCount: count,
-      lastWatchedAt: last !== undefined ? toIso(last) : undefined,
-    });
-  }
-  return fields;
-}
 
 /**
  * Pure: Plex library items → canonical fields keyed by ratingKey — view count and

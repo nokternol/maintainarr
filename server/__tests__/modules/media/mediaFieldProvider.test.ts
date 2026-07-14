@@ -49,4 +49,12 @@ describe('tautulliFieldProvider.toEnrichmentFields', () => {
       lastWatchedAt: new Date(1700000000 * 1000).toISOString(),
     });
   });
+
+  it('omits lastWatchedAt entirely when no play carried a timestamp', () => {
+    const native = tautulliFieldProvider.visit([history('abc123')]).get('abc123')!;
+
+    const result = tautulliFieldProvider.toEnrichmentFields(native);
+
+    expect(result).not.toHaveProperty('lastWatchedAt');
+  });
 });
