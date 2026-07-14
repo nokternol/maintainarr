@@ -3,6 +3,7 @@ import {
   plexFieldProvider,
   radarrTagsFieldSource,
   tautulliFieldProvider,
+  tmdbFieldSource,
 } from '@server/modules/media/mediaFieldProvider';
 import type {
   OverseerrIssue,
@@ -102,5 +103,13 @@ describe('plexFieldProvider.visit', () => {
     const result = plexFieldProvider.visit(items);
 
     expect(result.get('plex-101')).toEqual({ playCount: 5, lastPlayedUnix: 1700000000 });
+  });
+});
+
+describe('tmdbFieldSource', () => {
+  it('transforms the raw TMDB status string into the canonical tmdbStatus field', () => {
+    const result = tmdbFieldSource.toEnrichmentFields('Released');
+
+    expect(result).toEqual({ tmdbStatus: 'Released' });
   });
 });

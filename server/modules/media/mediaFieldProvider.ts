@@ -19,6 +19,7 @@ export interface EnrichmentFields {
   lastWatchedAt: string;
   overseerrRequestStatus: number;
   overseerrHasIssue: boolean;
+  tmdbStatus: string;
 }
 
 /**
@@ -93,6 +94,10 @@ export const tautulliFieldProvider: MediaFieldProvider<
     return byKey;
   },
   toEnrichmentFields: playHistoryToEnrichmentFields,
+};
+
+export const tmdbFieldSource: MediaFieldSource<string, Pick<EnrichmentFields, 'tmdbStatus'>> = {
+  toEnrichmentFields: (status) => ({ tmdbStatus: status }),
 };
 
 /** Overseerr's own representation: request status and whether an issue is open. */

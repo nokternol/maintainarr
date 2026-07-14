@@ -10,8 +10,8 @@ import {
   overseerrFieldProvider,
   plexFieldProvider,
   tautulliFieldProvider,
+  tmdbFieldSource,
 } from '../mediaFieldProvider';
-import type { MediaItem } from '../mediaItem';
 import { decorate } from './decorate';
 import type { EnrichmentResult, MediaEnricher } from './enricher';
 
@@ -62,12 +62,13 @@ export function overseerrEnricher(
 export function tmdbEnricher(tmdb: TmdbProvider): MediaEnricher<'tmdbStatus'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'tmdbStatus'>> => {
-      const fieldsByKey = new Map<number, Pick<MediaItem, 'tmdbStatus'>>();
+      const fieldsByKey = new Map<number, Pick<EnrichmentFields, 'tmdbStatus'>>();
       for (const item of items) {
         const tmdbId = item._sourceIds.tmdb;
         if (tmdbId === undefined || fieldsByKey.has(tmdbId)) continue;
         const status = await tmdb.getStatus(tmdbId);
-        if (status !== undefined) fieldsByKey.set(tmdbId, { tmdbStatus: status });
+        if (status !== undefined)
+          fieldsByKey.set(tmdbId, tmdbFieldSource.toEnrichmentFields(status));
       }
       return {
         provider: MetadataProviderType.TMDB,
