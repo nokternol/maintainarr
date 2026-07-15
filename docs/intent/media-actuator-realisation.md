@@ -1,6 +1,7 @@
 # Realising the MediaActuator pattern
 
-**Status:** INTENT (future state, not built). The `MediaActuator` role itself is shipped and as-built —
+**Status:** INTENT (future state, not built) — design questions resolved, see "Resolved decisions"
+below; implementation in progress on branch `actuator-realisation`. The `MediaActuator` role itself is shipped and as-built —
 `server/modules/providers/roles.ts`, `docs/architecture/actuator-task-ownership.md`. This document covers
 making the *non-source* actuators (Plex, Jellyfin, Tautulli) actually execute their declared tasks instead
 of rejecting with "not yet implemented," plus the parameter contract several tasks need regardless of
@@ -79,6 +80,69 @@ seam matters — it changes how many real problems there are to solve:
   take exactly one parameter, each a single-select id from a live provider-fetched list — none need
   multiple parameters or free text. That's promising evidence for a narrow contract, but is **not**
   confirmed as the general pattern across providers.
+
+## Resolved decisions
+
+The two open questions above (final task vocabulary, parameter contract) were resolved by a research
+spike against the official Plex, Jellyfin, and Tautulli API documentation (plexopedia + python-plexapi
+source for Plex; the published OpenAPI spec for Jellyfin 10.10; the Tautulli API wiki for `/api/v2`).
+
+### Final task vocabulary
+
+One additional prune beyond the two already recorded: **`moveToTrash` (Plex) is out of scope, prune
+it.** Plex exposes no per-item "move to trash" operation — "trash" in Plex is a scanner state for items
+whose files went missing, not an action; the only trash-related endpoint is the per-library
+`PUT /library/sections/{id}/emptyTrash`. The task as declared is unrealisable through the API.
+
+The realisable vocabulary, with the confirmed endpoint per task:
+
+| Provider | Task | API call |
+|---|---|---|
+| Plex | `deleteFromLibrary` | `DELETE /library/metadata/{ratingKey}` (deletes files; server must allow media deletion) |
+| Plex | `refreshMetadata` | `PUT /library/metadata/{ratingKey}/refresh` |
+| Plex | `markPlayed` | `GET /:/scrobble?identifier=com.plexapp.plugins.library&key={ratingKey}` |
+| Plex | `markUnplayed` | `GET /:/unscrobble?identifier=com.plexapp.plugins.library&key={ratingKey}` |
+| Jellyfin | `deleteItem` | `DELETE /Items/{itemId}` |
+| Jellyfin | `refreshMetadata` | `POST /Items/{itemId}/Refresh?metadataRefreshMode=FullRefresh&imageRefreshMode=FullRefresh` |
+| Jellyfin | `markPlayed` | `POST /UserPlayedItems/{itemId}?userId={userId}` |
+| Jellyfin | `markUnplayed` | `DELETE /UserPlayedItems/{itemId}?userId={userId}` |
+| Jellyfin | `addToCollection` | `POST /Collections/{collectionId}/Items?ids={id,…}` — parameterized (which collection) |
+| Tautulli | `deleteWatchHistory` | `get_history` filtered by `rating_key` and by `grandparent_rating_key` (shows log history per episode) → collect `row_id`s → `delete_history&row_ids={comma-separated}` |
+| Radarr | `changeQualityProfile` / `addTag` / `removeTag` | `PUT /api/v3/movie/editor` `{ movieIds, qualityProfileId }` / `{ movieIds, tags: [tagId], applyTags: 'add' \| 'remove' }` |
+| Sonarr | `changeQualityProfile` / `addTag` / `removeTag` | `PUT /api/v3/series/editor` `{ seriesIds, … }` (same body shape as Radarr) |
+
+### Parameter contract
+
+All four parameterized tasks fit "exactly one parameter, a single-select provider-native id" — and the
+per-API research confirmed nothing richer is needed for any of them (quality profile id, tag id,
+collection id; each an id from a live provider-fetched list). Contract:
+
+- `ActuatorTaskDescriptor` gains `parameter?: { label: string }` — declaring that the task takes one
+  value. The descriptor stays a pure-data projection; discovery surfaces (builder UI) read it to know a
+  value must be captured.
+- `ActuatorTask.run(ids, parameterValue?)` — the value transports as a `string` (numeric for
+  Radarr/Sonarr profile/tag ids, GUID for Jellyfin collection ids); each provider parses its own. A
+  parameterized task invoked without its value rejects with a clear error, never a silent no-op.
+- `run`'s ids widen to `Array<number | string>`: ids are always in the actuator's own addressing space
+  — source-native numeric ids for Radarr/Sonarr, `plexRatingKey` strings for Plex/Tautulli,
+  `jellyfinItemId` strings for Jellyfin. The executor guarantees the space by construction (see below).
+- The automation stores the value in a new nullable `automations.taskParameter` column; the executor
+  threads it into `run`. Capturing/validating the value against the live target list in the builder UI
+  is follow-up presentation work, not part of this realisation.
+
+### Id translation
+
+- The executor branches on `isMediaSourceType(provider.type)`. Source actuators keep today's path
+  (query evaluated against the actuator's own catalog, ids via `idOf`). Non-source actuators evaluate
+  the query against the pooled catalog(s) of the content type's owning source instances
+  (`MediaSourceFactory.sourcesFor`), then translate matched items to the actuator's addressing space:
+  `media_item (providerId, externalId)` → `media_identity` → `plexRatingKey` / `jellyfinItemId`,
+  deduplicated, nulls dropped.
+- Translation is per addressing-space, not per-provider: Plex and Tautulli both address by
+  `plexRatingKey`; Jellyfin by `jellyfinItemId`.
+- `jellyfinItemId` gains its missing writer: `IdentityResolutionJob.runForJellyfin()` mirroring
+  `runForPlex()`, matching Jellyfin items' `ProviderIds` (`Tmdb`/`Tvdb`) against the identity graph —
+  confirmed available on `GET /Items?recursive=true&fields=ProviderIds&includeItemTypes=Movie,Series`.
 
 ## Blockers / friction
 
