@@ -2,6 +2,7 @@ export interface IdentityJobLike {
   runForMovies(): Promise<number>;
   runForSeries(): Promise<number>;
   runForPlex(): Promise<number>;
+  runForJellyfin(): Promise<number>;
 }
 
 export interface EnrichmentJobLike {
@@ -36,7 +37,8 @@ export class SystemTaskRunner {
       const movies = await job.runForMovies();
       const series = await job.runForSeries();
       const plex = await job.runForPlex();
-      return movies + series + plex;
+      const jellyfin = await job.runForJellyfin();
+      return movies + series + plex + jellyfin;
     }
     if (taskId === 'system:enrichment') {
       const job = await this.enrichmentJobFactory.create();

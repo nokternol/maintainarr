@@ -2,6 +2,7 @@ import { MetadataProviderType } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { getChildLogger } from '@server/kernel/logger';
 import type { IdentityJobFactoryLike } from '@server/modules/system';
+import { JellyfinProvider } from './connections/jellyfinProvider';
 import { PlexProvider } from './connections/plexProvider';
 import { RadarrProvider } from './connections/radarrProvider';
 import { SonarrProvider } from './connections/sonarrProvider';
@@ -33,6 +34,7 @@ export class IdentityJobFactory implements IdentityJobFactoryLike {
       MetadataProviderType.RADARR,
       MetadataProviderType.SONARR,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
     ]);
     const instances = this.providerFactory.createInstances(providers, log);
     const movieSources = instances
@@ -42,11 +44,13 @@ export class IdentityJobFactory implements IdentityJobFactoryLike {
       .filter((i) => i.provider instanceof SonarrProvider)
       .map((i) => ({ providerId: i.settings.id, provider: i.provider as SonarrProvider }));
     const plex = instances.find((i) => i.provider instanceof PlexProvider);
+    const jellyfin = instances.find((i) => i.provider instanceof JellyfinProvider);
     return new IdentityResolutionJob({
       db: this.db,
       movieSources,
       seriesSources,
       plexProvider: plex?.provider as PlexProvider | undefined,
+      jellyfinProvider: jellyfin?.provider as JellyfinProvider | undefined,
       tvMazeLookup: this.providerFactory.createTvMaze(log),
     });
   }

@@ -36,6 +36,34 @@ describe('JellyfinProvider', () => {
   });
 });
 
+describe('JellyfinProvider — getAllItems', () => {
+  const provider = new JellyfinProvider(mockConfig, logger);
+
+  it('fetches all movies and series recursively with their provider ids', async () => {
+    let captured: URL | null = null;
+    server.use(
+      http.get(`${JELLYFIN_URL}/Items`, ({ request }) => {
+        captured = new URL(request.url);
+        return HttpResponse.json({
+          Items: [
+            { Id: 'jf-1', Name: 'The Matrix', Type: 'Movie', ProviderIds: { Tmdb: '603' } },
+            { Id: 'jf-2', Name: 'Breaking Bad', Type: 'Series', ProviderIds: { Tvdb: '81189' } },
+          ],
+          TotalRecordCount: 2,
+        });
+      })
+    );
+
+    const items = await provider.getAllItems();
+
+    expect(items).toHaveLength(2);
+    expect(items[0].ProviderIds).toEqual({ Tmdb: '603' });
+    expect(captured!.searchParams.get('recursive')).toBe('true');
+    expect(captured!.searchParams.get('fields')).toBe('ProviderIds');
+    expect(captured!.searchParams.get('includeItemTypes')).toBe('Movie,Series');
+  });
+});
+
 describe('JellyfinProvider — actuator tasks', () => {
   const provider = new JellyfinProvider(mockConfig, logger);
   const task = (id: string) => provider.tasks().find((t) => t.id === id)!;

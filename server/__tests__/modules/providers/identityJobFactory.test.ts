@@ -37,6 +37,7 @@ async function runIdentityJob(job: IdentityJobLike): Promise<void> {
   await job.runForMovies();
   await job.runForSeries();
   await job.runForPlex();
+  await job.runForJellyfin();
 }
 
 function makeFactory(): IdentityJobFactory {
@@ -155,6 +156,33 @@ describe('IdentityJobFactory', () => {
 
     const [row] = await db.select().from(mediaIdentity).where(eq(mediaIdentity.tmdbId, 603));
     expect(row.plexRatingKey).toBe('rk-1');
+  });
+
+  it('resolves the active Jellyfin provider and writes jellyfinItemId for matching identities', async () => {
+    const db = getDb();
+    const providerSettingsService = new ProviderSettingsService({ db });
+    const jellyfinUrl = 'http://localhost:8096';
+    await providerSettingsService.create({
+      type: MetadataProviderType.JELLYFIN,
+      name: 'Test Jellyfin',
+      url: jellyfinUrl,
+      apiKey: 'jf-token',
+    });
+    await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 603, resolvedAt: 0 });
+    server.use(
+      http.get(`${jellyfinUrl}/Items`, () =>
+        HttpResponse.json({
+          Items: [{ Id: 'jf-603', Type: 'Movie', ProviderIds: { Tmdb: '603' } }],
+          TotalRecordCount: 1,
+        })
+      )
+    );
+
+    const job = await makeFactory().create();
+    await runIdentityJob(job);
+
+    const [row] = await db.select().from(mediaIdentity).where(eq(mediaIdentity.tmdbId, 603));
+    expect(row.jellyfinItemId).toBe('jf-603');
   });
 
   it('backfills tvMazeId for a Sonarr series via the tvMaze lookup', async () => {

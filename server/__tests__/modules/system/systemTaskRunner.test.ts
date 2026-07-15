@@ -11,11 +11,13 @@ function makeIdentityJob(counts?: {
   movies?: number;
   series?: number;
   plex?: number;
+  jellyfin?: number;
 }): IdentityJobLike {
   return {
     runForMovies: vi.fn(async () => counts?.movies ?? 0),
     runForSeries: vi.fn(async () => counts?.series ?? 0),
     runForPlex: vi.fn(async () => counts?.plex ?? 0),
+    runForJellyfin: vi.fn(async () => counts?.jellyfin ?? 0),
   };
 }
 
@@ -55,6 +57,7 @@ describe('SystemTaskRunner', () => {
     expect(identityJob.runForMovies).toHaveBeenCalledTimes(1);
     expect(identityJob.runForSeries).toHaveBeenCalledTimes(1);
     expect(identityJob.runForPlex).toHaveBeenCalledTimes(1);
+    expect(identityJob.runForJellyfin).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches system:enrichment through the enrichment job factory', async () => {
@@ -80,12 +83,12 @@ describe('SystemTaskRunner', () => {
     expect(await runner.run('system:enrichment')).toBe(7);
   });
 
-  it('returns the sum of the three identity counts for system:identity-resolution', async () => {
+  it('returns the sum of every identity pass count for system:identity-resolution', async () => {
     const { runner } = makeRunner({
-      identityJob: makeIdentityJob({ movies: 3, series: 4, plex: 2 }),
+      identityJob: makeIdentityJob({ movies: 3, series: 4, plex: 2, jellyfin: 5 }),
     });
 
-    expect(await runner.run('system:identity-resolution')).toBe(9);
+    expect(await runner.run('system:identity-resolution')).toBe(14);
   });
 
   it('throws for an unknown task id', async () => {

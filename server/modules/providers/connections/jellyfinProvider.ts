@@ -13,6 +13,8 @@ export interface JellyfinItem {
   Name: string;
   Type: string;
   ProductionYear?: number;
+  /** External-id map (e.g. Tmdb, Tvdb, Imdb) — present when requested via fields=ProviderIds. */
+  ProviderIds?: Record<string, string>;
 }
 
 interface JellyfinItemsResponse {
@@ -88,6 +90,21 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
       .get(`Users/${this.userId}/Items`, {
         headers: this.authHeader,
         searchParams: { ParentId: libraryId, Recursive: 'true' },
+      })
+      .json<JellyfinItemsResponse>();
+    return resp.Items;
+  }
+
+  /** Every movie and series in the server's libraries, with their external-id maps. */
+  public async getAllItems(): Promise<JellyfinItem[]> {
+    const resp = await this.client
+      .get('Items', {
+        headers: this.authHeader,
+        searchParams: {
+          recursive: 'true',
+          fields: 'ProviderIds',
+          includeItemTypes: 'Movie,Series',
+        },
       })
       .json<JellyfinItemsResponse>();
     return resp.Items;

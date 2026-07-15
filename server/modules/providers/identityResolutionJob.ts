@@ -12,11 +12,18 @@ interface PlexBridgeProvider {
   getAllItems(): Promise<Array<{ ratingKey: string; type?: string; guids?: { id: string }[] }>>;
 }
 
+interface JellyfinBridgeProvider {
+  getAllItems(): Promise<
+    Array<{ Id: string; Type?: string; ProviderIds?: Record<string, string> }>
+  >;
+}
+
 interface TVMazeLookupProvider {
   lookupByTvdbId(tvdbId: number): Promise<{ id: number } | null>;
 }
 
 const PLEX_KIND: Record<string, MediaKind> = { movie: 'movie', show: 'show' };
+const JELLYFIN_KIND: Record<string, MediaKind> = { Movie: 'movie', Series: 'show' };
 
 interface Deps {
   db: DrizzleDb;
@@ -25,6 +32,7 @@ interface Deps {
   /** One entry per active Sonarr instance. Never collapsed to one. */
   seriesSources?: Array<{ providerId: number; provider: Pick<SonarrProvider, 'getSeries'> }>;
   plexProvider?: PlexBridgeProvider;
+  jellyfinProvider?: JellyfinBridgeProvider;
   tvMazeLookup?: TVMazeLookupProvider;
   delay?: (ms: number) => Promise<void>;
 }
@@ -42,17 +50,17 @@ export class IdentityResolutionJob {
         const tmdbMatch = guid.id.match(/^tmdb:\/\/(\d+)$/);
         const tvdbMatch = guid.id.match(/^thetvdb:\/\/(\d+)$/);
         if (tmdbMatch) {
-          changed += await this.setPlexRatingKey(
+          changed += await this.stampIdentity(
+            { plexRatingKey: item.ratingKey },
             mediaIdentity.tmdbId,
             Number.parseInt(tmdbMatch[1], 10),
-            item.ratingKey,
             kind
           );
         } else if (tvdbMatch) {
-          changed += await this.setPlexRatingKey(
+          changed += await this.stampIdentity(
+            { plexRatingKey: item.ratingKey },
             mediaIdentity.tvdbId,
             Number.parseInt(tvdbMatch[1], 10),
-            item.ratingKey,
             kind
           );
         }
@@ -63,22 +71,50 @@ export class IdentityResolutionJob {
   }
 
   /**
-   * Stamp a Plex ratingKey onto identities matching `column = id`, scoped by `kind` when
-   * known (an unscoped match could otherwise cross the movie/tv id namespaces — a TMDB
-   * movie id and a TMDB tv id with the same number are different titles). Returns rows
-   * actually changed.
+   * Stamp an actuator-addressing id (`plexRatingKey` / `jellyfinItemId`) onto identities
+   * matching `column = id`, scoped by `kind` when known (an unscoped match could otherwise
+   * cross the movie/tv id namespaces — a TMDB movie id and a TMDB tv id with the same
+   * number are different titles). Returns rows actually changed.
    */
-  private async setPlexRatingKey(
+  private async stampIdentity(
+    set: { plexRatingKey: string } | { jellyfinItemId: string },
     column: typeof mediaIdentity.tmdbId | typeof mediaIdentity.tvdbId,
     id: number,
-    ratingKey: string,
     kind: MediaKind | undefined
   ): Promise<number> {
     const result = await this.deps.db
       .update(mediaIdentity)
-      .set({ plexRatingKey: ratingKey })
+      .set(set)
       .where(kind ? and(eq(column, id), eq(mediaIdentity.kind, kind)) : eq(column, id));
     return result.rowsAffected;
+  }
+
+  async runForJellyfin(): Promise<number> {
+    if (!this.deps.jellyfinProvider) return 0;
+    const items = await this.deps.jellyfinProvider.getAllItems();
+    let changed = 0;
+    for (const item of items) {
+      const kind = item.Type ? JELLYFIN_KIND[item.Type] : undefined;
+      const tmdbId = Number.parseInt(item.ProviderIds?.Tmdb ?? '', 10);
+      const tvdbId = Number.parseInt(item.ProviderIds?.Tvdb ?? '', 10);
+      if (!Number.isNaN(tmdbId)) {
+        changed += await this.stampIdentity(
+          { jellyfinItemId: item.Id },
+          mediaIdentity.tmdbId,
+          tmdbId,
+          kind
+        );
+      } else if (!Number.isNaN(tvdbId)) {
+        changed += await this.stampIdentity(
+          { jellyfinItemId: item.Id },
+          mediaIdentity.tvdbId,
+          tvdbId,
+          kind
+        );
+      }
+    }
+
+    return changed;
   }
 
   async runForSeries(): Promise<number> {
