@@ -1,16 +1,27 @@
 import { MetadataProviderType } from '@server/database/schema';
 
 /**
+ * Declares that a task takes exactly one value: a single-select id from a live
+ * provider-fetched list (a quality profile, a tag, a collection). The value
+ * transports as a string — numeric id spaces parse their own. Discovery
+ * surfaces read this to know a value must be captured with the task.
+ */
+export interface ActuatorTaskParameter {
+  label: string;
+}
+
+/**
  * The pure-data projection of an actuator task: how it is presented (`id`,
- * `label`, `destructive`) and what data scope it touches (`affects`). This is
- * the transport and discovery shape — it serializes complete, carrying no
- * runner.
+ * `label`, `destructive`), what data scope it touches (`affects`), and the
+ * parameter it requires, if any. This is the transport and discovery shape —
+ * it serializes complete, carrying no runner.
  */
 export interface ActuatorTaskDescriptor {
   id: string;
   label: string;
   destructive: boolean;
   affects?: 'media';
+  parameter?: ActuatorTaskParameter;
 }
 
 /**
@@ -28,7 +39,20 @@ export type ActuatorTargetId = number | string;
  * descriptor it extends — projecting one from the other is lossless.
  */
 export interface ActuatorTask extends ActuatorTaskDescriptor {
-  run(ids: ActuatorTargetId[]): Promise<void>;
+  run(ids: ActuatorTargetId[], parameterValue?: string): Promise<void>;
+}
+
+/**
+ * Guards a parameterized task's runner: a declared-parameter task invoked
+ * without its value rejects loudly instead of acting on a default — the
+ * missing value is a wiring bug (the automation should have stored it), never
+ * a case to paper over.
+ */
+export function requireParameter(taskId: string, value: string | undefined): string {
+  if (value === undefined || value === '') {
+    throw new Error(`Task "${taskId}" requires a parameter value`);
+  }
+  return value;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
+import { type ActuatorTask, type MediaActuator, requireParameter } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface JellyfinLibrary {
@@ -30,35 +30,40 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
         label: 'Delete item',
         destructive: true,
         affects: 'media',
-        run: modelledRun('deleteItem'),
+        run: async (ids) => this.deleteItems(ids.map(String)),
       },
       {
         id: 'refreshMetadata',
         label: 'Refresh metadata',
         destructive: false,
         affects: 'media',
-        run: modelledRun('refreshMetadata'),
+        run: async (ids) => this.refreshMetadata(ids.map(String)),
       },
       {
         id: 'markPlayed',
         label: 'Mark as played',
         destructive: false,
         affects: 'media',
-        run: modelledRun('markPlayed'),
+        run: async (ids) => this.markPlayed(ids.map(String)),
       },
       {
         id: 'markUnplayed',
         label: 'Mark as unplayed',
         destructive: false,
         affects: 'media',
-        run: modelledRun('markUnplayed'),
+        run: async (ids) => this.markUnplayed(ids.map(String)),
       },
       {
         id: 'addToCollection',
         label: 'Add to collection',
         destructive: false,
         affects: 'media',
-        run: modelledRun('addToCollection'),
+        parameter: { label: 'Collection' },
+        run: async (ids, parameterValue) =>
+          this.addToCollection(
+            ids.map(String),
+            requireParameter('addToCollection', parameterValue)
+          ),
       },
     ];
   }
@@ -86,5 +91,51 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
       })
       .json<JellyfinItemsResponse>();
     return resp.Items;
+  }
+
+  public async deleteItems(itemIds: string[]): Promise<void> {
+    await Promise.all(
+      itemIds.map((id) => this.client.delete(`Items/${id}`, { headers: this.authHeader }))
+    );
+  }
+
+  public async refreshMetadata(itemIds: string[]): Promise<void> {
+    await Promise.all(
+      itemIds.map((id) =>
+        this.client.post(`Items/${id}/Refresh`, {
+          headers: this.authHeader,
+          searchParams: { metadataRefreshMode: 'FullRefresh', imageRefreshMode: 'FullRefresh' },
+        })
+      )
+    );
+  }
+
+  public async markPlayed(itemIds: string[]): Promise<void> {
+    await Promise.all(
+      itemIds.map((id) =>
+        this.client.post(`UserPlayedItems/${id}`, {
+          headers: this.authHeader,
+          searchParams: { userId: this.userId },
+        })
+      )
+    );
+  }
+
+  public async markUnplayed(itemIds: string[]): Promise<void> {
+    await Promise.all(
+      itemIds.map((id) =>
+        this.client.delete(`UserPlayedItems/${id}`, {
+          headers: this.authHeader,
+          searchParams: { userId: this.userId },
+        })
+      )
+    );
+  }
+
+  public async addToCollection(itemIds: string[], collectionId: string): Promise<void> {
+    await this.client.post(`Collections/${collectionId}/Items`, {
+      headers: this.authHeader,
+      searchParams: { ids: itemIds.join(',') },
+    });
   }
 }

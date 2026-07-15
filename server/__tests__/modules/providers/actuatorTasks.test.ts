@@ -93,12 +93,26 @@ describe('pure-actuator media systems — modelled vocabularies', () => {
     expect(refresh?.affects).toBe('media');
   });
 
+  it('Jellyfin declares a fully realised vocabulary — addToCollection parameterized', () => {
+    const tasks = new JellyfinProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual([
+      'deleteItem',
+      'refreshMetadata',
+      'markPlayed',
+      'markUnplayed',
+      'addToCollection',
+    ]);
+
+    const del = tasks.find((t) => t.id === 'deleteItem');
+    expect(del?.destructive).toBe(true);
+    expect(del?.affects).toBe('media');
+
+    expect(tasks.find((t) => t.id === 'addToCollection')?.parameter?.label).toBe('Collection');
+  });
+
   const cases: Array<
     [string, () => { tasks: () => { id: string; run: (i: number[]) => Promise<void> }[] }, string]
-  > = [
-    ['Jellyfin', () => new JellyfinProvider(cfg, log), 'deleteItem'],
-    ['Tautulli', () => new TautulliProvider(cfg, log), 'deleteWatchHistory'],
-  ];
+  > = [['Tautulli', () => new TautulliProvider(cfg, log), 'deleteWatchHistory']];
 
   for (const [name, make, expectedId] of cases) {
     it(`${name} declares its tasks, every one modelled (run throws)`, async () => {
