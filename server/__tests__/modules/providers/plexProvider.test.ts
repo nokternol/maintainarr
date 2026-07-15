@@ -1,16 +1,22 @@
 import { getChildLogger } from '@server/kernel/logger';
 import type { ProviderConfig } from '@server/modules/providers/connections/baseProviderConnection';
 import { PlexProvider } from '@server/modules/providers/connections/plexProvider';
-import { describe, expect, it } from 'vitest';
+import { server } from '@tests/mocks/server';
+import { http, HttpResponse } from 'msw';
+import { afterEach, describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestPlexProvider');
 
+const PLEX_URL = 'http://localhost:32400';
+
 const mockConfig: ProviderConfig = {
   name: 'Test Plex',
-  url: 'http://localhost:32400',
+  url: PLEX_URL,
   apiKey: 'fake-plex-token',
   settings: {},
 };
+
+afterEach(() => server.resetHandlers());
 
 describe('PlexProvider', () => {
   const provider = new PlexProvider(mockConfig, logger);
@@ -42,5 +48,87 @@ describe('PlexProvider', () => {
     const items = await provider.getLibraryContents('1');
     expect(items[0].viewCount).toBe(3);
     expect(items[0].lastViewedAt).toBe(1700000000);
+  });
+});
+
+describe('PlexProvider — actuator tasks', () => {
+  const provider = new PlexProvider(mockConfig, logger);
+  const task = (id: string) => provider.tasks().find((t) => t.id === id)!;
+
+  it('declares exactly the realisable vocabulary — moveToTrash is not a task', () => {
+    expect(provider.tasks().map((t) => t.id)).toEqual([
+      'deleteFromLibrary',
+      'refreshMetadata',
+      'markPlayed',
+      'markUnplayed',
+    ]);
+  });
+
+  it('deleteFromLibrary sends DELETE /library/metadata/{ratingKey} with the token for each id', async () => {
+    const deleted: Array<{ key: string; token: string | null }> = [];
+    server.use(
+      http.delete(`${PLEX_URL}/library/metadata/:key`, ({ params, request }) => {
+        deleted.push({
+          key: params.key as string,
+          token: request.headers.get('X-Plex-Token'),
+        });
+        return new HttpResponse(null, { status: 200 });
+      })
+    );
+
+    await task('deleteFromLibrary').run(['101', '102']);
+
+    expect(deleted.map((d) => d.key).sort()).toEqual(['101', '102']);
+    expect(deleted.every((d) => d.token === 'fake-plex-token')).toBe(true);
+  });
+
+  it('refreshMetadata sends PUT /library/metadata/{ratingKey}/refresh for each id', async () => {
+    const refreshed: string[] = [];
+    server.use(
+      http.put(`${PLEX_URL}/library/metadata/:key/refresh`, ({ params }) => {
+        refreshed.push(params.key as string);
+        return new HttpResponse(null, { status: 200 });
+      })
+    );
+
+    await task('refreshMetadata').run(['101']);
+
+    expect(refreshed).toEqual(['101']);
+  });
+
+  it('markPlayed scrobbles each rating key with the library identifier', async () => {
+    const calls: Array<{ key: string | null; identifier: string | null }> = [];
+    server.use(
+      http.get(/\/:\/scrobble/, ({ request }) => {
+        const url = new URL(request.url);
+        calls.push({
+          key: url.searchParams.get('key'),
+          identifier: url.searchParams.get('identifier'),
+        });
+        return new HttpResponse(null, { status: 200 });
+      })
+    );
+
+    await task('markPlayed').run(['201']);
+
+    expect(calls).toEqual([{ key: '201', identifier: 'com.plexapp.plugins.library' }]);
+  });
+
+  it('markUnplayed unscrobbles each rating key with the library identifier', async () => {
+    const calls: Array<{ key: string | null; identifier: string | null }> = [];
+    server.use(
+      http.get(/\/:\/unscrobble/, ({ request }) => {
+        const url = new URL(request.url);
+        calls.push({
+          key: url.searchParams.get('key'),
+          identifier: url.searchParams.get('identifier'),
+        });
+        return new HttpResponse(null, { status: 200 });
+      })
+    );
+
+    await task('markUnplayed').run(['201']);
+
+    expect(calls).toEqual([{ key: '201', identifier: 'com.plexapp.plugins.library' }]);
   });
 });

@@ -78,20 +78,20 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Unmonitor series',
         destructive: false,
         affects: 'media',
-        run: (ids) => this.unmonitorSeries(ids),
+        run: async (ids) => this.unmonitorSeries(ids.map(Number)),
       },
       {
         id: 'triggerSearch',
         label: 'Trigger episode search',
         destructive: false,
-        run: (ids) => this.triggerSeriesSearch(ids),
+        run: async (ids) => this.triggerSeriesSearch(ids.map(Number)),
       },
       {
         id: 'deleteSeriesWithFiles',
         label: 'Delete series + files',
         destructive: true,
         affects: 'media',
-        run: (ids) => this.deleteSeries(ids),
+        run: async (ids) => this.deleteSeries(ids.map(Number)),
       },
       {
         id: 'deleteSeriesKeepFiles',

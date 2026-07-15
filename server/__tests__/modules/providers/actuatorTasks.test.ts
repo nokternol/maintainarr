@@ -75,10 +75,27 @@ describe('SonarrProvider — MediaActuator.tasks()', () => {
 describe('pure-actuator media systems — modelled vocabularies', () => {
   const cfg = { name: 'x', url: 'http://localhost/api', apiKey: 'k', settings: null };
 
+  it('Plex declares a fully realised vocabulary — destructive/affects flags intact, no modelled runs', () => {
+    const tasks = new PlexProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual([
+      'deleteFromLibrary',
+      'refreshMetadata',
+      'markPlayed',
+      'markUnplayed',
+    ]);
+
+    const del = tasks.find((t) => t.id === 'deleteFromLibrary');
+    expect(del?.destructive).toBe(true);
+    expect(del?.affects).toBe('media');
+
+    const refresh = tasks.find((t) => t.id === 'refreshMetadata');
+    expect(refresh?.destructive).toBe(false);
+    expect(refresh?.affects).toBe('media');
+  });
+
   const cases: Array<
     [string, () => { tasks: () => { id: string; run: (i: number[]) => Promise<void> }[] }, string]
   > = [
-    ['Plex', () => new PlexProvider(cfg, log), 'deleteFromLibrary'],
     ['Jellyfin', () => new JellyfinProvider(cfg, log), 'deleteItem'],
     ['Tautulli', () => new TautulliProvider(cfg, log), 'deleteWatchHistory'],
   ];

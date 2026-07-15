@@ -69,20 +69,20 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Unmonitor movie',
         destructive: false,
         affects: 'media',
-        run: (ids) => this.unmonitorMovies(ids),
+        run: async (ids) => this.unmonitorMovies(ids.map(Number)),
       },
       {
         id: 'triggerSearch',
         label: 'Trigger download search',
         destructive: false,
-        run: (ids) => this.triggerMoviesSearch(ids),
+        run: async (ids) => this.triggerMoviesSearch(ids.map(Number)),
       },
       {
         id: 'deleteMovieWithFiles',
         label: 'Delete movie + files',
         destructive: true,
         affects: 'media',
-        run: (ids) => this.deleteMovies(ids),
+        run: async (ids) => this.deleteMovies(ids.map(Number)),
       },
       {
         id: 'deleteMovieKeepFiles',

@@ -14,12 +14,21 @@ export interface ActuatorTaskDescriptor {
 }
 
 /**
+ * An id in the actuator's own addressing space: source-native numeric ids for
+ * catalog-owning actuators (Radarr/Sonarr), `plexRatingKey` strings for
+ * Plex-addressed systems (Plex, Tautulli), `jellyfinItemId` strings for
+ * Jellyfin. The executor guarantees the space by construction — a task never
+ * receives an id it cannot address.
+ */
+export type ActuatorTargetId = number | string;
+
+/**
  * A descriptor plus its runner, bound to the concrete provider instance (no
  * cast). The execution shape: the executor reads `run`, discovery reads the
  * descriptor it extends — projecting one from the other is lossless.
  */
 export interface ActuatorTask extends ActuatorTaskDescriptor {
-  run(ids: number[]): Promise<void>;
+  run(ids: ActuatorTargetId[]): Promise<void>;
 }
 
 /**
@@ -28,7 +37,7 @@ export interface ActuatorTask extends ActuatorTaskDescriptor {
  * task is never silently a no-op; enablement defaulting off keeps it
  * unreachable by accident.
  */
-export function modelledRun(taskId: string): (ids: number[]) => Promise<void> {
+export function modelledRun(taskId: string): (ids: ActuatorTargetId[]) => Promise<void> {
   return () => Promise.reject(new Error(`Task "${taskId}" is not yet implemented`));
 }
 
