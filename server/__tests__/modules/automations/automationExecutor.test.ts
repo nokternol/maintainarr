@@ -13,15 +13,18 @@ import { getChildLogger } from '@server/kernel/logger';
 import { AutomationExecutor } from '@server/modules/automations/automationExecutor';
 import { AutomationRunService } from '@server/modules/automations/automationRunService';
 import { AutomationService } from '@server/modules/automations/automationService';
+import type { MediaItem } from '@server/modules/media';
 import type { FilterValueEntry } from '@server/modules/media/filterRegistry';
 import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import {
   type IProviderFactory,
+  PlexProvider,
   ProviderSettingsService,
   type RadarrMovie,
   RadarrProvider,
   SonarrProvider,
   type SonarrSeries,
+  TautulliProvider,
 } from '@server/modules/providers';
 import type { ProviderConfig } from '@server/modules/providers/connections/baseProviderConnection';
 import { http, HttpResponse } from 'msw';
@@ -135,13 +138,14 @@ async function seedMediaQuery(
 
 async function seedAutomation(
   automationService: AutomationService,
-  opts: { queryId: number; providerId: number; taskId: string }
+  opts: { queryId: number; providerId: number; taskId: string; taskParameter?: string }
 ) {
   return automationService.create({
     name: 'Test Automation',
     querySources: [{ queryId: opts.queryId, role: 'include' }],
     providerId: opts.providerId,
     taskId: opts.taskId,
+    taskParameter: opts.taskParameter,
     schedule: '0 * * * *',
   });
 }
@@ -1488,6 +1492,250 @@ describe('AutomationExecutor', () => {
 
       expect(executedId).toBe(42);
     });
+  });
+});
+
+describe('non-source actuators — id translation through the identity graph', () => {
+  let automationService: AutomationService;
+  let providerSettingsService: ProviderSettingsService;
+  let mediaQueryService: MediaQueryService;
+
+  beforeEach(async () => {
+    await initializeDatabase(testConfig);
+    const db = getDb();
+    automationService = new AutomationService({ db });
+    providerSettingsService = new ProviderSettingsService({ db });
+    mediaQueryService = new MediaQueryService({ db });
+  });
+
+  afterEach(async () => {
+    await _resetDatabase();
+    server.resetHandlers();
+  });
+
+  /** A pooled owning-source stand-in: three Radarr-normalized movies from one instance. */
+  function fakeMovieSources(radarrProviderId: number) {
+    const items = [1, 2, 3].map((n) => ({
+      _sourceIds: { radarr: n, providerId: radarrProviderId, tmdb: n * 100 },
+      title: `Movie ${n}`,
+    }));
+    return {
+      sourcesFor: async () => [
+        {
+          providerId: radarrProviderId,
+          name: 'Radarr',
+          source: {
+            getMediaItems: async () => items,
+            idOf: (item: MediaItem) => (item._sourceIds as { radarr?: number }).radarr,
+          },
+        },
+      ],
+    };
+  }
+
+  async function seedIdentityGraph(radarrProviderId: number) {
+    const db = getDb();
+    // movies 1 and 2 are stamped with Plex rating keys; movie 3 is not.
+    for (const [externalId, plexRatingKey] of [
+      [1, 'rk-1'],
+      [2, 'rk-2'],
+      [3, null],
+    ] as Array<[number, string | null]>) {
+      const [{ id: identityId }] = await db
+        .insert(mediaIdentity)
+        .values({ kind: 'movie', tmdbId: externalId * 100, plexRatingKey })
+        .returning({ id: mediaIdentity.id });
+      await db
+        .insert(mediaItems)
+        .values({ providerId: radarrProviderId, externalId, mediaIdentityId: identityId });
+    }
+  }
+
+  async function seedPlexProvider() {
+    return providerSettingsService.create({
+      type: MetadataProviderType.PLEX,
+      name: 'Test Plex',
+      url: 'http://localhost:32400',
+      apiKey: 'plex-token',
+      settings: { enabledTasks: ['deleteFromLibrary'] },
+    });
+  }
+
+  it('evaluates the query against the owning source and runs the task with translated Plex ids', async () => {
+    const db = getDb();
+    const radarrProv = await seedRadarrProvider(providerSettingsService);
+    const plexProv = await seedPlexProvider();
+    await seedIdentityGraph(radarrProv.id);
+
+    const plexInstance = new PlexProvider(
+      { name: 'Test Plex', url: 'http://localhost:32400', apiKey: 'plex-token', settings: {} },
+      mockConnectionLogger
+    );
+    const deleteFromLibrary = vi
+      .spyOn(plexInstance, 'deleteFromLibrary')
+      .mockResolvedValue(undefined);
+
+    const executor = new AutomationExecutor({
+      automationService,
+      automationRunService: new AutomationRunService({ db }),
+      providerSettingsService,
+      mediaQueryService,
+      providerFactory: { create: () => plexInstance },
+      mediaSourceFactory: fakeMovieSources(radarrProv.id),
+      db,
+    });
+
+    const query = await seedMediaQuery(mediaQueryService);
+    const automation = await seedAutomation(automationService, {
+      queryId: query.id,
+      providerId: plexProv.id,
+      taskId: 'deleteFromLibrary',
+    });
+
+    await executor.execute(automation.id);
+
+    expect(deleteFromLibrary).toHaveBeenCalledTimes(1);
+    expect(deleteFromLibrary.mock.calls[0][0].sort()).toEqual(['rk-1', 'rk-2']);
+    const runs = await db.select().from(automationRuns);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].status).toBe('success');
+    expect(runs[0].itemCount).toBe(2); // only the identities stamped with a Plex key
+  });
+
+  it('Tautulli rides the Plex addressing space end to end', async () => {
+    const db = getDb();
+    const radarrProv = await seedRadarrProvider(providerSettingsService);
+    const tautulliProv = await providerSettingsService.create({
+      type: MetadataProviderType.TAUTULLI,
+      name: 'Test Tautulli',
+      url: 'http://localhost:8181',
+      apiKey: 'tautulli-key',
+      settings: { enabledTasks: ['deleteWatchHistory'] },
+    });
+    await seedIdentityGraph(radarrProv.id);
+
+    const tautulliInstance = new TautulliProvider(
+      { name: 'Test Tautulli', url: 'http://localhost:8181', apiKey: 'tautulli-key', settings: {} },
+      mockConnectionLogger
+    );
+    const deleteWatchHistory = vi
+      .spyOn(tautulliInstance, 'deleteWatchHistory')
+      .mockResolvedValue(undefined);
+
+    const executor = new AutomationExecutor({
+      automationService,
+      automationRunService: new AutomationRunService({ db }),
+      providerSettingsService,
+      mediaQueryService,
+      providerFactory: { create: () => tautulliInstance },
+      mediaSourceFactory: fakeMovieSources(radarrProv.id),
+      db,
+    });
+
+    const query = await seedMediaQuery(mediaQueryService);
+    const automation = await seedAutomation(automationService, {
+      queryId: query.id,
+      providerId: tautulliProv.id,
+      taskId: 'deleteWatchHistory',
+    });
+
+    await executor.execute(automation.id);
+
+    expect(deleteWatchHistory).toHaveBeenCalledTimes(1);
+    expect(deleteWatchHistory.mock.calls[0][0].sort()).toEqual(['rk-1', 'rk-2']);
+  });
+});
+
+describe('task parameters — stored on the automation, threaded into run', () => {
+  let automationService: AutomationService;
+  let providerSettingsService: ProviderSettingsService;
+  let mediaQueryService: MediaQueryService;
+
+  beforeEach(async () => {
+    await initializeDatabase(testConfig);
+    const db = getDb();
+    automationService = new AutomationService({ db });
+    providerSettingsService = new ProviderSettingsService({ db });
+    mediaQueryService = new MediaQueryService({ db });
+  });
+
+  afterEach(async () => {
+    await _resetDatabase();
+    server.resetHandlers();
+  });
+
+  async function seedRadarrWithParamTask() {
+    return providerSettingsService.create({
+      type: MetadataProviderType.RADARR,
+      name: 'Test Radarr',
+      url: `${RADARR_URL}/api/v3`,
+      apiKey: 'test-api-key',
+      settings: { enabledTasks: ['changeQualityProfile'] },
+    });
+  }
+
+  it('passes the stored parameter value into the task run', async () => {
+    const db = getDb();
+    const prov = await seedRadarrWithParamTask();
+    const radarr = radarrSource([createRadarrMovie({ id: 1, tmdbId: 100 })]);
+    const changeQualityProfile = vi
+      .spyOn(radarr, 'changeQualityProfile')
+      .mockResolvedValue(undefined);
+
+    const executor = new AutomationExecutor({
+      automationService,
+      automationRunService: new AutomationRunService({ db }),
+      providerSettingsService,
+      mediaQueryService,
+      providerFactory: { create: () => radarr },
+    });
+
+    const query = await seedMediaQuery(mediaQueryService);
+    const automation = await seedAutomation(automationService, {
+      queryId: query.id,
+      providerId: prov.id,
+      taskId: 'changeQualityProfile',
+      taskParameter: '7',
+    });
+    expect(automation.taskParameter).toBe('7');
+
+    await executor.execute(automation.id);
+
+    expect(changeQualityProfile).toHaveBeenCalledWith([1], 7);
+    const runs = await db.select().from(automationRuns);
+    expect(runs[0].status).toBe('success');
+  });
+
+  it('records an error run when a parameterized task has no stored value, without running it', async () => {
+    const db = getDb();
+    const prov = await seedRadarrWithParamTask();
+    const radarr = radarrSource([createRadarrMovie({ id: 1, tmdbId: 100 })]);
+    const changeQualityProfile = vi
+      .spyOn(radarr, 'changeQualityProfile')
+      .mockResolvedValue(undefined);
+
+    const executor = new AutomationExecutor({
+      automationService,
+      automationRunService: new AutomationRunService({ db }),
+      providerSettingsService,
+      mediaQueryService,
+      providerFactory: { create: () => radarr },
+    });
+
+    const query = await seedMediaQuery(mediaQueryService);
+    const automation = await seedAutomation(automationService, {
+      queryId: query.id,
+      providerId: prov.id,
+      taskId: 'changeQualityProfile',
+    });
+
+    await executor.execute(automation.id);
+
+    expect(changeQualityProfile).not.toHaveBeenCalled();
+    const runs = await db.select().from(automationRuns);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].status).toBe('error');
+    expect(runs[0].error).toMatch(/requires a parameter/i);
   });
 });
 

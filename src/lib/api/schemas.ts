@@ -109,6 +109,7 @@ export const AutomationSchema = z
     querySources: z.array(AutomationQuerySourceSchema),
     provider: ProviderRefSchema,
     taskId: z.string(),
+    taskParameter: z.string().optional(),
     schedule: z.string(),
     status: z.enum(['active', 'paused']),
     lastRun: AutomationLastRunSchema.optional(),

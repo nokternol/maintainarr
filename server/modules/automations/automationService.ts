@@ -25,6 +25,8 @@ export interface AutomationDraft {
   querySources: QuerySourceDraft[];
   providerId: number;
   taskId: string;
+  /** The value for a parameterized task (a provider-native id as a string). */
+  taskParameter?: string;
   schedule: string;
 }
 
@@ -42,6 +44,8 @@ export interface AutomationDto {
   querySources: AutomationQuerySourceDto[];
   provider: { id: number; name: string; type: string } | null;
   taskId: string;
+  /** Present only when the task is parameterized and the automation stores a value. */
+  taskParameter?: string;
   schedule: string;
   status: 'active' | 'paused';
   lastRun?: {
@@ -67,8 +71,18 @@ function computeNextRun(schedule: string): string | undefined {
 }
 
 const CONTENT_TYPE_PROVIDERS: Record<ContentType, MetadataProviderType[]> = {
-  movie: [MetadataProviderType.RADARR, MetadataProviderType.PLEX, MetadataProviderType.JELLYFIN],
-  show: [MetadataProviderType.SONARR, MetadataProviderType.PLEX, MetadataProviderType.JELLYFIN],
+  movie: [
+    MetadataProviderType.RADARR,
+    MetadataProviderType.PLEX,
+    MetadataProviderType.JELLYFIN,
+    MetadataProviderType.TAUTULLI,
+  ],
+  show: [
+    MetadataProviderType.SONARR,
+    MetadataProviderType.PLEX,
+    MetadataProviderType.JELLYFIN,
+    MetadataProviderType.TAUTULLI,
+  ],
 };
 
 function rowToDto(
@@ -87,6 +101,7 @@ function rowToDto(
     querySources,
     provider: provider ? { id: provider.id, name: provider.name, type: provider.type } : null,
     taskId: row.taskId,
+    taskParameter: row.taskParameter ?? undefined,
     schedule: row.schedule,
     status: row.status as 'active' | 'paused',
     createdAt: row.createdAt.toISOString(),
@@ -287,6 +302,7 @@ export class AutomationService {
       name: draft.name.trim(),
       providerId: draft.providerId,
       taskId: draft.taskId,
+      taskParameter: draft.taskParameter ?? null,
       schedule: draft.schedule,
       status: 'active',
     };

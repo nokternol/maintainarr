@@ -11,6 +11,8 @@ export interface ProviderTaskDescriptor {
   label: string;
   destructive: boolean;
   affects?: 'media';
+  /** Declared when the task takes one value (a single-select provider-native id). */
+  parameter?: { label: string };
   enabled: boolean;
 }
 

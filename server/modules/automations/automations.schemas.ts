@@ -39,6 +39,7 @@ export const automationSchemas = {
         name: z.string().min(1).max(200),
         providerId: z.number().int().positive(),
         taskId: z.string().min(1),
+        taskParameter: z.string().min(1).optional(),
         schedule: z.string().min(1),
         querySources: z
           .array(
@@ -57,6 +58,7 @@ export const automationSchemas = {
         name: val.name,
         providerId: val.providerId,
         taskId: val.taskId,
+        taskParameter: val.taskParameter,
         schedule: val.schedule,
         querySources:
           val.querySources ??
