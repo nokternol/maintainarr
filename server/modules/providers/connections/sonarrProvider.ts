@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
+import { type ActuatorTask, type MediaActuator, modelledRun, requireParameter } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface SonarrSeason {
@@ -105,10 +105,33 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Change quality profile',
         destructive: false,
         affects: 'media',
-        run: modelledRun('changeQualityProfile'),
+        parameter: { label: 'Quality profile' },
+        run: async (ids, parameterValue) =>
+          this.changeQualityProfile(
+            ids.map(Number),
+            Number(requireParameter('changeQualityProfile', parameterValue))
+          ),
       },
-      { id: 'addTag', label: 'Add tag', destructive: false, run: modelledRun('addTag') },
-      { id: 'removeTag', label: 'Remove tag', destructive: false, run: modelledRun('removeTag') },
+      {
+        id: 'addTag',
+        label: 'Add tag',
+        destructive: false,
+        parameter: { label: 'Tag' },
+        run: async (ids, parameterValue) =>
+          this.applyTag(ids.map(Number), Number(requireParameter('addTag', parameterValue)), 'add'),
+      },
+      {
+        id: 'removeTag',
+        label: 'Remove tag',
+        destructive: false,
+        parameter: { label: 'Tag' },
+        run: async (ids, parameterValue) =>
+          this.applyTag(
+            ids.map(Number),
+            Number(requireParameter('removeTag', parameterValue)),
+            'remove'
+          ),
+      },
     ];
   }
 
@@ -164,6 +187,24 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
           .json()
       )
     );
+  }
+
+  public async changeQualityProfile(seriesIds: number[], qualityProfileId: number): Promise<void> {
+    await this.client
+      .put('series/editor', {
+        searchParams: this.apiParams,
+        json: { seriesIds, qualityProfileId },
+      })
+      .json();
+  }
+
+  public async applyTag(seriesIds: number[], tagId: number, mode: 'add' | 'remove'): Promise<void> {
+    await this.client
+      .put('series/editor', {
+        searchParams: this.apiParams,
+        json: { seriesIds, tags: [tagId], applyTags: mode },
+      })
+      .json();
   }
 
   public async deleteSeries(seriesIds: number[]): Promise<void> {

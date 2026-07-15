@@ -133,3 +133,55 @@ describe('SonarrProvider — task methods', () => {
     expect(putBodies.map((b) => b.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 });
+
+describe('SonarrProvider — parameterized tasks', () => {
+  const provider = new SonarrProvider(mockConfig, logger);
+  const task = (id: string) => provider.tasks().find((t) => t.id === id)!;
+
+  function stubEditor() {
+    const bodies: unknown[] = [];
+    server.use(
+      http.put(`${SONARR_BASE}/series/editor`, async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json([]);
+      })
+    );
+    return bodies;
+  }
+
+  it('declares parameters on changeQualityProfile, addTag, removeTag', () => {
+    expect(task('changeQualityProfile').parameter).toEqual({ label: 'Quality profile' });
+    expect(task('addTag').parameter).toEqual({ label: 'Tag' });
+    expect(task('removeTag').parameter).toEqual({ label: 'Tag' });
+  });
+
+  it('changeQualityProfile bulk-edits the series to the given profile', async () => {
+    const bodies = stubEditor();
+
+    await task('changeQualityProfile').run([1, 2], '7');
+
+    expect(bodies).toEqual([{ seriesIds: [1, 2], qualityProfileId: 7 }]);
+  });
+
+  it('addTag applies the tag to the series', async () => {
+    const bodies = stubEditor();
+
+    await task('addTag').run([3], '11');
+
+    expect(bodies).toEqual([{ seriesIds: [3], tags: [11], applyTags: 'add' }]);
+  });
+
+  it('removeTag removes the tag from the series', async () => {
+    const bodies = stubEditor();
+
+    await task('removeTag').run([3, 4], '11');
+
+    expect(bodies).toEqual([{ seriesIds: [3, 4], tags: [11], applyTags: 'remove' }]);
+  });
+
+  it('each parameterized task rejects without its value', async () => {
+    for (const id of ['changeQualityProfile', 'addTag', 'removeTag']) {
+      await expect(task(id).run([1])).rejects.toThrow(/requires a parameter/i);
+    }
+  });
+});

@@ -40,21 +40,26 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
     expect(del?.destructive).toBe(true);
   });
 
-  it('models the rest of its vocabulary as parameterless tasks whose run throws', async () => {
+  it('declares its parameterized tasks and keeps deleteMovieKeepFiles modelled', async () => {
     const provider = new RadarrProvider(radarrConfig, log);
-    const ids = provider.tasks().map((t) => t.id);
+    const tasks = provider.tasks();
+    const ids = tasks.map((t) => t.id);
 
     expect(ids).toContain('changeQualityProfile');
     expect(ids).toContain('addTag');
     expect(ids).toContain('removeTag');
 
-    const changeQuality = provider.tasks().find((t) => t.id === 'changeQualityProfile')!;
-    await expect(changeQuality.run([1])).rejects.toThrow(/not yet implemented/i);
+    expect(tasks.find((t) => t.id === 'changeQualityProfile')?.parameter?.label).toBe(
+      'Quality profile'
+    );
+
+    const keepFiles = tasks.find((t) => t.id === 'deleteMovieKeepFiles')!;
+    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
   });
 });
 
 describe('SonarrProvider — MediaActuator.tasks()', () => {
-  it('declares its real tasks bound to methods and models the rest', async () => {
+  it('declares its real tasks bound to methods, parameterized tasks with their parameter', async () => {
     const provider = new SonarrProvider(sonarrConfig, log);
     const tasks = provider.tasks();
     const ids = tasks.map((t) => t.id);
@@ -67,8 +72,10 @@ describe('SonarrProvider — MediaActuator.tasks()', () => {
     expect(del?.destructive).toBe(true);
     expect(del?.affects).toBe('media');
 
-    const addTag = tasks.find((t) => t.id === 'addTag')!;
-    await expect(addTag.run([1])).rejects.toThrow(/not yet implemented/i);
+    expect(tasks.find((t) => t.id === 'addTag')?.parameter?.label).toBe('Tag');
+
+    const keepFiles = tasks.find((t) => t.id === 'deleteSeriesKeepFiles')!;
+    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
   });
 });
 
