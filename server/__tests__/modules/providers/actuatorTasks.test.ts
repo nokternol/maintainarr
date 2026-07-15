@@ -110,18 +110,10 @@ describe('pure-actuator media systems — modelled vocabularies', () => {
     expect(tasks.find((t) => t.id === 'addToCollection')?.parameter?.label).toBe('Collection');
   });
 
-  const cases: Array<
-    [string, () => { tasks: () => { id: string; run: (i: number[]) => Promise<void> }[] }, string]
-  > = [['Tautulli', () => new TautulliProvider(cfg, log), 'deleteWatchHistory']];
-
-  for (const [name, make, expectedId] of cases) {
-    it(`${name} declares its tasks, every one modelled (run throws)`, async () => {
-      const tasks = make().tasks();
-      expect(tasks.map((t) => t.id)).toContain(expectedId);
-      expect(tasks.length).toBeGreaterThan(0);
-      for (const task of tasks) {
-        await expect(task.run([1])).rejects.toThrow(/not yet implemented/i);
-      }
-    });
-  }
+  it('Tautulli declares only its item-addressed task — session/notification tasks pruned', () => {
+    const tasks = new TautulliProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual(['deleteWatchHistory']);
+    expect(tasks[0].destructive).toBe(true);
+    expect(tasks[0].affects).toBe('media');
+  });
 });

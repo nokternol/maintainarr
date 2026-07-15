@@ -3,16 +3,20 @@ import type { ProviderConfig } from '@server/modules/providers/connections/baseP
 import { TautulliProvider } from '@server/modules/providers/connections/tautulliProvider';
 import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 const logger = getChildLogger('TestTautulliProvider');
 
+const TAUTULLI_URL = 'http://localhost:8181';
+
 const mockConfig: ProviderConfig = {
   name: 'Test Tautulli',
-  url: 'http://localhost:8181',
+  url: TAUTULLI_URL,
   apiKey: 'fake-api-key',
   settings: {},
 };
+
+afterEach(() => server.resetHandlers());
 
 describe('TautulliProvider', () => {
   const provider = new TautulliProvider(mockConfig, logger);
@@ -36,5 +40,78 @@ describe('TautulliProvider', () => {
     expect(history).toHaveLength(1);
     expect(history[0].title).toBe('The Matrix');
     expect(history[0].watched_status).toBe(1);
+  });
+});
+
+describe('TautulliProvider — actuator tasks', () => {
+  const provider = new TautulliProvider(mockConfig, logger);
+  const task = (id: string) => provider.tasks().find((t) => t.id === id)!;
+
+  it('declares only deleteWatchHistory — session/notification tasks are not in the vocabulary', () => {
+    expect(provider.tasks().map((t) => t.id)).toEqual(['deleteWatchHistory']);
+
+    const del = task('deleteWatchHistory');
+    expect(del.destructive).toBe(true);
+    expect(del.affects).toBe('media');
+  });
+
+  /** Wires a stateful /api/v2 handler: history rows per lookup key, capturing delete calls. */
+  function stubHistoryApi(rowsByKey: Record<string, Array<{ row_id: number }>>) {
+    const deleteCalls: Array<string | null> = [];
+    server.use(
+      http.get(`${TAUTULLI_URL}/api/v2`, ({ request }) => {
+        const url = new URL(request.url);
+        const cmd = url.searchParams.get('cmd');
+        if (cmd === 'get_history') {
+          const key =
+            url.searchParams.get('rating_key') ?? url.searchParams.get('grandparent_rating_key');
+          const qualifier = url.searchParams.has('rating_key') ? 'rating' : 'grandparent';
+          const rows = rowsByKey[`${qualifier}:${key}`] ?? [];
+          return HttpResponse.json({
+            response: { result: 'success', data: { data: rows, total_count: rows.length } },
+          });
+        }
+        if (cmd === 'delete_history') {
+          deleteCalls.push(url.searchParams.get('row_ids'));
+          return HttpResponse.json({ response: { result: 'success', data: null } });
+        }
+        return HttpResponse.json(
+          { response: { result: 'error', message: 'Unknown command' } },
+          { status: 400 }
+        );
+      })
+    );
+    return deleteCalls;
+  }
+
+  it('deleteWatchHistory collects row ids by rating_key and grandparent_rating_key, then deletes once', async () => {
+    const deleteCalls = stubHistoryApi({
+      'rating:101': [{ row_id: 1 }, { row_id: 2 }],
+      'grandparent:101': [{ row_id: 3 }],
+      'rating:202': [{ row_id: 8 }],
+    });
+
+    await task('deleteWatchHistory').run(['101', '202']);
+
+    expect(deleteCalls).toEqual(['1,2,3,8']);
+  });
+
+  it('deleteWatchHistory dedupes row ids seen under both lookup keys', async () => {
+    const deleteCalls = stubHistoryApi({
+      'rating:101': [{ row_id: 1 }, { row_id: 2 }],
+      'grandparent:101': [{ row_id: 2 }],
+    });
+
+    await task('deleteWatchHistory').run(['101']);
+
+    expect(deleteCalls).toEqual(['1,2']);
+  });
+
+  it('deleteWatchHistory issues no delete when nothing matched', async () => {
+    const deleteCalls = stubHistoryApi({});
+
+    await task('deleteWatchHistory').run(['999']);
+
+    expect(deleteCalls).toEqual([]);
   });
 });
