@@ -50,6 +50,24 @@ describe('plexEnricher', () => {
     expect(result.items).toHaveLength(0);
     expect(item.playCount).toBeUndefined();
   });
+
+  it('decorates a matched item with its ISO last-viewed timestamp', async () => {
+    const plex = new PlexProvider(mockConfig, mockLogger);
+    vi.spyOn(plex, 'getAllItems').mockResolvedValue([
+      {
+        ratingKey: 'plex-1',
+        title: 'The Matrix',
+        type: 'movie',
+        viewCount: 2,
+        lastViewedAt: 1700000000,
+      },
+    ]);
+    const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
+
+    const result = await plexEnricher(plex).enrich([item]);
+
+    expect(result.items[0].lastWatchedAt).toBe(new Date(1700000000 * 1000).toISOString());
+  });
 });
 
 describe('tautulliEnricher', () => {
@@ -72,6 +90,26 @@ describe('tautulliEnricher', () => {
     expect(result.provider).toBe(MetadataProviderType.TAUTULLI);
     expect(result.items).toHaveLength(1);
     expect(result.items[0].playCount).toBe(1);
+  });
+
+  it('decorates a matched item with its ISO last-watched timestamp', async () => {
+    const tautulli = new TautulliProvider(mockConfig, mockLogger);
+    vi.spyOn(tautulli, 'getHistory').mockResolvedValue([
+      {
+        rating_key: 'plex-1',
+        title: 'The Matrix',
+        user: 'u',
+        watched_status: 1,
+        duration: 1,
+        play_duration: 1,
+        played_at: 1700000000,
+      },
+    ]);
+    const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
+
+    const result = await tautulliEnricher(tautulli).enrich([item]);
+
+    expect(result.items[0].lastWatchedAt).toBe(new Date(1700000000 * 1000).toISOString());
   });
 });
 

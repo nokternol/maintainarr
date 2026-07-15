@@ -1,17 +1,17 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { ProviderSettingsService } from '../providers';
+import type { ActiveFieldSetCache } from './activeFieldSet';
 import { MEDIA_RULES, toDescriptor } from './filterRegistry';
 import type { ContentType, MediaRuleDescriptor } from './filterRegistry';
 
 interface FilterFieldsCradle {
-  providerSettingsService: ProviderSettingsService;
+  activeFieldSetCache: ActiveFieldSetCache;
 }
 
 export function createFilterFieldsHandlers(cradle: FilterFieldsCradle) {
-  const { providerSettingsService } = cradle;
+  const { activeFieldSetCache } = cradle;
 
   async function gatedDescriptors(contentType?: ContentType): Promise<MediaRuleDescriptor[]> {
-    const configuredTypes = await providerSettingsService.activeTypes();
+    const configuredTypes = await activeFieldSetCache.getActiveTypes();
 
     return MEDIA_RULES.filter(
       (rule) => contentType === undefined || rule.contentTypes.includes(contentType)

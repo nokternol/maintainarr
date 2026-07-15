@@ -7,6 +7,7 @@ import {
 } from '@server/database/schema';
 import type { DrizzleDb } from '@server/kernel/db';
 import { NotFoundError, ValidationError } from '@server/kernel/errors';
+import type { DomainEventBus } from '@server/kernel/eventBus';
 import { getChildLogger } from '@server/kernel/logger';
 import { and, eq, inArray } from 'drizzle-orm';
 import { isMediaSourceType } from './roles';
@@ -56,11 +57,32 @@ function redact(provider: MetadataProvider): ProviderSummary {
   };
 }
 
+/**
+ * The fail-fast hook `assertNoActiveConflict`'s call site invokes with the
+ * prospective active-type set (current active types plus the type being
+ * activated). Media-ignorant on purpose — `providers` never imports from
+ * `media`; the real precedence-coverage check is wired in by `media`'s DI
+ * registration, this class only knows it's a callback that may throw.
+ */
+export type PrecedenceCoverageValidator = (activeTypes: Set<MetadataProviderType>) => void;
+
 export class ProviderSettingsService {
   private readonly db: DrizzleDb;
+  private readonly eventBus?: DomainEventBus;
+  private readonly precedenceCoverageValidator?: PrecedenceCoverageValidator;
 
-  constructor({ db }: { db: DrizzleDb }) {
+  constructor({
+    db,
+    eventBus,
+    precedenceCoverageValidator,
+  }: {
+    db: DrizzleDb;
+    eventBus?: DomainEventBus;
+    precedenceCoverageValidator?: PrecedenceCoverageValidator;
+  }) {
     this.db = db;
+    this.eventBus = eventBus;
+    this.precedenceCoverageValidator = precedenceCoverageValidator;
   }
 
   async list(): Promise<ProviderSummary[]> {
@@ -92,9 +114,32 @@ export class ProviderSettingsService {
     }
   }
 
+  /**
+   * Runs the injected `precedenceCoverageValidator` (if any) against the
+   * prospective active-type set — current active types plus `type`, the one
+   * being activated. Fails loudly here, at provider-activation time, if
+   * activating `type` would leave a contested field's precedence order
+   * missing an active producer.
+   */
+  private async assertPrecedenceCovered(type: MetadataProviderType): Promise<void> {
+    if (!this.precedenceCoverageValidator) return;
+    const prospective = await this.activeTypes();
+    prospective.add(type);
+    this.precedenceCoverageValidator(prospective);
+  }
+
+  /** Both provider-activation-time guardrails, run together at create/update's hook point. */
+  private async assertActivationIsValid(
+    type: MetadataProviderType,
+    excludeId?: number
+  ): Promise<void> {
+    await this.assertNoActiveConflict(type, excludeId);
+    await this.assertPrecedenceCovered(type);
+  }
+
   async create(draft: ProviderSettingsDraft): Promise<ProviderSummary> {
     if (draft.isActive ?? true) {
-      await this.assertNoActiveConflict(draft.type);
+      await this.assertActivationIsValid(draft.type);
     }
 
     const insert: NewMetadataProvider = {
@@ -107,6 +152,7 @@ export class ProviderSettingsService {
     };
 
     const [raw] = await this.db.insert(metadataProviders).values(insert).returning();
+    this.eventBus?.emit('provider:changed', {});
     log.debug('Provider created', { id: raw.id, type: raw.type });
     return redact(parseRaw(raw));
   }
@@ -114,7 +160,7 @@ export class ProviderSettingsService {
   async update(id: number, patch: Partial<ProviderSettingsDraft>): Promise<ProviderSummary> {
     if (patch.isActive === true) {
       const current = await this.findById(id);
-      await this.assertNoActiveConflict(current.type, id);
+      await this.assertActivationIsValid(current.type, id);
     }
 
     const updateValues: Partial<NewMetadataProvider> = {};
@@ -136,6 +182,7 @@ export class ProviderSettingsService {
       throw new NotFoundError(`Provider with id ${id} not found`);
     }
 
+    this.eventBus?.emit('provider:changed', {});
     log.debug('Provider updated', { id });
     return redact(parseRaw(raw));
   }

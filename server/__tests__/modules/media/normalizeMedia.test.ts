@@ -46,6 +46,11 @@ describe('normalizeRadarrMovie', () => {
     expect(item._sourceIds.tmdb).toBe(27205);
     expect(item._sourceIds.imdb).toBe('tt1375666');
   });
+
+  it('carries Radarr tags through to the canonical tags field', () => {
+    const item = normalizeRadarrMovie({ ...baseMovie, tags: [10, 20] }, 7);
+    expect(item.tags).toEqual([10, 20]);
+  });
 });
 
 describe('normalizeSonarrSeries', () => {
@@ -59,5 +64,10 @@ describe('normalizeSonarrSeries', () => {
     const item = normalizeSonarrSeries(baseSeries, 9);
     expect(item._sourceIds.tvdb).toBe(81189);
     expect(item._sourceIds.tmdb).toBe(1396);
+  });
+
+  it('carries Sonarr tags through to the canonical tags field', () => {
+    const item = normalizeSonarrSeries({ ...baseSeries, tags: [30, 40] }, 9);
+    expect(item.tags).toEqual([30, 40]);
   });
 });

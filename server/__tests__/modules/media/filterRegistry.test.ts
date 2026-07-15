@@ -1,7 +1,9 @@
+import { MetadataProviderType } from '@server/database/schema';
 import {
   MEDIA_RULES,
   type NormalizedMovie,
   type NormalizedShow,
+  deriveSourceProviders,
   getRule,
 } from '@server/modules/media/filterRegistry';
 import { describe, expect, it } from 'vitest';
@@ -96,6 +98,68 @@ describe('dataType classification', () => {
     expect(getRule('year', 'movie')!.dataType).toBe('range');
     expect(getRule('addedDaysAgo', 'movie')!.dataType).toBe('range');
     expect(getRule('imdbRating', 'movie')!.dataType).toBe('range');
+  });
+});
+
+// ─── sourceProviders accuracy ───────────────────────────────────────────────
+// sourceProviders must reflect the real owner of a field, confirmed against
+// docs/architecture/media-providers.md — a stale entry implies an integration
+// that doesn't exist in this deployment.
+
+describe('sourceProviders accuracy', () => {
+  it('tagIds (movie) lists only Radarr — Sonarr cannot produce a movie tag', () => {
+    expect(getRule('tagIds', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('tagIds (show) lists only Sonarr — Radarr cannot produce a show tag', () => {
+    expect(getRule('tagIds', 'show')!.sourceProviders).toEqual([MetadataProviderType.SONARR]);
+  });
+
+  it('watched is derived from playCount — Tautulli before Plex, matching the field it reads', () => {
+    expect(getRule('watched', 'movie')!.sourceProviders).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
+    ]);
+  });
+
+  it('genres (movie) is Radarr-only — no TMDB genres call is wired', () => {
+    expect(getRule('genres', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('imdbRating is Radarr-only — no OMDB integration exists in this deployment', () => {
+    expect(getRule('imdbRating', 'movie')!.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+  });
+
+  it('communityRating is Sonarr-only — Sonarr ratings is a single aggregate, no TMDB key configured', () => {
+    expect(getRule('communityRating', 'show')!.sourceProviders).toEqual([
+      MetadataProviderType.SONARR,
+    ]);
+  });
+});
+
+// ─── deriveSourceProviders ─────────────────────────────────────────────────
+// For a rule backed by an EnrichmentFields-tracked field, sourceProviders is
+// derived from fieldsByProviderType (the same declaration MediaFieldProvider/
+// MediaFieldSource adapters are checked against) instead of hand-listed —
+// a provider rename/removal there can't silently leave a rule's gating stale.
+
+describe('deriveSourceProviders', () => {
+  it('derives tmdbStatus to [TMDB]', () => {
+    expect(deriveSourceProviders('tmdbStatus')).toEqual([MetadataProviderType.TMDB]);
+  });
+
+  it('derives playCount to both Tautulli and Plex — a contested field', () => {
+    expect(deriveSourceProviders('playCount')).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
+    ]);
+  });
+
+  it('derives tags to both Radarr and Sonarr — each owns tags on its own kind', () => {
+    expect(deriveSourceProviders('tags')).toEqual([
+      MetadataProviderType.RADARR,
+      MetadataProviderType.SONARR,
+    ]);
   });
 });
 

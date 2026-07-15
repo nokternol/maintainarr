@@ -55,23 +55,27 @@ fragments between them.
 `EnrichmentResult` is internal to the enrichment job: it carries provenance (which provider produced the
 items) for write-time precedence resolution, and never persists nor crosses a read boundary.
 
-Each `enrich` is a **thin shell over a pure mapper** ([`enrichment/mappers.ts`](ref:path:server/modules/media/enrichment/mappers.ts): `mapTautulliHistory` /
-`mapPlexItems` / `mapOverseerr`): fetch in the shell, transform in the pure core, then
-[`enrichment/decorate.ts`](ref:path:server/modules/media/enrichment/decorate.ts) applies it — so the hard logic stays mock-free testable.
+Each `enrich` is a **thin shell over a `MediaFieldProvider` adapter**
+([`docs/architecture/media-field-provider-role.md`](ref:path:docs/architecture/media-field-provider-role.md)):
+fetch in the shell, run the adapter's `visit`/`toEnrichmentFields` pair via a shared `toFieldsByKey`
+helper, then [`enrichment/decorate.ts`](ref:path:server/modules/media/enrichment/decorate.ts) applies
+it — so the hard logic stays mock-free testable. The standalone mapper functions this used to route
+through (`mappers.ts`'s `mapTautulliHistory`/`mapPlexItems`/`mapOverseerr`) are deleted; that logic now
+lives on each adapter, alongside the field declaration it produces.
 
 ## Cross-enricher precedence is a per-field policy, resolved at write time
 
 Two enrichers can speak to one canonical field (`playCount` from Tautulli **or** Plex). A single global
 enricher ordering cannot express this, because precedence can differ per field — so it is a small
-declarative map consumed by a **pure** `resolvePrecedence` ([`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts)):
+declarative map, scoped to only the fields with more than one real producer, consumed by a **pure**
+`resolvePrecedence` ([`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts)).
+Full shape and the fail-fast guardrail around it are in
+[`docs/architecture/media-field-provider-role.md`](ref:path:docs/architecture/media-field-provider-role.md):
 
 ```ts
-const ENRICHMENT_POLICY = {
-  playCount:              [TAUTULLI, PLEX],
-  lastWatchedAt:          [TAUTULLI, PLEX],
-  overseerrHasIssue:      [OVERSEERR],
-  overseerrRequestStatus: [OVERSEERR],
-  tmdbStatus:             [TMDB],
+const contestedFieldPrecedence = {
+  playCount:     [TAUTULLI, PLEX],
+  lastWatchedAt: [TAUTULLI, PLEX],
 };
 ```
 
@@ -86,7 +90,7 @@ recomputes from all enrichers on every staleness pass.
 ```
 items     = hydrate(identities)                  // MediaItem with _sourceIds resolved (identity layer)
 results   = await Promise.all(enrichers.map(e => e.enrich(items)))
-canonical = resolvePrecedence(results, ENRICHMENT_POLICY)
+canonical = resolvePrecedence(results, contestedFieldPrecedence)
 persist(canonical)                                // cache projection for cheap reads
 ```
 
@@ -105,8 +109,8 @@ It is upstream of, and separate from, enrichment — an ownership/identity conce
 - [`server/modules/media/enrichment/enricher.ts`](ref:path:server/modules/media/enrichment/enricher.ts) — `MediaEnricher` / `EnrichmentResult` contracts.
 - [`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts) — `plexEnricher`, `tautulliEnricher`,
   `overseerrEnricher`, `tmdbEnricher`, each a thin shell binding a provider connection to the role: fetch,
-  run its pure mapper (`enrichment/mappers.ts`), then `enrichment/decorate.ts`.
-- [`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts) — `resolvePrecedence` + the per-field `ENRICHMENT_POLICY`.
+  run its `MediaFieldProvider`/`MediaFieldSource` adapter's `visit`/`toEnrichmentFields`, then `enrichment/decorate.ts`.
+- [`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts) — `resolvePrecedence` + the per-field `contestedFieldPrecedence`.
 - `EnrichmentJob` — hydrates stale identities into `MediaItem`s, runs every enricher, resolves per field,
   persists resolved canonical columns.
 - [`enrichmentMerge.ts`](ref:path:server/modules/media/enrichmentMerge.ts) — read-time copy of canonical columns onto browse/executor items.

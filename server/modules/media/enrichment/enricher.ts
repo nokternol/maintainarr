@@ -1,18 +1,18 @@
 import type { MetadataProviderType } from '@server/database/schema';
+import type { EnrichmentFields } from '../mediaFieldProvider';
 import type { MediaItem } from '../mediaItem';
 
 /**
- * The canonical fields any provider's enrichment may contribute. Named here
- * (not derived from `MediaItem`'s full field list) because it is the role
- * contract's own vocabulary — which fields count as "enrichable" is a
- * media concept, independent of how many other fields `MediaItem` carries.
+ * The canonical fields any provider's enrichment may contribute — every field
+ * `EnrichmentFields` declares except `tags`, which is `MediaFieldSource`'s
+ * construction-only field (Radarr builds it as part of the item, never
+ * decorates it onto an existing one). `EnrichmentFields` is the single
+ * source of truth for field existence; this is just the enricher role's own
+ * name for "any of its keys but the construction-only ones," so a new
+ * enrichment field lands here automatically instead of needing a second
+ * hand-copied union kept in sync.
  */
-export type EnrichableField =
-  | 'playCount'
-  | 'lastWatchedAt'
-  | 'overseerrHasIssue'
-  | 'overseerrRequestStatus'
-  | 'tmdbStatus';
+export type EnrichableField = Exclude<keyof EnrichmentFields, 'tags'>;
 
 /**
  * A system that contributes metadata about media it does not own, joining the

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { mediaEnrichment, mediaIdentity } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { MediaEnricher } from './enrichment/enricher';
-import { ENRICHMENT_POLICY, resolvePrecedence } from './enrichment/precedence';
+import { contestedFieldPrecedence, resolvePrecedence } from './enrichment/precedence';
 import type { MediaItem } from './mediaItem';
 
 const STALENESS_SECONDS = 24 * 60 * 60;
@@ -65,7 +65,7 @@ export class EnrichmentJob {
     const enrichers = this.deps.enrichers ?? [];
     const results = await Promise.all(enrichers.map((e) => e.enrich(items)));
     const resolvedByKey = new Map(
-      resolvePrecedence(results, ENRICHMENT_POLICY).map((item) => [identityKey(item), item])
+      resolvePrecedence(results, contestedFieldPrecedence).map((item) => [identityKey(item), item])
     );
 
     for (const { identityId, hasRow, item } of hydrated) {

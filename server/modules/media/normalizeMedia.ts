@@ -1,4 +1,5 @@
 import type { RadarrMovie, SonarrSeries } from '../providers';
+import { radarrTagsFieldSource, sonarrTagsFieldSource } from './mediaFieldProvider';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
 
@@ -16,7 +17,7 @@ export function normalizeRadarrMovie(m: RadarrMovie, providerId: number): Normal
     hasFile: m.hasFile,
     monitored: m.monitored,
     qualityProfileId: m.qualityProfileId,
-    tags: m.tags,
+    ...radarrTagsFieldSource.toEnrichmentFields(m.tags),
     genres: m.genres,
     addedDate: m.added,
     sizeOnDiskBytes: m.statistics?.sizeOnDisk,
@@ -32,7 +33,7 @@ export function normalizeSonarrSeries(s: SonarrSeries, providerId: number): Norm
     year: s.year,
     monitored: s.monitored,
     qualityProfileId: s.qualityProfileId,
-    tags: s.tags,
+    ...sonarrTagsFieldSource.toEnrichmentFields(s.tags),
     genres: s.genres,
     addedDate: s.added,
     sizeOnDiskBytes: s.statistics?.sizeOnDisk,

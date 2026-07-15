@@ -68,3 +68,17 @@ export type { MediaQuery, MediaQuerySource, MediaQuerySpec } from './mediaQueryE
 export { mergeEnrichment } from './enrichmentMerge';
 export { EnrichmentJobFactory } from './enrichmentJobFactory';
 export type { EnrichmentJobFactoryDeps } from './enrichmentJobFactory';
+
+// Precedence — per-field resolution order for a contested field, and the
+// fail-fast guardrail the composition root wires into
+// ProviderSettingsService's precedenceCoverageValidator hook.
+export {
+  assertContestedFieldsCovered,
+  contestedFieldPrecedence,
+} from './enrichment/precedence';
+export type { ContestedFieldPrecedence } from './enrichment/precedence';
+
+// Field ownership — which provider type produces which EnrichmentFields key,
+// and the cache the composition root derives sourceProviders/gating from.
+export { fieldsByProviderType, ActiveFieldSetCache } from './activeFieldSet';
+export type { EnrichmentFields } from './mediaFieldProvider';

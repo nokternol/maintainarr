@@ -5,15 +5,32 @@ import type {
   TautulliProvider,
   TmdbProvider,
 } from '../../providers';
-import type { MediaItem } from '../mediaItem';
+import type { EnrichmentFields, MediaFieldProvider } from '../mediaFieldProvider';
+import {
+  overseerrFieldProvider,
+  plexFieldProvider,
+  tautulliFieldProvider,
+  tmdbFieldSource,
+} from '../mediaFieldProvider';
 import { decorate } from './decorate';
 import type { EnrichmentResult, MediaEnricher } from './enricher';
-import { mapOverseerr, mapPlexItems, mapTautulliHistory } from './mappers';
+
+/** Runs a `MediaFieldProvider`'s two-step visit→transform pipeline over one raw payload. */
+function toFieldsByKey<
+  TRaw,
+  TMediaField,
+  TFields extends Partial<EnrichmentFields>,
+  TKey extends string | number,
+>(provider: MediaFieldProvider<TRaw, TMediaField, TFields, TKey>, raw: TRaw): Map<TKey, TFields> {
+  return new Map(
+    [...provider.visit(raw)].map(([key, native]) => [key, provider.toEnrichmentFields(native)])
+  );
+}
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
-      const fieldsByKey = mapPlexItems(await plex.getAllItems());
+      const fieldsByKey = toFieldsByKey(plexFieldProvider, await plex.getAllItems());
       return {
         provider: MetadataProviderType.PLEX,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
@@ -33,7 +50,7 @@ export function overseerrEnricher(
         overseerr.getRequests(),
         overseerr.getIssues(),
       ]);
-      const fieldsByKey = mapOverseerr(requests, issues);
+      const fieldsByKey = toFieldsByKey(overseerrFieldProvider, [requests, issues]);
       return {
         provider: MetadataProviderType.OVERSEERR,
         items: decorate(items, (i) => i._sourceIds.tmdb, fieldsByKey),
@@ -45,12 +62,13 @@ export function overseerrEnricher(
 export function tmdbEnricher(tmdb: TmdbProvider): MediaEnricher<'tmdbStatus'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'tmdbStatus'>> => {
-      const fieldsByKey = new Map<number, Pick<MediaItem, 'tmdbStatus'>>();
+      const fieldsByKey = new Map<number, Pick<EnrichmentFields, 'tmdbStatus'>>();
       for (const item of items) {
         const tmdbId = item._sourceIds.tmdb;
         if (tmdbId === undefined || fieldsByKey.has(tmdbId)) continue;
         const status = await tmdb.getStatus(tmdbId);
-        if (status !== undefined) fieldsByKey.set(tmdbId, { tmdbStatus: status });
+        if (status !== undefined)
+          fieldsByKey.set(tmdbId, tmdbFieldSource.toEnrichmentFields(status));
       }
       return {
         provider: MetadataProviderType.TMDB,
@@ -65,7 +83,7 @@ export function tautulliEnricher(
 ): MediaEnricher<'playCount' | 'lastWatchedAt'> {
   return {
     enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
-      const fieldsByKey = mapTautulliHistory(await tautulli.getHistory());
+      const fieldsByKey = toFieldsByKey(tautulliFieldProvider, await tautulli.getHistory());
       return {
         provider: MetadataProviderType.TAUTULLI,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),

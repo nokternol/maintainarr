@@ -32,7 +32,11 @@ export type { IProviderFactory, ProviderInstance } from './providerFactory';
 
 // Provider settings — persistence and projection of configured providers.
 export { ProviderSettingsService } from './providerSettingsService';
-export type { ProviderSettingsDraft, ProviderSummary } from './providerSettingsService';
+export type {
+  PrecedenceCoverageValidator,
+  ProviderSettingsDraft,
+  ProviderSummary,
+} from './providerSettingsService';
 
 // Per-provider task enablement read by automations.
 export { readEnabledTaskIds } from './taskEnablement';
