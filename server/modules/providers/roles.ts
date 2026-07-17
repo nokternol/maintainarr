@@ -1,17 +1,37 @@
 import { MetadataProviderType } from '@server/database/schema';
 
 /**
+ * Declares that a task takes exactly one value: a single-select id from a live
+ * provider-fetched list (a quality profile, a tag, a collection). The value
+ * transports as a string — numeric id spaces parse their own. Discovery
+ * surfaces read this to know a value must be captured with the task.
+ */
+export interface ActuatorTaskParameter {
+  label: string;
+}
+
+/**
  * The pure-data projection of an actuator task: how it is presented (`id`,
- * `label`, `destructive`) and what data scope it touches (`affects`). This is
- * the transport and discovery shape — it serializes complete, carrying no
- * runner.
+ * `label`, `destructive`), what data scope it touches (`affects`), and the
+ * parameter it requires, if any. This is the transport and discovery shape —
+ * it serializes complete, carrying no runner.
  */
 export interface ActuatorTaskDescriptor {
   id: string;
   label: string;
   destructive: boolean;
   affects?: 'media';
+  parameter?: ActuatorTaskParameter;
 }
+
+/**
+ * An id in the actuator's own addressing space: source-native numeric ids for
+ * catalog-owning actuators (Radarr/Sonarr), `plexRatingKey` strings for
+ * Plex-addressed systems (Plex, Tautulli), `jellyfinItemId` strings for
+ * Jellyfin. The executor guarantees the space by construction — a task never
+ * receives an id it cannot address.
+ */
+export type ActuatorTargetId = number | string;
 
 /**
  * A descriptor plus its runner, bound to the concrete provider instance (no
@@ -19,7 +39,20 @@ export interface ActuatorTaskDescriptor {
  * descriptor it extends — projecting one from the other is lossless.
  */
 export interface ActuatorTask extends ActuatorTaskDescriptor {
-  run(ids: number[]): Promise<void>;
+  run(ids: ActuatorTargetId[], parameterValue?: string): Promise<void>;
+}
+
+/**
+ * Guards a parameterized task's runner: a declared-parameter task invoked
+ * without its value rejects loudly instead of acting on a default — the
+ * missing value is a wiring bug (the automation should have stored it), never
+ * a case to paper over.
+ */
+export function requireParameter(taskId: string, value: string | undefined): string {
+  if (value === undefined || value === '') {
+    throw new Error(`Task "${taskId}" requires a parameter value`);
+  }
+  return value;
 }
 
 /**
@@ -28,7 +61,7 @@ export interface ActuatorTask extends ActuatorTaskDescriptor {
  * task is never silently a no-op; enablement defaulting off keeps it
  * unreachable by accident.
  */
-export function modelledRun(taskId: string): (ids: number[]) => Promise<void> {
+export function modelledRun(taskId: string): (ids: ActuatorTargetId[]) => Promise<void> {
   return () => Promise.reject(new Error(`Task "${taskId}" is not yet implemented`));
 }
 

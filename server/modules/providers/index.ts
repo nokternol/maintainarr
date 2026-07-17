@@ -22,7 +22,12 @@ export type { ProvidersCradle } from './providers.registrations';
 
 // Provider roles — the capability vocabulary connections implement.
 export type { ActuatorTask, ActuatorTaskDescriptor, MediaActuator, MediaKind } from './roles';
-export { SOURCE_OWNER_BY_KIND, isMediaSourceType, kindOfSourceType } from './roles';
+export {
+  SOURCE_OWNER_BY_KIND,
+  isMediaActuator,
+  isMediaSourceType,
+  kindOfSourceType,
+} from './roles';
 
 // Factories: connections from stored settings, sources from connections.
 // ProviderFactory keeps a value export because consumers construct it as an

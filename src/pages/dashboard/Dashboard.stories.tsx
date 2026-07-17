@@ -82,7 +82,7 @@ const activeAutomations: AutomationDto[] = [
     id: 1,
     name: 'Archive stale movies',
     query: { id: 1, name: 'Movies > 2yr, unwatched', contentType: 'movie' as const },
-    taskId: 'moveToTrash',
+    taskId: 'deleteFromLibrary',
     lastRun: { at: hoursAgo(2), itemCount: 12, status: 'success' },
     nextRun: hoursFromNow(120),
   }),

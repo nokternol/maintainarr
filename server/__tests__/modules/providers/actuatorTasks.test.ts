@@ -40,21 +40,26 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
     expect(del?.destructive).toBe(true);
   });
 
-  it('models the rest of its vocabulary as parameterless tasks whose run throws', async () => {
+  it('declares its parameterized tasks and keeps deleteMovieKeepFiles modelled', async () => {
     const provider = new RadarrProvider(radarrConfig, log);
-    const ids = provider.tasks().map((t) => t.id);
+    const tasks = provider.tasks();
+    const ids = tasks.map((t) => t.id);
 
     expect(ids).toContain('changeQualityProfile');
     expect(ids).toContain('addTag');
     expect(ids).toContain('removeTag');
 
-    const changeQuality = provider.tasks().find((t) => t.id === 'changeQualityProfile')!;
-    await expect(changeQuality.run([1])).rejects.toThrow(/not yet implemented/i);
+    expect(tasks.find((t) => t.id === 'changeQualityProfile')?.parameter?.label).toBe(
+      'Quality profile'
+    );
+
+    const keepFiles = tasks.find((t) => t.id === 'deleteMovieKeepFiles')!;
+    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
   });
 });
 
 describe('SonarrProvider — MediaActuator.tasks()', () => {
-  it('declares its real tasks bound to methods and models the rest', async () => {
+  it('declares its real tasks bound to methods, parameterized tasks with their parameter', async () => {
     const provider = new SonarrProvider(sonarrConfig, log);
     const tasks = provider.tasks();
     const ids = tasks.map((t) => t.id);
@@ -67,30 +72,55 @@ describe('SonarrProvider — MediaActuator.tasks()', () => {
     expect(del?.destructive).toBe(true);
     expect(del?.affects).toBe('media');
 
-    const addTag = tasks.find((t) => t.id === 'addTag')!;
-    await expect(addTag.run([1])).rejects.toThrow(/not yet implemented/i);
+    expect(tasks.find((t) => t.id === 'addTag')?.parameter?.label).toBe('Tag');
+
+    const keepFiles = tasks.find((t) => t.id === 'deleteSeriesKeepFiles')!;
+    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
   });
 });
 
 describe('pure-actuator media systems — modelled vocabularies', () => {
   const cfg = { name: 'x', url: 'http://localhost/api', apiKey: 'k', settings: null };
 
-  const cases: Array<
-    [string, () => { tasks: () => { id: string; run: (i: number[]) => Promise<void> }[] }, string]
-  > = [
-    ['Plex', () => new PlexProvider(cfg, log), 'deleteFromLibrary'],
-    ['Jellyfin', () => new JellyfinProvider(cfg, log), 'deleteItem'],
-    ['Tautulli', () => new TautulliProvider(cfg, log), 'deleteWatchHistory'],
-  ];
+  it('Plex declares a fully realised vocabulary — destructive/affects flags intact, no modelled runs', () => {
+    const tasks = new PlexProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual([
+      'deleteFromLibrary',
+      'refreshMetadata',
+      'markPlayed',
+      'markUnplayed',
+    ]);
 
-  for (const [name, make, expectedId] of cases) {
-    it(`${name} declares its tasks, every one modelled (run throws)`, async () => {
-      const tasks = make().tasks();
-      expect(tasks.map((t) => t.id)).toContain(expectedId);
-      expect(tasks.length).toBeGreaterThan(0);
-      for (const task of tasks) {
-        await expect(task.run([1])).rejects.toThrow(/not yet implemented/i);
-      }
-    });
-  }
+    const del = tasks.find((t) => t.id === 'deleteFromLibrary');
+    expect(del?.destructive).toBe(true);
+    expect(del?.affects).toBe('media');
+
+    const refresh = tasks.find((t) => t.id === 'refreshMetadata');
+    expect(refresh?.destructive).toBe(false);
+    expect(refresh?.affects).toBe('media');
+  });
+
+  it('Jellyfin declares a fully realised vocabulary — addToCollection parameterized', () => {
+    const tasks = new JellyfinProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual([
+      'deleteItem',
+      'refreshMetadata',
+      'markPlayed',
+      'markUnplayed',
+      'addToCollection',
+    ]);
+
+    const del = tasks.find((t) => t.id === 'deleteItem');
+    expect(del?.destructive).toBe(true);
+    expect(del?.affects).toBe('media');
+
+    expect(tasks.find((t) => t.id === 'addToCollection')?.parameter?.label).toBe('Collection');
+  });
+
+  it('Tautulli declares only its item-addressed task — session/notification tasks pruned', () => {
+    const tasks = new TautulliProvider(cfg, log).tasks();
+    expect(tasks.map((t) => t.id)).toEqual(['deleteWatchHistory']);
+    expect(tasks[0].destructive).toBe(true);
+    expect(tasks[0].affects).toBe('media');
+  });
 });

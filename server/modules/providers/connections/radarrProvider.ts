@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
+import { type ActuatorTask, type MediaActuator, modelledRun, requireParameter } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface RadarrImage {
@@ -69,20 +69,20 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Unmonitor movie',
         destructive: false,
         affects: 'media',
-        run: (ids) => this.unmonitorMovies(ids),
+        run: async (ids) => this.unmonitorMovies(ids.map(Number)),
       },
       {
         id: 'triggerSearch',
         label: 'Trigger download search',
         destructive: false,
-        run: (ids) => this.triggerMoviesSearch(ids),
+        run: async (ids) => this.triggerMoviesSearch(ids.map(Number)),
       },
       {
         id: 'deleteMovieWithFiles',
         label: 'Delete movie + files',
         destructive: true,
         affects: 'media',
-        run: (ids) => this.deleteMovies(ids),
+        run: async (ids) => this.deleteMovies(ids.map(Number)),
       },
       {
         id: 'deleteMovieKeepFiles',
@@ -96,10 +96,33 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Change quality profile',
         destructive: false,
         affects: 'media',
-        run: modelledRun('changeQualityProfile'),
+        parameter: { label: 'Quality profile' },
+        run: async (ids, parameterValue) =>
+          this.changeQualityProfile(
+            ids.map(Number),
+            Number(requireParameter('changeQualityProfile', parameterValue))
+          ),
       },
-      { id: 'addTag', label: 'Add tag', destructive: false, run: modelledRun('addTag') },
-      { id: 'removeTag', label: 'Remove tag', destructive: false, run: modelledRun('removeTag') },
+      {
+        id: 'addTag',
+        label: 'Add tag',
+        destructive: false,
+        parameter: { label: 'Tag' },
+        run: async (ids, parameterValue) =>
+          this.applyTag(ids.map(Number), Number(requireParameter('addTag', parameterValue)), 'add'),
+      },
+      {
+        id: 'removeTag',
+        label: 'Remove tag',
+        destructive: false,
+        parameter: { label: 'Tag' },
+        run: async (ids, parameterValue) =>
+          this.applyTag(
+            ids.map(Number),
+            Number(requireParameter('removeTag', parameterValue)),
+            'remove'
+          ),
+      },
     ];
   }
 
@@ -150,6 +173,24 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
       .post('command', {
         searchParams: this.apiParams,
         json: { name: 'MoviesSearch', movieIds },
+      })
+      .json();
+  }
+
+  public async changeQualityProfile(movieIds: number[], qualityProfileId: number): Promise<void> {
+    await this.client
+      .put('movie/editor', {
+        searchParams: this.apiParams,
+        json: { movieIds, qualityProfileId },
+      })
+      .json();
+  }
+
+  public async applyTag(movieIds: number[], tagId: number, mode: 'add' | 'remove'): Promise<void> {
+    await this.client
+      .put('movie/editor', {
+        searchParams: this.apiParams,
+        json: { movieIds, tags: [tagId], applyTags: mode },
       })
       .json();
   }

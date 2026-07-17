@@ -39,6 +39,10 @@ export { mediaSourceFor, radarrMediaSource, sonarrMediaSource } from './sourceAd
 export { sourceOwnership } from './mediaSourceFactory';
 export type { MediaSourceDescriptor, MediaSourceFactory } from './mediaSourceFactory';
 
+// Non-source actuator addressing: query-matched items translated into the
+// actuator's own id space through the identity graph.
+export { resolveActuatorIds } from './actuatorIdResolver';
+
 // Enrichment roles and the adapters that bind providers' native connections
 // to them.
 export type { EnrichableField, EnrichmentResult, MediaEnricher } from './enrichment/enricher';

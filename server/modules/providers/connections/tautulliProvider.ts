@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun } from '../roles';
+import type { ActuatorTask, MediaActuator } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface TautulliLibraryStat {
@@ -46,19 +46,7 @@ export class TautulliProvider extends BaseProviderConnection implements MediaAct
         label: 'Delete watch history',
         destructive: true,
         affects: 'media',
-        run: modelledRun('deleteWatchHistory'),
-      },
-      {
-        id: 'sendNotification',
-        label: 'Send notification',
-        destructive: false,
-        run: modelledRun('sendNotification'),
-      },
-      {
-        id: 'terminateStream',
-        label: 'Terminate active stream',
-        destructive: true,
-        run: modelledRun('terminateStream'),
+        run: async (ids) => this.deleteWatchHistory(ids.map(String)),
       },
     ];
   }
@@ -94,5 +82,27 @@ export class TautulliProvider extends BaseProviderConnection implements MediaAct
       length: 100,
     });
     return data.data;
+  }
+
+  /**
+   * Deletes every history row logged against the given Plex rating keys.
+   * Tautulli logs history per played item, so a show's watch history lives on
+   * its episodes — each key is looked up both directly (`rating_key`: movies,
+   * episodes) and as a series (`grandparent_rating_key`: a show's episodes),
+   * then all matched rows are deleted in one `delete_history` call.
+   */
+  public async deleteWatchHistory(ratingKeys: string[]): Promise<void> {
+    const rowIds = new Set<number>();
+    for (const key of ratingKeys) {
+      for (const qualifier of ['rating_key', 'grandparent_rating_key'] as const) {
+        const data = await this.command<{ data: Array<{ row_id: number }> }>('get_history', {
+          [qualifier]: key,
+          length: 10000,
+        });
+        for (const row of data.data) rowIds.add(row.row_id);
+      }
+    }
+    if (rowIds.size === 0) return;
+    await this.command('delete_history', { row_ids: [...rowIds].sort((a, b) => a - b).join(',') });
   }
 }

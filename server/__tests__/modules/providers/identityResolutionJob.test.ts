@@ -106,6 +106,60 @@ describe('IdentityResolutionJob', () => {
     expect(rows[0].plexRatingKey).toBe('plex-key-42');
   });
 
+  it('runForJellyfin sets jellyfinItemId where a Jellyfin ProviderIds.Tmdb matches, kind-scoped', async () => {
+    const db = getDb();
+    await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 100 });
+    await db.insert(mediaIdentity).values({ kind: 'show', tmdbId: 100 });
+
+    const jellyfinProvider = {
+      getAllItems: vi
+        .fn()
+        .mockResolvedValue([{ Id: 'jf-42', Type: 'Movie', ProviderIds: { Tmdb: '100' } }]),
+    };
+
+    const job = new IdentityResolutionJob({ db, jellyfinProvider });
+    await job.runForJellyfin();
+
+    const movies = await db.select().from(mediaIdentity).where(eq(mediaIdentity.kind, 'movie'));
+    expect(movies[0].jellyfinItemId).toBe('jf-42');
+    const shows = await db.select().from(mediaIdentity).where(eq(mediaIdentity.kind, 'show'));
+    expect(shows[0].jellyfinItemId).toBeNull();
+  });
+
+  it('runForJellyfin matches a series by ProviderIds.Tvdb', async () => {
+    const db = getDb();
+    await db.insert(mediaIdentity).values({ kind: 'show', tvdbId: 200 });
+
+    const jellyfinProvider = {
+      getAllItems: vi
+        .fn()
+        .mockResolvedValue([{ Id: 'jf-show', Type: 'Series', ProviderIds: { Tvdb: '200' } }]),
+    };
+
+    const job = new IdentityResolutionJob({ db, jellyfinProvider });
+    await job.runForJellyfin();
+
+    const rows = await db.select().from(mediaIdentity);
+    expect(rows[0].jellyfinItemId).toBe('jf-show');
+  });
+
+  it('runForJellyfin returns 0 without a Jellyfin provider and counts rows actually changed', async () => {
+    const db = getDb();
+    expect(await new IdentityResolutionJob({ db }).runForJellyfin()).toBe(0);
+
+    await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 100 });
+    const jellyfinProvider = {
+      getAllItems: vi.fn().mockResolvedValue([
+        { Id: 'jf-hit', Type: 'Movie', ProviderIds: { Tmdb: '100' } },
+        { Id: 'jf-miss', Type: 'Movie', ProviderIds: { Tmdb: '999' } },
+        { Id: 'jf-no-ids', Type: 'Movie' },
+      ]),
+    };
+
+    const job = new IdentityResolutionJob({ db, jellyfinProvider });
+    expect(await job.runForJellyfin()).toBe(1);
+  });
+
   it('runForPlex counts rows actually changed, not Plex items processed', async () => {
     const db = getDb();
     await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 100 });

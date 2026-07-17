@@ -152,6 +152,9 @@ export const automations = sqliteTable(
       onDelete: 'cascade',
     }),
     taskId: text('taskId').notNull(),
+    /** The single value a parameterized task declares (a provider-native id as a
+     *  string — quality profile, tag, collection); null for parameterless tasks. */
+    taskParameter: text('taskParameter'),
     schedule: text('schedule').notNull(), // cron expression
     status: text('status').notNull().default('active'), // 'active' | 'paused'
     lastRunAt: text('lastRunAt'),

@@ -2,7 +2,8 @@ import type { MetadataProvider } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { DomainEventBus } from '../../kernel/eventBus';
 import { getChildLogger } from '../../kernel/logger';
-import { MediaQueryEngine, mediaSourceFor } from '../media';
+import { MediaQueryEngine, mediaSourceFor, resolveActuatorIds } from '../media';
+import type { MediaSource, MediaSourceFactory } from '../media';
 import type { MediaQueryService } from '../mediaQueries';
 import {
   type IProviderFactory,
@@ -10,6 +11,8 @@ import {
   type ProviderSettingsService,
   type RadarrProvider,
   type SonarrProvider,
+  isMediaActuator,
+  isMediaSourceType,
   readEnabledTaskIds,
 } from '../providers';
 import type { AutomationRunService } from './automationRunService';
@@ -28,6 +31,8 @@ interface ExecutorDeps {
   mediaQueryService: MediaQueryService;
   providerFactory?: IProviderFactory;
   mediaQueryEngine?: MediaQueryEngine;
+  /** The owning-catalog sources a non-source actuator's query evaluates against. */
+  mediaSourceFactory?: Pick<MediaSourceFactory, 'sourcesFor'>;
   db?: DrizzleDb;
   systemTaskRunner?: SystemTaskRunnerLike;
   eventBus?: DomainEventBus;
@@ -42,6 +47,8 @@ export class AutomationExecutor {
   private readonly mediaQueryService: MediaQueryService;
   private readonly providerFactory: IProviderFactory;
   private readonly mediaQueryEngine: MediaQueryEngine;
+  private readonly mediaSourceFactory?: Pick<MediaSourceFactory, 'sourcesFor'>;
+  private readonly db?: DrizzleDb;
   private readonly systemTaskRunner?: SystemTaskRunnerLike;
   private readonly eventBus?: DomainEventBus;
   private readonly inFlight = new Set<number>();
@@ -53,6 +60,8 @@ export class AutomationExecutor {
     this.mediaQueryService = deps.mediaQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
     this.mediaQueryEngine = deps.mediaQueryEngine ?? new MediaQueryEngine({ db: deps.db });
+    this.mediaSourceFactory = deps.mediaSourceFactory;
+    this.db = deps.db;
     this.systemTaskRunner = deps.systemTaskRunner;
     this.eventBus = deps.eventBus;
   }
@@ -105,7 +114,12 @@ export class AutomationExecutor {
       }
 
       const providerSettings = await this.providerSettingsService.findById(automation.provider.id);
-      const outcome = await this.executeWithSources(automation.taskId, providerSettings, sources);
+      const outcome = await this.executeWithSources(
+        automation.taskId,
+        providerSettings,
+        sources,
+        automation.taskParameter
+      );
       itemCount = outcome.itemCount;
       await this.recordResult(automationId, taskId, { itemCount, status: 'success', kind });
 
@@ -128,17 +142,23 @@ export class AutomationExecutor {
   private async executeWithSources(
     taskId: string,
     providerSettings: MetadataProvider,
-    sources: AutomationQuerySourceDto[]
+    sources: AutomationQuerySourceDto[],
+    taskParameter?: string
   ): Promise<{ itemCount: number; affects: 'media' | undefined }> {
     const queryDtos = await Promise.all(
       sources.map((s) => this.mediaQueryService.getById(s.queryId))
     );
     const contentType = queryDtos[0].contentType;
-    const source = this.providerFactory.create(providerSettings, log) as
-      | RadarrProvider
-      | SonarrProvider;
+    const querySpecs = sources.map((s, i) => ({
+      filterValues: queryDtos[i].filterValues,
+      role: s.role,
+    }));
 
-    const task = source.tasks().find((t) => t.id === taskId);
+    const provider = this.providerFactory.create(providerSettings, log);
+    if (!isMediaActuator(provider)) {
+      throw new Error(`Provider instance ${providerSettings.id} declares no actuator tasks`);
+    }
+    const task = provider.tasks().find((t) => t.id === taskId);
     if (!task) throw new Error(`Task "${taskId}" is not yet implemented`);
 
     if (!readEnabledTaskIds(providerSettings.settings).includes(taskId)) {
@@ -147,15 +167,48 @@ export class AutomationExecutor {
       );
     }
 
-    const mediaSource = mediaSourceFor(source, providerSettings.id);
-    const matched = await this.mediaQueryEngine.evaluate({
-      source: mediaSource,
-      contentType,
-      sources: sources.map((s, i) => ({ filterValues: queryDtos[i].filterValues, role: s.role })),
-    });
-    const finalIds = matched.map((item) => mediaSource.idOf(item)!);
+    if (isMediaSourceType(providerSettings.type)) {
+      // Catalog-owning actuator: the query evaluates against its own catalog
+      // and its native ids feed the task directly.
+      const mediaSource = mediaSourceFor(
+        provider as RadarrProvider | SonarrProvider,
+        providerSettings.id
+      );
+      const matched = await this.mediaQueryEngine.evaluate({
+        source: mediaSource,
+        contentType,
+        sources: querySpecs,
+      });
+      const finalIds = matched.map((item) => mediaSource.idOf(item)!);
 
-    await task.run(finalIds);
+      await task.run(finalIds, taskParameter);
+      return { itemCount: finalIds.length, affects: task.affects };
+    }
+
+    // Non-source actuator: it owns no catalog, so the query evaluates against
+    // the content type's owning source instances (pooled), and matched items
+    // translate into the actuator's own addressing space through the identity
+    // graph. Unstamped identities drop out — the task never receives an id it
+    // cannot address.
+    if (!this.mediaSourceFactory || !this.db) {
+      throw new Error(
+        `Task "${taskId}" on provider instance ${providerSettings.id} needs the owning-source catalog and identity graph to resolve ids`
+      );
+    }
+    const entries = await this.mediaSourceFactory.sourcesFor(contentType);
+    const pooled: MediaSource = {
+      getMediaItems: async () =>
+        (await Promise.all(entries.map((e) => e.source.getMediaItems()))).flat(),
+      idOf: () => undefined,
+    };
+    const matched = await this.mediaQueryEngine.evaluate({
+      source: pooled,
+      contentType,
+      sources: querySpecs,
+    });
+    const finalIds = await resolveActuatorIds(this.db, providerSettings.type, matched);
+
+    await task.run(finalIds, taskParameter);
     return { itemCount: finalIds.length, affects: task.affects };
   }
 
