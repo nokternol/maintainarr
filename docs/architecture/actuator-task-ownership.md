@@ -14,8 +14,15 @@ non-actuator can never be offered one.
 
 ```ts
 // server/modules/providers/roles.ts
-interface ActuatorTaskDescriptor { id: string; label: string; destructive: boolean; affects?: 'media'; }
-interface ActuatorTask extends ActuatorTaskDescriptor { run(ids: number[]): Promise<void>; }
+type ActuatorTargetId = number | string;
+interface ActuatorTaskParameter { label: string; }
+interface ActuatorTaskDescriptor {
+  id: string; label: string; destructive: boolean; affects?: 'media';
+  parameter?: ActuatorTaskParameter;
+}
+interface ActuatorTask extends ActuatorTaskDescriptor {
+  run(ids: ActuatorTargetId[], parameterValue?: string): Promise<void>;
+}
 interface MediaActuator { readonly actuatorType: MetadataProviderType; tasks(): ActuatorTask[]; }
 ```
 
@@ -24,27 +31,55 @@ is lossless rather than "the full shape with `run` silently dropped by serializa
 
 - **`ActuatorTaskDescriptor`** — pure data; the transport and discovery shape; serializes complete.
 - **`ActuatorTask`** — the descriptor plus a runner **bound to the concrete instance** (`run: (ids) =>
-  this.unmonitorMovies(ids)`). The execution shape; no cast.
+  this.unmonitorMovies(ids.map(Number))`). The execution shape; no cast.
+
+`run`'s ids are always in the actuator's **own addressing space** — source-native numeric ids for
+Radarr/Sonarr, `plexRatingKey` strings for Plex-addressed systems (Plex, Tautulli), `jellyfinItemId`
+strings for Jellyfin. The executor guarantees the space by construction (see "Non-source execution"
+below), so a task never receives an id it cannot address.
 
 Discovery reads the descriptor off the task; the executor reads the runner. Both are derived from the role
 instance, so the question "what tasks does this system have" has exactly one answer and one source.
 
-## The whole vocabulary is modelled, as parameterless tasks
+## The vocabulary is realised; only item-addressed tasks belong in it
 
-The full intended actuator surface is declared now — not only what executes today — so the design is proven
-across every system at once rather than one provider at a time.
+Every declared task executes against its provider's real API, with one exception noted below. The
+vocabulary was pruned to what the domain and the APIs can actually address before being realised:
 
-- **Radarr / Sonarr** own their full sets. Runnable today: Radarr `unmonitorMovie` / `triggerSearch` /
-  `deleteMovieWithFiles`; Sonarr `unmonitorSeries` / `triggerSearch` / `deleteSeriesWithFiles`.
-- **Plex, Jellyfin, Tautulli** declare `MediaActuator` and own modelled-only sets (delete / refresh / mark
-  / notify / …).
-- An action not yet wired is a **modelled task**: a first-class task in the right shape whose `run(ids)`
-  throws via the shared `modelledRun(taskId)`. It is **parameterless**; tasks that will eventually need a
-  target (`changeQualityProfile`, `addTag`, `removeTag`) are modelled parameterless until a
-  parameter-carrying task contract is designed and built.
+- **Radarr** — `unmonitorMovie`, `triggerSearch`, `deleteMovieWithFiles`, `changeQualityProfile`,
+  `addTag`, `removeTag` (the last three via `PUT movie/editor`).
+- **Sonarr** — the series-side mirror of Radarr's set (`PUT series/editor` for the parameterized three).
+- **Plex** — `deleteFromLibrary` (`DELETE /library/metadata/{ratingKey}`), `refreshMetadata`
+  (`PUT …/refresh`), `markPlayed`/`markUnplayed` (`/:/scrobble`, `/:/unscrobble`). A `moveToTrash` task
+  was pruned as unrealisable: Plex's "trash" is a scanner state for items whose files went missing, not
+  an action — no per-item endpoint exists.
+- **Jellyfin** — `deleteItem`, `refreshMetadata`, `markPlayed`/`markUnplayed` (per configured `userId`),
+  `addToCollection` (parameterized: which collection).
+- **Tautulli** — `deleteWatchHistory` only. Each Plex rating key is looked up both directly
+  (`rating_key`: movies, episodes) and as a series (`grandparent_rating_key` — Tautulli logs history per
+  played item, so a show's history lives on its episodes), then all matched rows are deleted in one
+  `delete_history` call. `terminateStream` (addresses a live playback *session*, no stable item
+  identity) and `sendNotification` (no media target at all) were pruned — neither is an action on the
+  media collection this system automates.
 
-"Declared ⇒ has a run binding, possibly a stub." Honesty is kept by the explicit throw and by enablement
-defaulting off, so a modelled task is never reached by accident.
+An action declared but not yet wired is a **modelled task**: a first-class task in the right shape whose
+`run` throws via the shared `modelledRun(taskId)`. `deleteMovieKeepFiles`/`deleteSeriesKeepFiles` are the
+remaining modelled tasks. Honesty is kept by the explicit throw and by enablement defaulting off, so a
+modelled task is never reached by accident.
+
+## Parameterized tasks carry exactly one value
+
+Some tasks need a target beyond the item ids — *which* quality profile, tag, or collection. Every such
+task fits one narrow contract, confirmed against each provider's API: **one parameter, a single-select
+provider-native id, transported as a string** (numeric for Radarr/Sonarr profile/tag ids, a GUID for
+Jellyfin collection ids — each provider parses its own).
+
+- The descriptor declares it (`parameter: { label }`), so discovery surfaces know a value must be
+  captured with the task.
+- The automation stores the value (`automations.taskParameter`, nullable) and the executor threads it
+  into `run` alongside the ids.
+- A parameterized task invoked without its value rejects loudly via `requireParameter` — a missing value
+  is a wiring bug, never a case to act on a default.
 
 ## Availability is per configured instance, gated by per-instance enablement
 
@@ -78,33 +113,52 @@ instance can actually do.
 ## The executor dispatches through the instance
 
 `AutomationExecutor` binds the specific provider instance by `automation.provider.id`, resolves the task by
-`source.tasks().find(t => t.id === taskId)`, enforces enablement via
-`readEnabledTaskIds(providerSettings.settings)`, evaluates the query, and calls `task.run(ids)` — the runner
-already bound to the instance. `task.affects` drives the `media:changed` event. `SYSTEM_TASKS`
-(`system:enrichment`, `system:identity-resolution`) are separate: internal jobs run via `SystemTaskRunner`,
-not actuator tasks, and absent from the discovery surface.
+`provider.tasks().find(t => t.id === taskId)`, enforces enablement via
+`readEnabledTaskIds(providerSettings.settings)`, evaluates the query, and calls
+`task.run(ids, automation.taskParameter)` — the runner already bound to the instance. `task.affects`
+drives the `media:changed` event. `SYSTEM_TASKS` (`system:enrichment`, `system:identity-resolution`) are
+separate: internal jobs run via `SystemTaskRunner`, not actuator tasks, and absent from the discovery
+surface.
+
+## Non-source execution: id translation through the identity graph
+
+Earlier phases derived target ids by evaluating the automation's query against the provider instance **as
+a `MediaSource`** — valid only while the actuator is also a catalog owner. That conflation is resolved:
+the executor branches on `isMediaSourceType(providerSettings.type)`
+([`server/modules/automations/automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts)).
+
+- **Source actuator (Radarr/Sonarr):** unchanged — the query evaluates against the instance's own
+  catalog and its native ids (`mediaSource.idOf`) feed the task directly.
+- **Non-source actuator (Plex/Jellyfin/Tautulli):** it owns no catalog, so the query evaluates against
+  the content type's owning source instances (pooled via `MediaSourceFactory.sourcesFor`), and matched
+  items are translated into the actuator's addressing space by `resolveActuatorIds`
+  ([`server/modules/media/actuatorIdResolver.ts`](ref:path:server/modules/media/actuatorIdResolver.ts)):
+  each item's `(providerId, externalId)` coordinate joins through `media_item` to its `media_identity`
+  group, whose `plexRatingKey`/`jellyfinItemId` column carries the actuator-native id. Identities the
+  resolution job has not stamped drop out (there is no id to address), and multiple instance copies of
+  one identity collapse to a single id — the recorded `itemCount` is the number of ids actually acted
+  on, not the number matched.
+
+Translation is keyed by **addressing space, not provider**: Tautulli has no id space of its own — it
+reports entirely against Plex rating keys — so it shares Plex's `plexRatingKey` column. The spaces are
+populated by the identity job's stamping passes (`runForPlex`, `runForJellyfin`,
+[`server/modules/providers/identityResolutionJob.ts`](ref:path:server/modules/providers/identityResolutionJob.ts)).
 
 ## How it is wired
 
 - [`server/modules/providers/roles.ts`](ref:path:server/modules/providers/roles.ts) — `MediaActuator` / `ActuatorTask` / `ActuatorTaskDescriptor` contracts,
-  `modelledRun`, `isMediaActuator`.
-- `RadarrProvider`, `SonarrProvider` — `tasks()` with real (instance-bound) + modelled tasks.
-- `PlexProvider`, `JellyfinProvider`, `TautulliProvider` — `implements MediaActuator`, modelled-only `tasks()`.
+  `ActuatorTargetId`, `modelledRun`, `requireParameter`, `isMediaActuator`.
+- `RadarrProvider`, `SonarrProvider` — `tasks()` bound to real API calls (bulk editor endpoints for the
+  parameterized three); `deleteMovieKeepFiles`/`deleteSeriesKeepFiles` modelled.
+- `PlexProvider`, `JellyfinProvider`, `TautulliProvider` — `implements MediaActuator`, every task bound
+  to its provider's real API.
+- [`server/modules/media/actuatorIdResolver.ts`](ref:path:server/modules/media/actuatorIdResolver.ts) — non-source id translation through the identity graph.
 - [`server/modules/providers/taskEnablement.ts`](ref:path:server/modules/providers/taskEnablement.ts) — `readEnabledTaskIds`, the one authority both create and the
   executor consult.
 - [`server/modules/providers/providerFactory.ts`](ref:path:server/modules/providers/providerFactory.ts) — constructs every configured type so discovery can ask any
   instance for its role.
 - [`server/modules/automations/automationService.ts`](ref:path:server/modules/automations/automationService.ts), [`automationExecutor.ts`](ref:path:server/modules/automations/automationExecutor.ts) — create-time and run-time enablement.
 - [`server/modules/providers/providers.handler.ts`](ref:path:server/modules/providers/providers.handler.ts) — instance-keyed discovery.
-
-## The open issue this modelling unearthed
-
-`AutomationExecutor` derives target ids by evaluating the automation's query against the provider instance
-**as a `MediaSource`**, then runs the actuator task on that same instance — conflating source and actuator.
-A modelled actuator that is **not** a source (Plex/Jellyfin/Tautulli) has no valid id-derivation path:
-acting on media it does not own requires resolving ids across the identity graph. Pure-actuator execution
-is therefore out of scope while modelled tasks default disabled; this conflation must be resolved before
-any non-source actuator can run.
 
 ## The client derives, holds no catalogue
 
