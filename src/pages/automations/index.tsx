@@ -144,9 +144,7 @@ export default function AutomationsPage() {
                   onDelete={() => {
                     void removeAutomation(a.id);
                   }}
-                  onRun={() => {
-                    void run(a.id);
-                  }}
+                  onRun={() => run(a.id)}
                 />
               ))}
             </div>

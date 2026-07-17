@@ -1,30 +1,37 @@
 # Realtime, event-driven cache & UI feedback
 
 **Status:** INTENT (future state, partially built). The domain event bus itself is shipped —
-`docs/architecture/domain-event-bus.md` — and run results already carry honest item counts. This
-document covers what the bus enables but doesn't yet deliver: a cached enrichment layer that reacts to
-it, realtime UI feedback for runs, and the hardening the bus needs before real consumers rely on it.
+`docs/architecture/domain-event-bus.md` — and run results already carry honest item counts. Basic Run
+Now feedback (trigger confirmation + polling-based list revalidation) has since shipped too, but
+through a simpler, non-bus mechanism — see `docs/architecture/system-vs-user-automations.md`'s "Run
+Now feedback" section. That closes the "no feedback at all" gap without touching what this document
+still covers: a cached enrichment layer reacting to the bus, a genuine live "still running" signal for
+slow jobs, and the hardening the bus needs before any real consumer (cache or SSE) can depend on it.
 
 ## The problem
 
 Two standing needs in the product both reduce to the same shape: *something inside the scheduler/
-executor happens, and something outside it needs to react.* Today neither reaction exists:
+executor happens, and something outside it needs to react.* Today neither reaction is bus-driven:
 
-- **Run feedback is invisible.** Run Now fires a job and returns a 202; nothing in the UI reflects
-  whether it succeeded, failed, or is still running. A user has no way to tell a run happened short of
-  refreshing and checking `lastRun` by hand.
+- **Run feedback stops at "triggered."** A user now sees their click was received and gets an
+  eventual, polled `lastRun` update — but there is still no live "still running" state for a job's
+  actual duration, and no way to distinguish a slow cross-system job from a hung one. A push-based
+  signal (the bus was built for exactly this) remains unbuilt.
 - **The enrichment cache doesn't exist.** `mergeEnrichment` issues two DB queries (identity + enrichment)
   on *every* request, with no cache in front of it — the old `watchedTitlesCache` that used to soften this
   was removed and never replaced. Every movie/series list pays that cost regardless of whether the
   underlying data changed.
 
 The domain event bus (`media:changed`, `run:started`, `run:completed`) exists precisely to drive both of
-these, but currently emits into the void — no consumer subscribes to it yet.
+these, but currently emits into the void — no consumer subscribes to either for this purpose yet (a
+`provider:changed` consumer exists elsewhere, unrelated to runs or enrichment).
 
 ## Why it needs solving
 
-- Users running automations have no confidence signal beyond "the button didn't error." Cross-system
-  jobs (Radarr/Sonarr/Plex) can take real time; a silent UI during that window reads as broken, not busy.
+- Polling papers over the worst of "no feedback at all," but a job that outruns the poll window (18s)
+  still reads as silent, and there's no way to tell "still working" from "stuck" for anything
+  longer-running than that. Cross-system jobs (Radarr/Sonarr/Plex) can take real time; a silent UI
+  during that window reads as broken, not busy.
 - The enrichment query cost is paid on every list request today, unconditionally — it's standing,
   measurable perf debt with a known fix shape (cache the lookup maps, invalidate on change) that just
   hasn't been wired up.
@@ -46,7 +53,9 @@ these, but currently emits into the void — no consumer subscribes to it yet.
   there's no client-side filtering to build. The one non-negotiable behaviour either stream needs:
   authoritative push is a correctness bug on its own, because a client that mounts mid-run or reconnects
   after a blip never learns what it missed. A single revalidation on connect (and on reconnect) seeds a
-  correct baseline; live events patch locally after that.
+  correct baseline; live events patch locally after that. The run-status stream's job has narrowed since
+  trigger confirmation shipped without it: it's no longer needed for "did the click register," only for
+  a live in-progress/duration signal for jobs that outlast a page's polling window.
 - **A visual pass on top, once the live state exists to design against**: honest verb naming (Run Now /
   Disable / Archive, none of which claims to control an in-flight process — "Pause" was considered and
   rejected as a lie for cross-system jobs), a designed "running…" affordance, and specialised columns for

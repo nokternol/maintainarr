@@ -28,6 +28,7 @@ import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
 import { itemKey, rawItemKey } from './mediaItem';
 import type { MediaQueryEngine } from './mediaQueryEngine';
+import { resetMediaData } from './mediaReset';
 import type { MediaSource } from './mediaSource';
 import { sourceOwnership } from './mediaSourceFactory';
 import { normalizeRadarrMovie, normalizeSonarrSeries } from './normalizeMedia';
@@ -569,6 +570,18 @@ export function createMediaHandlers(cradle: MediaCradle) {
       handler: async () => {
         const providers = await providerSettingsService.list();
         return sourceOwnership(providers.filter((p) => p.isActive));
+      },
+    }),
+
+    resetMedia: defineRoute({
+      schemas: { response: z.object({ deletedIdentities: z.number() }) },
+      handler: async () => {
+        if (!cradle.db) {
+          throw new Error('resetMedia requires a database handle');
+        }
+        const result = await resetMediaData(cradle.db);
+        log.warn('Media data reset', { deletedIdentities: result.deletedIdentities });
+        return result;
       },
     }),
   };
