@@ -47,7 +47,7 @@ describe('AutomationRow', () => {
 
   it('calls onRun when the run-now button is clicked', async () => {
     const user = userEvent.setup();
-    const onRun = vi.fn();
+    const onRun = vi.fn().mockResolvedValue(undefined);
     render(
       <AutomationRow
         automation={mockAutomation}
@@ -58,6 +58,37 @@ describe('AutomationRow', () => {
     );
     await user.click(screen.getByTitle('Run now'));
     expect(onRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a triggered confirmation after a successful run', async () => {
+    const user = userEvent.setup();
+    const onRun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <AutomationRow
+        automation={mockAutomation}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onRun={onRun}
+      />
+    );
+    await user.click(screen.getByTitle('Run now'));
+    expect(await screen.findByTitle('Run triggered')).toBeInTheDocument();
+  });
+
+  it('shows a failure state when the run rejects, and stays visible without hover', async () => {
+    const user = userEvent.setup();
+    const onRun = vi.fn().mockRejectedValue(new Error('boom'));
+    render(
+      <AutomationRow
+        automation={mockAutomation}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onRun={onRun}
+      />
+    );
+    await user.click(screen.getByTitle('Run now'));
+    const failButton = await screen.findByTitle('Run failed — click to retry');
+    expect(failButton.parentElement?.className).not.toMatch(/opacity-0/);
   });
 
   it('shows only Run-now for a system automation — no schedule toggle, no delete', () => {

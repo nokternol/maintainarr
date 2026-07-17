@@ -1,9 +1,14 @@
+import ConnectionTestIcon from '@app/components/ConnectionTestIcon';
 import StatusDot from '@app/components/StatusDot';
 import type { AutomationDto } from '@app/hooks/useAutomations';
 import { cn } from '@app/lib/utils/cn';
 import { relativeTime, safeHumanSchedule } from '@app/lib/utils/time';
 import { Pause, Play, Trash2, Zap } from 'lucide-react';
 import { useState } from 'react';
+
+const RUN_FEEDBACK_DISMISS_MS = 2000;
+
+type RunStatus = 'idle' | 'loading' | 'pass' | 'fail';
 
 export default function AutomationRow({
   automation,
@@ -14,14 +19,37 @@ export default function AutomationRow({
   automation: AutomationDto;
   onToggle: () => void;
   onDelete: () => void;
-  onRun?: () => void;
+  onRun?: () => Promise<void>;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [runStatus, setRunStatus] = useState<RunStatus>('idle');
   // System automations are invariants: they can only be run on demand. The schedule toggle and
   // delete (both forbidden by the API for kind=system) are user-automation controls only.
   const isUserAutomation = automation.kind !== 'system';
   const nextRunLabel = automation.nextRun ? relativeTime(automation.nextRun) : null;
   const lastRunLabel = automation.lastRun ? relativeTime(automation.lastRun.at) : null;
+
+  const handleRun = async () => {
+    if (!onRun || runStatus === 'loading') return;
+    setRunStatus('loading');
+    try {
+      await onRun();
+      setRunStatus('pass');
+    } catch {
+      setRunStatus('fail');
+    } finally {
+      setTimeout(() => setRunStatus('idle'), RUN_FEEDBACK_DISMISS_MS);
+    }
+  };
+
+  const runTitle =
+    runStatus === 'loading'
+      ? 'Triggering run…'
+      : runStatus === 'pass'
+        ? 'Run triggered'
+        : runStatus === 'fail'
+          ? 'Run failed — click to retry'
+          : 'Run now';
 
   return (
     <div className="block sm:grid sm:grid-cols-[1fr_160px_168px_88px] sm:items-start px-4 py-3 border-b border-border last:border-0 group hover:bg-surface-bg/40 transition-colors duration-150">
@@ -94,15 +122,39 @@ export default function AutomationRow({
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <div
+            className={cn(
+              'flex items-center gap-1 transition-opacity',
+              runStatus === 'idle'
+                ? 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+                : 'opacity-100'
+            )}
+          >
             {onRun && (
               <button
                 type="button"
-                onClick={onRun}
-                title="Run now"
-                className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-primary hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                onClick={() => {
+                  void handleRun();
+                }}
+                disabled={runStatus === 'loading'}
+                title={runTitle}
+                aria-live="polite"
+                className={cn(
+                  'w-6 h-6 flex items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed',
+                  runStatus === 'idle' &&
+                    'text-text-muted hover:text-primary hover:bg-surface-elevated',
+                  runStatus === 'fail' && 'text-danger hover:bg-danger/10'
+                )}
               >
-                <Zap size={12} strokeWidth={2} aria-hidden="true" />
+                {runStatus === 'idle' ? (
+                  <Zap size={12} strokeWidth={2} aria-hidden="true" />
+                ) : (
+                  <ConnectionTestIcon
+                    status={
+                      runStatus === 'loading' ? 'loading' : runStatus === 'pass' ? 'pass' : 'fail'
+                    }
+                  />
+                )}
               </button>
             )}
             {isUserAutomation && (

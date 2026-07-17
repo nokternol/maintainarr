@@ -1,9 +1,11 @@
 import AppLayout from '@app/components/AppLayout';
 import AutomationRow from '@app/components/AutomationRow';
 import EmptyState from '@app/components/EmptyState';
+import MediaResetControl from '@app/components/MediaResetControl';
 import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { useAutomations } from '@app/hooks/useAutomations';
+import { useMediaReset } from '@app/hooks/useMediaReset';
 import { requireAuth } from '@app/lib/utils/requireAuth';
 import { Monitor } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
@@ -18,6 +20,7 @@ const MonitorIcon = () => <Monitor className="w-12 h-12" strokeWidth={1.5} />;
 
 export default function SystemPage() {
   const { automations, isLoading, run } = useAutomations({ kind: 'system' });
+  const { reset } = useMediaReset();
 
   return (
     <AppLayout
@@ -26,11 +29,23 @@ export default function SystemPage() {
     >
       <div className="p-6 max-w-4xl">
         <section aria-labelledby="system-automations-heading">
-          <div className="flex items-center gap-3 mb-1">
-            <Monitor size={16} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            <h2 id="system-automations-heading" className="text-sm font-semibold text-text-primary">
-              System tasks
-            </h2>
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <div className="flex items-center gap-3">
+              <Monitor size={16} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+              <h2
+                id="system-automations-heading"
+                className="text-sm font-semibold text-text-primary"
+              >
+                System tasks
+              </h2>
+            </div>
+            <MediaResetControl
+              onReset={async () => {
+                const result = await reset();
+                if (!result) throw new Error('Failed to reset media data');
+                return result;
+              }}
+            />
           </div>
           <p className="text-xs text-text-muted mb-4 ml-[28px]">
             Built-in data jobs. Their task and schedule are fixed; you can pause or run them on
@@ -60,9 +75,7 @@ export default function SystemPage() {
                   // System rows expose only Run-now; toggle/delete are never rendered for kind=system.
                   onToggle={() => {}}
                   onDelete={() => {}}
-                  onRun={() => {
-                    void run(a.id);
-                  }}
+                  onRun={() => run(a.id)}
                 />
               ))}
             </div>

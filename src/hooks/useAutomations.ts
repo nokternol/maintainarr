@@ -91,9 +91,18 @@ export function useAutomations(options?: { kind?: 'user' | 'system' }) {
     await mutate();
   };
 
+  // Run Now returns 202 once the job is *triggered*, not once it's finished — system jobs and
+  // cross-provider tasks can take real time. These staggered revalidations catch the eventual
+  // `lastRun` update without the user reloading; a missed window just means the row updates on
+  // the next natural revalidation instead.
+  const POLL_DELAYS_MS = [1500, 4000, 9000, 18000];
+
   const run = async (id: number): Promise<void> => {
     const res = await fetch(`${KEY}/${id}/run`, { method: 'POST' });
     if (!res.ok) throw new Error('Failed to run automation');
+    for (const delay of POLL_DELAYS_MS) {
+      setTimeout(() => void mutate(), delay);
+    }
   };
 
   return { automations, isLoading, isCreating, create, setStatus, remove, run };
