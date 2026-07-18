@@ -11,16 +11,26 @@ import type { EnrichmentFields } from './mediaFieldProvider';
  * is the compiled-in declaration every consumer (gating, `sourceProviders`)
  * reads instead of re-deriving.
  */
-export const fieldsByProviderType: Partial<
-  Record<MetadataProviderType, readonly (keyof EnrichmentFields)[]>
-> = {
+export const fieldsByProviderType = {
   [MetadataProviderType.RADARR]: ['tags'],
   [MetadataProviderType.SONARR]: ['tags'],
   [MetadataProviderType.TAUTULLI]: ['playCount', 'lastWatchedAt'],
-  [MetadataProviderType.PLEX]: ['playCount', 'lastWatchedAt'],
+  [MetadataProviderType.PLEX]: ['playCount', 'lastWatchedAt', 'plexAddedAt'],
   [MetadataProviderType.OVERSEERR]: ['overseerrRequestStatus', 'overseerrHasIssue'],
   [MetadataProviderType.TMDB]: ['tmdbStatus'],
-};
+} as const satisfies Partial<Record<MetadataProviderType, readonly (keyof EnrichmentFields)[]>>;
+
+/**
+ * Every `EnrichmentFields` key must have at least one declared producer above — a field
+ * with no producer anywhere is unreachable (nothing would ever populate it), the same
+ * silent-gap shape as the other coverage checks in this codebase (see
+ * `docs/architecture/browse-range-param-enforcement.md`). `_ActualCoveredField` is the
+ * real union of every provider's declared fields; a new `EnrichmentFields` key with no
+ * matching entry above fails to compile here, naming it.
+ */
+type _ActualCoveredField = (typeof fieldsByProviderType)[keyof typeof fieldsByProviderType][number];
+type _UncoveredField = Exclude<keyof EnrichmentFields, _ActualCoveredField>;
+const _everyFieldHasAProducer: Record<_UncoveredField, never> = {};
 
 /**
  * The union of every currently-active provider type's declared fields —
@@ -30,9 +40,14 @@ export const fieldsByProviderType: Partial<
 export function activeFieldSet(
   activeTypes: Set<MetadataProviderType>
 ): Set<keyof EnrichmentFields> {
+  // Widened for indexing by the full `MetadataProviderType` enum (most of which have
+  // no entry above) — the literal-narrowed export type only has the declared keys.
+  const table = fieldsByProviderType as Partial<
+    Record<MetadataProviderType, readonly (keyof EnrichmentFields)[]>
+  >;
   const fields = new Set<keyof EnrichmentFields>();
   for (const type of activeTypes) {
-    for (const field of fieldsByProviderType[type] ?? []) {
+    for (const field of table[type] ?? []) {
       fields.add(field);
     }
   }

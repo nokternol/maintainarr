@@ -300,6 +300,7 @@ export const mediaEnrichment = sqliteTable(
     overseerrRequestStatus: integer('overseerrRequestStatus'),
     overseerrHasIssue: bit('overseerrHasIssue'),
     tmdbStatus: text('tmdbStatus'),
+    plexAddedAt: text('plexAddedAt'),
     enrichedAt: integer('enrichedAt'),
   },
   (table) => [index('idx_media_enrichment_identity').on(table.mediaIdentityId)]

@@ -1,25 +1,10 @@
 import type { EnrichmentFields } from './mediaFieldProvider';
 
 /**
- * The 6 `EnrichmentFields`-tracked properties (`tags`, `playCount`,
- * `lastWatchedAt`, `overseerrHasIssue`, `overseerrRequestStatus`,
- * `tmdbStatus`) are derived from `EnrichmentFields`, not hand-typed — a
- * field-type change there now breaks this interface's consumers
- * (`enrichmentMerge.ts`'s direct assignments in particular) at compile
- * time instead of silently diverging.
+ * Every `EnrichmentFields` key, not a hand-picked subset — see the identical note on
+ * `NormalizedMovie` (`movie.ts`) for why.
  */
-export interface NormalizedShow
-  extends Partial<
-    Pick<
-      EnrichmentFields,
-      | 'tags'
-      | 'playCount'
-      | 'lastWatchedAt'
-      | 'overseerrHasIssue'
-      | 'overseerrRequestStatus'
-      | 'tmdbStatus'
-    >
-  > {
+export interface NormalizedShow extends Partial<EnrichmentFields> {
   _sourceIds: {
     sonarr?: number;
     plex?: string;

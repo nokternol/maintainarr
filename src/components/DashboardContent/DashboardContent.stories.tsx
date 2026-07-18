@@ -5,7 +5,7 @@ import type { AutomationDto } from '@app/hooks/useAutomations';
 
 import type { SidebarItem } from '@app/types/navigation';
 import type { Story } from '@ladle/react';
-import { DashboardContent } from './DashboardContent';
+import { DashboardContent } from './index';
 
 // ── Shared chrome ──────────────────────────────────────────────────────────────
 

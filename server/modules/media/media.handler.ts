@@ -20,9 +20,11 @@ import { z } from 'zod';
 import type {
   FilterValue,
   FilterValueEntry,
+  MovieRangeRuleKey,
   NormalizedMovie,
   NormalizedShow,
   RangeValue,
+  ShowRangeRuleKey,
 } from './filterRegistry';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
@@ -68,6 +70,8 @@ const sharedFilterFields = {
   tmdbStatus: z.string().optional(),
   lastWatchedDaysAgoGte: intNum(),
   lastWatchedDaysAgoLte: intNum(),
+  plexAddedDaysAgoGte: intNum(),
+  plexAddedDaysAgoLte: intNum(),
   sort: sortField,
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
@@ -123,7 +127,7 @@ interface ParamMapping {
   providerIdParam?: string;
 }
 
-const MOVIE_PARAM_TO_KEY: Record<string, ParamMapping> = {
+const MOVIE_PARAM_TO_KEY = {
   title: { key: 'title' },
   yearMin: { key: 'year', bound: 'min' },
   yearMax: { key: 'year', bound: 'max' },
@@ -147,9 +151,11 @@ const MOVIE_PARAM_TO_KEY: Record<string, ParamMapping> = {
   tmdbStatus: { key: 'tmdbStatus' },
   lastWatchedDaysAgoGte: { key: 'lastWatchedDaysAgo', bound: 'min' },
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
-};
+  plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
+  plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+} as const satisfies Record<string, ParamMapping>;
 
-const SERIES_PARAM_TO_KEY: Record<string, ParamMapping> = {
+const SERIES_PARAM_TO_KEY = {
   title: { key: 'title' },
   yearMin: { key: 'year', bound: 'min' },
   yearMax: { key: 'year', bound: 'max' },
@@ -181,7 +187,71 @@ const SERIES_PARAM_TO_KEY: Record<string, ParamMapping> = {
   tmdbStatus: { key: 'tmdbStatus' },
   lastWatchedDaysAgoGte: { key: 'lastWatchedDaysAgo', bound: 'min' },
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
+  plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
+  plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+} as const satisfies Record<string, ParamMapping>;
+
+/**
+ * Range-rule coverage witness, per content type: a plain `as const`-style lookup —
+ * registry rule key → the (possibly legacy-renamed) `*_PARAM_TO_KEY` entry names that
+ * cover it — typed as `Record<RuleKey, ...>` so it's exhaustive over the
+ * registry-derived `MovieRangeRuleKey`/`ShowRangeRuleKey` union, and each `gte`/`lte`
+ * value is typed `keyof typeof *_PARAM_TO_KEY` so a typo or a dangling reference to a
+ * removed param also fails to compile. A new range rule, or a rule's content-type
+ * scope changing, breaks this map until it's updated — not a silently-dropped filter
+ * (caught the hard way once already: `plexAddedDaysAgo` shipped in the registry with
+ * no entry in any of the five browse-path translators, and nothing failed to
+ * compile). Deliberately a satellite map, not a restructuring of `*_PARAM_TO_KEY`
+ * itself: the browse URL contract (`radarrImdbRatingGte`, `sonarrRatingGte`,
+ * `yearMin`/`yearMax`, …) is a deliberately-renamed legacy vocabulary (see the
+ * fracture ledger's "Filter/rule vocabulary" entry) with no derivable relationship to
+ * registry keys, so `*_PARAM_TO_KEY`'s own keys can never be checked directly against
+ * `MEDIA_RULES` without breaking that vocabulary.
+ */
+const _MOVIE_RANGE_PARAM_WITNESS: Record<
+  MovieRangeRuleKey,
+  { gte: keyof typeof MOVIE_PARAM_TO_KEY; lte: keyof typeof MOVIE_PARAM_TO_KEY }
+> = {
+  year: { gte: 'yearMin', lte: 'yearMax' },
+  addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
+  plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
+  lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
 };
+
+const _SERIES_RANGE_PARAM_WITNESS: Record<
+  ShowRangeRuleKey,
+  { gte: keyof typeof SERIES_PARAM_TO_KEY; lte: keyof typeof SERIES_PARAM_TO_KEY }
+> = {
+  year: { gte: 'yearMin', lte: 'yearMax' },
+  addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
+  plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  communityRating: { gte: 'sonarrRatingGte', lte: 'sonarrRatingLte' },
+  lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
+  episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
+  lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+};
+
+/**
+ * Zod-schema coverage check: every param name `*_PARAM_TO_KEY` references must be a
+ * field the query schema actually accepts — otherwise it's stripped by validation
+ * before `toFilterValues` ever sees it, the same silent-drop failure mode as a missing
+ * `*_PARAM_TO_KEY` entry, just one layer earlier. `Missing` is the param-name set
+ * `*_PARAM_TO_KEY` references that the schema's inferred shape doesn't have; requiring
+ * those as `never`-typed properties makes the assignment fail naming them by name if
+ * the schema falls out of sync.
+ */
+type MovieSchemaShape = z.infer<typeof moviesQuerySchema>;
+type MovieSchemaMissing = Exclude<keyof typeof MOVIE_PARAM_TO_KEY, keyof MovieSchemaShape>;
+const _movieSchemaCoversParams: MovieSchemaShape & Record<MovieSchemaMissing, never> =
+  {} as MovieSchemaShape;
+
+type SeriesSchemaShape = z.infer<typeof seriesQuerySchema>;
+type SeriesSchemaMissing = Exclude<keyof typeof SERIES_PARAM_TO_KEY, keyof SeriesSchemaShape>;
+const _seriesSchemaCoversParams: SeriesSchemaShape & Record<SeriesSchemaMissing, never> =
+  {} as SeriesSchemaShape;
 
 // Project a browse query's content-prefixed params onto registry-keyed filter
 // values — the include source the MediaQueryEngine evaluates for the browse view.

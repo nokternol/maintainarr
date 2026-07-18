@@ -99,6 +99,8 @@ modelled-only.
 `getAllItems()`, runs it through `plexFieldProvider`
 ([`mediaFieldProvider.ts`](ref:path:server/modules/media/mediaFieldProvider.ts)) into `playCount`/
 `lastWatchedAt` keyed by `ratingKey`, loses precedence to Tautulli when both are configured. Also
+contributes `plexAddedAt` (Plex's own library-added timestamp, ISO-converted from `addedAt`) —
+single-producer, no precedence entry, gated into `filterRegistry.ts` as `plexAddedDaysAgo`. Also
 stamped onto `media_identity` groups by the identity job (`runForPlex`) for `plexRatingKey` matching —
 never inserts a group of its own.
 

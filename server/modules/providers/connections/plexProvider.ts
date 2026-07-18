@@ -17,6 +17,7 @@ export interface PlexMediaItem {
   guids?: { id: string }[];
   viewCount?: number;
   lastViewedAt?: number;
+  addedAt?: number;
 }
 
 /**

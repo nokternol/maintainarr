@@ -36,6 +36,7 @@ describe('plexEnricher', () => {
     expect(result.provider).toBe(MetadataProviderType.PLEX);
     expect(result.items).toHaveLength(1);
     expect(result.items[0].playCount).toBe(2);
+    expect(result.items[0].plexAddedAt).toBeUndefined();
   });
 
   it('omits and does not mutate an item whose key it does not speak', async () => {
@@ -67,6 +68,23 @@ describe('plexEnricher', () => {
     const result = await plexEnricher(plex).enrich([item]);
 
     expect(result.items[0].lastWatchedAt).toBe(new Date(1700000000 * 1000).toISOString());
+  });
+
+  it('decorates a matched item with its ISO added-to-Plex timestamp', async () => {
+    const plex = new PlexProvider(mockConfig, mockLogger);
+    vi.spyOn(plex, 'getAllItems').mockResolvedValue([
+      {
+        ratingKey: 'plex-1',
+        title: 'The Matrix',
+        type: 'movie',
+        addedAt: 1700000000,
+      },
+    ]);
+    const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
+
+    const result = await plexEnricher(plex).enrich([item]);
+
+    expect(result.items[0].plexAddedAt).toBe(new Date(1700000000 * 1000).toISOString());
   });
 });
 
