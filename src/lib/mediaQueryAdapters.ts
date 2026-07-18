@@ -22,6 +22,13 @@ import type {
 } from '@app/hooks/useMediaFilters';
 import type { FilterValueEntry } from '@app/hooks/useMediaQueries';
 import type { MediaFilters } from '@app/types/media';
+// Type-only, from a deliberately zero-dependency contract file (see its own
+// docstring) — any other `@server/*` import here breaks the Next.js build, since
+// the type-checker resolves the whole imported file's transitive import graph,
+// not just the specific type (verified: importing from `filterRegistry.ts`
+// directly reaches `container.ts`'s Express-specific type augmentations and fails
+// to compile).
+import type { MovieRangeRuleKey, ShowRangeRuleKey } from '@server/modules/media/browseRangeKeys';
 
 type Bound = 'min' | 'max';
 
@@ -41,6 +48,8 @@ const BROWSE_PARAM_BINDINGS = {
   tautulliWatched: { scope: 'shared', key: 'watched' },
   lastWatchedDaysAgoGte: { scope: 'shared', key: 'lastWatchedDaysAgo', bound: 'min' },
   lastWatchedDaysAgoLte: { scope: 'shared', key: 'lastWatchedDaysAgo', bound: 'max' },
+  plexAddedDaysAgoGte: { scope: 'shared', key: 'plexAddedDaysAgo', bound: 'min' },
+  plexAddedDaysAgoLte: { scope: 'shared', key: 'plexAddedDaysAgo', bound: 'max' },
   overseerrHasIssue: { scope: 'shared', key: 'overseerrHasIssue' },
   overseerrRequestStatus: { scope: 'shared', key: 'overseerrRequestStatus' },
   tmdbStatus: { scope: 'shared', key: 'tmdbStatus' },
@@ -70,6 +79,43 @@ const BROWSE_PARAM_BINDINGS = {
   sonarrPercentEpisodesGte: { scope: 'show', key: 'episodePercentage', bound: 'min' },
   sonarrPercentEpisodesLte: { scope: 'show', key: 'episodePercentage', bound: 'max' },
 } as const;
+
+/**
+ * Range-rule coverage witness: exhaustive over `MovieRangeRuleKey`/`ShowRangeRuleKey`
+ * (imported from the server's zero-dependency browse-range contract), each entry
+ * pointing at the `BROWSE_PARAM_BINDINGS` param names that cover it — typo'd or
+ * dangling references fail to compile via `keyof typeof BROWSE_PARAM_BINDINGS`. A
+ * range rule missing from here (new, or content-type rescoped) is a compile error,
+ * not a silently-dropped filter (caught the hard way once already: `plexAddedDaysAgo`
+ * shipped with no entry here, and nothing failed to compile). `movie`/`show` witnesses
+ * both check into the one shared `BROWSE_PARAM_BINDINGS` map — a rule reachable only
+ * via its `shared`-scope entry (e.g. `year`) still resolves fine for both.
+ */
+const _MOVIE_RANGE_PARAM_WITNESS: Record<
+  MovieRangeRuleKey,
+  { gte: keyof typeof BROWSE_PARAM_BINDINGS; lte: keyof typeof BROWSE_PARAM_BINDINGS }
+> = {
+  year: { gte: 'yearMin', lte: 'yearMax' },
+  addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
+  plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
+  lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+};
+
+const _SHOW_RANGE_PARAM_WITNESS: Record<
+  ShowRangeRuleKey,
+  { gte: keyof typeof BROWSE_PARAM_BINDINGS; lte: keyof typeof BROWSE_PARAM_BINDINGS }
+> = {
+  year: { gte: 'yearMin', lte: 'yearMax' },
+  addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
+  plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  communityRating: { gte: 'sonarrRatingGte', lte: 'sonarrRatingLte' },
+  lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
+  episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
+  lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+};
 
 type ScopedBuckets = Record<
   'shared' | 'movie' | 'show',

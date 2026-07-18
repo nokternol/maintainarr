@@ -113,6 +113,22 @@ describe('EnrichmentJob', () => {
     expect(enr.lastWatchedAt).toBe(iso);
   });
 
+  it('persists a resolved Plex-added ISO value', async () => {
+    const db = getDb();
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'movie', plexRatingKey: 'k' })
+      .returning();
+    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
+
+    const iso = new Date(1_700_000_000 * 1000).toISOString();
+    const plex = fakeEnricher(MetadataProviderType.PLEX, () => ({ plexAddedAt: iso }));
+    await new EnrichmentJob({ db, enrichers: [plex] }).run();
+
+    const [enr] = await db.select().from(mediaEnrichment);
+    expect(enr.plexAddedAt).toBe(iso);
+  });
+
   it('leaves canonical columns null for an identity no enricher touched', async () => {
     const db = getDb();
     const [identity] = await db

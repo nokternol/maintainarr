@@ -1,9 +1,21 @@
 import { eq } from 'drizzle-orm';
 import { mediaEnrichment, mediaIdentity } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
-import type { MediaEnricher } from './enrichment/enricher';
+import type { EnrichableField, MediaEnricher } from './enrichment/enricher';
 import { contestedFieldPrecedence, resolvePrecedence } from './enrichment/precedence';
+import type { EnrichmentFields } from './mediaFieldProvider';
 import type { MediaItem } from './mediaItem';
+
+/**
+ * Every enrichable field's resolved-or-unknown value, keyed exactly like
+ * `EnrichmentFields` minus `tags`. Assigning an object literal to this type makes a
+ * missing or extra key a compile error — a new `EnrichmentFields` key breaks this
+ * file until the write side is updated, instead of silently never persisting
+ * (caught the hard way once already: `plexAddedAt` shipped to every other
+ * touch point but not this one, and no test caught it because tests insert
+ * enrichment rows directly, bypassing this write path).
+ */
+type EnrichmentWriteValues = { [K in EnrichableField]: EnrichmentFields[K] | null };
 
 const STALENESS_SECONDS = 24 * 60 * 60;
 
@@ -70,12 +82,13 @@ export class EnrichmentJob {
 
     for (const { identityId, hasRow, item } of hydrated) {
       const resolved = resolvedByKey.get(identityKey(item));
-      const values = {
+      const values: EnrichmentWriteValues = {
         playCount: resolved?.playCount ?? null,
         lastWatchedAt: resolved?.lastWatchedAt ?? null,
         overseerrRequestStatus: resolved?.overseerrRequestStatus ?? null,
         overseerrHasIssue: resolved?.overseerrHasIssue ?? null,
         tmdbStatus: resolved?.tmdbStatus ?? null,
+        plexAddedAt: resolved?.plexAddedAt ?? null,
       };
 
       if (hasRow) {

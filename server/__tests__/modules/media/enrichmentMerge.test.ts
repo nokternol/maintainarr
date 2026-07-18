@@ -60,6 +60,7 @@ describe('mergeEnrichment', () => {
       overseerrRequestStatus: 2,
       overseerrHasIssue: true,
       tmdbStatus: 'Released',
+      plexAddedAt: '2023-11-14T22:13:20.000Z',
       enrichedAt: Math.floor(Date.now() / 1000),
     });
 
@@ -71,6 +72,7 @@ describe('mergeEnrichment', () => {
       overseerrRequestStatus: 2,
       overseerrHasIssue: true,
       tmdbStatus: 'Released',
+      plexAddedAt: '2023-11-14T22:13:20.000Z',
     });
     // No item/enrichment for externalId 2 → left untouched.
     expect(items[1].playCount).toBeUndefined();
@@ -88,6 +90,7 @@ describe('mergeEnrichment', () => {
       playCount: null,
       overseerrRequestStatus: null,
       tmdbStatus: null,
+      plexAddedAt: null,
       enrichedAt: Math.floor(Date.now() / 1000),
     });
 
@@ -97,6 +100,7 @@ describe('mergeEnrichment', () => {
     expect(items[0].playCount).toBeUndefined();
     expect(items[0].overseerrRequestStatus).toBeUndefined();
     expect(items[0].tmdbStatus).toBeUndefined();
+    expect(items[0].plexAddedAt).toBeUndefined();
   });
 
   it('no-ops when no items carry a providerId/externalId pair', async () => {

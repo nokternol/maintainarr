@@ -12,12 +12,19 @@ describe('fieldsByProviderType', () => {
     expect(fieldsByProviderType[MetadataProviderType.RADARR]).toEqual(['tags']);
   });
 
-  it('declares playCount and lastWatchedAt for Tautulli and Plex', () => {
+  it('declares playCount and lastWatchedAt for Tautulli', () => {
     expect(fieldsByProviderType[MetadataProviderType.TAUTULLI]).toEqual([
       'playCount',
       'lastWatchedAt',
     ]);
-    expect(fieldsByProviderType[MetadataProviderType.PLEX]).toEqual(['playCount', 'lastWatchedAt']);
+  });
+
+  it('declares playCount, lastWatchedAt, and plexAddedAt for Plex', () => {
+    expect(fieldsByProviderType[MetadataProviderType.PLEX]).toEqual([
+      'playCount',
+      'lastWatchedAt',
+      'plexAddedAt',
+    ]);
   });
 
   it('declares overseerrRequestStatus and overseerrHasIssue for Overseerr', () => {

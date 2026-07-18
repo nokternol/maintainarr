@@ -27,9 +27,13 @@ function toFieldsByKey<
   );
 }
 
-export function plexEnricher(plex: PlexProvider): MediaEnricher<'playCount' | 'lastWatchedAt'> {
+export function plexEnricher(
+  plex: PlexProvider
+): MediaEnricher<'playCount' | 'lastWatchedAt' | 'plexAddedAt'> {
   return {
-    enrich: async (items): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt'>> => {
+    enrich: async (
+      items
+    ): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt' | 'plexAddedAt'>> => {
       const fieldsByKey = toFieldsByKey(plexFieldProvider, await plex.getAllItems());
       return {
         provider: MetadataProviderType.PLEX,

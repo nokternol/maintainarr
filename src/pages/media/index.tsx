@@ -28,6 +28,7 @@ import { useMovies } from '@app/hooks/useMovies';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import { useSeries } from '@app/hooks/useSeries';
+import { toBrowseParams, toSaveValues } from '@app/lib/mediaQueryAdapters';
 import { NAV_ITEMS } from '@app/lib/navigation';
 import { PROVIDER_REGISTRY } from '@app/lib/provider-registry';
 import { cn } from '@app/lib/utils/cn';
@@ -44,7 +45,6 @@ import {
 } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toBrowseParams, toSaveValues } from './mediaQueryAdapters';
 
 // ─── Density icons ────────────────────────────────────────────────────────────
 

@@ -79,5 +79,6 @@ export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow
     if (enr.overseerrRequestStatus !== null)
       item.overseerrRequestStatus = enr.overseerrRequestStatus;
     if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus;
+    if (enr.plexAddedAt !== null) item.plexAddedAt = enr.plexAddedAt;
   }
 }

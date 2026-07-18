@@ -32,6 +32,8 @@ const LABELS: Record<string, string> = {
   overseerrHasIssue: 'Has issue',
   lastWatchedDaysAgoGte: 'Last watched ≥ days',
   lastWatchedDaysAgoLte: 'Last watched ≤ days',
+  plexAddedDaysAgoGte: 'Plex added ≥ days',
+  plexAddedDaysAgoLte: 'Plex added ≤ days',
 };
 
 export function summarizeFilters(filterValues: FilterValueEntry[]): string[] {

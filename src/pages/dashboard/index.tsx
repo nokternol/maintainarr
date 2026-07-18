@@ -1,11 +1,11 @@
 import AppLayout from '@app/components/AppLayout';
+import { DashboardContent } from '@app/components/DashboardContent';
 import SidebarNav from '@app/components/SidebarNav';
 import TopBar from '@app/components/TopBar';
 import { useAutomations } from '@app/hooks/useAutomations';
 import { requireAuth } from '@app/lib/utils/requireAuth';
 import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
-import { DashboardContent } from './DashboardContent';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const authRedirect = await requireAuth(ctx);

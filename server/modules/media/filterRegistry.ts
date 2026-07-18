@@ -34,15 +34,22 @@ export interface MediaRule<
 > {
   key: string;
   label: string;
-  contentTypes: ContentType[];
+  contentTypes: readonly ContentType[];
   dataType: 'boolean' | 'number' | 'string' | 'csv-ids' | 'csv-strings' | 'range';
-  sourceProviders: MetadataProviderType[];
+  sourceProviders: readonly MetadataProviderType[];
   required: boolean;
   /** True for rules whose values are a provider-*defined* id space (a quality profile id is
    *  minted by one instance) — the client must qualify these per instance when more than one
    *  is active. Flows into `MediaRuleDescriptor` automatically; the client learns the class
    *  from the registry projection instead of keeping its own list. */
   instanceScoped?: boolean;
+  /** The `EnrichmentFields` key this rule's predicate reads, if any — most rules read a
+   *  source-owned field instead (`title`, `year`, `hasFile`, …) and omit this. Declared,
+   *  not inferred from the predicate body (TS can't introspect that): every
+   *  `EnrichmentFields` key must be the `sourceField` of at least one rule, checked below
+   *  `MEDIA_RULES` — a field with no rule at all is enriched, stored, and merged onto the
+   *  item, and silently never filterable. */
+  sourceField?: keyof EnrichmentFields;
   predicate: Predicate<T>;
 }
 
@@ -110,7 +117,7 @@ export function deriveSourceProviders(field: keyof EnrichmentFields): MetadataPr
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
-export const MEDIA_RULES: MediaRule[] = [
+export const MEDIA_RULES = [
   // ── Shared: both content types ─────────────────────────────────────────────
   {
     key: 'title',
@@ -145,6 +152,7 @@ export const MEDIA_RULES: MediaRule[] = [
     contentTypes: ['movie', 'show'],
     dataType: 'boolean',
     sourceProviders: deriveSourceProviders('playCount'),
+    sourceField: 'playCount',
     required: false,
     predicate: (item, value) => {
       const watched = (item.playCount ?? 0) > 0;
@@ -165,6 +173,19 @@ export const MEDIA_RULES: MediaRule[] = [
     predicate: (item, value) => {
       if (!item.addedDate) return false;
       return inRange(daysElapsed(item.addedDate), value);
+    },
+  },
+  {
+    key: 'plexAddedDaysAgo',
+    label: 'Plex added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('plexAddedAt'),
+    sourceField: 'plexAddedAt',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.plexAddedAt) return false;
+      return inRange(daysElapsed(item.plexAddedAt), value);
     },
   },
   {
@@ -223,6 +244,7 @@ export const MEDIA_RULES: MediaRule[] = [
     // content-type scoping; only safe for a field with one producer regardless
     // of content type (see the show-side tagIds rule for the same reasoning).
     sourceProviders: [MetadataProviderType.RADARR],
+    sourceField: 'tags',
     required: false,
     instanceScoped: true,
     predicate: (item, value) => {
@@ -299,6 +321,7 @@ export const MEDIA_RULES: MediaRule[] = [
     // Hand-listed for the same reason as the movie-side tagIds rule above —
     // deriveSourceProviders('tags') would wrongly include Radarr here.
     sourceProviders: [MetadataProviderType.SONARR],
+    sourceField: 'tags',
     required: false,
     instanceScoped: true,
     predicate: (item, value) => {
@@ -413,6 +436,7 @@ export const MEDIA_RULES: MediaRule[] = [
     contentTypes: ['movie', 'show'],
     dataType: 'string',
     sourceProviders: deriveSourceProviders('tmdbStatus'),
+    sourceField: 'tmdbStatus',
     required: false,
     predicate: (item, value) => {
       if (!item.tmdbStatus) return false;
@@ -425,6 +449,7 @@ export const MEDIA_RULES: MediaRule[] = [
     contentTypes: ['movie', 'show'],
     dataType: 'number',
     sourceProviders: deriveSourceProviders('overseerrRequestStatus'),
+    sourceField: 'overseerrRequestStatus',
     required: false,
     predicate: (item, value) => {
       if (item.overseerrRequestStatus === undefined) return false;
@@ -437,6 +462,7 @@ export const MEDIA_RULES: MediaRule[] = [
     contentTypes: ['movie', 'show'],
     dataType: 'boolean',
     sourceProviders: deriveSourceProviders('overseerrHasIssue'),
+    sourceField: 'overseerrHasIssue',
     required: false,
     // Truthy/falsy: "has issue" treats unknown (null/undefined) and false alike as "no issue".
     predicate: (item, value) => Boolean(item.overseerrHasIssue) === asBool(value),
@@ -447,16 +473,74 @@ export const MEDIA_RULES: MediaRule[] = [
     contentTypes: ['movie', 'show'],
     dataType: 'range',
     sourceProviders: deriveSourceProviders('lastWatchedAt'),
+    sourceField: 'lastWatchedAt',
     required: false,
     predicate: (item, value) => {
       if (!item.lastWatchedAt) return false;
       return inRange(daysElapsed(item.lastWatchedAt), value);
     },
   },
-];
+] as const satisfies readonly MediaRule[];
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────
 
 export function getRule(key: string, contentType: ContentType): MediaRule | undefined {
-  return MEDIA_RULES.find((d) => d.key === key && d.contentTypes.includes(contentType));
+  // Widened for iteration — see the comment on the derived range-param types below for why.
+  return (MEDIA_RULES as readonly MediaRule[]).find(
+    (d) => d.key === key && d.contentTypes.includes(contentType)
+  );
 }
+
+// ─── Range-rule keys, by content type — checked against the cross-boundary contract ──
+// The browse-path param translators (server `*_PARAM_TO_KEY`, client
+// `BROWSE_PARAM_BINDINGS`) are checked against `MovieRangeRuleKey`/`ShowRangeRuleKey`
+// — re-exported from `browseRangeKeys.ts`, not derived here, because that file has
+// to be safely importable from the client (see its own docstring for why deriving
+// cross-boundary from `MEDIA_RULES` directly breaks the Next.js build). `_ActualXRangeKey`
+// below is the real derivation, used only to assert the hand-authored contract file
+// hasn't drifted from `MEDIA_RULES` — never exported, never crosses the boundary.
+// A range rule added to, removed from, or re-scoped in `MEDIA_RULES` without a
+// matching update to `browseRangeKeys.ts` fails to compile right here, naming the
+// mismatched key (caught the hard way once already: `plexAddedDaysAgo` shipped in
+// the registry with no entry in any of the five browse-path translators, and
+// nothing failed to compile).
+export type { MovieRangeRuleKey, ShowRangeRuleKey } from './browseRangeKeys';
+import type { MovieRangeRuleKey, ShowRangeRuleKey } from './browseRangeKeys';
+
+type RangeRule = Extract<(typeof MEDIA_RULES)[number], { dataType: 'range' }>;
+
+/** Every range rule whose `contentTypes` includes the given content type. */
+type _ActualRangeRuleFor<CT extends ContentType> = RangeRule extends infer R
+  ? R extends { contentTypes: readonly (infer U)[] }
+    ? CT extends U
+      ? R
+      : never
+    : never
+  : never;
+
+type _ActualMovieRangeKey = _ActualRangeRuleFor<'movie'>['key'];
+type _ActualShowRangeKey = _ActualRangeRuleFor<'show'>['key'];
+
+/** Symmetric difference — non-`never` in either direction means the two lists disagree. */
+type _SymmetricDiff<A extends string, B extends string> = Exclude<A, B> | Exclude<B, A>;
+
+const _movieRangeKeysMatchContract: Record<
+  _SymmetricDiff<_ActualMovieRangeKey, MovieRangeRuleKey>,
+  never
+> = {};
+const _showRangeKeysMatchContract: Record<
+  _SymmetricDiff<_ActualShowRangeKey, ShowRangeRuleKey>,
+  never
+> = {};
+
+// ─── Every EnrichmentFields key must be reachable through at least one rule ────
+// `sourceField` is declared per rule, not inferred (a predicate body isn't
+// TS-introspectable) — this checks that declaration against `EnrichmentFields`
+// itself, so a field with no rule at all (enriched, stored, and merged onto the
+// item, but never filterable) fails to compile, naming it.
+type _DeclaredSourceField = Extract<
+  (typeof MEDIA_RULES)[number],
+  { sourceField: string }
+>['sourceField'];
+type _FieldWithNoRule = Exclude<keyof EnrichmentFields, _DeclaredSourceField>;
+const _everyFieldHasARule: Record<_FieldWithNoRule, never> = {};

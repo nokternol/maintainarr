@@ -20,6 +20,7 @@ const baseMovie: NormalizedMovie = {
   tags: [10, 20],
   genres: ['Sci-Fi', 'Thriller'],
   addedDate: new Date(Date.now() - 10 * 86_400_000).toISOString(),
+  plexAddedAt: new Date(Date.now() - 10 * 86_400_000).toISOString(),
   sizeOnDiskBytes: 5 * 1_073_741_824,
   certification: 'PG-13',
   imdbRating: 8.8,
@@ -51,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 26 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(26);
+  it('contains exactly 27 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(27);
   });
 
   it('every entry has required fields', () => {
@@ -259,6 +260,16 @@ describe('movie predicates', () => {
     expect(rule.predicate(baseMovie, { max: 15 })).toBe(true); // added 10 days ago, lte 15
     expect(rule.predicate(baseMovie, { max: 5 })).toBe(false); // added 10 days ago, lte 5
     expect(rule.predicate({ ...baseMovie, addedDate: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('plexAddedDaysAgo — passes within min/max bounds', () => {
+    const rule = getRule('plexAddedDaysAgo', 'movie')!;
+    expect(rule.predicate(baseMovie, { min: 5 })).toBe(true); // added 10 days ago, gte 5
+  });
+
+  it('plexAddedDaysAgo — fails when item has no plexAddedAt', () => {
+    const rule = getRule('plexAddedDaysAgo', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, plexAddedAt: undefined }, { min: 5 })).toBe(false);
   });
 
   it('sizeOnDiskGb — passes within min/max bounds (GB)', () => {

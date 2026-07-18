@@ -207,6 +207,18 @@ describe('Media browse — enriched predicates', () => {
     });
   });
 
+  describe('plexAddedDaysAgoGte', () => {
+    it('returns only movies added to Plex at least N days ago', async () => {
+      const daysAgoIso = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+      await seedEnrichment(1, { plexAddedAt: daysAgoIso(10) });
+      await seedEnrichment(2, { plexAddedAt: daysAgoIso(2) });
+
+      const res = await client.get('/api/media/movies?plexAddedDaysAgoGte=7&pageSize=100');
+      const data = expectSuccessResponse(res);
+      expect(data.items.map((m: { title: string }) => m.title)).toEqual(['Requested']);
+    });
+  });
+
   describe('tautulliWatched (migrated to enrichment playCount)', () => {
     it('returns only movies with enriched playCount > 0 when tautulliWatched=true', async () => {
       await seedEnrichment(1, { playCount: 3 });

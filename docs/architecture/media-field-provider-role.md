@@ -21,6 +21,7 @@ export interface EnrichmentFields {
   overseerrRequestStatus: number;
   overseerrHasIssue: boolean;
   tmdbStatus: string;
+  plexAddedAt: string;
 }
 ```
 
@@ -57,13 +58,17 @@ field can never disagree on type regardless of which interface declares them.
 | `radarrTagsFieldSource` | `MediaFieldSource` | `tags` |
 | `sonarrTagsFieldSource` | `MediaFieldSource` | `tags` |
 | `tautulliFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt` |
-| `plexFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt` |
+| `plexFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt`, `plexAddedAt` |
 | `overseerrFieldProvider` | `MediaFieldProvider` | `overseerrRequestStatus`, `overseerrHasIssue` |
 | `tmdbFieldSource` | `MediaFieldSource` | `tmdbStatus` |
 
-Tautulli and Plex report the identical native shape (play count + optional last-played unix
-timestamp), so they share one `PlayHistoryFields` type and one `toEnrichmentFields` transform
-(`playHistoryToEnrichmentFields`) rather than two copies of the same logic. `tmdbFieldSource` is a
+Tautulli and Plex report the identical play-history native shape (play count + optional last-played
+unix timestamp), so both build on one `PlayHistoryFields` type and share the
+`playHistoryToEnrichmentFields` transform for that shared portion. Plex additionally reports its own
+library-added timestamp, which Tautulli has no equivalent for — `plexFieldProvider` extends
+`PlayHistoryFields` into its own `PlexNativeFields` (adding `addedAtUnix`) and wraps
+`playHistoryToEnrichmentFields` with the extra `plexAddedAt` conversion, rather than folding
+`plexAddedAt` into the shared transform Tautulli would then also carry. `tmdbFieldSource` is a
 `MediaFieldSource`, not a `MediaFieldProvider`, despite TMDB being a `MediaEnricher` — its
 `getStatus(tmdbId)` call has no natural batch to `visit()` (fetched one id at a time), so the checked
 transform (`string` → `{ tmdbStatus }`) stands alone without the `visit`/join machinery.
@@ -82,15 +87,22 @@ both Radarr's and Sonarr's `qualityProfileId` remain hand-assigned in
 [`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts). A real, scoped gap, not an
 oversight: closing it is follow-on work, not part of what shipped.
 
-## `movie.ts`/`show.ts` derive their enrichment fields, not hand-type them
+## `movie.ts`/`show.ts` carry every enrichment field, not a hand-picked subset
 
 [`movie.ts`](ref:path:server/modules/media/movie.ts) and
 [`show.ts`](ref:path:server/modules/media/show.ts) no longer hand-type `tags`, `playCount`,
-`lastWatchedAt`, `overseerrHasIssue`, `overseerrRequestStatus`, `tmdbStatus` — each interface
-extends `Partial<Pick<EnrichmentFields, ...>>` for exactly those six keys. A field-type change in
-`EnrichmentFields` now breaks `enrichmentMerge.ts`'s direct assignments
-(`item.playCount = enr.playCount`) at compile time instead of silently diverging from the declared
-canonical type.
+`lastWatchedAt`, `overseerrHasIssue`, `overseerrRequestStatus`, `tmdbStatus`, `plexAddedAt` — each
+interface extends `Partial<EnrichmentFields>` directly (no field is movie-only or show-only within
+`EnrichmentFields` itself; that distinction lives in `sourceProviders`/`contentTypes` instead). This
+started as an explicit `Partial<Pick<EnrichmentFields, 'tags' | 'playCount' | ...>>` union, but `Pick`
+only constrains the *listed* keys to be real ones — it doesn't require the list to be complete, so a
+new `EnrichmentFields` key could be silently left off it and nothing would fail to compile. `Partial<
+EnrichmentFields>` removes the union (and the maintenance burden) entirely, so every field-type change
+in `EnrichmentFields` still breaks `enrichmentMerge.ts`'s direct assignments
+(`item.playCount = enr.playCount`) at compile time, and a *new* field is now automatically carried
+instead of needing a matching edit here. See
+[`docs/architecture/browse-range-param-enforcement.md`](ref:path:docs/architecture/browse-range-param-enforcement.md)
+for the fuller set of compile-time checks a new `EnrichmentFields` key is now subject to end to end.
 
 ## Precedence: a total order, declared once per contested field
 
@@ -154,7 +166,7 @@ export const fieldsByProviderType = {
   [RADARR]: ['tags'],
   [SONARR]: ['tags'],
   [TAUTULLI]: ['playCount', 'lastWatchedAt'],
-  [PLEX]: ['playCount', 'lastWatchedAt'],
+  [PLEX]: ['playCount', 'lastWatchedAt', 'plexAddedAt'],
   [OVERSEERR]: ['overseerrRequestStatus', 'overseerrHasIssue'],
   [TMDB]: ['tmdbStatus'],
 };
@@ -173,9 +185,11 @@ import.
 ## `filterRegistry.ts`: derived where possible, hand-listed where genuinely source-owned
 
 `deriveSourceProviders(field)` inverts `fieldsByProviderType` — every provider type whose declared
-fields include the given key. Five rules whose predicate reads an `EnrichmentFields`-tracked field
+fields include the given key. Six rules whose predicate reads an `EnrichmentFields`-tracked field
 call it (`watched` and `lastWatchedDaysAgo`, which read `playCount`/`lastWatchedAt` under a different
-rule key than the field itself; `tmdbStatus`; `overseerrRequestStatus`; `overseerrHasIssue`). Every
+rule key than the field itself; `tmdbStatus`; `overseerrRequestStatus`; `overseerrHasIssue`;
+`plexAddedDaysAgo`, which reads `plexAddedAt` under a different rule key, same pattern as
+`lastWatchedDaysAgo`). Every
 other rule — most of `NormalizedMovie`/`NormalizedShow`'s fields (`title`, `year`, `hasFile`,
 `monitored`, `network`, `communityRating`, …) — stays hand-listed, correctly: they're source-owned
 fields with no `EnrichmentFields` entry to derive from.
