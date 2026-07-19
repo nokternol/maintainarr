@@ -1,9 +1,9 @@
-import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import { MetadataProviderType, mediaIdentity } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
+import { EnrichmentQueries } from '@server/modules/media/enrichment/enrichment.queries';
 import { EnrichmentJobFactory } from '@server/modules/media/enrichmentJobFactory';
 import { ProviderFactory, ProviderSettingsService } from '@server/modules/providers';
-import { eq } from 'drizzle-orm';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { server } from '../../../../tests/mocks/server';
@@ -27,6 +27,7 @@ function makeFactory(): EnrichmentJobFactory {
   const db = getDb();
   return new EnrichmentJobFactory({
     db,
+    enrichmentQueries: new EnrichmentQueries({ db }),
     providerSettingsService: new ProviderSettingsService({ db }),
     providerFactory: new ProviderFactory(),
   });
@@ -69,11 +70,8 @@ describe('EnrichmentJobFactory', () => {
     const job = await makeFactory().create();
     await job.run();
 
-    const [row] = await db
-      .select()
-      .from(mediaEnrichment)
-      .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
-    expect(row.playCount).toBe(1);
+    const fields = await new EnrichmentQueries({ db }).getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.playCount).toBe(1);
   });
 
   it('returns a runnable job when no enrichment providers are active', async () => {

@@ -9,23 +9,27 @@ import {
   tautulliEnricher,
   tmdbEnricher,
 } from './enrichment/enricherAdapters';
+import type { EnrichmentQueries } from './enrichment/enrichment.queries';
 import { EnrichmentJob } from './enrichmentJob';
 
 const log = getChildLogger('EnrichmentJobFactory');
 
 export interface EnrichmentJobFactoryDeps {
   db: DrizzleDb;
+  enrichmentQueries: EnrichmentQueries;
   providerSettingsService: ProviderSettingsService;
   providerFactory: ProviderFactory;
 }
 
 export class EnrichmentJobFactory implements EnrichmentJobFactoryLike {
   private readonly db: DrizzleDb;
+  private readonly enrichmentQueries: EnrichmentQueries;
   private readonly providerSettingsService: ProviderSettingsService;
   private readonly providerFactory: ProviderFactory;
 
   constructor(deps: EnrichmentJobFactoryDeps) {
     this.db = deps.db;
+    this.enrichmentQueries = deps.enrichmentQueries;
     this.providerSettingsService = deps.providerSettingsService;
     this.providerFactory = deps.providerFactory;
   }
@@ -44,6 +48,6 @@ export class EnrichmentJobFactory implements EnrichmentJobFactoryLike {
       plex && plexEnricher(plex),
       tmdb && tmdbEnricher(tmdb),
     ].filter((e) => e !== undefined);
-    return new EnrichmentJob({ db: this.db, enrichers });
+    return new EnrichmentJob({ db: this.db, enrichmentQueries: this.enrichmentQueries, enrichers });
   }
 }

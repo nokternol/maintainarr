@@ -1,23 +1,19 @@
 import { buildContainer } from '@server/container';
-import {
-  MetadataProviderType,
-  automations,
-  mediaEnrichment,
-  mediaIdentity,
-} from '@server/database/schema';
+import { MetadataProviderType, automations, mediaIdentity } from '@server/database/schema';
 /**
  * Integration test for Phase 1 — system task execution via DI (D1).
  *
  * Resolves AutomationExecutor from the real container and executes the seeded
  * `system:enrichment` automation. Asserts the enrichment job runs through the
- * SystemTaskRunner and writes a media_enrichment row for an existing identity —
- * i.e. the system tick no longer throws "has no provider".
+ * SystemTaskRunner and marks the identity enriched — i.e. the system tick no
+ * longer throws "has no provider".
  *
  * Run: yarn vitest run --project server server/__tests__/integration/system.task.execution.integration.test.ts
  */
 import { loadConfig } from '@server/kernel/config';
 import { closeDatabase, initializeDatabase } from '@server/kernel/db';
 import type { DrizzleDb } from '@server/kernel/db';
+import { EnrichmentQueries } from '@server/modules/media/enrichment/enrichment.queries';
 import { ensureSystemJobs } from '@server/modules/system/ensureSystemJobs';
 import { createMockConfig } from '@tests/factories';
 import { server } from '@tests/mocks/server';
@@ -48,7 +44,7 @@ describe('system task execution via container — system:enrichment', () => {
     await closeDatabase();
   });
 
-  it('executes the seeded system:enrichment automation and writes media_enrichment', async () => {
+  it('executes the seeded system:enrichment automation and marks the identity enriched', async () => {
     const [identity] = await db
       .insert(mediaIdentity)
       .values({ kind: 'movie', tmdbId: 603, resolvedAt: 0 })
@@ -61,11 +57,11 @@ describe('system task execution via container — system:enrichment', () => {
 
     await container.cradle.automationExecutor.execute(enrichmentAutomation.id);
 
-    const rows = await db
+    const [updated] = await db
       .select()
-      .from(mediaEnrichment)
-      .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
-    expect(rows).toHaveLength(1);
+      .from(mediaIdentity)
+      .where(eq(mediaIdentity.id, identity.id));
+    expect(updated.enrichedAt).not.toBeNull();
   });
 
   it('resolves an active Overseerr provider so enrichment writes a non-null overseerrRequestStatus', async () => {
@@ -103,10 +99,7 @@ describe('system task execution via container — system:enrichment', () => {
 
     await container.cradle.automationExecutor.execute(enrichmentAutomation.id);
 
-    const [row] = await db
-      .select()
-      .from(mediaEnrichment)
-      .where(eq(mediaEnrichment.mediaIdentityId, identity.id));
-    expect(row.overseerrRequestStatus).toBe(2);
+    const fields = await new EnrichmentQueries({ db }).getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.overseerrRequestStatus).toBe(2);
   });
 });

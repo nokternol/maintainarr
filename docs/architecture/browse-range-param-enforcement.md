@@ -55,11 +55,15 @@ _DeclaredSourceField>` (`_DeclaredSourceField` extracted from every rule's decla
 every rule's declaration — enriched, stored, and merged onto the item, but never
 filterable, would previously compile clean.
 
-**Deliberately left unenforced: `enrichmentMerge.ts`'s copy-through.** Its
-`if (enr.X !== null) item.X = enr.X;` lines are runtime logic, not a type — closing this
-gate properly means replacing the hand-written lines with a loop driven by a checked
-field list (an actual behavior change to the merge function), not an additive type
-check. Out of scope for "if type inference can police it" — a known, accepted gap.
+**`enrichmentMerge.ts`'s copy-through, closed by a storage shape change, not a type
+check.** This was the one Class A gap that stayed open after the other four: the
+per-field `if (enr.X !== null) item.X = enr.X;` lines were runtime logic no additive
+type check could police. It closed anyway, as a side effect of
+[the EAV rewrite](ref:path:docs/architecture/media-enrichment-eav-model.md) — once
+storage only ever holds a row for a field that's actually present,
+`enrichmentMerge.ts` reads back an object shaped exactly like `EnrichmentFields` and
+applies it with one generic `Object.assign(item, fields)`. There's no longer a
+per-field line to omit, so there's nothing left to enforce.
 
 ## Class B: browse-path range-param coverage
 

@@ -97,10 +97,13 @@ interface extends `Partial<EnrichmentFields>` directly (no field is movie-only o
 started as an explicit `Partial<Pick<EnrichmentFields, 'tags' | 'playCount' | ...>>` union, but `Pick`
 only constrains the *listed* keys to be real ones — it doesn't require the list to be complete, so a
 new `EnrichmentFields` key could be silently left off it and nothing would fail to compile. `Partial<
-EnrichmentFields>` removes the union (and the maintenance burden) entirely, so every field-type change
-in `EnrichmentFields` still breaks `enrichmentMerge.ts`'s direct assignments
-(`item.playCount = enr.playCount`) at compile time, and a *new* field is now automatically carried
-instead of needing a matching edit here. See
+EnrichmentFields>` removes the union (and the maintenance burden) entirely, so a *new* field is now
+automatically carried on `NormalizedMovie`/`NormalizedShow` instead of needing a matching edit here.
+(`enrichmentMerge.ts` no longer assigns fields one at a time — since
+[the EAV rewrite](ref:path:docs/architecture/media-enrichment-eav-model.md) it applies whatever
+`EnrichmentQueries.getByIdentityIds` returns via one generic `Object.assign`, so a field-type change
+there is no longer a compile-time-checked touch point at all; it was never enforceable in that shape to
+begin with.) See
 [`docs/architecture/browse-range-param-enforcement.md`](ref:path:docs/architecture/browse-range-param-enforcement.md)
 for the fuller set of compile-time checks a new `EnrichmentFields` key is now subject to end to end.
 

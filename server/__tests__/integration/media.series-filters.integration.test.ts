@@ -22,7 +22,9 @@ import { loadConfig } from '@server/kernel/config';
 import { closeDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import { errorHandlerMiddleware } from '@server/kernel/middleware/errorHandler';
 import { requestIdMiddleware } from '@server/kernel/middleware/requestId';
+import { EnrichmentQueries } from '@server/modules/media/enrichment/enrichment.queries';
 import { createMediaRoutes } from '@server/modules/media/media.routes';
+import type { EnrichmentFields } from '@server/modules/media/mediaFieldProvider';
 import { createMockConfig } from '@tests/factories';
 import { createApiClient, expectSuccessResponse } from '@tests/helpers/api';
 import { server } from '@tests/mocks/server';
@@ -119,21 +121,23 @@ describe('Media browse — series registry predicates', () => {
     return createApiClient(app);
   }
 
-  async function seedEnrichment(sourceId: number, fields: Record<string, unknown>): Promise<void> {
+  async function seedEnrichment(
+    sourceId: number,
+    fields: Partial<EnrichmentFields>
+  ): Promise<void> {
     const db = getDb();
     const [sonarr] = await db
       .select({ id: metadataProviders.id })
       .from(metadataProviders)
       .where(eq(metadataProviders.type, MetadataProviderType.SONARR));
-    const [identity] = await db.insert(mediaIdentity).values({ kind: 'show' }).returning();
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'show', enrichedAt: Math.floor(Date.now() / 1000) })
+      .returning();
     await db
       .insert(mediaItems)
       .values({ providerId: sonarr.id, externalId: sourceId, mediaIdentityId: identity.id });
-    await db.insert(mediaEnrichment).values({
-      mediaIdentityId: identity.id,
-      enrichedAt: Math.floor(Date.now() / 1000),
-      ...fields,
-    });
+    await new EnrichmentQueries({ db }).replaceFields(identity.id, fields);
   }
 
   describe('certification', () => {
