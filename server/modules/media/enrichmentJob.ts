@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { mediaEnrichment, mediaIdentity } from '../../database/schema';
+import { mediaIdentity } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { EnrichableField, MediaEnricher } from './enrichment/enricher';
+import type { EnrichmentQueries } from './enrichment/enrichment.queries';
 import { contestedFieldPrecedence, resolvePrecedence } from './enrichment/precedence';
 import type { EnrichmentFields } from './mediaFieldProvider';
 import type { MediaItem } from './mediaItem';
@@ -21,6 +22,7 @@ const STALENESS_SECONDS = 24 * 60 * 60;
 
 interface Deps {
   db: DrizzleDb;
+  enrichmentQueries: EnrichmentQueries;
   enrichers?: MediaEnricher[];
 }
 
@@ -55,20 +57,13 @@ export class EnrichmentJob {
     const now = Math.floor(Date.now() / 1000);
     const staleThreshold = now - STALENESS_SECONDS;
 
-    const rows = await this.deps.db
-      .select({ identity: mediaIdentity, enrichment: mediaEnrichment })
-      .from(mediaIdentity)
-      .leftJoin(mediaEnrichment, eq(mediaEnrichment.mediaIdentityId, mediaIdentity.id));
-
-    const toEnrich = rows.filter(
-      ({ enrichment }) => !enrichment || (enrichment.enrichedAt ?? 0) < staleThreshold
-    );
+    const identities = await this.deps.db.select().from(mediaIdentity);
+    const toEnrich = identities.filter((identity) => (identity.enrichedAt ?? 0) < staleThreshold);
     if (toEnrich.length === 0) return 0;
 
     // Hydrate each stale identity into a canonical item, tracking the row to write back to.
-    const hydrated = toEnrich.map(({ identity, enrichment }) => ({
+    const hydrated = toEnrich.map((identity) => ({
       identityId: identity.id,
-      hasRow: enrichment != null,
       item: hydrate(identity),
     }));
     const items = hydrated.map((h) => h.item);
@@ -80,7 +75,7 @@ export class EnrichmentJob {
       resolvePrecedence(results, contestedFieldPrecedence).map((item) => [identityKey(item), item])
     );
 
-    for (const { identityId, hasRow, item } of hydrated) {
+    for (const { identityId, item } of hydrated) {
       const resolved = resolvedByKey.get(identityKey(item));
       const values: EnrichmentWriteValues = {
         playCount: resolved?.playCount ?? null,
@@ -90,17 +85,15 @@ export class EnrichmentJob {
         tmdbStatus: resolved?.tmdbStatus ?? null,
         plexAddedAt: resolved?.plexAddedAt ?? null,
       };
+      const presentFields = Object.fromEntries(
+        Object.entries(values).filter(([, value]) => value !== null)
+      ) as Partial<EnrichmentFields>;
 
-      if (hasRow) {
-        await this.deps.db
-          .update(mediaEnrichment)
-          .set({ ...values, enrichedAt: now })
-          .where(eq(mediaEnrichment.mediaIdentityId, identityId));
-      } else {
-        await this.deps.db
-          .insert(mediaEnrichment)
-          .values({ mediaIdentityId: identityId, ...values, enrichedAt: now });
-      }
+      await this.deps.enrichmentQueries.replaceFields(identityId, presentFields);
+      await this.deps.db
+        .update(mediaIdentity)
+        .set({ enrichedAt: now })
+        .where(eq(mediaIdentity.id, identityId));
     }
 
     return toEnrich.length;

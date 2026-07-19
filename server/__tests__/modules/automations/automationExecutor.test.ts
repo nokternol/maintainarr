@@ -2,7 +2,6 @@ import {
   MetadataProviderType,
   automationRuns,
   automations,
-  mediaEnrichment,
   mediaIdentity,
   mediaItems,
 } from '@server/database/schema';
@@ -14,6 +13,7 @@ import { AutomationExecutor } from '@server/modules/automations/automationExecut
 import { AutomationRunService } from '@server/modules/automations/automationRunService';
 import { AutomationService } from '@server/modules/automations/automationService';
 import type { MediaItem } from '@server/modules/media';
+import { EnrichmentQueries } from '@server/modules/media/enrichment/enrichment.queries';
 import type { FilterValueEntry } from '@server/modules/media/filterRegistry';
 import { MediaQueryService } from '@server/modules/mediaQueries/mediaQueryService';
 import {
@@ -918,11 +918,7 @@ describe('AutomationExecutor', () => {
       await db
         .insert(mediaItems)
         .values({ providerId: provider.id, externalId: 1, mediaIdentityId: identity.id });
-      await db.insert(mediaEnrichment).values({
-        mediaIdentityId: identity.id,
-        playCount: 3,
-        enrichedAt: Math.floor(Date.now() / 1000),
-      });
+      await new EnrichmentQueries({ db }).replaceFields(identity.id, { playCount: 3 });
 
       const unmonitored: number[] = [];
       const mockRadarr = radarrSource(movies, {
@@ -972,10 +968,8 @@ describe('AutomationExecutor', () => {
       await db
         .insert(mediaItems)
         .values({ providerId: provider.id, externalId: 10, mediaIdentityId: id10.id });
-      await db.insert(mediaEnrichment).values({
-        mediaIdentityId: id10.id,
+      await new EnrichmentQueries({ db }).replaceFields(id10.id, {
         lastWatchedAt: new Date(tenDaysAgoUnix * 1000).toISOString(),
-        enrichedAt: Math.floor(Date.now() / 1000),
       });
 
       const twoDaysAgoUnix = Math.floor((Date.now() - 2 * 86_400_000) / 1000);
@@ -983,10 +977,8 @@ describe('AutomationExecutor', () => {
       await db
         .insert(mediaItems)
         .values({ providerId: provider.id, externalId: 11, mediaIdentityId: id11.id });
-      await db.insert(mediaEnrichment).values({
-        mediaIdentityId: id11.id,
+      await new EnrichmentQueries({ db }).replaceFields(id11.id, {
         lastWatchedAt: new Date(twoDaysAgoUnix * 1000).toISOString(),
-        enrichedAt: Math.floor(Date.now() / 1000),
       });
 
       const unmonitored: number[] = [];
@@ -1040,11 +1032,7 @@ describe('AutomationExecutor', () => {
       await db
         .insert(mediaItems)
         .values({ providerId: provider.id, externalId: 1, mediaIdentityId: identity.id });
-      await db.insert(mediaEnrichment).values({
-        mediaIdentityId: identity.id,
-        playCount: 5,
-        enrichedAt: Math.floor(Date.now() / 1000),
-      });
+      await new EnrichmentQueries({ db }).replaceFields(identity.id, { playCount: 5 });
 
       const unmonitored: number[] = [];
       const mockSonarr = sonarrSource(seriesList, {

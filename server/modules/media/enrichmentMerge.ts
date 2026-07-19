@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { mediaEnrichment, mediaItems } from '../../database/schema';
+import { mediaItems } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
+import type { EnrichmentQueries } from './enrichment/enrichment.queries';
 import { externalIdOf, itemKey } from './mediaItem';
 import type { NormalizedMovie } from './movie';
 import type { NormalizedShow } from './show';
@@ -17,6 +18,7 @@ import type { NormalizedShow } from './show';
  */
 export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow>(
   db: DrizzleDb,
+  enrichmentQueries: EnrichmentQueries,
   items: T[]
 ): Promise<void> {
   const byProvider = new Map<number, T[]>();
@@ -53,32 +55,19 @@ export async function mergeEnrichment<T extends NormalizedMovie | NormalizedShow
   const groupIdByItemKey = new Map(
     mediaItemRows.map((row) => [`${row.providerId}:${row.externalId}`, row.mediaIdentityId])
   );
-  const enrichments = await db
-    .select()
-    .from(mediaEnrichment)
-    .where(
-      inArray(
-        mediaEnrichment.mediaIdentityId,
-        mediaItemRows.map((row) => row.mediaIdentityId)
-      )
-    );
-  const enrichmentByGroupId = new Map(enrichments.map((enr) => [enr.mediaIdentityId, enr]));
+  const fieldsByGroupId = await enrichmentQueries.getByIdentityIds(
+    mediaItemRows.map((row) => row.mediaIdentityId)
+  );
 
   for (const item of items) {
     const key = itemKey(item);
     if (key === undefined) continue;
     const groupId = groupIdByItemKey.get(key);
     if (groupId === undefined) continue;
-    const enr = enrichmentByGroupId.get(groupId);
-    if (!enr) continue;
-    // Storage already holds write-time-resolved canonical values, so the read is a
-    // straight copy: null means "unknown", which leaves the item field undefined.
-    if (enr.playCount !== null) item.playCount = enr.playCount;
-    if (enr.lastWatchedAt !== null) item.lastWatchedAt = enr.lastWatchedAt;
-    if (enr.overseerrHasIssue !== null) item.overseerrHasIssue = enr.overseerrHasIssue;
-    if (enr.overseerrRequestStatus !== null)
-      item.overseerrRequestStatus = enr.overseerrRequestStatus;
-    if (enr.tmdbStatus !== null) item.tmdbStatus = enr.tmdbStatus;
-    if (enr.plexAddedAt !== null) item.plexAddedAt = enr.plexAddedAt;
+    const fields = fieldsByGroupId.get(groupId);
+    if (!fields) continue;
+    // Storage only holds rows for resolved fields, so a generic assign is a
+    // straight copy: an absent key leaves the item field untouched (undefined).
+    Object.assign(item, fields);
   }
 }

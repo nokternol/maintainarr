@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { bit } from './columns/bit';
 import { createdAt, updatedAt } from './columns/datetime';
 export { createdAt, updatedAt };
 
@@ -242,6 +241,9 @@ export const mediaIdentity = sqliteTable(
     title: text('title'),
     year: integer('year'),
     resolvedAt: integer('resolvedAt'),
+    /** Last time EnrichmentJob resolved this identity's fields — one per identity,
+     *  not per field (mirrors mediaItems.resolvedAt's precedent). */
+    enrichedAt: integer('enrichedAt'),
   },
   (table) => [
     uniqueIndex('ux_media_identity_movie_tmdb')
@@ -286,7 +288,23 @@ export type MediaItem = typeof mediaItems.$inferSelect;
 export type NewMediaItem = typeof mediaItems.$inferInsert;
 
 // ---------------------------------------------------------------------------
-// mediaEnrichment
+// enrichmentField — storage identity for a field key. {id, key} only: which
+// provider produces a field is a compile-time fact (activeFieldSet.ts's
+// fieldsByProviderType), not stored here.
+// ---------------------------------------------------------------------------
+export const enrichmentField = sqliteTable('enrichment_field', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  key: text('key').notNull().unique(),
+});
+
+export type EnrichmentField = typeof enrichmentField.$inferSelect;
+export type NewEnrichmentField = typeof enrichmentField.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// mediaEnrichment — one row per (identity, field) fact present. A field's
+// existence is a data fact (a row), not a schema fact (a column) — sparse by
+// construction for an attribute set whose membership varies by configured
+// provider.
 // ---------------------------------------------------------------------------
 export const mediaEnrichment = sqliteTable(
   'media_enrichment',
@@ -295,15 +313,15 @@ export const mediaEnrichment = sqliteTable(
     mediaIdentityId: integer('mediaIdentityId')
       .notNull()
       .references(() => mediaIdentity.id, { onDelete: 'cascade' }),
-    playCount: integer('playCount'),
-    lastWatchedAt: text('lastWatchedAt'),
-    overseerrRequestStatus: integer('overseerrRequestStatus'),
-    overseerrHasIssue: bit('overseerrHasIssue'),
-    tmdbStatus: text('tmdbStatus'),
-    plexAddedAt: text('plexAddedAt'),
-    enrichedAt: integer('enrichedAt'),
+    fieldId: integer('fieldId')
+      .notNull()
+      .references(() => enrichmentField.id, { onDelete: 'cascade' }),
+    /** JSON-encoded: number | string | boolean. */
+    value: text('value').notNull(),
   },
-  (table) => [index('idx_media_enrichment_identity').on(table.mediaIdentityId)]
+  (table) => [
+    uniqueIndex('ux_media_enrichment_identity_field').on(table.mediaIdentityId, table.fieldId),
+  ]
 );
 
 export type MediaEnrichment = typeof mediaEnrichment.$inferSelect;

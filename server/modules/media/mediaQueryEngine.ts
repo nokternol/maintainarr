@@ -1,5 +1,6 @@
 import type { DrizzleDb } from '../../kernel/db';
 import { type QueryResult, evaluateCombination } from './combinationEvaluator';
+import type { EnrichmentQueries } from './enrichment/enrichment.queries';
 import { mergeEnrichment } from './enrichmentMerge';
 import type { FilterValueEntry } from './filterRegistry';
 import { getRule } from './filterRegistry';
@@ -67,16 +68,18 @@ export function matchItems<T extends NormalizedMovie | NormalizedShow>(
  */
 export class MediaQueryEngine {
   private readonly db?: DrizzleDb;
+  private readonly enrichmentQueries?: EnrichmentQueries;
 
-  constructor(deps: { db?: DrizzleDb } = {}) {
+  constructor(deps: { db?: DrizzleDb; enrichmentQueries?: EnrichmentQueries } = {}) {
     this.db = deps.db;
+    this.enrichmentQueries = deps.enrichmentQueries;
   }
 
   async evaluate(query: MediaQuery): Promise<MediaItemSet> {
     const { source } = query;
     const items = await source.getMediaItems();
-    if (this.db) {
-      await mergeEnrichment(this.db, items);
+    if (this.db && this.enrichmentQueries) {
+      await mergeEnrichment(this.db, this.enrichmentQueries, items);
     }
     return this.combine(items, query.sources, query.contentType);
   }

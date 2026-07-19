@@ -2,7 +2,7 @@ import type { MetadataProvider } from '../../database/schema';
 import type { DrizzleDb } from '../../kernel/db';
 import type { DomainEventBus } from '../../kernel/eventBus';
 import { getChildLogger } from '../../kernel/logger';
-import { MediaQueryEngine, mediaSourceFor, resolveActuatorIds } from '../media';
+import { EnrichmentQueries, MediaQueryEngine, mediaSourceFor, resolveActuatorIds } from '../media';
 import type { MediaSource, MediaSourceFactory } from '../media';
 import type { MediaQueryService } from '../mediaQueries';
 import {
@@ -31,6 +31,7 @@ interface ExecutorDeps {
   mediaQueryService: MediaQueryService;
   providerFactory?: IProviderFactory;
   mediaQueryEngine?: MediaQueryEngine;
+  enrichmentQueries?: EnrichmentQueries;
   /** The owning-catalog sources a non-source actuator's query evaluates against. */
   mediaSourceFactory?: Pick<MediaSourceFactory, 'sourcesFor'>;
   db?: DrizzleDb;
@@ -59,7 +60,13 @@ export class AutomationExecutor {
     this.providerSettingsService = deps.providerSettingsService;
     this.mediaQueryService = deps.mediaQueryService;
     this.providerFactory = deps.providerFactory ?? new ProviderFactory();
-    this.mediaQueryEngine = deps.mediaQueryEngine ?? new MediaQueryEngine({ db: deps.db });
+    this.mediaQueryEngine =
+      deps.mediaQueryEngine ??
+      new MediaQueryEngine({
+        db: deps.db,
+        enrichmentQueries:
+          deps.enrichmentQueries ?? (deps.db ? new EnrichmentQueries({ db: deps.db }) : undefined),
+      });
     this.mediaSourceFactory = deps.mediaSourceFactory;
     this.db = deps.db;
     this.systemTaskRunner = deps.systemTaskRunner;

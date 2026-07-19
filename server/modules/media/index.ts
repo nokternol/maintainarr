@@ -45,6 +45,7 @@ export { resolveActuatorIds } from './actuatorIdResolver';
 
 // Enrichment roles and the adapters that bind providers' native connections
 // to them.
+export { EnrichmentQueries } from './enrichment/enrichment.queries';
 export type { EnrichableField, EnrichmentResult, MediaEnricher } from './enrichment/enricher';
 export {
   overseerrEnricher,

@@ -103,19 +103,24 @@ loop every active instance per type — never collapsed to one:
 ## Enrichment: two distinct paths through the group/item split
 
 - **The enrichment job** (`EnrichmentJob.run`, [`server/modules/media/enrichmentJob.ts`](ref:path:server/modules/media/enrichmentJob.ts)) is
-  group-level and instance-agnostic: it selects `FROM media_identity LEFT JOIN media_enrichment`,
-  hydrates each stale group into a canonical `MediaItem` (`_sourceIds.identity` is the group's own
-  surrogate id — collision-free by construction, since no two groups share it, unlike a bare `tmdbId`
-  that could span kinds), and hands the batch to every `MediaEnricher`; each matches by the logical key it
-  speaks (`_sourceIds.plex`/`.tmdb`) and `resolvePrecedence` resolves per field at write time. An empty
-  identity table means the enrichers are never even queried. See `docs/architecture/media-enricher-role.md`.
-- **`mergeEnrichment(db, items)`** (browse/preview path, [`server/modules/media/enrichmentMerge.ts`](ref:path:server/modules/media/enrichmentMerge.ts)) joins
+  group-level and instance-agnostic: it selects every `media_identity` row and filters on that row's own
+  `enrichedAt` column (staleness is a fact about the group, not a joined fact table —
+  see [the EAV rewrite](ref:path:docs/architecture/media-enrichment-eav-model.md) for why enrichment
+  storage no longer carries one row per identity to join against), hydrates each stale group into a
+  canonical `MediaItem` (`_sourceIds.identity` is the group's own surrogate id — collision-free by
+  construction, since no two groups share it, unlike a bare `tmdbId` that could span kinds), and hands the
+  batch to every `MediaEnricher`; each matches by the logical key it speaks (`_sourceIds.plex`/`.tmdb`) and
+  `resolvePrecedence` resolves per field at write time. An empty identity table means the enrichers are
+  never even queried. See `docs/architecture/media-enricher-role.md`.
+- **`mergeEnrichment(db, enrichmentQueries, items)`** (browse/preview path,
+  [`server/modules/media/enrichmentMerge.ts`](ref:path:server/modules/media/enrichmentMerge.ts)) joins
   the other direction — from a batch of source-produced items, each carrying its own
   `_sourceIds.providerId`/native id, grouped by `providerId` and joined through `media_item` to its
-  group's enrichment row. Two items from two instances that resolve to the same group correctly read
-  identical group-level enrichment (watched-ness is a fact about the title, not the copy); two instances'
-  distinct copies that happen to share a raw external id never cross-attribute, since the join is scoped
-  per `providerId`. No type parameter — attribution is a relational join, not a type-string equality.
+  group's id, which `EnrichmentQueries.getByIdentityIds` resolves to that group's fields. Two items from
+  two instances that resolve to the same group correctly read identical group-level enrichment
+  (watched-ness is a fact about the title, not the copy); two instances' distinct copies that happen to
+  share a raw external id never cross-attribute, since the join is scoped per `providerId`. No type
+  parameter — attribution is a relational join, not a type-string equality.
 
 ## The MediaSource read contract
 

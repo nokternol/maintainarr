@@ -1,8 +1,10 @@
-import { MetadataProviderType, mediaEnrichment, mediaIdentity } from '@server/database/schema';
+import { MetadataProviderType, mediaIdentity } from '@server/database/schema';
 import type { AppConfig } from '@server/kernel/config';
 import { _resetDatabase, getDb, initializeDatabase } from '@server/kernel/db';
 import type { MediaEnricher, MediaItem } from '@server/modules/media';
+import { EnrichmentQueries } from '@server/modules/media/enrichment/enrichment.queries';
 import { EnrichmentJob } from '@server/modules/media/enrichmentJob';
+import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const testConfig: AppConfig = {
@@ -41,8 +43,11 @@ function fakeEnricher(
 }
 
 describe('EnrichmentJob', () => {
+  let queries: EnrichmentQueries;
+
   beforeEach(async () => {
     await initializeDatabase(testConfig);
+    queries = new EnrichmentQueries({ db: getDb() });
   });
 
   afterEach(async () => {
@@ -51,14 +56,12 @@ describe('EnrichmentJob', () => {
 
   it('skips identity rows enriched within 24h — no enricher is queried', async () => {
     const db = getDb();
-    const [identity] = await db
+    await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'fresh' })
-      .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: FRESH });
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'fresh', enrichedAt: FRESH });
 
     const enricher = fakeEnricher(MetadataProviderType.PLEX, () => undefined);
-    await new EnrichmentJob({ db, enrichers: [enricher] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [enricher] }).run();
 
     expect(enricher.enrich).not.toHaveBeenCalled();
   });
@@ -67,85 +70,88 @@ describe('EnrichmentJob', () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'abc123' })
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'abc123', enrichedAt: STALE })
       .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, (item) =>
       item._sourceIds.plex === 'abc123' ? { playCount: 2 } : undefined
     );
-    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [tautulli] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.playCount).toBe(2);
-    expect(enr.enrichedAt).toBeGreaterThan(STALE);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.playCount).toBe(2);
+    const [updated] = await db
+      .select()
+      .from(mediaIdentity)
+      .where(eq(mediaIdentity.id, identity.id));
+    expect(updated.enrichedAt).toBeGreaterThan(STALE);
   });
 
   it('resolves a field per precedence across enrichers (Tautulli over Plex for playCount)', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'k' })
+      .values({ kind: 'movie', tmdbId: 100, plexRatingKey: 'k', enrichedAt: STALE })
       .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
     const plex = fakeEnricher(MetadataProviderType.PLEX, () => ({ playCount: 2 }));
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ playCount: 5 }));
-    await new EnrichmentJob({ db, enrichers: [plex, tautulli] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [plex, tautulli] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.playCount).toBe(5);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.playCount).toBe(5);
   });
 
   it('persists an ISO last-watched value resolved from an enricher', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', plexRatingKey: 'k' })
+      .values({ kind: 'movie', plexRatingKey: 'k', enrichedAt: STALE })
       .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
     const iso = new Date(1_700_000_000 * 1000).toISOString();
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ lastWatchedAt: iso }));
-    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [tautulli] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.lastWatchedAt).toBe(iso);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.lastWatchedAt).toBe(iso);
   });
 
   it('persists a resolved Plex-added ISO value', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', plexRatingKey: 'k' })
+      .values({ kind: 'movie', plexRatingKey: 'k', enrichedAt: STALE })
       .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
     const iso = new Date(1_700_000_000 * 1000).toISOString();
     const plex = fakeEnricher(MetadataProviderType.PLEX, () => ({ plexAddedAt: iso }));
-    await new EnrichmentJob({ db, enrichers: [plex] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [plex] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.plexAddedAt).toBe(iso);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.plexAddedAt).toBe(iso);
   });
 
-  it('leaves canonical columns null for an identity no enricher touched', async () => {
+  it('leaves no row for a field no enricher touched', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 100 })
+      .values({ kind: 'movie', tmdbId: 100, enrichedAt: STALE })
       .returning();
-    await db.insert(mediaEnrichment).values({ mediaIdentityId: identity.id, enrichedAt: STALE });
 
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => undefined);
-    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [tautulli] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.playCount).toBeNull();
-    expect(enr.enrichedAt).toBeGreaterThan(STALE);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.playCount).toBeUndefined();
+    const [updated] = await db
+      .select()
+      .from(mediaIdentity)
+      .where(eq(mediaIdentity.id, identity.id));
+    expect(updated.enrichedAt).toBeGreaterThan(STALE);
   });
 
-  it('inserts an enrichment row when the stale identity has none yet', async () => {
+  it('enriches an identity that has never been enriched before (enrichedAt null)', async () => {
     const db = getDb();
     const [identity] = await db
       .insert(mediaIdentity)
@@ -153,30 +159,22 @@ describe('EnrichmentJob', () => {
       .returning();
 
     const tautulli = fakeEnricher(MetadataProviderType.TAUTULLI, () => ({ playCount: 7 }));
-    await new EnrichmentJob({ db, enrichers: [tautulli] }).run();
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [tautulli] }).run();
 
-    const [enr] = await db.select().from(mediaEnrichment);
-    expect(enr.mediaIdentityId).toBe(identity.id);
-    expect(enr.playCount).toBe(7);
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.playCount).toBe(7);
   });
 
   it('returns the number of identity rows it enriched', async () => {
     const db = getDb();
-    const [id100] = await db
-      .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 100 })
-      .returning();
-    const [id200] = await db
-      .insert(mediaIdentity)
-      .values({ kind: 'movie', tmdbId: 200 })
-      .returning();
-    await db.insert(mediaEnrichment).values([
-      { mediaIdentityId: id100.id, enrichedAt: STALE },
-      { mediaIdentityId: id200.id, enrichedAt: STALE },
+    await db.insert(mediaIdentity).values([
+      { kind: 'movie', tmdbId: 100, enrichedAt: STALE },
+      { kind: 'movie', tmdbId: 200, enrichedAt: STALE },
     ]);
 
     const job = new EnrichmentJob({
       db,
+      enrichmentQueries: queries,
       enrichers: [fakeEnricher(MetadataProviderType.TAUTULLI, () => undefined)],
     });
 

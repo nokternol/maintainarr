@@ -81,9 +81,12 @@ const contestedFieldPrecedence = {
 
 Precedence runs at **write time**, so the cache stores **resolved** canonical fields (`playCount`,
 `lastWatchedAt`), not provider-shaped columns side by side. Read-time `enrichmentMerge.ts` is then a
-trivial copy of canonical columns onto items. Resolution is explicit and testable at the point of write
-rather than implicit at every read; storage-level provenance is intentionally discarded because the job
-recomputes from all enrichers on every staleness pass.
+generic `Object.assign` of whatever fields storage holds for the matched identity onto the item — see
+[the EAV rewrite](ref:path:docs/architecture/media-enrichment-eav-model.md) for why storage only ever
+holds a row for a field actually present, which is what makes the read-side generic rather than a
+per-field copy. Resolution is explicit and testable at the point of write rather than implicit at every
+read; storage-level provenance is intentionally discarded because the job recomputes from all enrichers
+on every staleness pass.
 
 ## The job is a scheduled executor over a cache
 
@@ -112,5 +115,5 @@ It is upstream of, and separate from, enrichment — an ownership/identity conce
   run its `MediaFieldProvider`/`MediaFieldSource` adapter's `visit`/`toEnrichmentFields`, then `enrichment/decorate.ts`.
 - [`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts) — `resolvePrecedence` + the per-field `contestedFieldPrecedence`.
 - `EnrichmentJob` — hydrates stale identities into `MediaItem`s, runs every enricher, resolves per field,
-  persists resolved canonical columns.
-- [`enrichmentMerge.ts`](ref:path:server/modules/media/enrichmentMerge.ts) — read-time copy of canonical columns onto browse/executor items.
+  persists resolved canonical fields via `EnrichmentQueries.replaceFields`.
+- [`enrichmentMerge.ts`](ref:path:server/modules/media/enrichmentMerge.ts) — read-time generic assign of canonical fields onto browse/executor items via `EnrichmentQueries.getByIdentityIds`.
