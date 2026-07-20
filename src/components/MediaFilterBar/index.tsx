@@ -10,8 +10,10 @@ import type { MediaQualityProfile, MediaTag } from '@app/hooks/useMediaLookups';
 import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
 import type { MediaSourceDescriptor } from '@app/hooks/useMediaSources';
 import { cn } from '@app/lib/utils/cn';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { OptionFilter } from '../filters/OptionFilter';
+import type { PickerEntry } from './FilterPicker';
+import { FilterPicker } from './FilterPicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -808,6 +810,14 @@ function toStringCsvOrUndefined(values: string[]): string | undefined {
 
 type FilterGroupId = 'movies' | 'series' | 'playHistory' | 'requests' | 'tmdb';
 
+const GROUP_LABELS: Record<FilterGroupId, string> = {
+  movies: 'Movies',
+  series: 'Series',
+  playHistory: 'Play History',
+  requests: 'Requests',
+  tmdb: 'TMDB',
+};
+
 function groupsFor(rule: MediaRuleDescriptor, configuredTypes: Set<string>): FilterGroupId[] {
   if (rule.key === 'title' || rule.key === 'year') return [];
   const scope = scopeOf(rule);
@@ -949,6 +959,32 @@ function csvStringOptions(
     return scope === 'movie' ? lookups.genres.movies : lookups.genres.series;
   if (rule.key === 'network') return lookups.networks;
   return null;
+}
+
+/** Mirrors RuleControl's switch: true only for a rule/scope RuleControl would
+ *  actually render something for. `string`/`number` rules with no ENUM_OPTIONS
+ *  entry and `csv-ids`/`csv-strings` rules with no lookup source (e.g.
+ *  `certification` today) render null — FilterPicker must not offer those, or
+ *  "adding" one produces a labeled group with nothing inside it. */
+function ruleRendersControl(
+  rule: MediaRuleDescriptor,
+  scope: ContentScope,
+  lookups: Lookups
+): boolean {
+  switch (rule.dataType) {
+    case 'range':
+    case 'boolean':
+      return true;
+    case 'string':
+    case 'number':
+      return ENUM_OPTIONS[rule.key] !== undefined;
+    case 'csv-ids':
+      return csvIdOptions(rule, scope, lookups) !== null;
+    case 'csv-strings':
+      return csvStringOptions(rule, scope, lookups) !== null;
+    default:
+      return false;
+  }
 }
 
 // ─── Value access + range collapse ────────────────────────────────────────────
@@ -1194,6 +1230,76 @@ export function MediaFilterBar({
     return groups;
   }, [rules, configuredTypes]);
 
+  // ─── Add-filter visibility ──────────────────────────────────────────────
+  //
+  // At ~70 possible fields across providers, rendering every configured rule
+  // unconditionally overruns the bar. A rule renders only once it has an
+  // active value (existing/deep-linked filters never silently disappear) or
+  // the user explicitly added it via FilterPicker. Clearing a filter's value
+  // through its own control returns an explicitly-added rule to the pool.
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(() => new Set());
+
+  const handleRuleChange = (scope: ContentScope, key: string, value: FilterValue | undefined) => {
+    onRuleChange(scope, key, value);
+    if (value === undefined) {
+      setVisibleKeys((prev) => {
+        const id = `${scope}:${key}`;
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const isRuleVisible = useCallback(
+    (rule: MediaRuleDescriptor, scope: ContentScope): boolean =>
+      isValueActive(values[scope][rule.key]) || visibleKeys.has(`${scope}:${rule.key}`),
+    [values, visibleKeys]
+  );
+
+  const visibleGroupedRules = useMemo(() => {
+    const filterGroup = (entries: Array<{ rule: MediaRuleDescriptor; scope: ContentScope }>) =>
+      entries.filter(({ rule, scope }) => isRuleVisible(rule, scope));
+    return {
+      movies: filterGroup(groupedRules.movies),
+      series: filterGroup(groupedRules.series),
+      playHistory: filterGroup(groupedRules.playHistory),
+      requests: filterGroup(groupedRules.requests),
+      tmdb: filterGroup(groupedRules.tmdb),
+    };
+  }, [groupedRules, isRuleVisible]);
+
+  const pickerEntries = useMemo(() => {
+    const byGroup = new Map<string, PickerEntry[]>();
+    for (const group of Object.keys(groupedRules) as FilterGroupId[]) {
+      if (
+        (group === 'movies' || group === 'series') &&
+        activeTab !== undefined &&
+        activeTab !== group
+      )
+        continue;
+      for (const { rule, scope } of groupedRules[group]) {
+        if (isRuleVisible(rule, scope)) continue;
+        if (!ruleRendersControl(rule, scope, lookups)) continue;
+        const label = GROUP_LABELS[group];
+        if (!byGroup.has(label)) byGroup.set(label, []);
+        // A shared rule can land in multiple groups; only offer it once.
+        const existing = byGroup.get(label)!;
+        if (existing.some((e) => e.scope === scope && e.rule.key === rule.key)) continue;
+        existing.push({ rule, scope, group: label });
+      }
+    }
+    return Array.from(byGroup.entries());
+  }, [groupedRules, isRuleVisible, activeTab, lookups]);
+
+  const handlePick = (entry: PickerEntry) => {
+    setVisibleKeys((prev) => new Set(prev).add(`${entry.scope}:${entry.rule.key}`));
+  };
+
+  const filterPicker =
+    pickerEntries.length > 0 ? <FilterPicker entries={pickerEntries} onPick={handlePick} /> : null;
+
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const dialogHeadingId = useId();
@@ -1249,13 +1355,14 @@ export function MediaFilterBar({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [mobileOpen]);
 
-  const hasMovieSection =
-    groupedRules.movies.length > 0 && (activeTab === undefined || activeTab === 'movies');
-  const hasSeriesSection =
-    groupedRules.series.length > 0 && (activeTab === undefined || activeTab === 'series');
-  const hasPlayHistorySection = groupedRules.playHistory.length > 0;
-  const hasOverseerrSection = groupedRules.requests.length > 0;
-  const hasTmdbSection = groupedRules.tmdb.length > 0;
+  const tabAllows = (group: 'movies' | 'series'): boolean =>
+    activeTab === undefined || activeTab === (group === 'movies' ? 'movies' : 'series');
+
+  const hasMovieSection = visibleGroupedRules.movies.length > 0 && tabAllows('movies');
+  const hasSeriesSection = visibleGroupedRules.series.length > 0 && tabAllows('series');
+  const hasPlayHistorySection = visibleGroupedRules.playHistory.length > 0;
+  const hasOverseerrSection = visibleGroupedRules.requests.length > 0;
+  const hasTmdbSection = visibleGroupedRules.tmdb.length > 0;
 
   // ─── Shared sub-elements ─────────────────────────────────────────────────
 
@@ -1300,51 +1407,49 @@ export function MediaFilterBar({
     />
   ) : null;
 
-  const movieGroup =
-    hasMovieSection && groupedRules.movies.length > 0 ? (
-      <FilterGroup label="Movies">
-        {groupedRules.movies.map(({ rule, scope }) => (
-          <RuleControl
-            key={rule.key}
-            rule={rule}
-            scope={scope}
-            values={values}
-            onRuleChange={onRuleChange}
-            onQualifierChange={onQualifierChange}
-            sources={sources}
-            lookups={lookups}
-          />
-        ))}
-      </FilterGroup>
-    ) : null;
-
-  const seriesGroup =
-    hasSeriesSection && groupedRules.series.length > 0 ? (
-      <FilterGroup label="Series">
-        {groupedRules.series.map(({ rule, scope }) => (
-          <RuleControl
-            key={rule.key}
-            rule={rule}
-            scope={scope}
-            values={values}
-            onRuleChange={onRuleChange}
-            onQualifierChange={onQualifierChange}
-            sources={sources}
-            lookups={lookups}
-          />
-        ))}
-      </FilterGroup>
-    ) : null;
-
-  const playHistoryFilter = hasPlayHistorySection ? (
-    <FilterGroup label="Play History">
-      {groupedRules.playHistory.map(({ rule, scope }) => (
+  const movieGroup = hasMovieSection ? (
+    <FilterGroup label="Movies">
+      {visibleGroupedRules.movies.map(({ rule, scope }) => (
         <RuleControl
           key={rule.key}
           rule={rule}
           scope={scope}
           values={values}
-          onRuleChange={onRuleChange}
+          onRuleChange={handleRuleChange}
+          onQualifierChange={onQualifierChange}
+          sources={sources}
+          lookups={lookups}
+        />
+      ))}
+    </FilterGroup>
+  ) : null;
+
+  const seriesGroup = hasSeriesSection ? (
+    <FilterGroup label="Series">
+      {visibleGroupedRules.series.map(({ rule, scope }) => (
+        <RuleControl
+          key={rule.key}
+          rule={rule}
+          scope={scope}
+          values={values}
+          onRuleChange={handleRuleChange}
+          onQualifierChange={onQualifierChange}
+          sources={sources}
+          lookups={lookups}
+        />
+      ))}
+    </FilterGroup>
+  ) : null;
+
+  const playHistoryFilter = hasPlayHistorySection ? (
+    <FilterGroup label="Play History">
+      {visibleGroupedRules.playHistory.map(({ rule, scope }) => (
+        <RuleControl
+          key={rule.key}
+          rule={rule}
+          scope={scope}
+          values={values}
+          onRuleChange={handleRuleChange}
           onQualifierChange={onQualifierChange}
           sources={sources}
           lookups={lookups}
@@ -1355,13 +1460,13 @@ export function MediaFilterBar({
 
   const overseerrFilter = hasOverseerrSection ? (
     <FilterGroup label="Requests">
-      {groupedRules.requests.map(({ rule, scope }) => (
+      {visibleGroupedRules.requests.map(({ rule, scope }) => (
         <RuleControl
           key={rule.key}
           rule={rule}
           scope={scope}
           values={values}
-          onRuleChange={onRuleChange}
+          onRuleChange={handleRuleChange}
           onQualifierChange={onQualifierChange}
           sources={sources}
           lookups={lookups}
@@ -1372,13 +1477,13 @@ export function MediaFilterBar({
 
   const tmdbFilter = hasTmdbSection ? (
     <FilterGroup label="TMDB">
-      {groupedRules.tmdb.map(({ rule, scope }) => (
+      {visibleGroupedRules.tmdb.map(({ rule, scope }) => (
         <RuleControl
           key={rule.key}
           rule={rule}
           scope={scope}
           values={values}
-          onRuleChange={onRuleChange}
+          onRuleChange={handleRuleChange}
           onQualifierChange={onQualifierChange}
           sources={sources}
           lookups={lookups}
@@ -1505,6 +1610,7 @@ export function MediaFilterBar({
           {playHistoryFilter}
           {overseerrFilter}
           {tmdbFilter}
+          {filterPicker}
         </div>
         {summaryRow}
       </div>
@@ -1571,13 +1677,13 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Movies</h3>
                 <div className="space-y-3">
-                  {groupedRules.movies.map(({ rule, scope }) => (
+                  {visibleGroupedRules.movies.map(({ rule, scope }) => (
                     <RuleControl
                       key={rule.key}
                       rule={rule}
                       scope={scope}
                       values={values}
-                      onRuleChange={onRuleChange}
+                      onRuleChange={handleRuleChange}
                       onQualifierChange={onQualifierChange}
                       sources={sources}
                       lookups={lookups}
@@ -1593,13 +1699,13 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Series</h3>
                 <div className="space-y-3">
-                  {groupedRules.series.map(({ rule, scope }) => (
+                  {visibleGroupedRules.series.map(({ rule, scope }) => (
                     <RuleControl
                       key={rule.key}
                       rule={rule}
                       scope={scope}
                       values={values}
-                      onRuleChange={onRuleChange}
+                      onRuleChange={handleRuleChange}
                       onQualifierChange={onQualifierChange}
                       sources={sources}
                       lookups={lookups}
@@ -1619,13 +1725,13 @@ export function MediaFilterBar({
               <div>
                 <h3 className="text-sm font-semibold text-text-secondary mb-3">Play History</h3>
                 <div className="space-y-3">
-                  {groupedRules.playHistory.map(({ rule, scope }) => (
+                  {visibleGroupedRules.playHistory.map(({ rule, scope }) => (
                     <RuleControl
                       key={rule.key}
                       rule={rule}
                       scope={scope}
                       values={values}
-                      onRuleChange={onRuleChange}
+                      onRuleChange={handleRuleChange}
                       onQualifierChange={onQualifierChange}
                       sources={sources}
                       lookups={lookups}
@@ -1633,6 +1739,14 @@ export function MediaFilterBar({
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Add filter */}
+            {filterPicker && (
+              <div>
+                <h3 className="text-sm font-semibold text-text-secondary mb-3">Add filter</h3>
+                {filterPicker}
               </div>
             )}
 

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import type { ContentScope, FilterState, FilterValue } from '@app/hooks/useMediaFilters';
 import type { MediaRuleDescriptor } from '@app/hooks/useMediaRules';
-import { fireEvent, render, screen, setupUser } from '@tests/helpers/component';
+import { fireEvent, render, screen, setupUser, within } from '@tests/helpers/component';
 import { describe, expect, it, vi } from 'vitest';
 import { MediaFilterBar } from '../index';
 import type { MediaFilterBarProps } from '../index';
@@ -211,6 +211,17 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     sourceProviders: ['TAUTULLI', 'PLEX'],
     required: false,
   },
+  {
+    // csv-strings with no lookup source (matches filterRegistry.ts's real
+    // shape) — RuleControl renders nothing for it. Regression coverage for
+    // the picker offering a rule it can't actually render a control for.
+    key: 'certification',
+    label: 'Certification',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR', 'SONARR', 'TMDB', 'OMDB'],
+    required: false,
+  },
 ];
 
 function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
@@ -299,6 +310,21 @@ function propsFor(configuredTypes: string[]): Partial<MediaFilterBarProps> {
   return { rules: rulesFor(types), configuredTypes: types };
 }
 
+/** Opens the "Add filter" picker and selects the rule with the given label —
+ *  the add-filter pattern's controls only render once added (or already
+ *  active), so most tests need this before asserting a control is present.
+ *  The desktop bar's trigger stays mounted (just CSS-hidden) even when the
+ *  mobile dialog is open, so mobile tests must pass `within(dialog)` to
+ *  disambiguate the two "Add filter" triggers. */
+async function addFilter(
+  user: ReturnType<typeof setupUser>,
+  label: string | RegExp,
+  scope: Pick<typeof screen, 'getByRole'> = screen
+) {
+  await user.click(scope.getByRole('button', { name: /add filter/i }));
+  await user.click(scope.getByRole('option', { name: label }));
+}
+
 // ─── Desktop bar — visibility ─────────────────────────────────────────────────
 
 describe('MediaFilterBar — desktop bar renders', () => {
@@ -326,22 +352,28 @@ describe('MediaFilterBar — desktop bar renders', () => {
 // ─── Provider gating ──────────────────────────────────────────────────────────
 
 describe('MediaFilterBar — provider gating', () => {
-  it('renders movie filters when RADARR is configured', () => {
+  it('renders movie filters when RADARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS })} />);
+    await addFilter(user, /has file/i);
     expect(screen.getByRole('button', { name: /downloaded/i })).toBeInTheDocument();
   });
 
-  it('renders series filters when SONARR is configured', () => {
+  it('renders series filters when SONARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ ...propsFor(['SONARR']), lookups: EMPTY_LOOKUPS })} />);
+    await addFilter(user, 'Monitored');
     expect(screen.getByRole('button', { name: 'Monitored' })).toBeInTheDocument();
   });
 
-  it('renders tautulli watched filter when TAUTULLI is configured', () => {
+  it('renders tautulli watched filter when TAUTULLI is configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar
         {...makeProps({ ...propsFor(['RADARR', 'TAUTULLI']), lookups: EMPTY_LOOKUPS })}
       />
     );
+    await addFilter(user, 'Watched');
     expect(screen.getByRole('button', { name: 'Watched' })).toBeInTheDocument();
   });
 
@@ -368,7 +400,8 @@ describe('MediaFilterBar — provider gating', () => {
 // ─── activeTab gating ─────────────────────────────────────────────────────────
 
 describe('MediaFilterBar — activeTab prop', () => {
-  it('shows only movie filters when activeTab is movies', () => {
+  it('shows only movie filters when activeTab is movies', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar
         {...makeProps({
@@ -378,11 +411,15 @@ describe('MediaFilterBar — activeTab prop', () => {
         })}
       />
     );
+    await addFilter(user, /has file/i);
     expect(screen.getByRole('button', { name: /downloaded/i })).toBeInTheDocument();
+    // Series-only rules aren't even offered by the picker while on the movies tab.
+    expect(screen.queryByRole('option', { name: 'Monitored' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /monitored/i })).not.toBeInTheDocument();
   });
 
-  it('shows only series filters when activeTab is series', () => {
+  it('shows only series filters when activeTab is series', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar
         {...makeProps({
@@ -392,6 +429,8 @@ describe('MediaFilterBar — activeTab prop', () => {
         })}
       />
     );
+    await addFilter(user, 'Monitored');
+    expect(screen.queryByRole('option', { name: /has file/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /downloaded/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Monitored' })).toBeInTheDocument();
   });
@@ -400,23 +439,31 @@ describe('MediaFilterBar — activeTab prop', () => {
 // ─── Multi-select dropdowns ───────────────────────────────────────────────────
 
 describe('MediaFilterBar — MultiSelectDropdown', () => {
-  it('renders movie tags dropdown when radarr tags are present', () => {
+  it('renders movie tags dropdown when radarr tags are present', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /movie tags/i);
     expect(screen.getByRole('button', { name: /movie tags/i })).toBeInTheDocument();
   });
 
-  it('renders series tags dropdown when sonarr tags are present', () => {
+  it('renders series tags dropdown when sonarr tags are present', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /series tags/i);
     expect(screen.getByRole('button', { name: /series tags/i })).toBeInTheDocument();
   });
 
-  it('renders movie genres dropdown when movie genres are present', () => {
+  it('renders movie genres dropdown when movie genres are present', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /movie genres/i);
     expect(screen.getByRole('button', { name: /movie genres/i })).toBeInTheDocument();
   });
 
-  it('renders network dropdown when networks are present', () => {
+  it('renders network dropdown when networks are present', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /network/i);
     expect(screen.getByRole('button', { name: /network/i })).toBeInTheDocument();
   });
 
@@ -428,6 +475,7 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
   it('opens the dropdown menu on click', async () => {
     const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /movie tags/i);
     await user.click(screen.getByRole('button', { name: /movie tags/i }));
     expect(screen.getByRole('menu', { name: /movie tags/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitemcheckbox', { name: /4k/i })).toBeInTheDocument();
@@ -436,6 +484,7 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
   it('closes the dropdown on Escape', async () => {
     const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /movie tags/i);
     await user.click(screen.getByRole('button', { name: /movie tags/i }));
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu', { name: /movie tags/i })).not.toBeInTheDocument();
@@ -445,6 +494,7 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
     const onRuleChange = vi.fn();
     const user = setupUser();
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS, onRuleChange })} />);
+    await addFilter(user, /movie tags/i);
     await user.click(screen.getByRole('button', { name: /movie tags/i }));
     await user.click(screen.getByRole('menuitemcheckbox', { name: /4k/i }));
     expect(onRuleChange).toHaveBeenCalledWith('movie', 'tagIds', '1');
@@ -627,21 +677,25 @@ describe('MediaFilterBar — mobile sheet', () => {
     expect(screen.getAllByRole('button', { name: /clear all/i }).length).toBeGreaterThan(0);
   });
 
-  it('renders movie chips section in mobile dialog when RADARR configured', () => {
+  it('renders movie chips section in mobile dialog when RADARR configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar
         {...makeProps({ mobileOpen: true, ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS })}
       />
     );
+    await addFilter(user, /has file/i, within(screen.getByRole('dialog')));
     expect(screen.getByRole('heading', { name: 'Movies' })).toBeInTheDocument();
   });
 
-  it('renders series chips section in mobile dialog when SONARR configured', () => {
+  it('renders series chips section in mobile dialog when SONARR configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar
         {...makeProps({ mobileOpen: true, ...propsFor(['SONARR']), lookups: EMPTY_LOOKUPS })}
       />
     );
+    await addFilter(user, 'Monitored', within(screen.getByRole('dialog')));
     expect(screen.getByRole('heading', { name: 'Series' })).toBeInTheDocument();
   });
 });
@@ -657,6 +711,7 @@ describe('MediaFilterBar — OptionFilter interactions', () => {
         {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS, onRuleChange })}
       />
     );
+    await addFilter(user, /has file/i);
     await user.click(screen.getByRole('button', { name: /downloaded/i }));
     expect(onRuleChange).toHaveBeenCalledWith('shared', 'hasFile', 'true');
   });
@@ -686,6 +741,7 @@ describe('MediaFilterBar — OptionFilter interactions', () => {
         {...makeProps({ ...propsFor(['SONARR']), lookups: EMPTY_LOOKUPS, onRuleChange })}
       />
     );
+    await addFilter(user, 'Status');
     await user.click(screen.getByRole('button', { name: /continuing/i }));
     expect(onRuleChange).toHaveBeenCalledWith('show', 'seriesStatus', 'continuing');
   });
@@ -698,6 +754,7 @@ describe('MediaFilterBar — OptionFilter interactions', () => {
         {...makeProps({ ...propsFor(['TAUTULLI']), lookups: EMPTY_LOOKUPS, onRuleChange })}
       />
     );
+    await addFilter(user, 'Watched');
     await user.click(screen.getByRole('button', { name: /unwatched/i }));
     expect(onRuleChange).toHaveBeenCalledWith('shared', 'watched', 'false');
   });
@@ -706,18 +763,24 @@ describe('MediaFilterBar — OptionFilter interactions', () => {
 // ─── Predicate controls ────────────────────────────────────────────────────────
 
 describe('MediaFilterBar — movie predicate controls', () => {
-  it('renders Added filter in movies section when RADARR is configured', () => {
+  it('renders Added filter in movies section when RADARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, 'Added');
     expect(screen.getByRole('button', { name: /added/i })).toBeInTheDocument();
   });
 
-  it('renders Size filter in movies section when RADARR is configured', () => {
+  it('renders Size filter in movies section when RADARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, /size/i);
     expect(screen.getByRole('button', { name: /size/i })).toBeInTheDocument();
   });
 
-  it('renders IMDB Rating filter in movies section when RADARR is configured', () => {
+  it('renders IMDB Rating filter in movies section when RADARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, /imdb rating/i);
     expect(screen.getByRole('button', { name: /imdb rating/i })).toBeInTheDocument();
   });
 
@@ -728,20 +791,26 @@ describe('MediaFilterBar — movie predicate controls', () => {
 });
 
 describe('MediaFilterBar — play history controls', () => {
-  it('shows Watched filter when PLEX is configured (not just TAUTULLI)', () => {
+  it('shows Watched filter when PLEX is configured (not just TAUTULLI)', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ ...propsFor(['PLEX']), lookups: EMPTY_LOOKUPS })} />);
+    await addFilter(user, 'Watched');
     expect(screen.getByRole('button', { name: 'Watched' })).toBeInTheDocument();
   });
 
-  it('shows Last Watched range filter when TAUTULLI is configured', () => {
+  it('shows Last Watched range filter when TAUTULLI is configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar {...makeProps({ ...propsFor(['TAUTULLI']), lookups: EMPTY_LOOKUPS })} />
     );
+    await addFilter(user, /last watched/i);
     expect(screen.getByRole('button', { name: /last watched/i })).toBeInTheDocument();
   });
 
-  it('shows Last Watched range filter when PLEX is configured', () => {
+  it('shows Last Watched range filter when PLEX is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ ...propsFor(['PLEX']), lookups: EMPTY_LOOKUPS })} />);
+    await addFilter(user, /last watched/i);
     expect(screen.getByRole('button', { name: /last watched/i })).toBeInTheDocument();
   });
 
@@ -752,17 +821,21 @@ describe('MediaFilterBar — play history controls', () => {
 });
 
 describe('MediaFilterBar — Overseerr controls', () => {
-  it('shows Has Issue filter when OVERSEERR is configured', () => {
+  it('shows Has Issue filter when OVERSEERR is configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar {...makeProps({ ...propsFor(['OVERSEERR']), lookups: EMPTY_LOOKUPS })} />
     );
+    await addFilter(user, /has issue/i);
     expect(screen.getByRole('button', { name: /has issue/i })).toBeInTheDocument();
   });
 
-  it('shows Request Status options (e.g. Approved) when OVERSEERR is configured', () => {
+  it('shows Request Status options (e.g. Approved) when OVERSEERR is configured', async () => {
+    const user = setupUser();
     render(
       <MediaFilterBar {...makeProps({ ...propsFor(['OVERSEERR']), lookups: EMPTY_LOOKUPS })} />
     );
+    await addFilter(user, 'Status');
     expect(screen.getByRole('button', { name: 'Approved' })).toBeInTheDocument();
   });
 
@@ -773,8 +846,10 @@ describe('MediaFilterBar — Overseerr controls', () => {
 });
 
 describe('MediaFilterBar — TMDB controls', () => {
-  it('shows TMDB Status options (e.g. Returning Series) when TMDB is configured', () => {
+  it('shows TMDB Status options (e.g. Returning Series) when TMDB is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps({ ...propsFor(['TMDB']), lookups: EMPTY_LOOKUPS })} />);
+    await addFilter(user, /tmdb status/i);
     expect(screen.getByRole('button', { name: 'Returning Series' })).toBeInTheDocument();
   });
 
@@ -785,28 +860,63 @@ describe('MediaFilterBar — TMDB controls', () => {
 });
 
 describe('MediaFilterBar — series predicate controls', () => {
-  it('renders Sonarr Rating filter in series section when SONARR is configured', () => {
+  it('renders Sonarr Rating filter in series section when SONARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['SONARR']))} />);
+    await addFilter(user, /sonarr rating/i);
     expect(screen.getByRole('button', { name: /sonarr rating/i })).toBeInTheDocument();
   });
 
-  it('renders Ended filter in series section when SONARR is configured', () => {
+  it('renders Ended filter in series section when SONARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['SONARR']))} />);
+    await addFilter(user, 'Ended');
     expect(screen.getByRole('button', { name: 'Finished' })).toBeInTheDocument();
   });
 
-  it('renders Last Aired filter in series section when SONARR is configured', () => {
+  it('renders Last Aired filter in series section when SONARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['SONARR']))} />);
+    await addFilter(user, /last aired/i);
     expect(screen.getByRole('button', { name: /last aired/i })).toBeInTheDocument();
   });
 
-  it('renders % Episodes filter in series section when SONARR is configured', () => {
+  it('renders % Episodes filter in series section when SONARR is configured', async () => {
+    const user = setupUser();
     render(<MediaFilterBar {...makeProps(propsFor(['SONARR']))} />);
+    await addFilter(user, /% episodes/i);
     expect(screen.getByRole('button', { name: /% episodes/i })).toBeInTheDocument();
   });
 
   it('does not render series-specific filters when SONARR is not configured', () => {
     render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
     expect(screen.queryByRole('button', { name: /sonarr rating/i })).not.toBeInTheDocument();
+  });
+});
+
+// ─── FilterPicker — only offers renderable rules ──────────────────────────────
+
+describe('MediaFilterBar — FilterPicker excludes unrenderable rules', () => {
+  it('does not offer Certification — a csv-strings rule with no lookup source, which RuleControl renders as nothing', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS })} />);
+    await user.click(screen.getByRole('button', { name: /add filter/i }));
+    expect(screen.queryByRole('option', { name: /certification/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render an empty labeled group when a rule with no other visible fields would be the only content', () => {
+    // Movies section would contain only Certification if offered — with no
+    // renderable rule added, hasMovieSection must stay false so no empty
+    // "Movies" panel appears.
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          rules: [ALL_RULES.find((r) => r.key === 'certification')!],
+          configuredTypes: new Set(['RADARR']),
+          lookups: EMPTY_LOOKUPS,
+        })}
+      />
+    );
+    expect(screen.queryByText('Movies')).not.toBeInTheDocument();
   });
 });
