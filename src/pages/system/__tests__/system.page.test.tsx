@@ -5,7 +5,7 @@ import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';
 import { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
-import SystemPage from '../index';
+import SystemPage from '../index.page';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>

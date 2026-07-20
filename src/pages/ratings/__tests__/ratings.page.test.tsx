@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import RatingsPage from '../index';
+import RatingsPage from '../index.page';
 
 describe('RatingsPage', () => {
   it('renders the page heading as an h1', () => {

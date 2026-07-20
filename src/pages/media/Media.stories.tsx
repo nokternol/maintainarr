@@ -4,8 +4,8 @@ import type { ManagedMovie } from '@app/hooks/useMovies';
 import type { ManagedSeries } from '@app/hooks/useSeries';
 import type { Story } from '@ladle/react';
 import { useState } from 'react';
-import { MediaContent } from './index';
-import type { ActiveTab, MediaSlice } from './index';
+import { MediaContent } from './index.page';
+import type { ActiveTab, MediaSlice } from './index.page';
 
 // ─── Fixture data ─────────────────────────────────────────────────────────────
 

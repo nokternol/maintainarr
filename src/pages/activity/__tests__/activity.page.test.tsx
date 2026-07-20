@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import ActivityPage from '../index';
+import ActivityPage from '../index.page';
 
 describe('ActivityPage', () => {
   it('renders the page heading', () => {
