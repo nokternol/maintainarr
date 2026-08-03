@@ -278,6 +278,19 @@ export const MEDIA_RULES = [
     },
   },
   {
+    key: 'studio',
+    label: 'Studio',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('studio'),
+    sourceField: 'studio',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.studio) return false;
+      return parseCsvStrings(value).includes(item.studio);
+    },
+  },
+  {
     key: 'imdbRating',
     label: 'IMDB rating',
     contentTypes: ['movie'],
@@ -364,6 +377,20 @@ export const MEDIA_RULES = [
     predicate: (item, value) => {
       const show = item as NormalizedShow;
       return show.seriesType === String(value);
+    },
+  },
+  {
+    key: 'studio',
+    label: 'Studio',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('studio'),
+    sourceField: 'studio',
+    required: false,
+    predicate: (item, value) => {
+      const show = item as NormalizedShow;
+      if (!show.studio) return false;
+      return parseCsvStrings(value).includes(show.studio);
     },
   },
   {

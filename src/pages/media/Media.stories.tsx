@@ -239,6 +239,7 @@ const LOOKUPS = {
     series: ['Animation', 'Comedy', 'Crime', 'Drama', 'Reality', 'Sci-Fi'],
   },
   networks: ['Netflix', 'HBO', 'Apple TV+', 'Disney+', 'Hulu'],
+  studio: ['Legendary Pictures', 'Warner Bros', 'Universal'],
 };
 
 const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);

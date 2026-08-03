@@ -46,6 +46,7 @@ export function useMediaLookups() {
   );
   const { data: genresData } = useSWR<GenresResponse>('/api/media/genres', fetcher);
   const { data: networksData } = useSWR<string[]>('/api/media/networks', fetcher);
+  const { data: studioData } = useSWR<string[]>('/api/media/studio', fetcher);
 
   return {
     tags: {
@@ -61,5 +62,6 @@ export function useMediaLookups() {
       series: genresData?.series ?? [],
     },
     networks: networksData ?? [],
+    studio: studioData ?? [],
   };
 }

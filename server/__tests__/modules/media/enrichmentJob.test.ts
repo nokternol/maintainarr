@@ -132,6 +132,20 @@ describe('EnrichmentJob', () => {
     expect(fields.get(identity.id)?.plexAddedAt).toBe(iso);
   });
 
+  it('persists a resolved studio value', async () => {
+    const db = getDb();
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'movie', plexRatingKey: 'k', enrichedAt: STALE })
+      .returning();
+
+    const plex = fakeEnricher(MetadataProviderType.PLEX, () => ({ studio: 'Legendary Pictures' }));
+    await new EnrichmentJob({ db, enrichmentQueries: queries, enrichers: [plex] }).run();
+
+    const fields = await queries.getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.studio).toBe('Legendary Pictures');
+  });
+
   it('hydrates _sourceIds.jellyfin from the identity row for a Jellyfin-known item', async () => {
     const db = getDb();
     await db

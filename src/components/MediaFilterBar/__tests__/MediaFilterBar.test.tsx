@@ -92,6 +92,14 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     required: false,
   },
   {
+    key: 'studio',
+    label: 'Movie Studio',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
     key: 'monitored',
     label: 'Monitored',
     contentTypes: ['show'],
@@ -145,6 +153,14 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     contentTypes: ['show'],
     dataType: 'csv-strings',
     sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'studio',
+    label: 'Series Studio',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
     required: false,
   },
   {
@@ -264,6 +280,7 @@ const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
     series: ['Crime', 'Drama', 'Sci-Fi'],
   },
   networks: ['HBO', 'Netflix'],
+  studio: ['Legendary Pictures', 'Warner Bros'],
 };
 
 const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
@@ -271,6 +288,7 @@ const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
   qualityProfiles: { radarr: [], sonarr: [] },
   genres: { movies: [], series: [] },
   networks: [],
+  studio: [],
 };
 
 function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBarProps {
@@ -465,6 +483,21 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
     render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
     await addFilter(user, /network/i);
     expect(screen.getByRole('button', { name: /network/i })).toBeInTheDocument();
+  });
+
+  it('renders movie studio dropdown when studio options are present', async () => {
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          lookups: RICH_LOOKUPS,
+          rules: rulesFor(new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX'])),
+          configuredTypes: new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX']),
+        })}
+      />
+    );
+    await addFilter(user, /movie studio/i);
+    expect(screen.getByRole('button', { name: /movie studio/i })).toBeInTheDocument();
   });
 
   it('does not render movie tags dropdown when no radarr tags', () => {

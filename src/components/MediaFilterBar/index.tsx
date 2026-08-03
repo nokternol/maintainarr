@@ -27,6 +27,7 @@ interface Lookups {
   qualityProfiles: { radarr: MediaQualityProfile[]; sonarr: MediaQualityProfile[] };
   genres: { movies: string[]; series: string[] };
   networks: string[];
+  studio: string[];
 }
 
 export interface MediaFilterBarProps {
@@ -958,6 +959,7 @@ function csvStringOptions(
   if (rule.key === 'genres')
     return scope === 'movie' ? lookups.genres.movies : lookups.genres.series;
   if (rule.key === 'network') return lookups.networks;
+  if (rule.key === 'studio') return lookups.studio;
   return null;
 }
 

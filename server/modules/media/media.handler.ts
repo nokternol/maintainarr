@@ -5,6 +5,7 @@ import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
 import {
   type IProviderFactory,
+  type PlexProvider,
   ProviderFactory,
   type ProviderSettingsService,
   type RadarrMovie,
@@ -390,6 +391,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
   }>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
+  const studioCache = new MediaCache<string[]>();
 
   /** One active Radarr instance's library, kept separate so browse can attribute copies. */
   async function getMovies(): Promise<{ sublists: MovieSublist[]; errors: MediaError[] }> {
@@ -633,6 +635,28 @@ export function createMediaHandlers(cradle: MediaCradle) {
           const { sublists } = await getSeries();
           const all = sublists.flatMap((s) => s.series);
           return [...new Set(all.map((s) => s.network).filter((n): n is string => !!n))].sort();
+        }),
+    }),
+
+    listStudio: defineRoute({
+      handler: () =>
+        studioCache.getOrFetch('studio', async () => {
+          const providers = await providerSettingsService.findActiveByTypes([
+            MetadataProviderType.PLEX,
+          ]);
+          const all: string[] = [];
+          await Promise.all(
+            providers.map(async (provider) => {
+              try {
+                const plex = factory.create(provider, log) as PlexProvider;
+                const items = await plex.getAllItems();
+                all.push(...items.map((i) => i.studio).filter((s): s is string => !!s));
+              } catch (err) {
+                log.warn('Plex fetch failed', { provider: provider.name, err });
+              }
+            })
+          );
+          return [...new Set(all)].sort();
         }),
     }),
 

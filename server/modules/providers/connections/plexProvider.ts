@@ -18,6 +18,7 @@ export interface PlexMediaItem {
   viewCount?: number;
   lastViewedAt?: number;
   addedAt?: number;
+  studio?: string;
 }
 
 /**

@@ -52,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 27 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(27);
+  it('contains exactly 29 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(29);
   });
 
   it('every entry has required fields', () => {
@@ -307,6 +307,25 @@ describe('movie predicates', () => {
 });
 
 // ─── Show predicates ─────────────────────────────────────────────────────────
+
+describe('studio predicates', () => {
+  it('movie — passes when item studio is in the csv list', () => {
+    const rule = getRule('studio', 'movie')!;
+    expect(
+      rule.predicate({ ...baseMovie, studio: 'Legendary Pictures' }, 'Legendary Pictures')
+    ).toBe(true);
+    expect(rule.predicate({ ...baseMovie, studio: 'Legendary Pictures' }, 'Warner Bros')).toBe(
+      false
+    );
+    expect(rule.predicate(baseMovie, 'Legendary Pictures')).toBe(false);
+  });
+
+  it('show — passes when item studio is in the csv list', () => {
+    const rule = getRule('studio', 'show')!;
+    expect(rule.predicate({ ...baseShow, studio: 'AMC Studios' }, 'AMC Studios')).toBe(true);
+    expect(rule.predicate({ ...baseShow, studio: 'AMC Studios' }, 'HBO')).toBe(false);
+  });
+});
 
 describe('show predicates', () => {
   it('title — show', () => {

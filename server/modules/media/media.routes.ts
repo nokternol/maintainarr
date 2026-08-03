@@ -15,6 +15,7 @@ export function createMediaRoutes(
     listQualityProfiles,
     listGenres,
     listNetworks,
+    listStudio,
     listSources,
     resetMedia,
   } = handlers ?? createMediaHandlers(cradle);
@@ -26,6 +27,7 @@ export function createMediaRoutes(
   router.get('/quality-profiles', isAuthenticated(), listQualityProfiles);
   router.get('/genres', isAuthenticated(), listGenres);
   router.get('/networks', isAuthenticated(), listNetworks);
+  router.get('/studio', isAuthenticated(), listStudio);
   router.delete('/reset', isAuthenticated(), resetMedia);
 
   return router;

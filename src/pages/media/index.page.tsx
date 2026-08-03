@@ -418,6 +418,7 @@ interface Lookups {
   qualityProfiles: { radarr: MediaQualityProfile[]; sonarr: MediaQualityProfile[] };
   genres: { movies: string[]; series: string[] };
   networks: string[];
+  studio: string[];
 }
 
 export interface MediaContentProps {

@@ -69,6 +69,16 @@ describe('useMediaLookups', () => {
     expect(typeof result.current.networks[0]).toBe('string');
   });
 
+  it('loads studio', async () => {
+    const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.studio.length).toBeGreaterThan(0);
+    });
+
+    expect(typeof result.current.studio[0]).toBe('string');
+  });
+
   it('exposes the correct shape for all fields', async () => {
     const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
 
