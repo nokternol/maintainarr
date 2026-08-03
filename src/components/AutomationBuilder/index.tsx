@@ -4,6 +4,8 @@ import type { QuerySource } from '@app/components/QuerySourceList';
 import type { CreateAutomationInput } from '@app/hooks/useAutomations';
 import type { MediaQueryRecord } from '@app/hooks/useMediaQueries';
 import { useProviderSettings } from '@app/hooks/useProviderSettings';
+import { optionsForProvider, useProviderTaskOptions } from '@app/hooks/useProviderTaskOptions';
+import type { ProviderTaskParameter } from '@app/hooks/useProviderTasks';
 import { useProviderTasks } from '@app/hooks/useProviderTasks';
 import { cn } from '@app/lib/utils/cn';
 import { Cron } from 'croner';
@@ -67,6 +69,7 @@ interface BuilderTask {
   providerId: number;
   providerName: string;
   providerType: string;
+  parameter?: ProviderTaskParameter;
 }
 
 function SettingsLink() {
@@ -114,6 +117,7 @@ export default function AutomationBuilder({
           providerId: provider.id,
           providerName: provider.name,
           providerType: provider.type,
+          parameter: t.parameter,
         }));
     });
   }, [providers, availability]);
@@ -141,6 +145,16 @@ export default function AutomationBuilder({
     queries.length === 1 ? [{ queryId: queries[0].id, role: 'include', sortOrder: 0 }] : []
   );
   const [selectedTask, setSelectedTask] = useState<BuilderTask | null>(null);
+  const [taskParameterValue, setTaskParameterValue] = useState('');
+
+  const selectParameter =
+    selectedTask?.parameter?.type === 'select' ? selectedTask.parameter : undefined;
+  const { availability: taskOptionsAvailability } = useProviderTaskOptions(
+    selectParameter?.optionsRoute
+  );
+  const taskParameterOptions = selectedTask
+    ? optionsForProvider(taskOptionsAvailability, selectedTask.providerId)
+    : [];
   const [schedulePreset, setSchedulePreset] = useState(SCHEDULE_PRESETS[1].value);
   const [customSchedule, setCustomSchedule] = useState('');
   const [isCustom, setIsCustom] = useState(false);
@@ -158,8 +172,14 @@ export default function AutomationBuilder({
 
   const hasValidInclude = querySources.some((s) => s.role === 'include' && s.queryId > 0);
 
+  const hasRequiredParameter = !selectedTask?.parameter || taskParameterValue.trim().length > 0;
+
   const canSubmit =
-    name.trim().length > 0 && hasValidInclude && selectedTask !== null && isValidCron;
+    name.trim().length > 0 &&
+    hasValidInclude &&
+    selectedTask !== null &&
+    isValidCron &&
+    hasRequiredParameter;
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -171,10 +191,11 @@ export default function AutomationBuilder({
         querySources,
         providerId: selectedTask.providerId,
         taskId: selectedTask.taskId,
+        taskParameter: selectedTask.parameter ? taskParameterValue : undefined,
         schedule: effectiveCron,
       });
     },
-    [canSubmit, querySources, selectedTask, name, effectiveCron, onSubmit]
+    [canSubmit, querySources, selectedTask, name, effectiveCron, taskParameterValue, onSubmit]
   );
 
   return (
@@ -268,7 +289,10 @@ export default function AutomationBuilder({
                             type="radio"
                             name="task"
                             checked={selected}
-                            onChange={() => setSelectedTask(bt)}
+                            onChange={() => {
+                              setSelectedTask(bt);
+                              setTaskParameterValue('');
+                            }}
                             className="flex-shrink-0 text-primary focus:ring-primary focus:ring-offset-0"
                           />
                           <div className="flex flex-1 min-w-0 items-center gap-2">
@@ -301,6 +325,34 @@ export default function AutomationBuilder({
             </div>
           )}
         </div>
+
+        {/* ── Task parameter ── */}
+        {selectParameter && (
+          <div>
+            <label
+              htmlFor="task-parameter"
+              className="block text-xs font-medium text-text-secondary mb-1.5"
+            >
+              {selectParameter.label}
+            </label>
+            <select
+              id="task-parameter"
+              value={taskParameterValue}
+              onChange={(e) => setTaskParameterValue(e.target.value)}
+              className="w-full max-w-md px-3 py-1.5 text-sm bg-surface-bg border border-border rounded text-text-primary focus:border-primary focus:outline-none transition-colors"
+              required
+            >
+              <option value="" disabled>
+                Select {selectParameter.label.toLowerCase()}…
+              </option>
+              {taskParameterOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* ── Schedule ── */}
         <div>

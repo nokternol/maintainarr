@@ -60,7 +60,7 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
         label: 'Add to collection',
         destructive: false,
         affects: 'media',
-        parameter: { label: 'Collection' },
+        parameter: { type: 'select', label: 'Collection', optionsRoute: 'collections' },
         run: async (ids, parameterValue) =>
           this.addToCollection(
             ids.map(String),

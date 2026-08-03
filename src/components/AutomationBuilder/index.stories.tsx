@@ -36,8 +36,15 @@ const queries: MediaQueryRecord[] = [
 
 function withData(
   providers: ProviderSummary[],
-  availability: ProviderTaskAvailability[]
+  availability: ProviderTaskAvailability[],
+  taskOptions: Record<string, Array<{ providerId: number; type: string; options: unknown[] }>> = {}
 ): React.ReactNode {
+  const optionsFallback = Object.fromEntries(
+    Object.entries(taskOptions).map(([route, data]) => [
+      `/api/providers/task-options/${route}`,
+      data,
+    ])
+  );
   return (
     <SWRConfig
       value={{
@@ -45,6 +52,7 @@ function withData(
         fallback: {
           '/api/settings/providers': providers,
           '/api/providers/tasks': availability,
+          ...optionsFallback,
         },
         revalidateOnMount: false,
         revalidateOnFocus: false,
@@ -123,6 +131,42 @@ export const MultipleInstances: Story = () =>
         ],
       },
     ]
+  );
+
+export const ParameterizedTask: Story = () =>
+  withData(
+    [makeProvider({ id: 1, name: 'Radarr Main' })],
+    [
+      {
+        providerId: 1,
+        type: 'RADARR',
+        tasks: [
+          {
+            id: 'changeQualityProfile',
+            label: 'Change quality profile',
+            destructive: false,
+            enabled: true,
+            parameter: {
+              type: 'select',
+              label: 'Quality profile',
+              optionsRoute: 'quality-profiles',
+            },
+          },
+        ],
+      },
+    ],
+    {
+      'quality-profiles': [
+        {
+          providerId: 1,
+          type: 'RADARR',
+          options: [
+            { id: '1', label: 'HD-1080p' },
+            { id: '2', label: 'Any' },
+          ],
+        },
+      ],
+    }
   );
 
 export const Empty: Story = () =>

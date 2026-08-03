@@ -40,7 +40,7 @@ export function normalizeSonarrSeries(s: SonarrSeries, providerId: number): Norm
     certification: s.certification,
     seriesType: s.seriesType as NormalizedShow['seriesType'],
     network: s.network,
-    status: s.status as NormalizedShow['status'],
+    seriesStatus: s.status as NormalizedShow['seriesStatus'],
     ended: s.ended,
     episodePercentage: s.statistics?.percentOfEpisodes,
     lastAiredAt: s.previousAiring,

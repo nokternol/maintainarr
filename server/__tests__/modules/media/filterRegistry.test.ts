@@ -39,7 +39,7 @@ const baseShow: NormalizedShow = {
   addedDate: new Date(Date.now() - 20 * 86_400_000).toISOString(),
   sizeOnDiskBytes: 20 * 1_073_741_824,
   certification: 'TV-MA',
-  status: 'ended',
+  seriesStatus: 'ended',
   ended: true,
   episodePercentage: 95,
   lastAiredAt: new Date(Date.now() - 100 * 86_400_000).toISOString(),

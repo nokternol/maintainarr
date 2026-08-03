@@ -1,14 +1,31 @@
 import { MetadataProviderType } from '@server/database/schema';
 
-/**
- * Declares that a task takes exactly one value: a single-select id from a live
- * provider-fetched list (a quality profile, a tag, a collection). The value
- * transports as a string — numeric id spaces parse their own. Discovery
- * surfaces read this to know a value must be captured with the task.
- */
-export interface ActuatorTaskParameter {
+/** One field within a `fields`-shaped parameter — see `ActuatorTaskParameter`. */
+export interface ActuatorTaskParameterField {
+  key: string;
   label: string;
+  kind: 'select' | 'text' | 'boolean';
+  /** Present when `kind` is `'select'` — see `ActuatorTaskParameter`'s `optionsRoute`. */
+  optionsRoute?: string;
 }
+
+/**
+ * Declares the value(s) a task takes, carried with the automation and passed
+ * to `run` at execution time. Discovery surfaces read this to know a value
+ * must be captured with the task, and how to render its control:
+ *  - `select`: one value chosen from a live provider-fetched list (a quality
+ *    profile, a tag, a collection). `optionsRoute` names the all-instances-
+ *    keyed discovery route (shaped like `getTasks`) the client fetches
+ *    choices from.
+ *  - `text`: one freeform string value (e.g. a comment body).
+ *  - `fields`: more than one value, each its own `select`/`text`/`boolean` —
+ *    JSON-encoded together as the task's single transported parameter string.
+ * The value always transports as a string — numeric id spaces parse their own.
+ */
+export type ActuatorTaskParameter =
+  | { type: 'select'; label: string; optionsRoute: string }
+  | { type: 'text'; label: string }
+  | { type: 'fields'; label: string; fields: ActuatorTaskParameterField[] };
 
 /**
  * The pure-data projection of an actuator task: how it is presented (`id`,

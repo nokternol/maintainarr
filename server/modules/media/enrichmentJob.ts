@@ -47,6 +47,7 @@ function hydrate(identity: typeof mediaIdentity.$inferSelect): MediaItem {
   if (identity.tmdbId != null) ids.tmdb = identity.tmdbId;
   if (identity.plexRatingKey != null) ids.plex = identity.plexRatingKey;
   if (identity.imdbId != null) ids.imdb = identity.imdbId;
+  if (identity.jellyfinItemId != null) ids.jellyfin = identity.jellyfinItemId;
   return { _sourceIds: ids, title: '' } as MediaItem;
 }
 

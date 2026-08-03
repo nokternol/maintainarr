@@ -78,7 +78,9 @@ describe('JellyfinProvider — actuator tasks', () => {
       'addToCollection',
     ]);
     expect(tasks.find((t) => t.id === 'addToCollection')?.parameter).toEqual({
+      type: 'select',
       label: 'Collection',
+      optionsRoute: 'collections',
     });
     for (const t of tasks.filter((t) => t.id !== 'addToCollection')) {
       expect(t.parameter).toBeUndefined();

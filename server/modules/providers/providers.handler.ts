@@ -15,7 +15,7 @@ import { TvMazeProvider } from './connections/tvmazeProvider';
 import { resolveApiKey } from './keyResolver';
 import type { ProviderFactory } from './providerFactory';
 import type { ProviderSettingsService } from './providerSettingsService';
-import { providersSchemas } from './providers.schemas';
+import { type TaskOptionsRoute, providersSchemas } from './providers.schemas';
 import { aggregateRatings } from './ratingsAggregation';
 import { isMediaActuator } from './roles';
 import { readEnabledTaskIds } from './taskEnablement';
@@ -26,6 +26,54 @@ interface ProvidersCradle {
   providerSettingsService: ProviderSettingsService;
   providerFactory: ProviderFactory;
   config: AppConfig;
+}
+
+interface TaskOption {
+  id: string;
+  label: string;
+}
+
+/**
+ * A provider instance's live choices for a parameterized task's `select`
+ * control. `undefined` means this provider type has nothing to say about
+ * `route` — omitted from the response, not surfaced as an empty list.
+ * `collections`/`language-profiles` return `[]` for their owning provider
+ * type: the route exists so the client can wire against it now, but no
+ * provider fetches real collections/language-profiles yet.
+ */
+async function resolveTaskOptions(
+  provider: MetadataProvider,
+  route: TaskOptionsRoute,
+  providerFactory: ProviderFactory
+): Promise<TaskOption[] | undefined> {
+  switch (route) {
+    case 'quality-profiles': {
+      if (
+        provider.type !== MetadataProviderType.RADARR &&
+        provider.type !== MetadataProviderType.SONARR
+      ) {
+        return undefined;
+      }
+      const instance = providerFactory.create(provider, log) as RadarrProvider | SonarrProvider;
+      const profiles = await instance.getProfiles();
+      return profiles.map((p) => ({ id: String(p.id), label: p.name }));
+    }
+    case 'root-folders': {
+      if (
+        provider.type !== MetadataProviderType.RADARR &&
+        provider.type !== MetadataProviderType.SONARR
+      ) {
+        return undefined;
+      }
+      const instance = providerFactory.create(provider, log) as RadarrProvider | SonarrProvider;
+      const folders = await instance.getRootFolders();
+      return folders.map((f) => ({ id: String(f.id), label: f.path }));
+    }
+    case 'collections':
+      return provider.type === MetadataProviderType.JELLYFIN ? [] : undefined;
+    case 'language-profiles':
+      return provider.type === MetadataProviderType.SONARR ? [] : undefined;
+  }
 }
 
 export function createProvidersHandlers(cradle: ProvidersCradle) {
@@ -58,6 +106,28 @@ export function createProvidersHandlers(cradle: ProvidersCradle) {
             },
           ];
         });
+      },
+    }),
+
+    getTaskOptions: defineRoute({
+      schemas: providersSchemas.getTaskOptions,
+      handler: async ({ params }) => {
+        const providers = await providerSettingsService.list();
+
+        const entries = await Promise.all(
+          providers.map(async (p) => {
+            try {
+              const options = await resolveTaskOptions(p, params.route, providerFactory);
+              if (options === undefined) return undefined;
+              return { providerId: p.id, type: p.type, options };
+            } catch (err) {
+              log.warn('Task options fetch failed', { provider: p.name, route: params.route, err });
+              return undefined;
+            }
+          })
+        );
+
+        return entries.filter((e): e is NonNullable<typeof e> => e !== undefined);
       },
     }),
 

@@ -310,7 +310,7 @@ export const MEDIA_RULES = [
     required: false,
     predicate: (item, value) => {
       const show = item as NormalizedShow;
-      return show.status === String(value);
+      return show.seriesStatus === String(value);
     },
   },
   {
