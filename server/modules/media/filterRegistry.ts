@@ -164,11 +164,7 @@ export const MEDIA_RULES = [
     label: 'Added (days ago)',
     contentTypes: ['movie', 'show'],
     dataType: 'range',
-    sourceProviders: [
-      MetadataProviderType.RADARR,
-      MetadataProviderType.SONARR,
-      MetadataProviderType.PLEX,
-    ],
+    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.SONARR],
     required: false,
     predicate: (item, value) => {
       if (!item.addedDate) return false;
@@ -322,6 +318,15 @@ export const MEDIA_RULES = [
       return (item.plexLabels ?? []).some((l) => labels.includes(l));
     },
   },
+  {
+    key: 'monitored',
+    label: 'Monitored',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.SONARR],
+    required: false,
+    predicate: (item, value) => item.monitored === asBool(value),
+  },
 
   // ── Movie-only ─────────────────────────────────────────────────────────────
   {
@@ -410,15 +415,6 @@ export const MEDIA_RULES = [
   },
 
   // ── Show-only ──────────────────────────────────────────────────────────────
-  {
-    key: 'monitored',
-    label: 'Monitored',
-    contentTypes: ['show'],
-    dataType: 'boolean',
-    sourceProviders: [MetadataProviderType.SONARR],
-    required: false,
-    predicate: (item, value) => item.monitored === asBool(value),
-  },
   {
     key: 'seriesStatus',
     label: 'Series status',

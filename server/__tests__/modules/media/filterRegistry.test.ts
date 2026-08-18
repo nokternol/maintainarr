@@ -136,6 +136,20 @@ describe('sourceProviders accuracy', () => {
       MetadataProviderType.SONARR,
     ]);
   });
+
+  it('addedDaysAgo (movie) lists only Radarr/Sonarr — nothing populates addedDate from Plex', () => {
+    expect(getRule('addedDaysAgo', 'movie')!.sourceProviders).toEqual([
+      MetadataProviderType.RADARR,
+      MetadataProviderType.SONARR,
+    ]);
+  });
+
+  it('addedDaysAgo (show) lists only Radarr/Sonarr — nothing populates addedDate from Plex', () => {
+    expect(getRule('addedDaysAgo', 'show')!.sourceProviders).toEqual([
+      MetadataProviderType.RADARR,
+      MetadataProviderType.SONARR,
+    ]);
+  });
 });
 
 // ─── deriveSourceProviders ─────────────────────────────────────────────────
@@ -378,6 +392,16 @@ describe('show predicates', () => {
     const rule = getRule('monitored', 'show')!;
     expect(rule.predicate(baseShow, false)).toBe(true);
     expect(rule.predicate(baseShow, true)).toBe(false);
+  });
+
+  it('monitored — movie: rule exists and reads item.monitored', () => {
+    const rule = getRule('monitored', 'movie')!;
+    expect(rule).toBeDefined();
+    expect(rule.predicate(baseMovie, true)).toBe(true); // baseMovie.monitored = true
+    expect(rule.predicate(baseMovie, false)).toBe(false);
+    expect(rule.sourceProviders).toEqual(
+      expect.arrayContaining([MetadataProviderType.RADARR, MetadataProviderType.SONARR])
+    );
   });
 
   it('seriesStatus — show', () => {
