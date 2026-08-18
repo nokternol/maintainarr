@@ -374,6 +374,15 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     sourceProviders: ['JELLYFIN'],
     required: false,
   },
+  {
+    key: 'languageProfileIds',
+    label: 'Language profile',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+    instanceScoped: true,
+  },
 ];
 
 function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
@@ -424,6 +433,10 @@ const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
   labels: ['4K', 'Favorites'],
   releaseGroups: ['SPARKS', 'RARBG'],
   collectionNames: ['The Matrix Collection'],
+  languageProfiles: [
+    { id: 1, name: 'English', providerId: 2, providerName: 'Sonarr' },
+    { id: 2, name: 'English/Japanese', providerId: 2, providerName: 'Sonarr' },
+  ],
 };
 
 const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
@@ -439,6 +452,7 @@ const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
   labels: [],
   releaseGroups: [],
   collectionNames: [],
+  languageProfiles: [],
 };
 
 function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBarProps {
@@ -701,6 +715,18 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
     );
     await addFilter(user, 'Labels');
     expect(screen.getByRole('button', { name: 'Labels' })).toBeInTheDocument();
+  });
+
+  it('renders language profile dropdown when sonarr language profiles are present', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps({ lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /language profile/i);
+    expect(screen.getByRole('button', { name: /language profile/i })).toBeInTheDocument();
+  });
+
+  it('does not render language profile dropdown when no sonarr language profiles', () => {
+    render(<MediaFilterBar {...makeProps({ lookups: EMPTY_LOOKUPS })} />);
+    expect(screen.queryByRole('button', { name: /language profile/i })).not.toBeInTheDocument();
   });
 
   it('does not render movie tags dropdown when no radarr tags', () => {

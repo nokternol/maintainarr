@@ -102,6 +102,10 @@ const FILE_RESOLUTIONS = ['2160', '1080', '720', 'sd'];
 const LABELS = ['4K', 'HDR', 'Favorites'];
 const RELEASE_GROUPS = ['SPARKS', 'RARBG', 'FraMeSToR', 'CMRG'];
 const COLLECTION_NAMES = ['The Matrix Collection', 'Rocky Collection', 'James Bond Collection'];
+const LANGUAGE_PROFILES = [
+  { id: 1, name: 'English', providerId: 2, providerName: 'Sonarr' },
+  { id: 2, name: 'English/Japanese', providerId: 2, providerName: 'Sonarr' },
+];
 
 const YEAR_RANGE = { min: 1980, max: 2024 };
 
@@ -118,6 +122,7 @@ const EMPTY_LOOKUPS = {
   labels: [],
   releaseGroups: [],
   collectionNames: [],
+  languageProfiles: [],
 };
 
 const RICH_LOOKUPS = {
@@ -133,6 +138,7 @@ const RICH_LOOKUPS = {
   labels: LABELS,
   releaseGroups: RELEASE_GROUPS,
   collectionNames: COLLECTION_NAMES,
+  languageProfiles: LANGUAGE_PROFILES,
 };
 
 const MULTI_INSTANCE_LOOKUPS = {
@@ -148,6 +154,7 @@ const MULTI_INSTANCE_LOOKUPS = {
   labels: LABELS,
   releaseGroups: RELEASE_GROUPS,
   collectionNames: COLLECTION_NAMES,
+  languageProfiles: LANGUAGE_PROFILES,
 };
 
 // The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/modules/media/filterRegistry.ts).
@@ -348,6 +355,15 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     dataType: 'csv-strings',
     sourceProviders: ['SONARR'],
     required: false,
+  },
+  {
+    key: 'languageProfileIds',
+    label: 'Language profile',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: ['SONARR'],
+    required: false,
+    instanceScoped: true,
   },
   {
     key: 'seriesType',

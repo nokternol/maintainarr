@@ -99,6 +99,17 @@ describe('useMediaLookups', () => {
     expect(typeof result.current.collectionNames[0]).toBe('string');
   });
 
+  it('loads a flat array of language profiles', async () => {
+    const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.languageProfiles.length).toBeGreaterThan(0);
+    });
+
+    expect(result.current.languageProfiles[0]).toHaveProperty('id');
+    expect(result.current.languageProfiles[0]).toHaveProperty('name');
+  });
+
   it('exposes the correct shape for all fields', async () => {
     const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
 

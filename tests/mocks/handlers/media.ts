@@ -116,6 +116,16 @@ export const mediaHandlers = [
     return HttpResponse.json({ status: 'ok', data: ['The Matrix Collection'] });
   }),
 
+  http.get('/api/media/language-profiles', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: [
+        { id: 1, name: 'English', providerId: 2, providerName: 'Sonarr' },
+        { id: 2, name: 'English/Japanese', providerId: 2, providerName: 'Sonarr' },
+      ],
+    });
+  }),
+
   http.get('/api/media/file-containers', () => {
     return HttpResponse.json({ status: 'ok', data: ['mkv', 'mp4'] });
   }),

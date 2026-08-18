@@ -35,6 +35,7 @@ interface Lookups {
   labels: string[];
   releaseGroups: string[];
   collectionNames: string[];
+  languageProfiles: MediaQualityProfile[];
 }
 
 export interface MediaFilterBarProps {
@@ -948,6 +949,14 @@ function csvIdOptions(
     const list =
       scope === 'movie' ? lookups.qualityProfiles.radarr : lookups.qualityProfiles.sonarr;
     return list.map((p) => ({
+      id: p.id,
+      displayName: p.name,
+      providerId: p.providerId,
+      providerName: p.providerName,
+    }));
+  }
+  if (rule.key === 'languageProfileIds') {
+    return lookups.languageProfiles.map((p) => ({
       id: p.id,
       displayName: p.name,
       providerId: p.providerId,
