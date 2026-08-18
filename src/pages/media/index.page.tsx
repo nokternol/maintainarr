@@ -419,6 +419,11 @@ interface Lookups {
   genres: { movies: string[]; series: string[] };
   networks: string[];
   studio: string[];
+  fileContainers: string[];
+  videoCodecs: string[];
+  audioCodecs: string[];
+  fileResolutions: string[];
+  labels: string[];
 }
 
 export interface MediaContentProps {

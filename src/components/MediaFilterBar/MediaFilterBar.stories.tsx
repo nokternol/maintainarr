@@ -95,6 +95,11 @@ const GENRES = {
 
 const NETWORKS = ['Netflix', 'HBO', 'Apple TV+', 'Disney+', 'Hulu', 'Prime Video', 'Peacock'];
 const STUDIOS = ['Legendary Pictures', 'Warner Bros', 'Universal', 'A24', 'AMC Studios'];
+const FILE_CONTAINERS = ['mkv', 'mp4', 'avi'];
+const VIDEO_CODECS = ['h264', 'hevc', 'mpeg2video'];
+const AUDIO_CODECS = ['aac', 'dts', 'ac3'];
+const FILE_RESOLUTIONS = ['2160', '1080', '720', 'sd'];
+const LABELS = ['4K', 'HDR', 'Favorites'];
 
 const YEAR_RANGE = { min: 1980, max: 2024 };
 
@@ -104,6 +109,11 @@ const EMPTY_LOOKUPS = {
   genres: { movies: [], series: [] },
   networks: [],
   studio: [],
+  fileContainers: [],
+  videoCodecs: [],
+  audioCodecs: [],
+  fileResolutions: [],
+  labels: [],
 };
 
 const RICH_LOOKUPS = {
@@ -112,6 +122,11 @@ const RICH_LOOKUPS = {
   genres: GENRES,
   networks: NETWORKS,
   studio: STUDIOS,
+  fileContainers: FILE_CONTAINERS,
+  videoCodecs: VIDEO_CODECS,
+  audioCodecs: AUDIO_CODECS,
+  fileResolutions: FILE_RESOLUTIONS,
+  labels: LABELS,
 };
 
 const MULTI_INSTANCE_LOOKUPS = {
@@ -120,6 +135,11 @@ const MULTI_INSTANCE_LOOKUPS = {
   genres: GENRES,
   networks: NETWORKS,
   studio: STUDIOS,
+  fileContainers: FILE_CONTAINERS,
+  videoCodecs: VIDEO_CODECS,
+  audioCodecs: AUDIO_CODECS,
+  fileResolutions: FILE_RESOLUTIONS,
+  labels: LABELS,
 };
 
 // The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/modules/media/filterRegistry.ts).
@@ -321,6 +341,70 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     sourceProviders: ['TAUTULLI'],
     required: false,
   },
+  {
+    key: 'runtimeMinutes',
+    label: 'Runtime (minutes)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'fileSizeBytes',
+    label: 'File size (bytes)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'releaseDaysAgo',
+    label: 'Release date (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'fileContainer',
+    label: 'File container',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'videoCodec',
+    label: 'Video codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'audioCodec',
+    label: 'Audio codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'fileResolution',
+    label: 'File resolution',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'labels',
+    label: 'Labels',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
 ];
 
 function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
@@ -349,11 +433,12 @@ function isBucketActive(bucket: Record<string, FilterValue>, skipEmptyTitle = fa
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 const CONFIGURED_TYPE_OPTIONS = {
-  'All providers': new Set(['RADARR', 'SONARR', 'TAUTULLI']),
+  'All providers': new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX']),
   'Movies only (Radarr)': new Set(['RADARR']),
   'Series only (Sonarr)': new Set(['SONARR']),
   'Movies + Tautulli': new Set(['RADARR', 'TAUTULLI']),
   'Tautulli only': new Set(['TAUTULLI']),
+  'Plex only': new Set(['PLEX']),
 };
 
 type WrapperArgs = {

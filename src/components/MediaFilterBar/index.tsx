@@ -28,6 +28,11 @@ interface Lookups {
   genres: { movies: string[]; series: string[] };
   networks: string[];
   studio: string[];
+  fileContainers: string[];
+  videoCodecs: string[];
+  audioCodecs: string[];
+  fileResolutions: string[];
+  labels: string[];
 }
 
 export interface MediaFilterBarProps {
@@ -960,6 +965,11 @@ function csvStringOptions(
     return scope === 'movie' ? lookups.genres.movies : lookups.genres.series;
   if (rule.key === 'network') return lookups.networks;
   if (rule.key === 'studio') return lookups.studio;
+  if (rule.key === 'fileContainer') return lookups.fileContainers;
+  if (rule.key === 'videoCodec') return lookups.videoCodecs;
+  if (rule.key === 'audioCodec') return lookups.audioCodecs;
+  if (rule.key === 'fileResolution') return lookups.fileResolutions;
+  if (rule.key === 'labels') return lookups.labels;
   return null;
 }
 

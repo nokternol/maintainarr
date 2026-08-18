@@ -240,6 +240,11 @@ const LOOKUPS = {
   },
   networks: ['Netflix', 'HBO', 'Apple TV+', 'Disney+', 'Hulu'],
   studio: ['Legendary Pictures', 'Warner Bros', 'Universal'],
+  fileContainers: ['mkv', 'mp4'],
+  videoCodecs: ['h264', 'hevc'],
+  audioCodecs: ['aac', 'dts'],
+  fileResolutions: ['2160', '1080'],
+  labels: ['4K', 'HDR'],
 };
 
 const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);
