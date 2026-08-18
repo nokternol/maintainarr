@@ -133,3 +133,145 @@ the rule.
 - `rescanSeries` — none.
 - `renameSeries` — none.
 - `changeLanguageProfile` — single-select (target language profile id, instance-scoped, same shape as `changeQualityProfile`).
+
+## UI decisions
+
+Same generic-control survey as `specs/plex.md`'s "Per-field widget shapes" and `specs/radarr.md`'s
+mirror of it — **no field needed a `/prototype` session or a further `impeccable` pass.** Sonarr adds
+zero new widget shapes to `RuleControl`; every filterable field maps onto the four generic renderers
+already established (`range` → `NumberRangeFilter`, `csv-ids` → `MultiSelectDropdown`, `boolean` →
+`OptionFilter`, `string`/`number` → `OptionFilter` with a fixed `ENUM_OPTIONS` entry — unused by any
+Sonarr field this pass). This closes out the items the ticket flagged for scrutiny:
+
+### `languageProfileId` — `csv-ids`, new dedicated lookup (not a `qualityProfiles`-shaped pair)
+
+Confirmed via `csvIdOptions` (`ref:src/components/MediaFilterBar/index.tsx#L916`) that
+`qualityProfileIds` branches on `scope` (`movie` → `lookups.qualityProfiles.radarr`, `show` →
+`lookups.qualityProfiles.sonarr`) because quality profiles exist as a concept on both Radarr and
+Sonarr. Language profiles are Sonarr-only — Radarr has no equivalent concept — so mirroring the
+`{ radarr: [...], sonarr: [...] }` pair shape on `Lookups.qualityProfiles` would be wrong: it would
+imply a `radarr` producer that can never exist and force every consumer to branch on a scope that
+only ever has one live side.
+
+**Decision: add a flat `Lookups.languageProfiles: MediaQualityProfile[]` field** (reusing the
+existing `MediaQualityProfile` shape — `{ id, name, providerId, providerName }` — since a language
+profile is structurally identical to a quality profile: an instance-scoped id/name pair), not a
+`{ radarr, sonarr }` record. `csvIdOptions` gets a new branch:
+
+```
+if (rule.key === 'languageProfileIds') {
+  return lookups.languageProfiles.map((p) => ({
+    id: p.id,
+    displayName: p.name,
+    providerId: p.providerId,
+    providerName: p.providerName,
+  }));
+}
+```
+
+No `scope` branch needed inside it (unlike `qualityProfileIds`) — this rule only ever renders for
+`show` scope, so there's nothing to switch on. `useMediaLookups.ts` gets a new
+`/api/media/language-profiles` route + `languageProfiles: MediaQualityProfile[]` in its return,
+following `qualityProfiles`'s fetch-and-default-empty-array pattern. `instanceScoped: true` carries
+through unchanged (same as `qualityProfileIds`/`tagIds`), per the decision ticket's own note that the
+new filter should extend the existing instance-scoping treatment.
+
+### `nextAiring` — resolved as `nextAiringInDays`, not `nextAiringDaysAgo`
+
+The spec's own note is right that "days ago" doesn't fit a forward-looking value. Resolving rather
+than leaving flagged: **the filter key is `nextAiringInDays`**, not `nextAiringDaysAgo`. Reasoning:
+
+- Every existing "days ago" key in the registry (`addedDaysAgo`, `plexAddedDaysAgo`,
+  `lastAiredDaysAgo`, Radarr's `inCinemasDaysAgo`/`physicalReleaseDaysAgo`/`digitalReleaseDaysAgo`)
+  names a *past* event, and the "ago" suffix is doing real semantic work — it tells a reader the
+  min/max bounds count backwards from now. Reusing that suffix on a future value would make
+  `min: 3, max: 7` silently mean the opposite direction of every sibling range filter with no visual
+  cue, which is a worse outcome than an inconsistent name.
+- `nextAiringInDays` keeps the field's own name (`nextAiring`) recognizable, reads correctly
+  forward ("next episode airs in N days"), and only costs one filter key deviating from the "ago"
+  convention family — a family that convention only applies to past-tense fields in the first place,
+  so `nextAiring` was never really a candidate for it.
+- No control change: `NumberRangeFilter` is direction-agnostic: `inRange` over a day-count works
+  identically whichever way the sign points. This is purely a key-name/copy decision, not a widget
+  decision, so no `/prototype` session applies.
+
+**Correction to the "Filter type mapping" table above**: `nextAiring`'s filter key is
+`nextAiringInDays`, not `nextAiringDaysAgo`.
+
+### `path` — dropped from filterable scope, per Radarr's precedent
+
+Same situation Radarr hit with `folderName`/`path`: `string` dataType is strictly a fixed-enum
+picker keyed by `ENUM_OPTIONS[rule.key]` (confirmed again via `RuleControl`'s `string`/`number`
+branch) — never free text, and no free-text/substring `dataType` exists anywhere in
+`filterRegistry.ts`. Sonarr's `path` is described in the spec as "substring match, same shape as
+`title`" — the identical mismatch, not a new one.
+
+**Decision: leave `path` display-only, matching Radarr's precedent exactly.** This is the second
+occurrence of the same gap (Radarr's `folderName`/`path`, now Sonarr's `path`), which is worth
+naming explicitly rather than quietly repeating: two independent providers have now hit "no
+substring-match control exists" for a filesystem-path field. Still not designing the shared
+free-text `dataType` here — that's a cross-cutting decision bigger than one provider's UI ticket,
+per Radarr's own reasoning — but flagging it as a live candidate for whichever future ticket
+next needs it (e.g. an id/title-search field), since a third occurrence would make deferral start to
+look like avoidance rather than caution. See the ticket-level report for this flagged explicitly to
+the caller.
+
+**Correction to the "Filter type mapping" table above**: `path`'s row should be read as no filter
+rule (drop the `string` dataType entry), wired only for display — same treatment as `overview`/
+title-variant fields and Radarr's `folderName`/`path`.
+
+### `seasonCount` — reclassified to `range`
+
+Same reasoning as Radarr's `movieFileCount`: `number` dataType is the fixed-`ENUM_OPTIONS`-picker
+shape, not a numeric input, and season counts (0, 1, 2, 3…) have no natural small enum the way a
+status code does.
+
+**Decision: reclassify `seasonCount` to `range` dataType**, same shape as `episodeCount` and
+`sizeOnDiskGb`. A `NumberRangeFilter` with equal min/max still expresses exact-count match ("has
+exactly 3 seasons"), while also supporting open-ended "5 or more seasons" queries for free. No new
+widget.
+
+**Correction to the "Filter type mapping" table above**: `seasonCount`'s dataType is `range`, not
+`number`.
+
+### `episodeCount` / `totalEpisodeCount` — mapping table framing confirmed, no other action
+
+Single `range` rule (`episodeCount`) spanning both fields' min/max is a sound framing — matches the
+spec's own reasoning that `totalEpisodeCount` is the practical filter ceiling and `episodeCount`
+alone is redundant with the already-wired `episodePercentage`. No widget decision beyond the
+existing `range` → `NumberRangeFilter` mapping.
+
+### `episodeFileCount` — confirmed no separate widget
+
+Backs the `hasFile` predicate fix only (per the bug-fix section above) — not exposed as its own
+filter rule, so no `RuleControl` branch or lookup applies. No widget decision needed.
+
+### Per-field widget shapes — full mapping
+
+- **`range` fields**: `nextAiringInDays` (renamed, see above), `seasonCount` (reclassified, see
+  above), `episodeCount` (spans `episodeCount`/`totalEpisodeCount`). All render via
+  `NumberRangeFilter`, no new bounds decided, consistent with prior providers' precedent of leaving
+  numeric rules unbounded.
+- **`csv-ids`**: `languageProfileIds` — new dedicated `Lookups.languageProfiles` field and
+  `csvIdOptions` branch (see above), not a reuse of `qualityProfiles`'s paired shape.
+- **Dropped from filterable scope**: `path` (see above, matches Radarr's `folderName`/`path`
+  precedent), plus the already-noted not-filtered set (`images`, `profileId`).
+- **No new `boolean` or `string`/`ENUM_OPTIONS` fields this pass** — `hasFile`'s predicate fix reuses
+  the existing rule/control, no new boolean surfaces.
+
+### Tasks
+
+- **`deleteSeriesKeepFiles`, `refreshSeries`, `rescanSeries`, `renameSeries`** — no parameter, no
+  automation-UI decision needed; render on the existing plain id/label task list unchanged (confirmed
+  same shape as Radarr's `deleteMovieKeepFiles`/`refreshMovie`/`rescanMovie`/`renameMovies`).
+- **`moveSeries`** needs a parameter (target root folder) — same shape as Radarr's `moveMovie`
+  (single-select via `getRootFolders()`). Deferred to
+  [`tickets/11-automation-task-parameters.md`](../tickets/11-automation-task-parameters.md), not
+  designed here.
+- **`changeLanguageProfile`** needs a parameter (target language profile id, instance-scoped) — same
+  "single-select from a fetched list" shape as `moveMovie`/Jellyfin's `removeFromCollection`, sourced
+  from the new `getLanguageProfiles()` fetch method / `languageProfiles` lookup named above. Also
+  deferred to ticket 11, not designed here.
+
+Both parameter shapes are appended to ticket 11's "Parameter shapes recorded by deferring tickets"
+section rather than designed in this ticket.

@@ -1,8 +1,8 @@
 ---
 type: wayfinder-ticket
 label: wayfinder:grilling
-status: open
-assignee: null
+status: closed
+assignee: claude
 blocked_by: [01-plex-ui, 02-jellyfin-ui, 03-radarr-ui, 04-sonarr-ui, 05-tautulli-ui, 06-overseerr-ui, 07-tmdb-ui, 08-omdb-ui, 09-seerr-ui, 10-tvmaze-ui]
 parent: docs/in_progress/provider-e2e-spec/map.md
 ---

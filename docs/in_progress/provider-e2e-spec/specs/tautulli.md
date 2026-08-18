@@ -107,3 +107,39 @@ excluded by the per-item-tasks-only premise.
 ### Tasks (automation options)
 
 No new tasks — see spec.
+
+## UI decisions
+
+No `/prototype` session needed — every field in the "Filter type mapping" table above maps onto a
+generic `RuleControl` renderer (`ref:src/components/MediaFilterBar/index.tsx`) this map has already
+established across Plex's/Jellyfin's/Radarr's/Sonarr's UI passes. Narrowest UI pass in the map so
+far, matching the decision ticket's narrow scope.
+
+- **`fileContainer`/`videoCodec`/`audioCodec`/`fileResolution`** (`csv-strings`) — no new lookup
+  route. These are the exact same fields Plex's UI pass already named dedicated routes for
+  (`specs/plex.md`'s "Per-field widget shapes") and Jellyfin's UI pass already confirmed as an
+  additional-producer join rather than a new route (`specs/jellyfin.md`'s "Options sources").
+  Tautulli joins as a third producer into those same routes/rules — `render via
+  StringMultiSelectDropdown`, options through `csvStringOptions(rule, scope, lookups)`, no new
+  control or route. Extending Jellyfin's aggregation note: `listStudios`-style dedupe+sort lookups
+  should read from every configured provider's already-fetched library data (Radarr + Jellyfin +
+  Tautulli), not just the first one wired.
+- **`fileSizeBytes`** (`range`) — no new control. Per the spec's own "Filter type mapping"
+  reconciliation, this keeps its own rule (not merged into `sizeOnDiskGb`) since Plex's and
+  Jellyfin's independently-made mappings both treat per-file size as distinct from
+  `sizeOnDiskGb`'s aggregate on-disk total. Renders via `NumberRangeFilter`, same shape as
+  `sizeOnDiskGb`/`runtimeMinutes`. Tautulli is simply a producer into the same rule Plex/Jellyfin
+  already defined — no route, no widget decision.
+- **`fileBitrate`** (`range`) — genuinely new field name (no earlier provider in this map named a
+  bitrate field; confirmed via `specs/plex.md`, `specs/jellyfin.md`, `specs/radarr.md`,
+  `specs/sonarr.md`). Needs no lookup (range rules never do) and renders via the existing
+  `NumberRangeFilter`, same shape as `sizeOnDiskGb`. No bounds decided, consistent with this map's
+  precedent for numeric ranges. No widget or route decision beyond confirming the mapping.
+- **`tautulliRecentlyAdded`** — joins the existing `plexAddedDaysAgo` rule (`range`,
+  `ref:server/modules/media/filterRegistry.ts#L179`) as a second producer, per the spec's
+  naming-collision note (Plex wins precedence; Tautulli doesn't get its own filter key). No new
+  control, no new rule, no UI change at all — this is a query-time/precedence concern already
+  resolved in the spec's "Filter type mapping" table, not a UI decision.
+- **Tasks**: none. `deleteWatchHistory` is already wired with no parameter; the decision ticket
+  confirmed no new tasks. Nothing to defer to
+  [`11-automation-task-parameters`](../tickets/11-automation-task-parameters.md).

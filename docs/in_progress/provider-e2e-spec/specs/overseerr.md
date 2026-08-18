@@ -141,3 +141,158 @@ notes above, these are audit-only, task-target-only, or config-surface display f
 | Delete issue | none |
 | Add issue comment | free-text |
 | Override media availability status | multi-field (status + optional `is4k`) |
+
+## UI decisions
+
+Biggest UI pass in the map so far — six new filter fields to resolve, plus three tasks whose
+parameter shapes don't fit anything `AutomationBuilder` or `useProviderTasks.ts` has seen. No field
+below needed a `/prototype` session: every filterable field maps onto the four generic `RuleControl`
+renderers already established across Plex/Jellyfin/Radarr/Sonarr/Tautulli's passes (`range` →
+`NumberRangeFilter`, `csv-strings` → `StringMultiSelectDropdown`, `boolean` → `OptionFilter`,
+`string`/`number` → `OptionFilter` with a fixed `ENUM_OPTIONS` entry). The three complex task
+parameters are **not** prototyped here — characterized and deferred to
+[`11-automation-task-parameters`](../tickets/11-automation-task-parameters.md) per that ticket's own
+scope.
+
+### `overseerrRequestedAt` — confirmed as `range` (`overseerrRequestedDaysAgo`)
+
+Straightforward, no correction needed. Same days-ago convention as `addedDaysAgo`/
+`plexAddedDaysAgo`/Radarr's three release-date fields — renders via `NumberRangeFilter`, no new
+control, no lookup.
+
+### `overseerrRequestedBy` — reclassified from `string` to `csv-strings`, new dedicated lookup route
+
+The mapping table's `string` classification does not survive scrutiny, for the same reason Radarr's
+`folderName`/`path` and Sonarr's `path` didn't: `RuleControl`'s `string`/`number` branch is strictly
+an `ENUM_OPTIONS`-keyed fixed-value picker (confirmed again by reading `ruleRendersControl` and
+`ENUM_OPTIONS` at `ref:src/components/MediaFilterBar/index.tsx#L885`), and the set of people who've
+requested media on a given Overseerr instance is not a fixed enum — it's an open, per-instance,
+growing list of arbitrary usernames. `ENUM_OPTIONS[rule.key]` would need to be hand-maintained per
+deployment, which is not what that table is for (it holds the provider's own fixed API vocabulary —
+`seriesStatus`, `radarrStatus`, etc. — not runtime library data).
+
+**This is not the same gap as `folderName`/`path`, though.** Those fields needed *substring match on
+an unenumerable string* — no control in this codebase does that, full stop, confirmed a second time
+by Sonarr's ticket. `overseerrRequestedBy` is different in kind: it's exact-match against a **finite,
+enumerable-at-query-time** set of values (however many distinct requesters an instance has), which is
+exactly what `csv-strings` + a `Lookups`-sourced list already handles — the same shape as `network`
+(`lookups.networks: string[]`, a flat fetched string array, no id/label pair needed since there's no
+separate "requester id" to preserve). So the fix isn't "defer, no control exists" — it's "the
+mapping table chose the wrong dataType for a field that already has a fitting one."
+
+**Decision: `overseerrRequestedBy` is `csv-strings`**, filter key unchanged
+(`overseerrRequestedBy`), rendering via `StringMultiSelectDropdown`/`csvStringOptions`. Needs a new
+dedicated lookup: `Lookups` gains `overseerrRequesters: string[]`, `csvStringOptions` gets a new
+branch (`if (rule.key === 'overseerrRequestedBy') return lookups.overseerrRequesters;`), and
+`useMediaLookups.ts` gets a new `/api/media/overseerr-requesters` route returning the distinct set of
+`MediaRequest.requestedBy` display names/identifiers seen on the instance, following the
+`listGenres`/`listNetworks` dedupe-and-sort pattern. This is a genuinely new field/route, not
+semantic reuse — checked all five closed specs' "UI decisions" sections and none has a
+requester/user-identity field; Overseerr's request/issue-attribution domain is unrelated to the
+media-metadata fields (genres, studios, codecs, etc.) the first five providers cover.
+
+**Correction to the "Filter type mapping" table above**: `overseerrRequestedBy`'s dataType is
+`csv-strings`, not `string`, and it gets its own lookup route rather than rendering nothing.
+
+**On the "third `string`-mismatch occurrence" question**: this is *not* that third occurrence. The
+mismatch class Radarr and Sonarr flagged is specifically "open value set with no fitting control at
+all" (substring/free-text match on paths). `overseerrRequestedBy` turns out to have a fitting
+control once correctly classified (`csv-strings` + lookup) — the mapping table's error was choosing
+`string` instead of `csv-strings`, not a case where no renderer exists. The free-text/substring gap
+count stays at **two** (`folderName`/`path`, Sonarr's `path`) after this ticket. Nothing in this
+Overseerr pass adds to it — worth stating explicitly since the ticket asked to watch for a third.
+
+### `overseerrIssueType` — `csv-strings`, options sourced from a hardcoded fixed array, not `Lookups`
+
+Confirmed the mechanism question by reading `csvStringOptions` directly
+(`ref:src/components/MediaFilterBar/index.tsx#L953`): it's a plain function, `(rule, scope, lookups)
+=> string[] | null`, dispatching on `rule.key` with an `if` chain — nothing about `csv-strings` as a
+`dataType` structurally requires the options come from `lookups`/a fetched route. `lookups` is just
+one parameter available to reach for; a branch can return a literal array and ignore it entirely,
+exactly the way `ENUM_OPTIONS` is a hardcoded table for `string`/`number` rules. Checked whether any
+existing `csv-strings` field already does this (a precedent to point to) — it doesn't:
+`certification` is the one `csv-strings` rule in the registry with no options source at all today
+(still an open, cross-provider-flagged gap per Plex's and Jellyfin's specs, not fixed), and every
+*live* `csv-strings` field (`genres`, `network`, and now `overseerrRequestedBy` above) routes through
+`lookups`. So this is the first genuinely fixed-and-small `csv-strings` value set in the map — no
+precedent to reuse, but nothing blocks the mechanism either.
+
+**Decision: `overseerrIssueType` gets a hardcoded fixed-array branch in `csvStringOptions`**, not a
+new lookup route:
+
+```
+if (rule.key === 'overseerrIssueType') return ['video', 'audio', 'subtitle', 'other'];
+```
+
+Reasoning: Overseerr's `Issue.issueType` enum is fixed API vocabulary (four values, not runtime
+library data that grows per-instance) — the same category of thing `ENUM_OPTIONS` exists for, just
+needed as a multi-select rather than single-value. Routing it through a `/api/media/*` fetch would
+be pure overhead: a network round-trip to return four values that never change and aren't specific
+to any instance's data, unlike `overseerrRequestedBy`'s genuinely per-instance requester list above.
+`StringMultiSelectDropdown`/`csvStringOptions`'s signature already accommodates this with zero
+changes to the renderer — only `csvStringOptions`'s body gets a new `if` arm, same footprint as
+`ENUM_OPTIONS` gaining an entry. No new `Lookups` field, no new route, no `useMediaLookups.ts` change.
+
+### `overseerrIssueStatus` — confirmed as `number`, mirrors `overseerrRequestStatus`
+
+Clean win as flagged. Add to `ENUM_OPTIONS` (`ref:src/components/MediaFilterBar/index.tsx#L885`):
+
+```
+overseerrIssueStatus: [
+  { value: '1', label: 'Open' },
+  { value: '2', label: 'Resolved' },
+]
+```
+
+Same shape as the already-wired `overseerrRequestStatus` entry directly above it in the table —
+numeric-equality `OptionFilter`, no new control. Given the naming-collision note in this spec's own
+"Naming-collision notes" section (four distinct `status` fields), the segment label should read
+"Issue status," not bare "Status" — add `overseerrIssueStatus: 'Issue status'` to
+`SEGMENT_LABEL_OVERRIDES` (`ref:src/components/MediaFilterBar/index.tsx#L870`) rather than leaving it
+to default to the registry label, so the filter UI disambiguates from `overseerrRequestStatus`
+(already overridden to plain `'Status'`) and any future `overseerrMediaStatus`.
+
+### `overseerrHasComments` — confirmed as `boolean`, add a `BOOLEAN_VALUE_LABELS` entry
+
+Same shape as `overseerrHasIssue`. Add to `BOOLEAN_VALUE_LABELS`
+(`ref:src/components/MediaFilterBar/index.tsx#L850`), matching `overseerrHasIssue`'s existing
+`['Has Issue', 'No Issue']` pattern rather than falling back to the generic `Yes`/`No` pair:
+
+```
+overseerrHasComments: ['Has Comments', 'No Comments'],
+```
+
+### `overseerrRequestScope` — confirmed as `string`/`ENUM_OPTIONS`, genuine closed set
+
+Unlike `overseerrRequestedBy`, this one is legitimately a fixed two-value enum — `"all"`/`"partial"`
+is Overseerr's own derived vocabulary (from `MediaRequest.seasons`), not open per-instance data,
+same category as `seriesStatus`/`radarrStatus`. Add to `ENUM_OPTIONS`:
+
+```
+overseerrRequestScope: [
+  { value: 'all', label: 'All seasons' },
+  { value: 'partial', label: 'Some seasons' },
+]
+```
+
+### Summary of corrections to the "Filter type mapping" table above
+
+| Domain field | Table said | Actual | Why |
+|---|---|---|---|
+| `overseerrRequestedBy` | `string` | `csv-strings` + new `overseerrRequesters` lookup route | Open per-instance value set, not a fixed enum — but *is* enumerable at query time, unlike `folderName`/`path`'s unenumerable substring-match gap. |
+
+All other rows in the mapping table are confirmed as-is (`overseerrRequestedAt`, `overseerrIssueType`,
+`overseerrIssueStatus`, `overseerrHasComments`, `overseerrRequestScope`) — no other correction needed.
+
+### Task parameter shapes deferred to ticket 11
+
+`Update request`, `Add issue comment`, and `Override media availability status` all need
+parameter-collection UI `AutomationBuilder` doesn't have today. Per this ticket's scope, the actual
+input UI is **not** designed here — each task's distinct shape is appended to
+[`11-automation-task-parameters`](../tickets/11-automation-task-parameters.md)'s "Parameter shapes
+recorded by deferring tickets" section instead, since none of the three fit the "single-select from a
+fetched list" shape every prior entry there has used. See that ticket for the recorded shapes.
+
+`Approve request` / `Decline request` / `Retry failed request` / `Delete request` / `Resolve issue` /
+`Reopen issue` / `Delete issue` need no parameter — plain id/label radio entries, already fit
+`AutomationBuilder`'s existing (if currently non-functional-for-parameterized-tasks) list UI.

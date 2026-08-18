@@ -132,3 +132,67 @@ support. Bigger lift than the other additions; not decided here.
 ### Tasks (automation options)
 
 - `removeFromCollection` — single-select (external collection id, same shape as the existing `addToCollection` task).
+
+## UI decisions
+
+Same generic-control survey as `specs/plex.md`'s "Per-field widget shapes" — no field needed a
+`/prototype` session.
+
+### Per-field widget shapes (13 new/joining fields)
+
+All 13 fields in the "Filter type mapping" table above map onto controls `RuleControl`
+(`ref:src/components/MediaFilterBar/index.tsx`) already switches on by `dataType`, the same three
+(now four, counting `boolean`) generic shapes established across this map:
+
+- **`range` fields** (`runtimeMinutes`, `fileSizeBytes`, `jellyfinAddedDaysAgo`, plus the two
+  joining existing range rules — `lastWatchedDaysAgo`, `releaseDaysAgo`) render via
+  `NumberRangeFilter`, same shape as `sizeOnDiskGb`/`addedDaysAgo`/Plex's `releaseDaysAgo`. No new
+  bounds decided, consistent with Plex's precedent.
+- **`csv-strings` fields** (`studio`, `fileContainer`, `videoCodec`, `audioCodec`,
+  `fileResolution`, `labels`, plus `genres`/`certification` which join existing rules) render via
+  `StringMultiSelectDropdown`, options resolved through `csvStringOptions(rule, scope, lookups)`.
+  All six non-lookup-yet fields are the same fields Plex's UI pass already named for its 6 new
+  routes (`studio`, `fileContainer`, `videoCodec`, `audioCodec`, `fileResolution`, `labels`) —
+  Jellyfin doesn't add any *new* csv-strings field beyond what Plex already covers; see "Options
+  sources" below for how Jellyfin's producer role interacts with those already-decided routes.
+- **`watched`** (joining `playCount`) stays on its already-wired `boolean` control — Jellyfin adds
+  a third producer, no new control.
+- **`jellyfinIsFavorite`** — new `boolean` field, first genuinely new boolean rule this map has
+  added (Plex's booleans all joined existing rules). Renders via the same generic `booleanOptions`
+  fallback (`ref:src/components/MediaFilterBar/index.tsx#L858`): no entry in
+  `BOOLEAN_VALUE_LABELS` today, so it would render the default "Yes"/"No" pair rather than a
+  purpose-labeled one (existing labeled examples: `watched` → "Watched"/"Unwatched", `monitored` →
+  "Monitored"/"Unmonitored"). **Copy decision**: add a `jellyfinIsFavorite` entry —
+  `['Favorited', 'Not Favorited']` — to `BOOLEAN_VALUE_LABELS` at implementation time; "Yes"/"No"
+  reads ambiguously for a filter chip shown out of context (e.g. in the active-conditions summary),
+  the same reasoning the existing labeled entries already establish. No new widget, no
+  `/prototype` needed — this is a value-label table entry, not a control shape decision.
+
+### Options sources
+
+Jellyfin contributes zero *new* `csv-strings` fields needing their own lookup route — every
+non-lookup-yet csv-strings field in Jellyfin's mapping table (`studio`, `fileContainer`,
+`videoCodec`, `audioCodec`, `fileResolution`, `labels`) is a field Plex's UI pass already named a
+dedicated route for (`specs/plex.md`'s "Per-field widget shapes"). Per the shared-field strategy,
+Jellyfin becomes an *additional producer* into the same rules and the same lookup routes — e.g.
+`listStudios`'s dedupe+sort should read from every configured provider's already-fetched library
+data (Radarr + Jellyfin), not just Radarr's, same as `listGenres`/`listNetworks` already aggregate
+across producers today. No new route is named here; this is a note for whoever implements the
+routes Plex's ticket named, not a new decision.
+
+`genres`/`certification` continue to rely on the existing `listGenres` lookup and the still-unwired
+`certification` gap respectively (both already flagged, `certification`'s gap first noted in Plex's
+UI pass and not Jellyfin's to fix).
+
+### Tasks
+
+- **`removeFromCollection`** needs a parameter (which collection to remove from) — same shape as
+  the already-wired `addToCollection`, which itself has no working parameter-input UI today
+  (`AutomationBuilder`'s task list is a plain id/label radio with no parameter collection at all,
+  a pre-existing gap independent of this map). Per this map's cross-cutting finding, **this
+  ticket does not design a one-off parameter input for `removeFromCollection`** — deferred to
+  [`tickets/11-automation-task-parameters.md`](../tickets/11-automation-task-parameters.md), which
+  already lists `removeFromCollection` (collection id) as one of the tasks it must cover when
+  resolved. No automation-UI change decided here.
+- No other new Jellyfin task exists in the decision ticket (`createCollection` was dropped, not
+  decided as a task).

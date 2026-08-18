@@ -54,6 +54,15 @@ None — Seerr introduces zero net-new fields of its own; it shares Overseerr's 
 for the actual widget/dataType decisions). Nothing to map here until Seerr is promoted from a
 migration note to a full spec.
 
+## UI decisions
+
+No `/prototype` session and no `impeccable` pass needed — Seerr has no fields or tasks of its own to
+run a UI pass against. Per the "What sharing means" section above, Seerr shares Overseerr's exact
+implementation (same enricher, same actuator tasks, same `overseerr`-prefixed field names), so the
+actual widget/parameter decisions already live in [`specs/overseerr.md`](overseerr.md)'s "UI
+decisions" section — that is the source of truth, not this file. Nothing to record here until Seerr
+is promoted from a migration note to a full spec (see "Trigger to revisit this file" below).
+
 ## Trigger to revisit this file
 
 Upgrade the container to the merged Seerr project, then: (1) confirm `request`/`issue`/`search`

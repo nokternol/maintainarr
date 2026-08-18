@@ -176,3 +176,34 @@ dark mode specifically, though the component uses only existing dark-mode-aware 
 **Not yet decided**: the picker's exact placement/behavior at very high field counts per group (a
 single provider exceeding what fits in the `max-h-96` scroll area) and whether search should also
 match provider/group names, not just rule labels — neither is a blocker at Plex's 13-field scale.
+
+### Per-field widget shapes (13 new/joining fields)
+
+No field needs a bespoke control or a `/prototype` session — all 13 map onto the two generic
+renderers `RuleControl` (`ref:src/components/MediaFilterBar/index.tsx`) already switches on by
+`dataType`, so the design work is confirming that mapping plus each `csv-strings` field's options
+source, not inventing new widget shapes:
+
+- **`range` fields** (`runtimeMinutes`, `fileSizeBytes`, `releaseDaysAgo`) render via
+  `NumberRangeFilter` — the same min/max pair already used by `sizeOnDiskGb`/`addedDaysAgo`. No
+  `dataMin`/`dataMax` bounds decided here; leave unbounded like the existing numeric rules unless
+  implementation finds a natural bound.
+- **`csv-strings` fields** (`studio`, `fileContainer`, `videoCodec`, `audioCodec`, `fileResolution`,
+  `labels`, plus `genres`/`certification` which join existing rules) render via
+  `StringMultiSelectDropdown`, options resolved through `csvStringOptions(rule, scope, lookups)`.
+- **`playCount`/`lastWatchedAt`** stay on their already-wired `boolean`/`range` controls — Plex adds
+  no new control, only a new producer.
+
+**Options-source decision for the 6 net-new `csv-strings` fields**: one dedicated route per field,
+following the existing `listNetworks`/`listGenres` precedent exactly (`server/modules/media/media.routes.ts`
++ `media.handler.ts`) — an in-process `MediaCache<string[]>`, computed by dedupe+sort over
+already-fetched library data (no dedicated DB distinct-query), added to the `Lookups` interface and
+wired into `csvStringOptions`. Considered and rejected: one combined "facets" endpoint returning all
+six lists — diverges from the established per-field pattern and couples six independent caches'
+invalidation together for a marginal round-trip saving.
+
+**Known gap to not repeat**: `certification` already has `dataType: 'csv-strings'` in
+`filterRegistry.ts` but no lookup source wired in the frontend, so its control silently renders empty
+today (`ref:src/components/MediaFilterBar/index.tsx#L966`). Each of the 6 new routes above must ship
+together with its `csvStringOptions` branch and `Lookups` field in the same change — not as a
+follow-up — so none of them repeat that gap.

@@ -99,3 +99,51 @@ ratings/metadata lookup service; no `MediaActuator` role is plausible.").
 | `awardWinner` | `awardWinner` | `boolean` | New rule — no other provider produces an award-derived signal; not a join. Same shape as `hasFile`/`watched`/`monitored`: a single true/false predicate, not a range or string set. |
 | `oscarWinner` | `oscarWinner` | `boolean` | New rule, same reasoning as `awardWinner` — OMDB-only derived boolean, no existing rule to join. |
 | `Director`, `Writer`, `Actors`, `Plot`, `BoxOffice`, raw `Awards` text, `Poster`, `DVD`, `Production`, `Website` | — none — | — | On-demand item-detail metadata per the spec's own "not enrichment" classification (flat person strings with no filter-by-person infrastructure, display-only synopsis, a link/date/text field with no filter use case). Never batch-enriched, never filtered on. No filter mapping. |
+
+## UI decisions
+
+No `/prototype` session needed — every filterable field maps onto a `RuleControl` renderer already
+established across the seven prior UI passes (`csv-strings` → `StringMultiSelectDropdown`, `range` →
+`NumberRangeFilter`, `boolean` → `OptionFilter`). No tasks exist for OMDB ("Tasks: N/A — no tasks"
+above), so nothing goes to `11-automation-task-parameters` this ticket, matching TMDB's UI pass.
+
+### `certification` / `genres` / `runtime` / `originCountry` — confirmed as joining, no new key/route/widget
+
+OMDB becomes an additional producer on all four already-shared rules (`csv-strings`, `csv-strings`,
+`range`, `csv-strings` respectively) per the mapping table above. No control decision to make —
+`RuleControl` already renders these for Radarr/Sonarr/TMDB/Plex/Jellyfin. `runtime` joins
+`runtimeMinutes`, the `range` rule minted by `specs/radarr.md`; `originCountry` joins the
+`csv-strings` rule minted by `specs/tmdb.md`, resolved there as a hardcoded ISO-3166-1 fixed-array
+branch in `csvStringOptions` — no new `Lookups` route for either.
+
+**Carry-forward from TMDB's UI ticket, confirmed**: OMDB's `Country` field is single-valued (per
+OMDB's API shape), joining `originCountry` as an additional producer of that multi-value
+`csv-strings` rule. This is a query-engine/provider-field-layer concern, not a widget-shape one — the
+UI control is unaffected (`StringMultiSelectDropdown` already handles a producer contributing a
+single value into the aggregated set). The one-element-array wrapping needs to happen where OMDB's
+`Country` value is normalized into the shared `originCountry` field, not in `MediaFilterBar`. No UI
+change follows from this note; flagged here only so the wrapping isn't lost before that layer is
+implemented.
+
+### `awardWinner` / `oscarWinner` — confirmed `boolean`, both need `BOOLEAN_VALUE_LABELS` entries
+
+Same shape as `hasTrailer`/`overseerrHasIssue` — generic "Yes"/"No" would read ambiguously in an
+active-filter chip, and the two rules are independent signals (a title can be industry-award-winning
+without having won an Oscar specifically, or vice versa in edge cases like nominations counted
+differently), so they need distinct copy, not a shared pair. Add:
+
+```
+awardWinner: ['Award Winner', 'No Awards'],
+oscarWinner: ['Oscar Winner', 'No Oscar'],
+```
+
+### On-demand metadata fields — confirmed excluded, no action
+
+`Director`/`Writer`/`Actors`/`Plot`/`BoxOffice`/raw `Awards` text/`Poster`/`DVD`/`Production`/
+`Website` stay out of the filter mapping per the spec's own "not enrichment" classification above —
+no UI control to design, nothing reopened here.
+
+### Summary of corrections to the "Filter type mapping" table above
+
+None. Every row's `dataType` classification in the mapping table is confirmed as-is; this section
+adds the two boolean label pairs and confirms the joined fields carry no widget-shape work.

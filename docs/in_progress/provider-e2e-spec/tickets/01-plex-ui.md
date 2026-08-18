@@ -1,8 +1,8 @@
 ---
 type: wayfinder-ticket
 label: wayfinder:prototype
-status: open
-assignee: null
+status: closed
+assignee: claude
 blocked_by: [01-plex-decision]
 parent: docs/in_progress/provider-e2e-spec/map.md
 ---
@@ -35,3 +35,27 @@ Still open: the per-field widget/parameter-shape decisions for Plex's 13 new fie
 `fileSizeBytes`, `releaseDaysAgo`, `labels`, plus the two joining-existing-rule fields) — this
 ticket's original scope — are unaddressed. Each still needs its own widget-shape decision and
 `impeccable` pass once its control is built.
+
+## Resolution
+
+- **No field needed a `/prototype` session or a further `impeccable` pass.** Surveyed
+  `RuleControl` (`src/components/MediaFilterBar/index.tsx`) and confirmed all 13 fields map onto
+  the two existing generic renderers it already switches on by `dataType`: `range` →
+  `NumberRangeFilter` (same shape as `sizeOnDiskGb`/`addedDaysAgo`), `csv-strings` →
+  `StringMultiSelectDropdown` (same shape as `network`). None of Plex's fields need a bespoke
+  widget (no date picker, no slider) — "real UI complexity" per this map's own Notes criterion for
+  triggering `/prototype` never materialized here.
+- **Remaining decision was the options-source for the 6 net-new `csv-strings` fields**
+  (`studio`/`fileContainer`/`videoCodec`/`audioCodec`/`fileResolution`/`labels`), since unlike
+  `genres`/`certification` they have no lookups entry yet. Decided with the user: one dedicated
+  route per field, following the existing `listNetworks`/`listGenres` precedent
+  (`server/modules/media/media.routes.ts` + `media.handler.ts`, in-process `MediaCache<string[]>`,
+  dedupe+sort over already-fetched data) — not a combined multi-field "facets" endpoint.
+- **Flagged, not fixed**: `certification` already declares `dataType: 'csv-strings'` in
+  `filterRegistry.ts` but has no lookup source wired, so its control silently renders empty today.
+  Recorded in the spec as a gap the 6 new routes must not repeat — each new route ships together
+  with its `csvStringOptions` branch and `Lookups` field, not as a follow-up.
+- Full writeup: `docs/in_progress/provider-e2e-spec/specs/plex.md`'s "Per-field widget shapes"
+  subsection (under "UI decisions").
+
+This closes Plex's UI pass. `99-precedence` remains blocked on the other 9 providers' UI tickets.
