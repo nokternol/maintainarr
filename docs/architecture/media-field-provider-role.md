@@ -22,6 +22,17 @@ export interface EnrichmentFields {
   overseerrHasIssue: boolean;
   tmdbStatus: string;
   plexAddedAt: string;
+  studio: string;
+  runtimeMinutes: number;
+  fileSizeBytes: number;
+  releaseDate: string;
+  fileContainer: string;
+  videoCodec: string;
+  audioCodec: string;
+  fileResolution: string;
+  labels: string[];
+  jellyfinAddedAt: string;
+  isFavorite: boolean;
 }
 ```
 
@@ -58,23 +69,28 @@ field can never disagree on type regardless of which interface declares them.
 | `radarrTagsFieldSource` | `MediaFieldSource` | `tags` |
 | `sonarrTagsFieldSource` | `MediaFieldSource` | `tags` |
 | `tautulliFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt` |
-| `plexFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt`, `plexAddedAt` |
+| `plexFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt`, `plexAddedAt`, `studio`, `runtimeMinutes`, `fileSizeBytes`, `releaseDate`, `fileContainer`, `videoCodec`, `audioCodec`, `fileResolution`, `labels` |
+| `jellyfinFieldProvider` | `MediaFieldProvider` | `playCount`, `lastWatchedAt`, `jellyfinAddedAt`, `studio`, `runtimeMinutes`, `fileSizeBytes`, `releaseDate`, `fileContainer`, `videoCodec`, `audioCodec`, `fileResolution`, `labels`, `isFavorite` |
 | `overseerrFieldProvider` | `MediaFieldProvider` | `overseerrRequestStatus`, `overseerrHasIssue` |
 | `tmdbFieldSource` | `MediaFieldSource` | `tmdbStatus` |
 
-Tautulli and Plex report the identical play-history native shape (play count + optional last-played
-unix timestamp), so both build on one `PlayHistoryFields` type and share the
-`playHistoryToEnrichmentFields` transform for that shared portion. Plex additionally reports its own
-library-added timestamp, which Tautulli has no equivalent for — `plexFieldProvider` extends
-`PlayHistoryFields` into its own `PlexNativeFields` (adding `addedAtUnix`) and wraps
-`playHistoryToEnrichmentFields` with the extra `plexAddedAt` conversion, rather than folding
-`plexAddedAt` into the shared transform Tautulli would then also carry. `tmdbFieldSource` is a
-`MediaFieldSource`, not a `MediaFieldProvider`, despite TMDB being a `MediaEnricher` — its
-`getStatus(tmdbId)` call has no natural batch to `visit()` (fetched one id at a time), so the checked
-transform (`string` → `{ tmdbStatus }`) stands alone without the `visit`/join machinery.
+Tautulli, Plex, and Jellyfin report the identical play-history native shape (play count + optional
+last-played unix timestamp — Jellyfin synthesizes `playCount` from its `Played` boolean when
+`PlayCount` is absent), so all three build on one `PlayHistoryFields` type and share the
+`playHistoryToEnrichmentFields` transform for that shared portion. Plex and Jellyfin each additionally
+report a library-added timestamp (`plexAddedAt`/`jellyfinAddedAt`, kept as two separate fields — same
+kind of event from mutually-exclusive server choices, not merged) plus a shared set of directly-owned
+metadata (`studio`, `runtimeMinutes`, file-tech fields, `releaseDate`, `labels`); each extends
+`PlayHistoryFields` into its own native-fields type and wraps `playHistoryToEnrichmentFields` with its
+own extra conversions, rather than folding provider-specific fields into the shared transform Tautulli
+would then also carry. `isFavorite` has no Plex analog — Jellyfin-only, no precedence entry needed.
+`tmdbFieldSource` is a `MediaFieldSource`, not a `MediaFieldProvider`, despite TMDB being a
+`MediaEnricher` — its `getStatus(tmdbId)` call has no natural batch to `visit()` (fetched one id at a
+time), so the checked transform (`string` → `{ tmdbStatus }`) stands alone without the `visit`/join
+machinery.
 
 `radarrMediaSource`/`sonarrMediaSource`
-([`sourceAdapters.ts`](ref:path:server/modules/media/sourceAdapters.ts)) and the four
+([`sourceAdapters.ts`](ref:path:server/modules/media/sourceAdapters.ts)) and the five
 `MediaEnricher` adapters
 ([`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts))
 route through these `MediaFieldSource`/`MediaFieldProvider` instances instead of hand-copied field
@@ -109,7 +125,7 @@ for the fuller set of compile-time checks a new `EnrichmentFields` key is now su
 
 ## Precedence: a total order, declared once per contested field
 
-`playCount` is legitimately produced by both Tautulli and Plex — precedence encodes a deliberate
+`playCount` is legitimately produced by Tautulli, Plex, and Jellyfin — precedence encodes a deliberate
 trust judgment (Tautulli wins; it tracks completed plays, not opens), not a race-breaker, so a tie is
 never a valid state.
 [`enrichment/precedence.ts`](ref:path:server/modules/media/enrichment/precedence.ts) declares
@@ -117,14 +133,23 @@ never a valid state.
 
 ```ts
 export const contestedFieldPrecedence: ContestedFieldPrecedence = {
-  playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
-  lastWatchedAt: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+  playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX, MetadataProviderType.JELLYFIN],
+  lastWatchedAt: [
+    MetadataProviderType.TAUTULLI,
+    MetadataProviderType.PLEX,
+    MetadataProviderType.JELLYFIN,
+  ],
 };
 ```
 
+Jellyfin sits after Plex as a fixed literal order, not yet a `primaryMediaServer`-driven swap — that
+settings-aware ordering (`applyPrimaryMediaServer`,
+[`enrichment/settingsAwarePrecedence.ts`](ref:path:server/modules/media/enrichment/settingsAwarePrecedence.ts))
+exists and is tested but isn't wired to a live setting read at either call site above yet.
+
 Scoped only to fields with more than one real producer — an uncontested field (`overseerrHasIssue`,
-`tmdbStatus`, `tags`, all single-producer today) needs no entry, since there's nothing to order; it
-carries through `resolvePrecedence` unlisted. An array's positions can't collide, so a tie is
+`tmdbStatus`, `tags`, `isFavorite`, all single-producer today) needs no entry, since there's nothing to
+order; it carries through `resolvePrecedence` unlisted. An array's positions can't collide, so a tie is
 structurally unrepresentable rather than merely forbidden by convention — the same shape decision
 `EnrichmentFields` makes for field types, applied to field ordering. This replaced the prior
 `ENRICHMENT_POLICY`/`PrecedencePolicy` shape, which listed every field (including single-producer
@@ -139,7 +164,7 @@ field, never decorated onto an existing item by a `MediaEnricher`.
 `assertContestedFieldsCovered` (same file) checks every contested field's active producers against
 its `contestedFieldPrecedence` order, throwing if an active producer is missing from it. Pure and
 parameterized over `precedence`/`fieldsByType` rather than reading the module's own constants, so
-it's testable against synthetic data independent of today's fixed 2-provider contested set.
+it's testable against synthetic data independent of today's fixed 3-provider contested set.
 
 `ProviderSettingsService` ([`providerSettingsService.ts`](ref:path:server/modules/providers/providerSettingsService.ts))
 exposes an optional `precedenceCoverageValidator` injection point — invoked with the prospective
@@ -153,8 +178,11 @@ class itself stays ignorant of `EnrichmentFields`/`media` entirely — the real 
 (enforced by a `depcruise` rule).
 
 The fail-fast path is unreachable with today's real data — both real contested fields already list
-both real producers — verified only against synthetic data. It would trigger the moment a new
-provider starts producing an already-contested field without a covering precedence entry.
+every real producer (Tautulli, Plex, and now Jellyfin) — verified only against synthetic data. It
+would trigger the moment a new provider starts producing an already-contested field without a
+covering precedence entry, which is exactly what happened when Jellyfin joined `playCount`/
+`lastWatchedAt` as a third producer: activating a Jellyfin instance failed fast until its entry was
+added above.
 
 ## The active field set: computed once, cached, invalidated on provider change
 
@@ -169,7 +197,16 @@ export const fieldsByProviderType = {
   [RADARR]: ['tags'],
   [SONARR]: ['tags'],
   [TAUTULLI]: ['playCount', 'lastWatchedAt'],
-  [PLEX]: ['playCount', 'lastWatchedAt', 'plexAddedAt'],
+  [PLEX]: [
+    'playCount', 'lastWatchedAt', 'plexAddedAt', 'studio', 'runtimeMinutes',
+    'fileSizeBytes', 'releaseDate', 'fileContainer', 'videoCodec', 'audioCodec',
+    'fileResolution', 'labels',
+  ],
+  [JELLYFIN]: [
+    'playCount', 'lastWatchedAt', 'jellyfinAddedAt', 'studio', 'runtimeMinutes',
+    'fileSizeBytes', 'releaseDate', 'fileContainer', 'videoCodec', 'audioCodec',
+    'fileResolution', 'labels', 'isFavorite',
+  ],
   [OVERSEERR]: ['overseerrRequestStatus', 'overseerrHasIssue'],
   [TMDB]: ['tmdbStatus'],
 };
@@ -188,12 +225,13 @@ import.
 ## `filterRegistry.ts`: derived where possible, hand-listed where genuinely source-owned
 
 `deriveSourceProviders(field)` inverts `fieldsByProviderType` — every provider type whose declared
-fields include the given key. Six rules whose predicate reads an `EnrichmentFields`-tracked field
-call it (`watched` and `lastWatchedDaysAgo`, which read `playCount`/`lastWatchedAt` under a different
-rule key than the field itself; `tmdbStatus`; `overseerrRequestStatus`; `overseerrHasIssue`;
-`plexAddedDaysAgo`, which reads `plexAddedAt` under a different rule key, same pattern as
-`lastWatchedDaysAgo`). Every
-other rule — most of `NormalizedMovie`/`NormalizedShow`'s fields (`title`, `year`, `hasFile`,
+fields include the given key. Every rule whose predicate reads an `EnrichmentFields`-tracked field
+calls it, either directly (`studio`, `runtimeMinutes`, `fileContainer`, `videoCodec`, `audioCodec`,
+`fileResolution`, `fileSizeBytes`, `labels`, `isFavorite` → `jellyfinIsFavorite`, `tmdbStatus`,
+`overseerrRequestStatus`, `overseerrHasIssue`) or under a different rule key than the field itself
+(`watched`/`lastWatchedDaysAgo` read `playCount`/`lastWatchedAt`; `plexAddedDaysAgo` reads
+`plexAddedAt`; `jellyfinAddedDaysAgo` reads `jellyfinAddedAt`; `releaseDaysAgo` reads `releaseDate`).
+Every other rule — most of `NormalizedMovie`/`NormalizedShow`'s fields (`title`, `year`, `hasFile`,
 `monitored`, `network`, `communityRating`, …) — stays hand-listed, correctly: they're source-owned
 fields with no `EnrichmentFields` entry to derive from.
 
