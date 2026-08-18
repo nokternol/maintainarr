@@ -116,6 +116,14 @@ or session-scoped:
   concepts now exist; precedence ticket should confirm `releaseDate`'s relationship to Radarr's
   milestones (complementary detail vs. overlapping duplicate).
 
+## Implementation status
+
+Every row below is implemented except `genres`/`certification`: the enrichment pipeline has no
+mechanism today to keep Radarr/Sonarr's construction-time value from being overwritten by Plex's
+enrichment-stored one, so wiring Plex as a producer for those two fields now would regress
+existing behavior rather than extend it. Blocked on `_precedence.md`'s implementation landing
+precedence-ordering machinery first. Tracked in `specs/_implementation-map.md`.
+
 ## Filter type mapping
 
 | Domain field | Filter key | dataType | Notes |

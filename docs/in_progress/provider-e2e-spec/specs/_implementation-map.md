@@ -69,3 +69,11 @@ lifecycle:
 
 `_automation-parameters` and `_precedence` are cross-cutting; implement them alongside whichever
 provider spec first needs the mechanism or precedence rule they define, not standalone.
+
+**Plex is partially done, still `implementing`.** [#46](https://github.com/nokternol/maintainarr/pull/46)
+merged every field in its filter-type-mapping table except `genres`/`certification`: the
+enrichment pipeline has no mechanism today to keep Radarr/Sonarr's construction-time value from
+being overwritten by Plex's enrichment-stored one, so wiring Plex as a producer for those two
+fields now would regress existing behavior rather than extend it. Blocked on `_precedence`'s
+implementation landing precedence-ordering machinery first — revisit `plex.md`'s `genres`/
+`certification` rows once that ships.
