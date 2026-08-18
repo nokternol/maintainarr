@@ -106,6 +106,13 @@ nested addressing space exists. `MissingEpisodeSearch`, `RssSync`, `Backup`,
 - **`added`** — see Radarr's spec; Sonarr's `added` (addedAt-to-source) stays permanently distinct
   from Plex's `plexAddedAt` (addedAt-to-library), already separate filter rules today.
 
+## Implementation status
+
+Every field row below is implemented. `moveSeries`/`changeLanguageProfile` (see Tasks) are not:
+both need a single-select task parameter `AutomationBuilder` has no UI for yet, mirroring
+Radarr's `moveMovie` gap. Blocked on `tickets/11-automation-task-parameters.md`'s implementation.
+Tracked in `specs/_implementation-map.md`.
+
 ## Filter type mapping
 
 | Domain field | Filter key | dataType | Notes |
