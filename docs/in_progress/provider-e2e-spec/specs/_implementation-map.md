@@ -67,7 +67,7 @@ lifecycle:
 | [plex](plex.md) | implementing | `implement/plex-provider-spec` | [#46](https://github.com/nokternol/maintainarr/pull/46) |
 | [jellyfin](jellyfin.md) | implementing | `implement/jellyfin-provider-spec` | [#48](https://github.com/nokternol/maintainarr/pull/48) |
 | [radarr](radarr.md) | implementing | `implement/radarr-provider-spec` | [#49](https://github.com/nokternol/maintainarr/pull/49) (merged) |
-| [sonarr](sonarr.md) | implementing | `implement/sonarr-provider-spec` | [#50](https://github.com/nokternol/maintainarr/pull/50) |
+| [sonarr](sonarr.md) | implementing | `implement/sonarr-provider-spec` | [#50](https://github.com/nokternol/maintainarr/pull/50) (merged) |
 | [tautulli](tautulli.md) | draft | — | — |
 | [overseerr](overseerr.md) | draft | — | — |
 | [seerr](seerr.md) | draft | — | — |
@@ -93,3 +93,10 @@ implementation landing precedence-ordering machinery first — revisit `plex.md`
 already-live `EnrichmentFields` keys with Plex as sole current producer, and wiring Radarr in now
 would make it a second, uncoordinated producer with no precedence ordering. Also blocked on
 `_precedence`'s implementation — revisit `radarr.md`'s `runtime`/`studio` rows once that ships.
+
+**Sonarr is partially done, still `implementing`.** [#50](https://github.com/nokternol/maintainarr/pull/50)
+(merged) left `moveSeries`/`changeLanguageProfile` unwired — both need a single-select task
+parameter `AutomationBuilder` has no UI for yet (mirrors Radarr's `moveMovie`, same gap). Blocked
+on `tickets/11-automation-task-parameters.md`'s implementation, not `_precedence` — no Sonarr
+field collided with an already-enriched single-producer field this time. The `getLanguageProfiles()`
+lookup shipped; only the two task actions wait — revisit once `_automation-parameters.md` ships.
