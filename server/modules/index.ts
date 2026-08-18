@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Cradle } from '../container';
 import { checkUser } from '../kernel/middleware/auth';
+import { createAppSettingsRoutes } from './appSettings';
 import { createAuthRoutes } from './auth';
 import { createAutomationRoutes } from './automations';
 import {
@@ -17,6 +18,7 @@ import { createHealthRoutes } from './system';
 
 const route = (path: string) => `/${path}`;
 export const routes = {
+  appSettings: route('app-settings'),
   health: route('health'),
   backdrops: route('backdrops'),
   filterFields: route('filter-fields'),
@@ -48,6 +50,7 @@ export function createApiRouter(cradle: Cradle) {
   const { invalidateMediaCaches } = mediaHandlers;
 
   // Mount modules
+  router.use(routes.appSettings, createAppSettingsRoutes(cradle));
   router.use(routes.health, createHealthRoutes(cradle));
   router.use(routes.backdrops, createBackdropsRoutes(cradle));
   router.use(routes.auth, createAuthRoutes(cradle));

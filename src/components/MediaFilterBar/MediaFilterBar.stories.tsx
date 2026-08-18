@@ -94,6 +94,7 @@ const GENRES = {
 };
 
 const NETWORKS = ['Netflix', 'HBO', 'Apple TV+', 'Disney+', 'Hulu', 'Prime Video', 'Peacock'];
+const STUDIOS = ['Legendary Pictures', 'Warner Bros', 'Universal', 'A24', 'AMC Studios'];
 
 const YEAR_RANGE = { min: 1980, max: 2024 };
 
@@ -102,6 +103,7 @@ const EMPTY_LOOKUPS = {
   qualityProfiles: { radarr: [], sonarr: [] },
   genres: { movies: [], series: [] },
   networks: [],
+  studio: [],
 };
 
 const RICH_LOOKUPS = {
@@ -109,6 +111,7 @@ const RICH_LOOKUPS = {
   qualityProfiles: QUALITY_PROFILES,
   genres: GENRES,
   networks: NETWORKS,
+  studio: STUDIOS,
 };
 
 const MULTI_INSTANCE_LOOKUPS = {
@@ -116,6 +119,7 @@ const MULTI_INSTANCE_LOOKUPS = {
   qualityProfiles: MULTI_INSTANCE_QUALITY_PROFILES,
   genres: GENRES,
   networks: NETWORKS,
+  studio: STUDIOS,
 };
 
 // The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/modules/media/filterRegistry.ts).
@@ -204,6 +208,14 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     required: false,
   },
   {
+    key: 'studio',
+    label: 'Studio',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
     key: 'monitored',
     label: 'Monitored',
     contentTypes: ['show'],
@@ -259,6 +271,14 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     contentTypes: ['show'],
     dataType: 'csv-strings',
     sourceProviders: ['SONARR'],
+    required: false,
+  },
+  {
+    key: 'studio',
+    label: 'Studio',
+    contentTypes: ['show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
     required: false,
   },
   {

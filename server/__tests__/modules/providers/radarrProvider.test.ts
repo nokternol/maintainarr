@@ -142,9 +142,21 @@ describe('RadarrProvider — parameterized tasks', () => {
   }
 
   it('declares parameters on changeQualityProfile, addTag, removeTag', () => {
-    expect(task('changeQualityProfile').parameter).toEqual({ label: 'Quality profile' });
-    expect(task('addTag').parameter).toEqual({ label: 'Tag' });
-    expect(task('removeTag').parameter).toEqual({ label: 'Tag' });
+    expect(task('changeQualityProfile').parameter).toEqual({
+      type: 'select',
+      label: 'Quality profile',
+      optionsRoute: 'quality-profiles',
+    });
+    expect(task('addTag').parameter).toEqual({
+      type: 'select',
+      label: 'Tag',
+      optionsRoute: 'tags',
+    });
+    expect(task('removeTag').parameter).toEqual({
+      type: 'select',
+      label: 'Tag',
+      optionsRoute: 'tags',
+    });
   });
 
   it('changeQualityProfile bulk-edits the movies to the given profile', async () => {

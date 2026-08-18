@@ -7,7 +7,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { server } from '../../../../tests/mocks/server';
-import SettingsPage from '../index';
+import SettingsPage from '../index.page';
 
 // Each render gets an isolated SWR cache so handlers set per test are the only
 // source of truth (no cross-test cache bleed).

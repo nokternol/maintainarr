@@ -115,6 +115,19 @@ describe('plexFieldProvider.visit', () => {
   });
 });
 
+describe('plexFieldProvider — studio', () => {
+  it('carries studio through to the canonical field', () => {
+    const items: PlexMediaItem[] = [
+      { ratingKey: 'plex-101', title: 'M', type: 'movie', studio: 'Legendary Pictures' },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.studio).toBe('Legendary Pictures');
+  });
+});
+
 describe('tmdbFieldSource', () => {
   it('transforms the raw TMDB status string into the canonical tmdbStatus field', () => {
     const result = tmdbFieldSource.toEnrichmentFields('Released');

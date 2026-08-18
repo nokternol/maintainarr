@@ -132,6 +132,7 @@ export const CreateAutomationInputSchema = z.object({
   queryId: z.number().int().positive(),
   providerId: z.number().int().positive(),
   taskId: z.string().min(1),
+  taskParameter: z.string().optional(),
   schedule: z.string().min(1),
 });
 

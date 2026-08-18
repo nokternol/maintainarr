@@ -3,7 +3,17 @@ import { z } from 'zod';
 
 const providerType = z.nativeEnum(MetadataProviderType);
 
+export const taskOptionsRoutes = [
+  'quality-profiles',
+  'root-folders',
+  'collections',
+  'language-profiles',
+] as const;
+
 export const providersSchemas = {
+  getTaskOptions: {
+    params: z.object({ route: z.enum(taskOptionsRoutes) }),
+  },
   getMetadata: {
     query: z.object({
       type: providerType,
@@ -41,3 +51,4 @@ export const providersSchemas = {
 
 export type GetMetadataQuery = z.infer<typeof providersSchemas.getMetadata.query>;
 export type GetRatingsQuery = z.infer<typeof providersSchemas.getRatings.query>;
+export type TaskOptionsRoute = (typeof taskOptionsRoutes)[number];

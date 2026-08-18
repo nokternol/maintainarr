@@ -1,3 +1,7 @@
+import {
+  type AppSettingsCradle,
+  registerAppSettingsDependencies,
+} from '@server/modules/appSettings';
 import { type AuthCradle, registerAuthDependencies } from '@server/modules/auth';
 import {
   type AutomationsCradle,
@@ -35,6 +39,7 @@ const log = getChildLogger('Container');
  */
 export interface Cradle
   extends KernelCradle,
+    AppSettingsCradle,
     AuthCradle,
     AutomationsCradle,
     MediaCradle,
@@ -64,6 +69,7 @@ export function buildContainer(deps: {
 }): AwilixContainer<Cradle> {
   container = createKernelContainer<Cradle>(deps);
 
+  registerAppSettingsDependencies(container);
   registerAuthDependencies(container);
   registerAutomationsDependencies(container);
   registerMediaDependencies(container);

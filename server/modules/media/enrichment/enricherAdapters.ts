@@ -29,11 +29,11 @@ function toFieldsByKey<
 
 export function plexEnricher(
   plex: PlexProvider
-): MediaEnricher<'playCount' | 'lastWatchedAt' | 'plexAddedAt'> {
+): MediaEnricher<'playCount' | 'lastWatchedAt' | 'plexAddedAt' | 'studio'> {
   return {
     enrich: async (
       items
-    ): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt' | 'plexAddedAt'>> => {
+    ): Promise<EnrichmentResult<'playCount' | 'lastWatchedAt' | 'plexAddedAt' | 'studio'>> => {
       const fieldsByKey = toFieldsByKey(plexFieldProvider, await plex.getAllItems());
       return {
         provider: MetadataProviderType.PLEX,

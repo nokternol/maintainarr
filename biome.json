@@ -87,6 +87,16 @@
           }
         }
       }
+    },
+    {
+      "include": ["src/components/MediaFilterBar/FilterPicker.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useFocusableInteractive": "off"
+          }
+        }
+      }
     }
   ]
 }

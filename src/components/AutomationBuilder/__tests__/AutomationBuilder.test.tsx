@@ -31,10 +31,17 @@ function makeProvider(overrides: Partial<ProviderSummary> = {}): ProviderSummary
   };
 }
 
-function mockApi(providers: ProviderSummary[], availability: ProviderTaskAvailability[]): void {
+function mockApi(
+  providers: ProviderSummary[],
+  availability: ProviderTaskAvailability[],
+  taskOptions: Record<string, Array<{ providerId: number; type: string; options: unknown[] }>> = {}
+): void {
   server.use(
     http.get('/api/settings/providers', () => HttpResponse.json({ data: providers })),
-    http.get('/api/providers/tasks', () => HttpResponse.json({ data: availability }))
+    http.get('/api/providers/tasks', () => HttpResponse.json({ data: availability })),
+    http.get('/api/providers/task-options/:route', ({ params }) =>
+      HttpResponse.json({ data: taskOptions[params.route as string] ?? [] })
+    )
   );
 }
 
@@ -161,5 +168,77 @@ describe('AutomationBuilder', () => {
       })
     );
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('queryId');
+  });
+
+  it('renders a dropdown for a select-parameter task and includes taskParameter in onSubmit', async () => {
+    const CHANGE_QUALITY_PROFILE = {
+      id: 'changeQualityProfile',
+      label: 'Change quality profile',
+      destructive: false,
+      enabled: true,
+      parameter: {
+        type: 'select' as const,
+        label: 'Quality profile',
+        optionsRoute: 'quality-profiles',
+      },
+    };
+    mockApi(
+      [makeProvider()],
+      [{ providerId: 1, type: 'RADARR', tasks: [CHANGE_QUALITY_PROFILE] }],
+      {
+        'quality-profiles': [
+          {
+            providerId: 1,
+            type: 'RADARR',
+            options: [
+              { id: '1', label: 'HD-1080p' },
+              { id: '2', label: 'Any' },
+            ],
+          },
+        ],
+      }
+    );
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    renderBuilder({ onSubmit });
+
+    await user.type(screen.getByLabelText('Name'), 'My Automation');
+    await user.click(await screen.findByRole('radio', { name: /change quality profile/i }));
+
+    const select = await screen.findByLabelText('Quality profile');
+    await user.selectOptions(select, '2');
+    await user.click(screen.getByRole('button', { name: /create automation/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ taskParameter: '2' }));
+  });
+
+  it('disables submit for a parameterized task until a value is chosen', async () => {
+    const CHANGE_QUALITY_PROFILE = {
+      id: 'changeQualityProfile',
+      label: 'Change quality profile',
+      destructive: false,
+      enabled: true,
+      parameter: {
+        type: 'select' as const,
+        label: 'Quality profile',
+        optionsRoute: 'quality-profiles',
+      },
+    };
+    mockApi(
+      [makeProvider()],
+      [{ providerId: 1, type: 'RADARR', tasks: [CHANGE_QUALITY_PROFILE] }],
+      {
+        'quality-profiles': [
+          { providerId: 1, type: 'RADARR', options: [{ id: '1', label: 'HD-1080p' }] },
+        ],
+      }
+    );
+    const user = userEvent.setup();
+    renderBuilder();
+
+    await user.type(screen.getByLabelText('Name'), 'My Automation');
+    await user.click(await screen.findByRole('radio', { name: /change quality profile/i }));
+
+    expect(screen.getByRole('button', { name: /create automation/i })).toBeDisabled();
   });
 });

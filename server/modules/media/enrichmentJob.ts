@@ -47,6 +47,7 @@ function hydrate(identity: typeof mediaIdentity.$inferSelect): MediaItem {
   if (identity.tmdbId != null) ids.tmdb = identity.tmdbId;
   if (identity.plexRatingKey != null) ids.plex = identity.plexRatingKey;
   if (identity.imdbId != null) ids.imdb = identity.imdbId;
+  if (identity.jellyfinItemId != null) ids.jellyfin = identity.jellyfinItemId;
   return { _sourceIds: ids, title: '' } as MediaItem;
 }
 
@@ -84,6 +85,7 @@ export class EnrichmentJob {
         overseerrHasIssue: resolved?.overseerrHasIssue ?? null,
         tmdbStatus: resolved?.tmdbStatus ?? null,
         plexAddedAt: resolved?.plexAddedAt ?? null,
+        studio: resolved?.studio ?? null,
       };
       const presentFields = Object.fromEntries(
         Object.entries(values).filter(([, value]) => value !== null)

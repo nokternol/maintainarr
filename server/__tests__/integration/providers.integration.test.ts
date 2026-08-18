@@ -84,6 +84,51 @@ describe('Providers API Integration', () => {
     });
   });
 
+  describe('GET /api/providers/task-options/:route', () => {
+    it('serves per configured instance its options for the quality-profiles route', async () => {
+      const radarr = await providerSettingsService.create({
+        type: MetadataProviderType.RADARR,
+        name: 'My Radarr',
+        url: 'http://localhost:7878/api/v3',
+        apiKey: 'k',
+      });
+
+      const response = await client.get('/api/providers/task-options/quality-profiles');
+      const data = expectSuccessResponse(response) as Array<{
+        providerId: number;
+        type: string;
+        options: Array<{ id: string; label: string }>;
+      }>;
+
+      const entry = data.find((e) => e.providerId === radarr.id);
+      expect(entry?.type).toBe('RADARR');
+      expect(entry?.options).toEqual(
+        expect.arrayContaining([
+          { id: '1', label: 'HD-1080p' },
+          { id: '2', label: 'Any' },
+        ])
+      );
+    });
+
+    it('returns an empty options list for collections — no provider fetches real collections yet', async () => {
+      const jellyfin = await providerSettingsService.create({
+        type: MetadataProviderType.JELLYFIN,
+        name: 'My Jellyfin',
+        url: 'http://localhost:8096',
+        apiKey: 'k',
+      });
+
+      const response = await client.get('/api/providers/task-options/collections');
+      const data = expectSuccessResponse(response) as Array<{
+        providerId: number;
+        options: unknown[];
+      }>;
+
+      const entry = data.find((e) => e.providerId === jellyfin.id);
+      expect(entry?.options).toEqual([]);
+    });
+  });
+
   describe('GET /api/providers/metadata', () => {
     it('returns Sonarr metadata when given valid SONARR params', async () => {
       const response = await client.get(

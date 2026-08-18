@@ -49,9 +49,12 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
     expect(ids).toContain('addTag');
     expect(ids).toContain('removeTag');
 
-    expect(tasks.find((t) => t.id === 'changeQualityProfile')?.parameter?.label).toBe(
-      'Quality profile'
-    );
+    const changeQualityProfile = tasks.find((t) => t.id === 'changeQualityProfile')?.parameter;
+    expect(changeQualityProfile?.label).toBe('Quality profile');
+    expect(changeQualityProfile).toMatchObject({
+      type: 'select',
+      optionsRoute: 'quality-profiles',
+    });
 
     const keepFiles = tasks.find((t) => t.id === 'deleteMovieKeepFiles')!;
     await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);

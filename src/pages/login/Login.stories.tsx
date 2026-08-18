@@ -1,5 +1,5 @@
 import type { Meta, Story, StoryDecorator } from '@ladle/react';
-import LoginPage from './index';
+import LoginPage from './index.page';
 
 export const meta: Meta = {
   // Remove the Provider's min-h-screen wrapper so the login page fills

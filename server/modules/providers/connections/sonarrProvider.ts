@@ -105,7 +105,7 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Change quality profile',
         destructive: false,
         affects: 'media',
-        parameter: { label: 'Quality profile' },
+        parameter: { type: 'select', label: 'Quality profile', optionsRoute: 'quality-profiles' },
         run: async (ids, parameterValue) =>
           this.changeQualityProfile(
             ids.map(Number),
@@ -116,7 +116,7 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         id: 'addTag',
         label: 'Add tag',
         destructive: false,
-        parameter: { label: 'Tag' },
+        parameter: { type: 'select', label: 'Tag', optionsRoute: 'tags' },
         run: async (ids, parameterValue) =>
           this.applyTag(ids.map(Number), Number(requireParameter('addTag', parameterValue)), 'add'),
       },
@@ -124,7 +124,7 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         id: 'removeTag',
         label: 'Remove tag',
         destructive: false,
-        parameter: { label: 'Tag' },
+        parameter: { type: 'select', label: 'Tag', optionsRoute: 'tags' },
         run: async (ids, parameterValue) =>
           this.applyTag(
             ids.map(Number),

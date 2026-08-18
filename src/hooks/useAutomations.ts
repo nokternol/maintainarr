@@ -16,6 +16,7 @@ export interface CreateAutomationInput {
   querySources: QuerySourceInput[];
   providerId: number;
   taskId: string;
+  taskParameter?: string;
   schedule: string;
 }
 

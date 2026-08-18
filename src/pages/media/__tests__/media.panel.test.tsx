@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { render } from '@tests/helpers/component';
 import { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
-import MediaPage from '../index';
+import MediaPage from '../index.page';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ provider: () => new Map() }}>{children}</SWRConfig>

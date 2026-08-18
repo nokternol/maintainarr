@@ -15,6 +15,7 @@ export interface NormalizedMovie extends Partial<EnrichmentFields> {
     plex?: string;
     tmdb?: number;
     imdb?: string;
+    jellyfin?: string;
     /** The configured instance this item came from — set by every source-produced item. */
     providerId?: number;
     /** The group this item was hydrated from — set only on enrichment-job hydrated items. */

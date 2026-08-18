@@ -107,6 +107,21 @@ export type MetadataProvider = {
 };
 
 // ---------------------------------------------------------------------------
+// appSettings — system-wide settings, singleton row (id fixed at 1).
+// ---------------------------------------------------------------------------
+export const appSettings = sqliteTable('app_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  /** ISO 3166-1 alpha-2 country code; null until the user sets one. */
+  region: text('region'),
+  /** Which media server's fields win when Plex and Jellyfin both produce a
+   *  contested field — see `contestedFieldPrecedence`. */
+  primaryMediaServer: text('primaryMediaServer').notNull().default('PLEX'),
+});
+
+export type AppSettingsRow = typeof appSettings.$inferSelect;
+export type NewAppSettingsRow = typeof appSettings.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // mediaQueries — persisted MediaQueryRecord rows
 // ---------------------------------------------------------------------------
 export const mediaQueries = sqliteTable('media_queries', {

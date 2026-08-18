@@ -11,6 +11,7 @@ export interface NormalizedShow extends Partial<EnrichmentFields> {
     tmdb?: number;
     tvdb?: number;
     tvmaze?: number;
+    jellyfin?: string;
     /** The configured instance this item came from — set by every source-produced item. */
     providerId?: number;
     /** The group this item was hydrated from — set only on enrichment-job hydrated items. */
@@ -27,7 +28,7 @@ export interface NormalizedShow extends Partial<EnrichmentFields> {
   certification?: string;
   seriesType?: 'standard' | 'daily' | 'anime';
   network?: string;
-  status?: 'continuing' | 'ended' | 'upcoming';
+  seriesStatus?: 'continuing' | 'ended' | 'upcoming';
   ended?: boolean;
   episodePercentage?: number;
   lastAiredAt?: string;

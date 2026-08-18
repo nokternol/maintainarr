@@ -5,7 +5,7 @@ import { server } from '@tests/mocks/server';
 import { http, HttpResponse } from 'msw';
 import { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
-import AutomationsPage from '../index';
+import AutomationsPage from '../index.page';
 
 // Isolate SWR cache per test
 const Wrapper = ({ children }: { children: React.ReactNode }) => (

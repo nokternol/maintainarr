@@ -101,6 +101,13 @@ export const mediaHandlers = [
     });
   }),
 
+  http.get('/api/media/studio', () => {
+    return HttpResponse.json({
+      status: 'ok',
+      data: ['Legendary Pictures', 'Warner Bros', 'AMC Studios'],
+    });
+  }),
+
   // Mirrors GET /api/media/sources' ownership projection (sourceOwnership in
   // server/providers/mediaSourceFactory.ts) — configured state matches the
   // default settings.ts fixture (RADARR active, no SONARR).

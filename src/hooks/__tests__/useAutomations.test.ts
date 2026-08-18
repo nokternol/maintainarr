@@ -55,6 +55,35 @@ describe('useAutomations — create sends querySources', () => {
     });
     expect(capturedBody).not.toHaveProperty('queryId');
   });
+
+  it('sends taskParameter in the POST body when creating a parameterized automation', async () => {
+    let capturedBody: unknown;
+    const newAutomation = makeAutomation({ id: 3, name: 'Parameterized' });
+
+    server.use(
+      http.get('/api/automations', () => HttpResponse.json({ data: [] })),
+      http.post('/api/automations', async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({ data: newAutomation });
+      })
+    );
+
+    const { result } = renderHook(() => useAutomations(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.create({
+        name: 'Parameterized',
+        querySources: [{ queryId: 1, role: 'include', sortOrder: 0 }],
+        providerId: 1,
+        taskId: 'changeQualityProfile',
+        taskParameter: '7',
+        schedule: '0 * * * *',
+      });
+    });
+
+    expect(capturedBody).toMatchObject({ taskParameter: '7' });
+  });
 });
 
 describe('useAutomations — kind filter', () => {
