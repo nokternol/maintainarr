@@ -54,7 +54,7 @@ lifecycle:
 
 | Spec | Status | Branch | PR |
 |---|---|---|---|
-| [plex](plex.md) | draft | — | — |
+| [plex](plex.md) | implementing | `implement/plex-provider-spec` | [#46](https://github.com/nokternol/maintainarr/pull/46) |
 | [jellyfin](jellyfin.md) | draft | — | — |
 | [radarr](radarr.md) | draft | — | — |
 | [sonarr](sonarr.md) | draft | — | — |
