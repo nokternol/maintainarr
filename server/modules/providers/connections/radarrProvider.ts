@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun, requireParameter } from '../roles';
+import { type ActuatorTask, type MediaActuator, requireParameter } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface RadarrImage {
@@ -121,7 +121,32 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Delete movie (keep files)',
         destructive: true,
         affects: 'media',
-        run: modelledRun('deleteMovieKeepFiles'),
+        run: async (ids) => this.deleteMoviesKeepFiles(ids.map(Number)),
+      },
+      {
+        id: 'refreshMovie',
+        label: 'Refresh metadata',
+        destructive: false,
+        run: async (ids) => this.refreshMovies(ids.map(Number)),
+      },
+      {
+        id: 'rescanMovie',
+        label: 'Rescan folder',
+        destructive: false,
+        run: async (ids) => this.rescanMovies(ids.map(Number)),
+      },
+      {
+        id: 'renameMovies',
+        label: 'Rename files',
+        destructive: false,
+        affects: 'media',
+        run: async (ids) => this.renameMovies(ids.map(Number)),
+      },
+      {
+        id: 'refreshCollection',
+        label: 'Refresh collection metadata',
+        destructive: false,
+        run: async () => this.refreshCollections(),
       },
       {
         id: 'changeQualityProfile',
@@ -237,5 +262,57 @@ export class RadarrProvider extends BaseProviderConnection implements MediaActua
           .json()
       )
     );
+  }
+
+  public async deleteMoviesKeepFiles(movieIds: number[]): Promise<void> {
+    await Promise.all(
+      movieIds.map((id) =>
+        this.client
+          .delete(`movie/${id}`, {
+            searchParams: { ...this.apiParams, deleteFiles: 'false', addImportExclusion: 'false' },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async refreshMovies(movieIds: number[]): Promise<void> {
+    if (movieIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RefreshMovie', movieIds },
+      })
+      .json();
+  }
+
+  public async rescanMovies(movieIds: number[]): Promise<void> {
+    if (movieIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RescanMovie', movieIds },
+      })
+      .json();
+  }
+
+  public async renameMovies(movieIds: number[]): Promise<void> {
+    if (movieIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RenameMovies', movieIds },
+      })
+      .json();
+  }
+
+  /** RefreshCollectionsCommand is instance-wide, not per-movie — no `movieIds` in its payload. */
+  public async refreshCollections(): Promise<void> {
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RefreshCollections' },
+      })
+      .json();
   }
 }
