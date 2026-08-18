@@ -2,7 +2,7 @@
 type: wayfinder-spec
 label: wayfinder:spec
 provider: sonarr
-status: draft
+status: implementing
 source_ticket: docs/in_progress/provider-e2e-spec/tickets/04-sonarr-decision.md
 source_research: docs/in_progress/provider-e2e-spec/research/sonarr.md
 ---

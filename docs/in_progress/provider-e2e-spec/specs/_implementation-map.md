@@ -45,10 +45,12 @@ lifecycle:
    `main`. Fill in the tracker row below with the branch and PR link.
 3. The PR description is the report of what was done — update it as work lands rather than
    narrating progress elsewhere. No separate summary doc.
-4. Drive the actual build with the `plan-and-go:tdd` skill: invoke it via the Skill tool
-   (`skill: "plan-and-go:tdd"`) as the first action, before writing any code — do not just
-   apply RED/GREEN/REFACTOR from general knowledge, follow the skill's own instructions once
-   loaded. Point it at the spec file and this implementation map.
+4. Drive the actual build via the `plan-and-go:tdd-engineer` agent persona: spawn it directly
+   with `Agent(subagent_type: "plan-and-go:tdd-engineer")`, pointed at the spec file and this
+   implementation map. Do not spawn a generic agent and have it separately invoke the
+   `plan-and-go:tdd` skill — that skill's own process spawns a `plan-and-go:tdd-engineer` agent
+   internally, so doing both nests two agents deep for no reason. Spawning the persona directly
+   is the flat, one-level version of the same thing.
 5. On merge: flip `status` to `implemented`, update the tracker row, and hand off to
    `docs-lifecycle` to move the spec into `docs/architecture/`.
 
@@ -58,8 +60,8 @@ lifecycle:
 |---|---|---|---|
 | [plex](plex.md) | implementing | `implement/plex-provider-spec` | [#46](https://github.com/nokternol/maintainarr/pull/46) |
 | [jellyfin](jellyfin.md) | implementing | `implement/jellyfin-provider-spec` | [#48](https://github.com/nokternol/maintainarr/pull/48) |
-| [radarr](radarr.md) | implementing | `implement/radarr-provider-spec` | [#49](https://github.com/nokternol/maintainarr/pull/49) |
-| [sonarr](sonarr.md) | draft | — | — |
+| [radarr](radarr.md) | implementing | `implement/radarr-provider-spec` | [#49](https://github.com/nokternol/maintainarr/pull/49) (merged) |
+| [sonarr](sonarr.md) | implementing | `implement/sonarr-provider-spec` | [#50](https://github.com/nokternol/maintainarr/pull/50) |
 | [tautulli](tautulli.md) | draft | — | — |
 | [overseerr](overseerr.md) | draft | — | — |
 | [seerr](seerr.md) | draft | — | — |
@@ -79,3 +81,9 @@ being overwritten by Plex's enrichment-stored one, so wiring Plex as a producer 
 fields now would regress existing behavior rather than extend it. Blocked on `_precedence`'s
 implementation landing precedence-ordering machinery first — revisit `plex.md`'s `genres`/
 `certification` rows once that ships.
+
+**Radarr is partially done, still `implementing`.** [#49](https://github.com/nokternol/maintainarr/pull/49)
+(merged) left `runtime`→`runtimeMinutes` and `studio` unwired for the same reason: both are
+already-live `EnrichmentFields` keys with Plex as sole current producer, and wiring Radarr in now
+would make it a second, uncoordinated producer with no precedence ordering. Also blocked on
+`_precedence`'s implementation — revisit `radarr.md`'s `runtime`/`studio` rows once that ships.
