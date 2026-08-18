@@ -22,7 +22,11 @@ export type MovieRangeRuleKey =
   | 'fileSizeBytes'
   | 'releaseDaysAgo'
   | 'imdbRating'
-  | 'lastWatchedDaysAgo';
+  | 'lastWatchedDaysAgo'
+  | 'movieFileCount'
+  | 'inCinemasDaysAgo'
+  | 'physicalReleaseDaysAgo'
+  | 'digitalReleaseDaysAgo';
 
 export type ShowRangeRuleKey =
   | 'year'

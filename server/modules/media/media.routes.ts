@@ -16,6 +16,8 @@ export function createMediaRoutes(
     listGenres,
     listNetworks,
     listStudio,
+    listReleaseGroups,
+    listCollectionNames,
     listFileContainers,
     listVideoCodecs,
     listAudioCodecs,
@@ -33,6 +35,8 @@ export function createMediaRoutes(
   router.get('/genres', isAuthenticated(), listGenres);
   router.get('/networks', isAuthenticated(), listNetworks);
   router.get('/studio', isAuthenticated(), listStudio);
+  router.get('/release-groups', isAuthenticated(), listReleaseGroups);
+  router.get('/collection-names', isAuthenticated(), listCollectionNames);
   router.get('/file-containers', isAuthenticated(), listFileContainers);
   router.get('/video-codecs', isAuthenticated(), listVideoCodecs);
   router.get('/audio-codecs', isAuthenticated(), listAudioCodecs);

@@ -80,6 +80,78 @@ describe('RadarrProvider — task methods', () => {
     expect(deleted.every((d) => d.deleteFiles === 'true')).toBe(true);
   });
 
+  it('deleteMoviesKeepFiles sends DELETE /movie/{id} with deleteFiles=false for each ID', async () => {
+    const deleted: Array<{ id: number; deleteFiles: string | null }> = [];
+    server.use(
+      http.delete(`${RADARR_BASE}/movie/:id`, ({ params, request }) => {
+        const url = new URL(request.url);
+        deleted.push({ id: Number(params.id), deleteFiles: url.searchParams.get('deleteFiles') });
+        return HttpResponse.json({});
+      })
+    );
+
+    await provider.deleteMoviesKeepFiles([6, 7]);
+
+    expect(deleted.map((d) => d.id)).toEqual(expect.arrayContaining([6, 7]));
+    expect(deleted.every((d) => d.deleteFiles === 'false')).toBe(true);
+  });
+
+  it('refreshMovies posts RefreshMovie command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${RADARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.refreshMovies([1, 2]);
+
+    expect(commandBody).toEqual({ name: 'RefreshMovie', movieIds: [1, 2] });
+  });
+
+  it('rescanMovies posts RescanMovie command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${RADARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.rescanMovies([3]);
+
+    expect(commandBody).toEqual({ name: 'RescanMovie', movieIds: [3] });
+  });
+
+  it('renameMovies posts RenameMovies command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${RADARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.renameMovies([4, 5]);
+
+    expect(commandBody).toEqual({ name: 'RenameMovies', movieIds: [4, 5] });
+  });
+
+  it('refreshCollections posts RefreshCollections command with no item scope', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${RADARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.refreshCollections();
+
+    expect(commandBody).toEqual({ name: 'RefreshCollections' });
+  });
+
   it('unmonitorMovies sends PUT /movie/{id} with monitored:false for each ID', async () => {
     const putBodies: Array<{ id: number; monitored: boolean }> = [];
     server.use(

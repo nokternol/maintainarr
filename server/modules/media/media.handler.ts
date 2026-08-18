@@ -109,6 +109,18 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   radarrImdbRatingLte: num(),
   runtimeMinutesGte: intNum(),
   runtimeMinutesLte: intNum(),
+  movieFileCountGte: intNum(),
+  movieFileCountLte: intNum(),
+  inCinemasDaysAgoGte: intNum(),
+  inCinemasDaysAgoLte: intNum(),
+  physicalReleaseDaysAgoGte: intNum(),
+  physicalReleaseDaysAgoLte: intNum(),
+  digitalReleaseDaysAgoGte: intNum(),
+  digitalReleaseDaysAgoLte: intNum(),
+  releaseGroups: z.string().optional(),
+  collectionName: z.string().optional(),
+  isAvailable: bool3(),
+  radarrStatus: z.string().optional(),
 });
 
 const seriesQuerySchema = paginationQuerySchema.extend({
@@ -185,6 +197,18 @@ const MOVIE_PARAM_TO_KEY = {
   audioCodec: { key: 'audioCodec' },
   fileResolution: { key: 'fileResolution' },
   labels: { key: 'labels' },
+  movieFileCountGte: { key: 'movieFileCount', bound: 'min' },
+  movieFileCountLte: { key: 'movieFileCount', bound: 'max' },
+  releaseGroups: { key: 'releaseGroups' },
+  inCinemasDaysAgoGte: { key: 'inCinemasDaysAgo', bound: 'min' },
+  inCinemasDaysAgoLte: { key: 'inCinemasDaysAgo', bound: 'max' },
+  physicalReleaseDaysAgoGte: { key: 'physicalReleaseDaysAgo', bound: 'min' },
+  physicalReleaseDaysAgoLte: { key: 'physicalReleaseDaysAgo', bound: 'max' },
+  digitalReleaseDaysAgoGte: { key: 'digitalReleaseDaysAgo', bound: 'min' },
+  digitalReleaseDaysAgoLte: { key: 'digitalReleaseDaysAgo', bound: 'max' },
+  collectionName: { key: 'collectionName' },
+  isAvailable: { key: 'isAvailable' },
+  radarrStatus: { key: 'radarrStatus' },
   jellyfinIsFavorite: { key: 'jellyfinIsFavorite' },
 } as const satisfies Record<string, ParamMapping>;
 
@@ -267,6 +291,10 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
   releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+  movieFileCount: { gte: 'movieFileCountGte', lte: 'movieFileCountLte' },
+  inCinemasDaysAgo: { gte: 'inCinemasDaysAgoGte', lte: 'inCinemasDaysAgoLte' },
+  physicalReleaseDaysAgo: { gte: 'physicalReleaseDaysAgoGte', lte: 'physicalReleaseDaysAgoLte' },
+  digitalReleaseDaysAgo: { gte: 'digitalReleaseDaysAgoGte', lte: 'digitalReleaseDaysAgoLte' },
 };
 
 const _SERIES_RANGE_PARAM_WITNESS: Record<
@@ -443,6 +471,8 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
   const studioCache = new MediaCache<string[]>();
+  const releaseGroupsCache = new MediaCache<string[]>();
+  const collectionNamesCache = new MediaCache<string[]>();
   const fileContainerCache = new MediaCache<string[]>();
   const videoCodecCache = new MediaCache<string[]>();
   const audioCodecCache = new MediaCache<string[]>();
@@ -578,6 +608,8 @@ export function createMediaHandlers(cradle: MediaCradle) {
     genresCache.invalidate('genres');
     networksCache.invalidate('networks');
     studioCache.invalidate('studio');
+    releaseGroupsCache.invalidate('releaseGroups');
+    collectionNamesCache.invalidate('collectionNames');
     fileContainerCache.invalidate('fileContainer');
     videoCodecCache.invalidate('videoCodec');
     audioCodecCache.invalidate('audioCodec');
@@ -782,6 +814,26 @@ export function createMediaHandlers(cradle: MediaCradle) {
         (i) => i.studio,
         (i) => i.Studios?.map((s) => s.Name)
       ),
+    }),
+
+    listReleaseGroups: defineRoute({
+      handler: () =>
+        releaseGroupsCache.getOrFetch('releaseGroups', async () => {
+          const { sublists } = await getMovies();
+          const all = sublists.flatMap((s) => s.movies);
+          return [...new Set(all.flatMap((m) => m.statistics?.releaseGroups ?? []))].sort();
+        }),
+    }),
+
+    listCollectionNames: defineRoute({
+      handler: () =>
+        collectionNamesCache.getOrFetch('collectionNames', async () => {
+          const { sublists } = await getMovies();
+          const all = sublists.flatMap((s) => s.movies);
+          return [
+            ...new Set(all.map((m) => m.collection?.name).filter((n): n is string => !!n)),
+          ].sort();
+        }),
     }),
 
     listFileContainers: defineRoute({

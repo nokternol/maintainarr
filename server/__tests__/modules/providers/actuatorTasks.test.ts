@@ -40,7 +40,7 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
     expect(del?.destructive).toBe(true);
   });
 
-  it('declares its parameterized tasks and keeps deleteMovieKeepFiles modelled', async () => {
+  it('declares its parameterized tasks', () => {
     const provider = new RadarrProvider(radarrConfig, log);
     const tasks = provider.tasks();
     const ids = tasks.map((t) => t.id);
@@ -55,9 +55,17 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
       type: 'select',
       optionsRoute: 'quality-profiles',
     });
+  });
 
-    const keepFiles = tasks.find((t) => t.id === 'deleteMovieKeepFiles')!;
-    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
+  it('declares deleteMovieKeepFiles, refreshMovie, rescanMovie, renameMovies, refreshCollection as real tasks', () => {
+    const provider = new RadarrProvider(radarrConfig, log);
+    const ids = provider.tasks().map((t) => t.id);
+
+    expect(ids).toContain('deleteMovieKeepFiles');
+    expect(ids).toContain('refreshMovie');
+    expect(ids).toContain('rescanMovie');
+    expect(ids).toContain('renameMovies');
+    expect(ids).toContain('refreshCollection');
   });
 });
 

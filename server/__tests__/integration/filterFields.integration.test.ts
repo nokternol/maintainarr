@@ -62,8 +62,8 @@ describe('GET /api/filter-fields', () => {
     // Radarr-sourced rule present
     expect(keys).toContain('title');
     expect(keys).toContain('tagIds');
-    // Sonarr-only rule absent — no Sonarr provider configured
-    expect(keys).not.toContain('monitored');
+    // monitored is also Radarr-sourced now (movie+show rule) — present with only Radarr active
+    expect(keys).toContain('monitored');
   });
 
   it('excludes rules whose only provider is configured but inactive', async () => {
@@ -102,8 +102,9 @@ describe('GET /api/filter-fields', () => {
     expect(keys).toContain('hasFile');
     // movie-only present
     expect(keys).toContain('imdbRating');
+    // monitored now applies to movies too (bug fix — NormalizedMovie.monitored is populated)
+    expect(keys).toContain('monitored');
     // show-only absent
-    expect(keys).not.toContain('monitored');
     expect(keys).not.toContain('seriesStatus');
   });
 
