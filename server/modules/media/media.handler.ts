@@ -5,6 +5,8 @@ import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
 import {
   type IProviderFactory,
+  type JellyfinItem,
+  type JellyfinProvider,
   type PlexMediaItem,
   type PlexProvider,
   ProviderFactory,
@@ -30,6 +32,7 @@ import type {
 } from './filterRegistry';
 import { paginateItems } from './media.pagination';
 import { sortMedia } from './media.sort';
+import { resolutionTier } from './mediaFieldProvider';
 import { itemKey, rawItemKey } from './mediaItem';
 import type { MediaQueryEngine } from './mediaQueryEngine';
 import { resetMediaData } from './mediaReset';
@@ -74,6 +77,8 @@ const sharedFilterFields = {
   lastWatchedDaysAgoLte: intNum(),
   plexAddedDaysAgoGte: intNum(),
   plexAddedDaysAgoLte: intNum(),
+  jellyfinAddedDaysAgoGte: intNum(),
+  jellyfinAddedDaysAgoLte: intNum(),
   fileSizeBytesGte: num(),
   fileSizeBytesLte: num(),
   releaseDaysAgoGte: intNum(),
@@ -83,6 +88,7 @@ const sharedFilterFields = {
   audioCodec: z.string().optional(),
   fileResolution: z.string().optional(),
   labels: z.string().optional(),
+  jellyfinIsFavorite: bool3(),
   sort: sortField,
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
@@ -180,6 +186,8 @@ const MOVIE_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  jellyfinAddedDaysAgoGte: { key: 'jellyfinAddedDaysAgo', bound: 'min' },
+  jellyfinAddedDaysAgoLte: { key: 'jellyfinAddedDaysAgo', bound: 'max' },
   fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
   fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
   releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
@@ -201,6 +209,7 @@ const MOVIE_PARAM_TO_KEY = {
   collectionName: { key: 'collectionName' },
   isAvailable: { key: 'isAvailable' },
   radarrStatus: { key: 'radarrStatus' },
+  jellyfinIsFavorite: { key: 'jellyfinIsFavorite' },
 } as const satisfies Record<string, ParamMapping>;
 
 const SERIES_PARAM_TO_KEY = {
@@ -237,6 +246,8 @@ const SERIES_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  jellyfinAddedDaysAgoGte: { key: 'jellyfinAddedDaysAgo', bound: 'min' },
+  jellyfinAddedDaysAgoLte: { key: 'jellyfinAddedDaysAgo', bound: 'max' },
   fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
   fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
   releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
@@ -246,6 +257,7 @@ const SERIES_PARAM_TO_KEY = {
   audioCodec: { key: 'audioCodec' },
   fileResolution: { key: 'fileResolution' },
   labels: { key: 'labels' },
+  jellyfinIsFavorite: { key: 'jellyfinIsFavorite' },
 } as const satisfies Record<string, ParamMapping>;
 
 /**
@@ -272,6 +284,7 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   year: { gte: 'yearMin', lte: 'yearMax' },
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  jellyfinAddedDaysAgo: { gte: 'jellyfinAddedDaysAgoGte', lte: 'jellyfinAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
   runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
@@ -291,6 +304,7 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   year: { gte: 'yearMin', lte: 'yearMax' },
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  jellyfinAddedDaysAgo: { gte: 'jellyfinAddedDaysAgoGte', lte: 'jellyfinAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
   releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
@@ -465,6 +479,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const fileResolutionCache = new MediaCache<string[]>();
   const labelsCache = new MediaCache<string[]>();
   const plexItemsCache = new MediaCache<PlexMediaItem[]>();
+  const jellyfinItemsCache = new MediaCache<JellyfinItem[]>();
 
   /** One active Radarr instance's library, kept separate so browse can attribute copies. */
   async function getMovies(): Promise<{ sublists: MovieSublist[]; errors: MediaError[] }> {
@@ -537,21 +552,51 @@ export function createMediaHandlers(cradle: MediaCradle) {
     });
   }
 
-  /** Dedupe+sort a string projection over every fetched Plex item — the shape every
-   *  file-tech/label lookup route shares. */
-  function plexStringLookup(
+  /** Every active Jellyfin instance's flattened library — shared by every
+   *  Jellyfin-sourced lookup, same one-fetch-per-route-set shape as getPlexItems. */
+  async function getJellyfinItems(): Promise<JellyfinItem[]> {
+    return jellyfinItemsCache.getOrFetch('jellyfinItems', async () => {
+      const providers = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.JELLYFIN,
+      ]);
+      const all: JellyfinItem[] = [];
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const jellyfin = factory.create(provider, log) as JellyfinProvider;
+            all.push(...(await jellyfin.getAllItems()));
+          } catch (err) {
+            log.warn('Jellyfin fetch failed', { provider: provider.name, err });
+          }
+        })
+      );
+      return all;
+    });
+  }
+
+  function values(v: string | string[] | undefined): string[] {
+    return v === undefined ? [] : Array.isArray(v) ? v : [v];
+  }
+
+  /** Dedupe+sort a string projection over every fetched Plex and Jellyfin item —
+   *  the shape every file-tech/studio/label lookup route shares. Per the spec,
+   *  Jellyfin joins these rules as an additional producer alongside Plex, so
+   *  every route aggregates both configured servers' already-fetched library
+   *  data rather than just one. */
+  function mediaServerStringLookup(
     cache: MediaCache<string[]>,
     cacheKey: string,
-    pick: (item: PlexMediaItem) => string | string[] | undefined
+    pickPlex: (item: PlexMediaItem) => string | string[] | undefined,
+    pickJellyfin: (item: JellyfinItem) => string | string[] | undefined
   ) {
     return () =>
       cache.getOrFetch(cacheKey, async () => {
-        const items = await getPlexItems();
-        const values = items.flatMap((item) => {
-          const v = pick(item);
-          return v === undefined ? [] : Array.isArray(v) ? v : [v];
-        });
-        return [...new Set(values)].sort();
+        const [plexItems, jellyfinItems] = await Promise.all([getPlexItems(), getJellyfinItems()]);
+        const all = [
+          ...plexItems.flatMap((item) => values(pickPlex(item))),
+          ...jellyfinItems.flatMap((item) => values(pickJellyfin(item))),
+        ];
+        return [...new Set(all)].sort();
       });
   }
 
@@ -571,6 +616,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     fileResolutionCache.invalidate('fileResolution');
     labelsCache.invalidate('labels');
     plexItemsCache.invalidate('plexItems');
+    jellyfinItemsCache.invalidate('jellyfinItems');
   }
 
   return {
@@ -762,25 +808,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
     }),
 
     listStudio: defineRoute({
-      handler: () =>
-        studioCache.getOrFetch('studio', async () => {
-          const providers = await providerSettingsService.findActiveByTypes([
-            MetadataProviderType.PLEX,
-          ]);
-          const all: string[] = [];
-          await Promise.all(
-            providers.map(async (provider) => {
-              try {
-                const plex = factory.create(provider, log) as PlexProvider;
-                const items = await plex.getAllItems();
-                all.push(...items.map((i) => i.studio).filter((s): s is string => !!s));
-              } catch (err) {
-                log.warn('Plex fetch failed', { provider: provider.name, err });
-              }
-            })
-          );
-          return [...new Set(all)].sort();
-        }),
+      handler: mediaServerStringLookup(
+        studioCache,
+        'studio',
+        (i) => i.studio,
+        (i) => i.Studios?.map((s) => s.Name)
+      ),
     }),
 
     listReleaseGroups: defineRoute({
@@ -804,31 +837,49 @@ export function createMediaHandlers(cradle: MediaCradle) {
     }),
 
     listFileContainers: defineRoute({
-      handler: plexStringLookup(
+      handler: mediaServerStringLookup(
         fileContainerCache,
         'fileContainer',
-        (i) => i.Media?.[0]?.container
+        (i) => i.Media?.[0]?.container,
+        (i) => i.MediaSources?.[0]?.Container
       ),
     }),
 
     listVideoCodecs: defineRoute({
-      handler: plexStringLookup(videoCodecCache, 'videoCodec', (i) => i.Media?.[0]?.videoCodec),
+      handler: mediaServerStringLookup(
+        videoCodecCache,
+        'videoCodec',
+        (i) => i.Media?.[0]?.videoCodec,
+        (i) => i.MediaSources?.[0]?.MediaStreams?.find((s) => s.Type === 'Video')?.Codec
+      ),
     }),
 
     listAudioCodecs: defineRoute({
-      handler: plexStringLookup(audioCodecCache, 'audioCodec', (i) => i.Media?.[0]?.audioCodec),
+      handler: mediaServerStringLookup(
+        audioCodecCache,
+        'audioCodec',
+        (i) => i.Media?.[0]?.audioCodec,
+        (i) => i.MediaSources?.[0]?.MediaStreams?.find((s) => s.Type === 'Audio')?.Codec
+      ),
     }),
 
     listFileResolutions: defineRoute({
-      handler: plexStringLookup(
+      handler: mediaServerStringLookup(
         fileResolutionCache,
         'fileResolution',
-        (i) => i.Media?.[0]?.videoResolution
+        (i) => i.Media?.[0]?.videoResolution,
+        (i) =>
+          resolutionTier(i.MediaSources?.[0]?.MediaStreams?.find((s) => s.Type === 'Video')?.Height)
       ),
     }),
 
     listLabels: defineRoute({
-      handler: plexStringLookup(labelsCache, 'labels', (i) => i.Label?.map((l) => l.tag)),
+      handler: mediaServerStringLookup(
+        labelsCache,
+        'labels',
+        (i) => i.Label?.map((l) => l.tag),
+        (i) => i.Tags
+      ),
     }),
 
     listSources: defineRoute({

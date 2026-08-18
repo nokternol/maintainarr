@@ -1,5 +1,6 @@
 import { MetadataProviderType } from '../../../database/schema';
 import type {
+  JellyfinProvider,
   OverseerrProvider,
   PlexProvider,
   TautulliProvider,
@@ -7,6 +8,7 @@ import type {
 } from '../../providers';
 import type { EnrichmentFields, MediaFieldProvider } from '../mediaFieldProvider';
 import {
+  jellyfinFieldProvider,
   overseerrFieldProvider,
   plexFieldProvider,
   tautulliFieldProvider,
@@ -39,7 +41,7 @@ type PlexEnrichedField =
   | 'videoCodec'
   | 'audioCodec'
   | 'fileResolution'
-  | 'plexLabels';
+  | 'labels';
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<PlexEnrichedField> {
   return {
@@ -48,6 +50,33 @@ export function plexEnricher(plex: PlexProvider): MediaEnricher<PlexEnrichedFiel
       return {
         provider: MetadataProviderType.PLEX,
         items: decorate(items, (i) => i._sourceIds.plex, fieldsByKey),
+      };
+    },
+  };
+}
+
+type JellyfinEnrichedField =
+  | 'playCount'
+  | 'lastWatchedAt'
+  | 'jellyfinAddedAt'
+  | 'studio'
+  | 'runtimeMinutes'
+  | 'fileSizeBytes'
+  | 'releaseDate'
+  | 'fileContainer'
+  | 'videoCodec'
+  | 'audioCodec'
+  | 'fileResolution'
+  | 'labels'
+  | 'isFavorite';
+
+export function jellyfinEnricher(jellyfin: JellyfinProvider): MediaEnricher<JellyfinEnrichedField> {
+  return {
+    enrich: async (items): Promise<EnrichmentResult<JellyfinEnrichedField>> => {
+      const fieldsByKey = toFieldsByKey(jellyfinFieldProvider, await jellyfin.getAllItems());
+      return {
+        provider: MetadataProviderType.JELLYFIN,
+        items: decorate(items, (i) => i._sourceIds.jellyfin, fieldsByKey),
       };
     },
   };

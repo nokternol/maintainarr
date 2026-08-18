@@ -167,10 +167,11 @@ describe('IdentityJobFactory', () => {
       name: 'Test Jellyfin',
       url: jellyfinUrl,
       apiKey: 'jf-token',
+      settings: { userId: 'test-user-id' },
     });
     await db.insert(mediaIdentity).values({ kind: 'movie', tmdbId: 603, resolvedAt: 0 });
     server.use(
-      http.get(`${jellyfinUrl}/Items`, () =>
+      http.get(`${jellyfinUrl}/Users/:userId/Items`, () =>
         HttpResponse.json({
           Items: [{ Id: 'jf-603', Type: 'Movie', ProviderIds: { Tmdb: '603' } }],
           TotalRecordCount: 1,

@@ -1,8 +1,26 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { EnrichmentResult } from '@server/modules/media/enrichment/enricher';
-import { resolvePrecedence } from '@server/modules/media/enrichment/precedence';
+import {
+  contestedFieldPrecedence,
+  resolvePrecedence,
+} from '@server/modules/media/enrichment/precedence';
 import type { NormalizedMovie } from '@server/modules/media/movie';
 import { describe, expect, it } from 'vitest';
+
+describe('contestedFieldPrecedence', () => {
+  it('orders playCount and lastWatchedAt Tautulli > Plex > Jellyfin', () => {
+    expect(contestedFieldPrecedence.playCount).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
+    ]);
+    expect(contestedFieldPrecedence.lastWatchedAt).toEqual([
+      MetadataProviderType.TAUTULLI,
+      MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
+    ]);
+  });
+});
 
 function result(provider: MetadataProviderType, item: NormalizedMovie): EnrichmentResult {
   return { provider, items: [item] };

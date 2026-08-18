@@ -8,6 +8,30 @@ export interface JellyfinLibrary {
   CollectionType: string;
 }
 
+export interface JellyfinMediaStream {
+  Type?: string;
+  Codec?: string;
+  Width?: number;
+  Height?: number;
+}
+
+export interface JellyfinMediaSource {
+  Container?: string;
+  Size?: number;
+  MediaStreams?: JellyfinMediaStream[];
+}
+
+/** Per-user watch/favorite state — only present when fetched via a user-scoped
+ *  endpoint (`Users/{userId}/Items`), which is why `getAllItems` uses that route
+ *  rather than the generic `/Items` one. Scoped to the single configured Jellyfin
+ *  user per instance (today's one-user-per-instance model). */
+export interface JellyfinUserData {
+  PlayCount?: number;
+  LastPlayedDate?: string;
+  Played?: boolean;
+  IsFavorite?: boolean;
+}
+
 export interface JellyfinItem {
   Id: string;
   Name: string;
@@ -15,6 +39,22 @@ export interface JellyfinItem {
   ProductionYear?: number;
   /** External-id map (e.g. Tmdb, Tvdb, Imdb) — present when requested via fields=ProviderIds. */
   ProviderIds?: Record<string, string>;
+  /** Genre/certification are collected but not yet wired as enrichment fields — see
+   *  the provider spec's implementation status (blocked on precedence-ordering
+   *  machinery, same reasoning as Plex's genres/certification gap). */
+  Genres?: string[];
+  OfficialRating?: string;
+  Studios?: { Name: string }[];
+  /** 10,000 ticks per millisecond — converted to minutes at the field-provider layer. */
+  RunTimeTicks?: number;
+  MediaSources?: JellyfinMediaSource[];
+  /** Day-granularity release date. */
+  PremiereDate?: string;
+  /** Added-to-this-library timestamp — distinct from PremiereDate. */
+  DateCreated?: string;
+  /** Free-text tags — shares the `labels` filter rule with Plex's `Label` tags. */
+  Tags?: string[];
+  UserData?: JellyfinUserData;
 }
 
 interface JellyfinItemsResponse {
@@ -67,6 +107,18 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
             requireParameter('addToCollection', parameterValue)
           ),
       },
+      {
+        id: 'removeFromCollection',
+        label: 'Remove from collection',
+        destructive: false,
+        affects: 'media',
+        parameter: { type: 'select', label: 'Collection', optionsRoute: 'collections' },
+        run: async (ids, parameterValue) =>
+          this.removeFromCollection(
+            ids.map(String),
+            requireParameter('removeFromCollection', parameterValue)
+          ),
+      },
     ];
   }
 
@@ -95,14 +147,18 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
     return resp.Items;
   }
 
-  /** Every movie and series in the server's libraries, with their external-id maps. */
+  /** Every movie and series in the server's libraries, with their external-id maps
+   *  and enrichment-relevant fields. User-scoped (`Users/{userId}/Items`, not the
+   *  generic `/Items` route) so the response carries per-user `UserData`
+   *  (`IsFavorite`/`PlayCount`/`LastPlayedDate`/`Played`) for the configured user. */
   public async getAllItems(): Promise<JellyfinItem[]> {
     const resp = await this.client
-      .get('Items', {
+      .get(`Users/${this.userId}/Items`, {
         headers: this.authHeader,
         searchParams: {
           recursive: 'true',
-          fields: 'ProviderIds',
+          fields:
+            'ProviderIds,Genres,OfficialRating,Studios,RunTimeTicks,MediaSources,PremiereDate,DateCreated,Tags',
           includeItemTypes: 'Movie,Series',
         },
       })
@@ -151,6 +207,14 @@ export class JellyfinProvider extends BaseProviderConnection implements MediaAct
 
   public async addToCollection(itemIds: string[], collectionId: string): Promise<void> {
     await this.client.post(`Collections/${collectionId}/Items`, {
+      headers: this.authHeader,
+      searchParams: { ids: itemIds.join(',') },
+    });
+  }
+
+  /** Natural counterpart to addToCollection — same external-collection-id shape. */
+  public async removeFromCollection(itemIds: string[], collectionId: string): Promise<void> {
+    await this.client.delete(`Collections/${collectionId}/Items`, {
       headers: this.authHeader,
       searchParams: { ids: itemIds.join(',') },
     });

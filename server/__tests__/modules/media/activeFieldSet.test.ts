@@ -32,7 +32,25 @@ describe('fieldsByProviderType', () => {
       'videoCodec',
       'audioCodec',
       'fileResolution',
-      'plexLabels',
+      'labels',
+    ]);
+  });
+
+  it('declares every field Jellyfin produces', () => {
+    expect(fieldsByProviderType[MetadataProviderType.JELLYFIN]).toEqual([
+      'playCount',
+      'lastWatchedAt',
+      'jellyfinAddedAt',
+      'studio',
+      'runtimeMinutes',
+      'fileSizeBytes',
+      'releaseDate',
+      'fileContainer',
+      'videoCodec',
+      'audioCodec',
+      'fileResolution',
+      'labels',
+      'isFavorite',
     ]);
   });
 

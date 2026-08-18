@@ -39,11 +39,12 @@ describe('JellyfinProvider', () => {
 describe('JellyfinProvider — getAllItems', () => {
   const provider = new JellyfinProvider(mockConfig, logger);
 
-  it('fetches all movies and series recursively with their provider ids', async () => {
+  it('fetches all movies and series recursively, user-scoped, with their provider ids and enrichment fields', async () => {
     let captured: URL | null = null;
     server.use(
-      http.get(`${JELLYFIN_URL}/Items`, ({ request }) => {
+      http.get(`${JELLYFIN_URL}/Users/:userId/Items`, ({ params, request }) => {
         captured = new URL(request.url);
+        expect(params.userId).toBe('test-user-id');
         return HttpResponse.json({
           Items: [
             { Id: 'jf-1', Name: 'The Matrix', Type: 'Movie', ProviderIds: { Tmdb: '603' } },
@@ -59,7 +60,9 @@ describe('JellyfinProvider — getAllItems', () => {
     expect(items).toHaveLength(2);
     expect(items[0].ProviderIds).toEqual({ Tmdb: '603' });
     expect(captured!.searchParams.get('recursive')).toBe('true');
-    expect(captured!.searchParams.get('fields')).toBe('ProviderIds');
+    expect(captured!.searchParams.get('fields')).toBe(
+      'ProviderIds,Genres,OfficialRating,Studios,RunTimeTicks,MediaSources,PremiereDate,DateCreated,Tags'
+    );
     expect(captured!.searchParams.get('includeItemTypes')).toBe('Movie,Series');
   });
 });
@@ -68,7 +71,7 @@ describe('JellyfinProvider — actuator tasks', () => {
   const provider = new JellyfinProvider(mockConfig, logger);
   const task = (id: string) => provider.tasks().find((t) => t.id === id)!;
 
-  it('declares its vocabulary; only addToCollection takes a parameter', () => {
+  it('declares its vocabulary; addToCollection and removeFromCollection take a parameter', () => {
     const tasks = provider.tasks();
     expect(tasks.map((t) => t.id)).toEqual([
       'deleteItem',
@@ -76,13 +79,14 @@ describe('JellyfinProvider — actuator tasks', () => {
       'markPlayed',
       'markUnplayed',
       'addToCollection',
+      'removeFromCollection',
     ]);
-    expect(tasks.find((t) => t.id === 'addToCollection')?.parameter).toEqual({
-      type: 'select',
-      label: 'Collection',
-      optionsRoute: 'collections',
-    });
-    for (const t of tasks.filter((t) => t.id !== 'addToCollection')) {
+    const collectionParam = { type: 'select', label: 'Collection', optionsRoute: 'collections' };
+    expect(tasks.find((t) => t.id === 'addToCollection')?.parameter).toEqual(collectionParam);
+    expect(tasks.find((t) => t.id === 'removeFromCollection')?.parameter).toEqual(collectionParam);
+    for (const t of tasks.filter(
+      (t) => t.id !== 'addToCollection' && t.id !== 'removeFromCollection'
+    )) {
       expect(t.parameter).toBeUndefined();
     }
   });
@@ -174,5 +178,29 @@ describe('JellyfinProvider — actuator tasks', () => {
 
   it('addToCollection rejects when invoked without its parameter', async () => {
     await expect(task('addToCollection').run(['abc'])).rejects.toThrow(/requires a parameter/i);
+  });
+
+  it('removeFromCollection deletes every id from /Collections/{collectionId}/Items', async () => {
+    const calls: Array<{ collectionId: string; ids: string | null }> = [];
+    server.use(
+      http.delete(`${JELLYFIN_URL}/Collections/:collectionId/Items`, ({ params, request }) => {
+        const url = new URL(request.url);
+        calls.push({
+          collectionId: params.collectionId as string,
+          ids: url.searchParams.get('ids'),
+        });
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+
+    await task('removeFromCollection').run(['abc', 'def'], 'col-1');
+
+    expect(calls).toEqual([{ collectionId: 'col-1', ids: 'abc,def' }]);
+  });
+
+  it('removeFromCollection rejects when invoked without its parameter', async () => {
+    await expect(task('removeFromCollection').run(['abc'])).rejects.toThrow(
+      /requires a parameter/i
+    );
   });
 });

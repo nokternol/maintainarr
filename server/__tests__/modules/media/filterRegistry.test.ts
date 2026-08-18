@@ -52,8 +52,15 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 45 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(45);
+  /**
+   * 47 = 18 shared (both content types) + 14 movie-only + 15 show-only, per
+   * filterRegistry.ts's own `// ── Shared / Movie-only / Show-only ──` section
+   * comments. Bump this count (and re-derive the breakdown) whenever a rule is
+   * added or removed — a silent pass/fail here is the signal that MEDIA_RULES
+   * drifted without this test being updated to match.
+   */
+  it('contains exactly 47 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(47);
   });
 
   it('every entry has required fields', () => {
@@ -139,10 +146,11 @@ describe('sourceProviders accuracy', () => {
     expect(getRule('tagIds', 'show')!.sourceProviders).toEqual([MetadataProviderType.SONARR]);
   });
 
-  it('watched is derived from playCount — Tautulli before Plex, matching the field it reads', () => {
+  it('watched is derived from playCount — Tautulli, Plex, and Jellyfin all produce it', () => {
     expect(getRule('watched', 'movie')!.sourceProviders).toEqual([
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
     ]);
   });
 
@@ -186,10 +194,11 @@ describe('deriveSourceProviders', () => {
     expect(deriveSourceProviders('tmdbStatus')).toEqual([MetadataProviderType.TMDB]);
   });
 
-  it('derives playCount to both Tautulli and Plex — a contested field', () => {
+  it('derives playCount to Tautulli, Plex, and Jellyfin — a contested field', () => {
     expect(deriveSourceProviders('playCount')).toEqual([
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
     ]);
   });
 
@@ -698,14 +707,39 @@ describe('file-tech and release-date predicates', () => {
 
   it('labels — movie: passes when item has any of the csv labels', () => {
     const rule = getRule('labels', 'movie')!;
-    expect(rule.predicate({ ...baseMovie, plexLabels: ['4K', 'Favorites'] }, '4K,HDR')).toBe(true);
-    expect(rule.predicate({ ...baseMovie, plexLabels: ['Favorites'] }, '4K,HDR')).toBe(false);
+    expect(rule.predicate({ ...baseMovie, labels: ['4K', 'Favorites'] }, '4K,HDR')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, labels: ['Favorites'] }, '4K,HDR')).toBe(false);
     expect(rule.predicate(baseMovie, '4K')).toBe(false);
   });
 
   it('labels — show: passes when item has any of the csv labels', () => {
     const rule = getRule('labels', 'show')!;
-    expect(rule.predicate({ ...baseShow, plexLabels: ['Anime'] }, 'Anime,Kids')).toBe(true);
+    expect(rule.predicate({ ...baseShow, labels: ['Anime'] }, 'Anime,Kids')).toBe(true);
     expect(rule.predicate(baseShow, 'Anime')).toBe(false);
+  });
+});
+
+// ─── Jellyfin-only predicates ─────────────────────────────────────────────────
+
+describe('Jellyfin-only predicates', () => {
+  it('jellyfinAddedDaysAgo — movie: passes within min/max bounds', () => {
+    const rule = getRule('jellyfinAddedDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: tenDaysAgo }, { min: 5 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: tenDaysAgo }, { min: 15 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('jellyfinIsFavorite — movie: matches boolean exactly', () => {
+    const rule = getRule('jellyfinIsFavorite', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, isFavorite: true }, true)).toBe(true);
+    expect(rule.predicate({ ...baseMovie, isFavorite: true }, false)).toBe(false);
+    expect(rule.predicate({ ...baseMovie, isFavorite: undefined }, false)).toBe(true);
+  });
+
+  it('jellyfinIsFavorite — show: matches boolean exactly', () => {
+    const rule = getRule('jellyfinIsFavorite', 'show')!;
+    expect(rule.predicate({ ...baseShow, isFavorite: true }, true)).toBe(true);
+    expect(rule.predicate({ ...baseShow, isFavorite: false }, true)).toBe(false);
   });
 });

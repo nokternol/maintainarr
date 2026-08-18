@@ -19,13 +19,27 @@ export type ContestedFieldPrecedence = Partial<{
 
 /**
  * The enrichment precedence in force. Play count and last-watched are the only
- * fields with more than one real producer today — Tautulli or Plex — and
- * Tautulli wins (it tracks completed plays, not opens). Every other field has
- * exactly one producer and so carries through `resolvePrecedence` unlisted.
+ * fields with more than one real producer today — Tautulli, Plex, or Jellyfin —
+ * and Tautulli wins (it tracks completed plays, not opens). Jellyfin is placed
+ * after Plex as a fixed literal order, not a `primaryMediaServer`-driven swap:
+ * `docs/in_progress/provider-e2e-spec/specs/_precedence.md` designs a settings-
+ * driven Plex/Jellyfin ordering swap, but that mechanism isn't built yet, and
+ * Plex-then-Jellyfin is a safe, uncontroversial default in the meantime (same
+ * "arr-stack wins, media servers rank lowest" reasoning already applied to
+ * Plex). Revisit when `primaryMediaServer` lands. Every other field has exactly
+ * one producer and so carries through `resolvePrecedence` unlisted.
  */
 export const contestedFieldPrecedence: ContestedFieldPrecedence = {
-  playCount: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
-  lastWatchedAt: [MetadataProviderType.TAUTULLI, MetadataProviderType.PLEX],
+  playCount: [
+    MetadataProviderType.TAUTULLI,
+    MetadataProviderType.PLEX,
+    MetadataProviderType.JELLYFIN,
+  ],
+  lastWatchedAt: [
+    MetadataProviderType.TAUTULLI,
+    MetadataProviderType.PLEX,
+    MetadataProviderType.JELLYFIN,
+  ],
 };
 
 /**

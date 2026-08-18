@@ -185,6 +185,19 @@ export const MEDIA_RULES = [
     },
   },
   {
+    key: 'jellyfinAddedDaysAgo',
+    label: 'Jellyfin added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('jellyfinAddedAt'),
+    sourceField: 'jellyfinAddedAt',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.jellyfinAddedAt) return false;
+      return inRange(daysElapsed(item.jellyfinAddedAt), value);
+    },
+  },
+  {
     key: 'sizeOnDiskGb',
     label: 'Size on disk (GB)',
     contentTypes: ['movie', 'show'],
@@ -310,12 +323,12 @@ export const MEDIA_RULES = [
     label: 'Labels',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: deriveSourceProviders('plexLabels'),
-    sourceField: 'plexLabels',
+    sourceProviders: deriveSourceProviders('labels'),
+    sourceField: 'labels',
     required: false,
     predicate: (item, value) => {
       const labels = parseCsvStrings(value);
-      return (item.plexLabels ?? []).some((l) => labels.includes(l));
+      return (item.labels ?? []).some((l) => labels.includes(l));
     },
   },
   {
@@ -326,6 +339,16 @@ export const MEDIA_RULES = [
     sourceProviders: [MetadataProviderType.RADARR, MetadataProviderType.SONARR],
     required: false,
     predicate: (item, value) => item.monitored === asBool(value),
+  },
+  {
+    key: 'jellyfinIsFavorite',
+    label: 'Jellyfin favorite',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: deriveSourceProviders('isFavorite'),
+    sourceField: 'isFavorite',
+    required: false,
+    predicate: (item, value) => Boolean(item.isFavorite) === asBool(value),
   },
 
   // ── Movie-only ─────────────────────────────────────────────────────────────

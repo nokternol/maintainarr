@@ -112,20 +112,37 @@ never inserts a group of its own.
 
 **What it is:** alternative media server (Plex analog).
 
-**Role:** `MediaActuator` only. `provider-roles-and-identity.md` lists Jellyfin as "inert toward catalog" —
-it cannot produce a catalog row, and unlike Plex it is not wired as a `MediaEnricher` either; its
-`jellyfinItemId` column is never populated by any job.
+**Role:** `MediaEnricher` + `MediaActuator`. Explicitly *not* `MediaSource`, same "media servers cannot
+own" limitation as Plex — Jellyfin only enriches Radarr/Sonarr-owned items, matched by
+`_sourceIds.jellyfin` (populated by the identity job's `runForJellyfin` stamping pass, matching by
+`kind` + `tmdbId`/`tvdbId`, mirroring `runForPlex`).
 
-**Auth:** access token (`X-Emby-Authorization` header) plus a configured `userId` setting.
+**Auth:** access token (`X-Emby-Authorization` header) plus a configured `userId` setting (today's model —
+one Jellyfin user per configured instance, not full multi-user).
 
 **What the app can pull today** ([`connections/jellyfinProvider.ts`](ref:path:server/modules/providers/connections/jellyfinProvider.ts)):
-`getLibraries()`, `getLibraryContents(libraryId)`. Actuator tasks (`deleteItem`, `refreshMetadata`,
-`markPlayed`, `markUnplayed`, `addToCollection`) are all modelled-only. `getLibraries()` is used today only
-by `providers.handler.ts`'s connection-test path (returns library list to prove the connection works, not
-consumed by any media pipeline).
+`getLibraries()`, `getLibraryContents(libraryId)`, `getAllItems()` (user-scoped `Users/{userId}/Items`,
+so the response carries per-user `UserData` — `IsFavorite`/`PlayCount`/`LastPlayedDate`/`Played`).
+Actuator tasks (`deleteItem`, `refreshMetadata`, `markPlayed`, `markUnplayed`, `addToCollection`,
+`removeFromCollection`) are all real, bound to Jellyfin's API.
 
-**Wired into the media-item pipeline?** No. Connection exists and can list libraries/items, but nothing in
-`enrichment/` or `filterRegistry.ts` consumes it for media-item purposes.
+**Wired into the media-item pipeline?** Yes — `jellyfinEnricher`
+([`enrichment/enricherAdapters.ts`](ref:path:server/modules/media/enrichment/enricherAdapters.ts)) calls
+`getAllItems()`, runs it through `jellyfinFieldProvider`
+([`mediaFieldProvider.ts`](ref:path:server/modules/media/mediaFieldProvider.ts)) into `playCount`/
+`lastWatchedAt` (synthesized from `Played` when `PlayCount` is absent), `studio`, `runtimeMinutes`
+(`RunTimeTicks` ÷ 10,000 ÷ 60,000), the shared file-tech fields (`fileContainer`/`videoCodec`/
+`audioCodec`/`fileResolution`/`fileSizeBytes`, from `MediaSources`/`MediaStreams`), `releaseDate`
+(`PremiereDate`), `labels` (`Tags`, shared with Plex's `Label` tags), `jellyfinAddedAt` (`DateCreated`,
+kept prefixed and separate from `plexAddedAt` — mutually-exclusive server choices), and `isFavorite`
+(`UserData.IsFavorite`, no other producer). Loses precedence to Tautulli and Plex for `playCount`/
+`lastWatchedAt` (`contestedFieldPrecedence`: Tautulli > Plex > Jellyfin, a fixed literal order pending
+the settings-driven `primaryMediaServer` Plex/Jellyfin swap `_precedence.md` designs). `genres`/
+`certification` are deliberately not wired as Jellyfin-producer fields — same construction-time-vs-
+enrichment-overwrite gap Plex's `genres`/`certification` hit, blocked on precedence-ordering machinery.
+Gated into `filterRegistry.ts` (`studio`, `runtimeMinutes`, `fileContainer`, `videoCodec`, `audioCodec`,
+`fileResolution`, `fileSizeBytes`, `releaseDaysAgo`, `labels`, `watched`, `lastWatchedDaysAgo`,
+`jellyfinAddedDaysAgo`, `jellyfinIsFavorite`).
 
 ## Overseerr
 
@@ -249,7 +266,7 @@ returns per-show `network` data) that simply has no enricher built yet — unlik
 | Sonarr | MediaSource (show), MediaActuator | Yes — source fields direct to `filterRegistry` |
 | Tautulli | MediaEnricher, MediaActuator | Yes — `tautulliEnricher` |
 | Plex | MediaEnricher, MediaActuator | Yes — `plexEnricher` + identity stamping |
-| Jellyfin | MediaActuator | No — connection-test/search only |
+| Jellyfin | MediaEnricher, MediaActuator | Yes — `jellyfinEnricher` |
 | Overseerr | MediaEnricher | Yes — `overseerrEnricher` |
 | Seerr | (same API as Overseerr; role not extended in code) | No — connection-test only, no `ProviderFactory`/enricher wiring |
 | TMDB | MediaEnricher | Partially — only `getStatus` wired; richer surface used by ratings aggregation only |
