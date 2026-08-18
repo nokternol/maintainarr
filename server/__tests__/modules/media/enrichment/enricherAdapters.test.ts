@@ -141,7 +141,7 @@ describe('plexEnricher', () => {
     expect(result.items[0].audioCodec).toBe('dts');
     expect(result.items[0].fileResolution).toBe('1080');
     expect(result.items[0].fileSizeBytes).toBe(8_589_934_592);
-    expect(result.items[0].plexLabels).toEqual(['4K']);
+    expect(result.items[0].labels).toEqual(['4K']);
   });
 });
 

@@ -32,7 +32,7 @@ describe('fieldsByProviderType', () => {
       'videoCodec',
       'audioCodec',
       'fileResolution',
-      'plexLabels',
+      'labels',
     ]);
   });
 

@@ -30,7 +30,7 @@ export interface EnrichmentFields {
   videoCodec: string;
   audioCodec: string;
   fileResolution: string;
-  plexLabels: string[];
+  labels: string[];
 }
 
 /**
@@ -175,7 +175,7 @@ interface PlexNativeFields extends PlayHistoryFields {
   videoCodec?: string;
   audioCodec?: string;
   fileResolution?: string;
-  plexLabels?: string[];
+  labels?: string[];
 }
 
 export const plexFieldProvider: MediaFieldProvider<
@@ -195,7 +195,7 @@ export const plexFieldProvider: MediaFieldProvider<
       | 'videoCodec'
       | 'audioCodec'
       | 'fileResolution'
-      | 'plexLabels'
+      | 'labels'
     >
   >
 > = {
@@ -215,7 +215,7 @@ export const plexFieldProvider: MediaFieldProvider<
         videoCodec: media?.videoCodec,
         audioCodec: media?.audioCodec,
         fileResolution: media?.videoResolution,
-        plexLabels: item.Label?.map((l) => l.tag),
+        labels: item.Label?.map((l) => l.tag),
       });
     }
     return byKey;
@@ -233,8 +233,6 @@ export const plexFieldProvider: MediaFieldProvider<
     ...(native.videoCodec !== undefined ? { videoCodec: native.videoCodec } : {}),
     ...(native.audioCodec !== undefined ? { audioCodec: native.audioCodec } : {}),
     ...(native.fileResolution !== undefined ? { fileResolution: native.fileResolution } : {}),
-    ...(native.plexLabels !== undefined && native.plexLabels.length > 0
-      ? { plexLabels: native.plexLabels }
-      : {}),
+    ...(native.labels !== undefined && native.labels.length > 0 ? { labels: native.labels } : {}),
   }),
 };

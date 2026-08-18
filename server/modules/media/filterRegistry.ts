@@ -314,12 +314,12 @@ export const MEDIA_RULES = [
     label: 'Labels',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: deriveSourceProviders('plexLabels'),
-    sourceField: 'plexLabels',
+    sourceProviders: deriveSourceProviders('labels'),
+    sourceField: 'labels',
     required: false,
     predicate: (item, value) => {
       const labels = parseCsvStrings(value);
-      return (item.plexLabels ?? []).some((l) => labels.includes(l));
+      return (item.labels ?? []).some((l) => labels.includes(l));
     },
   },
 

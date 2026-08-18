@@ -552,14 +552,14 @@ describe('file-tech and release-date predicates', () => {
 
   it('labels — movie: passes when item has any of the csv labels', () => {
     const rule = getRule('labels', 'movie')!;
-    expect(rule.predicate({ ...baseMovie, plexLabels: ['4K', 'Favorites'] }, '4K,HDR')).toBe(true);
-    expect(rule.predicate({ ...baseMovie, plexLabels: ['Favorites'] }, '4K,HDR')).toBe(false);
+    expect(rule.predicate({ ...baseMovie, labels: ['4K', 'Favorites'] }, '4K,HDR')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, labels: ['Favorites'] }, '4K,HDR')).toBe(false);
     expect(rule.predicate(baseMovie, '4K')).toBe(false);
   });
 
   it('labels — show: passes when item has any of the csv labels', () => {
     const rule = getRule('labels', 'show')!;
-    expect(rule.predicate({ ...baseShow, plexLabels: ['Anime'] }, 'Anime,Kids')).toBe(true);
+    expect(rule.predicate({ ...baseShow, labels: ['Anime'] }, 'Anime,Kids')).toBe(true);
     expect(rule.predicate(baseShow, 'Anime')).toBe(false);
   });
 });

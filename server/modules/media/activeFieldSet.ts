@@ -27,7 +27,7 @@ export const fieldsByProviderType = {
     'videoCodec',
     'audioCodec',
     'fileResolution',
-    'plexLabels',
+    'labels',
   ],
   [MetadataProviderType.OVERSEERR]: ['overseerrRequestStatus', 'overseerrHasIssue'],
   [MetadataProviderType.TMDB]: ['tmdbStatus'],

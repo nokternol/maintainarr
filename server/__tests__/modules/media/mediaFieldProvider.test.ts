@@ -231,7 +231,7 @@ describe('plexFieldProvider — file-tech fields', () => {
   });
 });
 
-describe('plexFieldProvider — plexLabels', () => {
+describe('plexFieldProvider — labels', () => {
   it('carries Label tags through as a string array', () => {
     const items: PlexMediaItem[] = [
       {
@@ -245,16 +245,16 @@ describe('plexFieldProvider — plexLabels', () => {
     const native = plexFieldProvider.visit(items).get('plex-101')!;
     const result = plexFieldProvider.toEnrichmentFields(native);
 
-    expect(result.plexLabels).toEqual(['4K', 'Favorites']);
+    expect(result.labels).toEqual(['4K', 'Favorites']);
   });
 
-  it('omits plexLabels when there are no Label tags', () => {
+  it('omits labels when there are no Label tags', () => {
     const items: PlexMediaItem[] = [{ ratingKey: 'plex-101', title: 'M', type: 'movie' }];
 
     const native = plexFieldProvider.visit(items).get('plex-101')!;
     const result = plexFieldProvider.toEnrichmentFields(native);
 
-    expect(result).not.toHaveProperty('plexLabels');
+    expect(result).not.toHaveProperty('labels');
   });
 });
 

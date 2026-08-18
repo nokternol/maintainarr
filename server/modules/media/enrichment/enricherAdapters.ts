@@ -39,7 +39,7 @@ type PlexEnrichedField =
   | 'videoCodec'
   | 'audioCodec'
   | 'fileResolution'
-  | 'plexLabels';
+  | 'labels';
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<PlexEnrichedField> {
   return {
