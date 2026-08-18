@@ -110,6 +110,39 @@ describe('plexEnricher', () => {
 
     expect(result.items[0].runtimeMinutes).toBe(136);
   });
+
+  it('decorates a matched item with its file-tech and release-date fields', async () => {
+    const plex = new PlexProvider(mockConfig, mockLogger);
+    vi.spyOn(plex, 'getAllItems').mockResolvedValue([
+      {
+        ratingKey: 'plex-1',
+        title: 'The Matrix',
+        type: 'movie',
+        originallyAvailableAt: '1999-03-31',
+        Label: [{ tag: '4K' }],
+        Media: [
+          {
+            container: 'mkv',
+            videoCodec: 'h264',
+            audioCodec: 'dts',
+            videoResolution: '1080',
+            Part: [{ size: 8_589_934_592 }],
+          },
+        ],
+      },
+    ]);
+    const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
+
+    const result = await plexEnricher(plex).enrich([item]);
+
+    expect(result.items[0].releaseDate).toBe('1999-03-31');
+    expect(result.items[0].fileContainer).toBe('mkv');
+    expect(result.items[0].videoCodec).toBe('h264');
+    expect(result.items[0].audioCodec).toBe('dts');
+    expect(result.items[0].fileResolution).toBe('1080');
+    expect(result.items[0].fileSizeBytes).toBe(8_589_934_592);
+    expect(result.items[0].plexLabels).toEqual(['4K']);
+  });
 });
 
 describe('tautulliEnricher', () => {

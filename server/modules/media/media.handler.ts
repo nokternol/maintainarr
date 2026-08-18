@@ -73,6 +73,15 @@ const sharedFilterFields = {
   lastWatchedDaysAgoLte: intNum(),
   plexAddedDaysAgoGte: intNum(),
   plexAddedDaysAgoLte: intNum(),
+  fileSizeBytesGte: num(),
+  fileSizeBytesLte: num(),
+  releaseDaysAgoGte: intNum(),
+  releaseDaysAgoLte: intNum(),
+  fileContainer: z.string().optional(),
+  videoCodec: z.string().optional(),
+  audioCodec: z.string().optional(),
+  fileResolution: z.string().optional(),
+  labels: z.string().optional(),
   sort: sortField,
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
@@ -158,6 +167,15 @@ const MOVIE_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
+  fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
+  releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
+  releaseDaysAgoLte: { key: 'releaseDaysAgo', bound: 'max' },
+  fileContainer: { key: 'fileContainer' },
+  videoCodec: { key: 'videoCodec' },
+  audioCodec: { key: 'audioCodec' },
+  fileResolution: { key: 'fileResolution' },
+  labels: { key: 'labels' },
 } as const satisfies Record<string, ParamMapping>;
 
 const SERIES_PARAM_TO_KEY = {
@@ -194,6 +212,15 @@ const SERIES_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
+  fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
+  releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
+  releaseDaysAgoLte: { key: 'releaseDaysAgo', bound: 'max' },
+  fileContainer: { key: 'fileContainer' },
+  videoCodec: { key: 'videoCodec' },
+  audioCodec: { key: 'audioCodec' },
+  fileResolution: { key: 'fileResolution' },
+  labels: { key: 'labels' },
 } as const satisfies Record<string, ParamMapping>;
 
 /**
@@ -223,6 +250,8 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
   runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
+  fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
+  releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
 };
 
@@ -234,6 +263,8 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
+  releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
   communityRating: { gte: 'sonarrRatingGte', lte: 'sonarrRatingLte' },
   lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
   episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },

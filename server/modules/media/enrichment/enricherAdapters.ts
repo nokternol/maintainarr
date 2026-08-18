@@ -32,7 +32,14 @@ type PlexEnrichedField =
   | 'lastWatchedAt'
   | 'plexAddedAt'
   | 'studio'
-  | 'runtimeMinutes';
+  | 'runtimeMinutes'
+  | 'fileSizeBytes'
+  | 'releaseDate'
+  | 'fileContainer'
+  | 'videoCodec'
+  | 'audioCodec'
+  | 'fileResolution'
+  | 'plexLabels';
 
 export function plexEnricher(plex: PlexProvider): MediaEnricher<PlexEnrichedField> {
   return {

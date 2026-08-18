@@ -150,6 +150,114 @@ describe('plexFieldProvider — runtimeMinutes', () => {
   });
 });
 
+describe('plexFieldProvider — fileSizeBytes', () => {
+  it('carries the file size from Media/Part through to the canonical field', () => {
+    const items: PlexMediaItem[] = [
+      {
+        ratingKey: 'plex-101',
+        title: 'M',
+        type: 'movie',
+        Media: [{ Part: [{ size: 4_294_967_296 }] }],
+      },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.fileSizeBytes).toBe(4_294_967_296);
+  });
+
+  it('omits fileSizeBytes when no Media/Part is present', () => {
+    const items: PlexMediaItem[] = [{ ratingKey: 'plex-101', title: 'M', type: 'movie' }];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result).not.toHaveProperty('fileSizeBytes');
+  });
+});
+
+describe('plexFieldProvider — releaseDate', () => {
+  it('carries originallyAvailableAt through to the canonical field unchanged', () => {
+    const items: PlexMediaItem[] = [
+      { ratingKey: 'plex-101', title: 'M', type: 'movie', originallyAvailableAt: '1999-03-31' },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.releaseDate).toBe('1999-03-31');
+  });
+});
+
+describe('plexFieldProvider — file-tech fields', () => {
+  it('carries container, video codec, audio codec, and resolution from the primary Media/Part', () => {
+    const items: PlexMediaItem[] = [
+      {
+        ratingKey: 'plex-101',
+        title: 'M',
+        type: 'movie',
+        Media: [
+          {
+            container: 'mkv',
+            videoCodec: 'h264',
+            audioCodec: 'aac',
+            videoResolution: '1080',
+            Part: [{ size: 123 }],
+          },
+        ],
+      },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.fileContainer).toBe('mkv');
+    expect(result.videoCodec).toBe('h264');
+    expect(result.audioCodec).toBe('aac');
+    expect(result.fileResolution).toBe('1080');
+  });
+
+  it('omits file-tech fields when no Media entry is present', () => {
+    const items: PlexMediaItem[] = [{ ratingKey: 'plex-101', title: 'M', type: 'movie' }];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result).not.toHaveProperty('fileContainer');
+    expect(result).not.toHaveProperty('videoCodec');
+    expect(result).not.toHaveProperty('audioCodec');
+    expect(result).not.toHaveProperty('fileResolution');
+  });
+});
+
+describe('plexFieldProvider — plexLabels', () => {
+  it('carries Label tags through as a string array', () => {
+    const items: PlexMediaItem[] = [
+      {
+        ratingKey: 'plex-101',
+        title: 'M',
+        type: 'movie',
+        Label: [{ tag: '4K' }, { tag: 'Favorites' }],
+      },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.plexLabels).toEqual(['4K', 'Favorites']);
+  });
+
+  it('omits plexLabels when there are no Label tags', () => {
+    const items: PlexMediaItem[] = [{ ratingKey: 'plex-101', title: 'M', type: 'movie' }];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result).not.toHaveProperty('plexLabels');
+  });
+});
+
 describe('tmdbFieldSource', () => {
   it('transforms the raw TMDB status string into the canonical tmdbStatus field', () => {
     const result = tmdbFieldSource.toEnrichmentFields('Released');

@@ -52,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 30 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(30);
+  it('contains exactly 37 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(37);
   });
 
   it('every entry has required fields', () => {
@@ -496,5 +496,70 @@ describe('show predicates', () => {
     expect(rule.predicate({ ...baseMovie, lastWatchedAt: tenDaysAgo }, { min: 7 })).toBe(true);
     expect(rule.predicate({ ...baseMovie, lastWatchedAt: twoDaysAgo }, { min: 7 })).toBe(false);
     expect(rule.predicate({ ...baseMovie, lastWatchedAt: undefined }, { max: 7 })).toBe(false);
+  });
+});
+
+// ─── File-tech and release-date predicates (Plex-sourced, shared) ────────────
+
+describe('file-tech and release-date predicates', () => {
+  it('fileSizeBytes — movie: passes within min/max bounds', () => {
+    const rule = getRule('fileSizeBytes', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, fileSizeBytes: 1000 }, { min: 500 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, fileSizeBytes: 1000 }, { min: 1500 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, fileSizeBytes: 1000 }, { max: 1500 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, fileSizeBytes: 1000 }, { max: 500 })).toBe(false);
+    expect(rule.predicate(baseMovie, { min: 500 })).toBe(false);
+  });
+
+  it('fileSizeBytes — show: passes within min/max bounds', () => {
+    const rule = getRule('fileSizeBytes', 'show')!;
+    expect(rule.predicate({ ...baseShow, fileSizeBytes: 1000 }, { min: 500 })).toBe(true);
+    expect(rule.predicate(baseShow, { min: 500 })).toBe(false);
+  });
+
+  it('releaseDaysAgo — movie: passes within min/max bounds', () => {
+    const rule = getRule('releaseDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, releaseDate: tenDaysAgo }, { min: 5 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, releaseDate: tenDaysAgo }, { min: 15 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, releaseDate: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('fileContainer — movie: passes when item container is in the csv list', () => {
+    const rule = getRule('fileContainer', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, fileContainer: 'mkv' }, 'mkv,mp4')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, fileContainer: 'avi' }, 'mkv,mp4')).toBe(false);
+    expect(rule.predicate(baseMovie, 'mkv')).toBe(false);
+  });
+
+  it('videoCodec — movie: passes when item codec is in the csv list', () => {
+    const rule = getRule('videoCodec', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, videoCodec: 'h264' }, 'h264,hevc')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, videoCodec: 'mpeg2video' }, 'h264,hevc')).toBe(false);
+  });
+
+  it('audioCodec — movie: passes when item codec is in the csv list', () => {
+    const rule = getRule('audioCodec', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, audioCodec: 'aac' }, 'aac,dts')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, audioCodec: 'mp3' }, 'aac,dts')).toBe(false);
+  });
+
+  it('fileResolution — movie: passes when item resolution is in the csv list', () => {
+    const rule = getRule('fileResolution', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, fileResolution: '1080' }, '1080,4k')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, fileResolution: '720' }, '1080,4k')).toBe(false);
+  });
+
+  it('labels — movie: passes when item has any of the csv labels', () => {
+    const rule = getRule('labels', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, plexLabels: ['4K', 'Favorites'] }, '4K,HDR')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, plexLabels: ['Favorites'] }, '4K,HDR')).toBe(false);
+    expect(rule.predicate(baseMovie, '4K')).toBe(false);
+  });
+
+  it('labels — show: passes when item has any of the csv labels', () => {
+    const rule = getRule('labels', 'show')!;
+    expect(rule.predicate({ ...baseShow, plexLabels: ['Anime'] }, 'Anime,Kids')).toBe(true);
+    expect(rule.predicate(baseShow, 'Anime')).toBe(false);
   });
 });

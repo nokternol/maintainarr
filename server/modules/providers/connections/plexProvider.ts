@@ -8,6 +8,19 @@ export interface PlexLibrary {
   type: string;
 }
 
+export interface PlexMediaPart {
+  size?: number;
+  file?: string;
+}
+
+export interface PlexMedia {
+  container?: string;
+  videoCodec?: string;
+  audioCodec?: string;
+  videoResolution?: string;
+  Part?: PlexMediaPart[];
+}
+
 export interface PlexMediaItem {
   ratingKey: string;
   title: string;
@@ -20,6 +33,11 @@ export interface PlexMediaItem {
   addedAt?: number;
   studio?: string;
   duration?: number;
+  contentRating?: string;
+  originallyAvailableAt?: string;
+  Genre?: { tag: string }[];
+  Label?: { tag: string }[];
+  Media?: PlexMedia[];
 }
 
 /**
