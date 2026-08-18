@@ -19,6 +19,7 @@ export interface PlexMediaItem {
   lastViewedAt?: number;
   addedAt?: number;
   studio?: string;
+  duration?: number;
 }
 
 /**

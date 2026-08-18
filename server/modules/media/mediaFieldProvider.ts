@@ -22,6 +22,7 @@ export interface EnrichmentFields {
   tmdbStatus: string;
   plexAddedAt: string;
   studio: string;
+  runtimeMinutes: number;
 }
 
 /**
@@ -151,12 +152,18 @@ export const overseerrFieldProvider: MediaFieldProvider<
 interface PlexNativeFields extends PlayHistoryFields {
   addedAtUnix?: number;
   studio?: string;
+  durationMs?: number;
 }
 
 export const plexFieldProvider: MediaFieldProvider<
   PlexMediaItem[],
   PlexNativeFields,
-  Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt' | 'plexAddedAt' | 'studio'>>
+  Partial<
+    Pick<
+      EnrichmentFields,
+      'playCount' | 'lastWatchedAt' | 'plexAddedAt' | 'studio' | 'runtimeMinutes'
+    >
+  >
 > = {
   visit: (items) => {
     const byKey = new Map<string, PlexNativeFields>();
@@ -166,6 +173,7 @@ export const plexFieldProvider: MediaFieldProvider<
         lastPlayedUnix: item.lastViewedAt,
         addedAtUnix: item.addedAt,
         studio: item.studio,
+        durationMs: item.duration,
       });
     }
     return byKey;
@@ -174,5 +182,8 @@ export const plexFieldProvider: MediaFieldProvider<
     ...playHistoryToEnrichmentFields(native),
     ...(native.addedAtUnix !== undefined ? { plexAddedAt: toIso(native.addedAtUnix) } : {}),
     ...(native.studio !== undefined ? { studio: native.studio } : {}),
+    ...(native.durationMs !== undefined
+      ? { runtimeMinutes: Math.round(native.durationMs / 60_000) }
+      : {}),
   }),
 };

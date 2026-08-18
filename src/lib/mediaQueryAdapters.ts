@@ -64,6 +64,8 @@ const BROWSE_PARAM_BINDINGS = {
   movieGenres: { scope: 'movie', key: 'genres' },
   radarrImdbRatingGte: { scope: 'movie', key: 'imdbRating', bound: 'min' },
   radarrImdbRatingLte: { scope: 'movie', key: 'imdbRating', bound: 'max' },
+  runtimeMinutesGte: { scope: 'movie', key: 'runtimeMinutes', bound: 'min' },
+  runtimeMinutesLte: { scope: 'movie', key: 'runtimeMinutes', bound: 'max' },
   monitored: { scope: 'show', key: 'monitored' },
   seriesStatus: { scope: 'show', key: 'seriesStatus' },
   seriesTagIds: { scope: 'show', key: 'tagIds' },
@@ -100,6 +102,7 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
+  runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
 };
 

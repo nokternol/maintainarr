@@ -128,6 +128,28 @@ describe('plexFieldProvider — studio', () => {
   });
 });
 
+describe('plexFieldProvider — runtimeMinutes', () => {
+  it('converts duration from milliseconds to minutes', () => {
+    const items: PlexMediaItem[] = [
+      { ratingKey: 'plex-101', title: 'M', type: 'movie', duration: 7_320_000 },
+    ];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result.runtimeMinutes).toBe(122);
+  });
+
+  it('omits runtimeMinutes when duration is absent', () => {
+    const items: PlexMediaItem[] = [{ ratingKey: 'plex-101', title: 'M', type: 'movie' }];
+
+    const native = plexFieldProvider.visit(items).get('plex-101')!;
+    const result = plexFieldProvider.toEnrichmentFields(native);
+
+    expect(result).not.toHaveProperty('runtimeMinutes');
+  });
+});
+
 describe('tmdbFieldSource', () => {
   it('transforms the raw TMDB status string into the canonical tmdbStatus field', () => {
     const result = tmdbFieldSource.toEnrichmentFields('Released');

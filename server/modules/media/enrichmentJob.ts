@@ -86,6 +86,7 @@ export class EnrichmentJob {
         tmdbStatus: resolved?.tmdbStatus ?? null,
         plexAddedAt: resolved?.plexAddedAt ?? null,
         studio: resolved?.studio ?? null,
+        runtimeMinutes: resolved?.runtimeMinutes ?? null,
       };
       const presentFields = Object.fromEntries(
         Object.entries(values).filter(([, value]) => value !== null)

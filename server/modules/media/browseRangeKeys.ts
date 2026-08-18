@@ -17,6 +17,7 @@ export type MovieRangeRuleKey =
   | 'addedDaysAgo'
   | 'plexAddedDaysAgo'
   | 'sizeOnDiskGb'
+  | 'runtimeMinutes'
   | 'imdbRating'
   | 'lastWatchedDaysAgo';
 

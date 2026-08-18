@@ -52,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 29 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(29);
+  it('contains exactly 30 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(30);
   });
 
   it('every entry has required fields', () => {
@@ -295,6 +295,15 @@ describe('movie predicates', () => {
     expect(rule.predicate(baseMovie, { max: 9.0 })).toBe(true);
     expect(rule.predicate(baseMovie, { max: 7.0 })).toBe(false);
     expect(rule.predicate({ ...baseMovie, imdbRating: undefined }, { min: 8.0 })).toBe(false);
+  });
+
+  it('runtimeMinutes — passes within min/max bounds', () => {
+    const rule = getRule('runtimeMinutes', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, runtimeMinutes: 148 }, { min: 120 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, runtimeMinutes: 148 }, { min: 150 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, runtimeMinutes: 148 }, { max: 150 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, runtimeMinutes: 148 }, { max: 120 })).toBe(false);
+    expect(rule.predicate(baseMovie, { min: 120 })).toBe(false);
   });
 
   it('watched — passes when playCount > 0', () => {

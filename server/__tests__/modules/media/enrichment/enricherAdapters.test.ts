@@ -98,6 +98,18 @@ describe('plexEnricher', () => {
 
     expect(result.items[0].studio).toBe('Warner Bros');
   });
+
+  it('decorates a matched item with its runtime in minutes, converted from milliseconds', async () => {
+    const plex = new PlexProvider(mockConfig, mockLogger);
+    vi.spyOn(plex, 'getAllItems').mockResolvedValue([
+      { ratingKey: 'plex-1', title: 'The Matrix', type: 'movie', duration: 8_160_000 },
+    ]);
+    const item: NormalizedMovie = { _sourceIds: { plex: 'plex-1' }, title: 'The Matrix' };
+
+    const result = await plexEnricher(plex).enrich([item]);
+
+    expect(result.items[0].runtimeMinutes).toBe(136);
+  });
 });
 
 describe('tautulliEnricher', () => {

@@ -91,6 +91,8 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   movieGenres: z.string().optional(),
   radarrImdbRatingGte: num(),
   radarrImdbRatingLte: num(),
+  runtimeMinutesGte: intNum(),
+  runtimeMinutesLte: intNum(),
 });
 
 const seriesQuerySchema = paginationQuerySchema.extend({
@@ -147,6 +149,8 @@ const MOVIE_PARAM_TO_KEY = {
   sizeOnDiskGbLte: { key: 'sizeOnDiskGb', bound: 'max' },
   radarrImdbRatingGte: { key: 'imdbRating', bound: 'min' },
   radarrImdbRatingLte: { key: 'imdbRating', bound: 'max' },
+  runtimeMinutesGte: { key: 'runtimeMinutes', bound: 'min' },
+  runtimeMinutesLte: { key: 'runtimeMinutes', bound: 'max' },
   overseerrRequestStatus: { key: 'overseerrRequestStatus' },
   overseerrHasIssue: { key: 'overseerrHasIssue' },
   tmdbStatus: { key: 'tmdbStatus' },
@@ -218,6 +222,7 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
+  runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
 };
 

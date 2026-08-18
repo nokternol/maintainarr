@@ -291,6 +291,20 @@ export const MEDIA_RULES = [
     },
   },
   {
+    key: 'runtimeMinutes',
+    label: 'Runtime (minutes)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('runtimeMinutes'),
+    sourceField: 'runtimeMinutes',
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (movie.runtimeMinutes === undefined) return false;
+      return inRange(movie.runtimeMinutes, value);
+    },
+  },
+  {
     key: 'imdbRating',
     label: 'IMDB rating',
     contentTypes: ['movie'],
