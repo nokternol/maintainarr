@@ -16,6 +16,11 @@ export function createMediaRoutes(
     listGenres,
     listNetworks,
     listStudio,
+    listFileContainers,
+    listVideoCodecs,
+    listAudioCodecs,
+    listFileResolutions,
+    listLabels,
     listSources,
     resetMedia,
   } = handlers ?? createMediaHandlers(cradle);
@@ -28,6 +33,11 @@ export function createMediaRoutes(
   router.get('/genres', isAuthenticated(), listGenres);
   router.get('/networks', isAuthenticated(), listNetworks);
   router.get('/studio', isAuthenticated(), listStudio);
+  router.get('/file-containers', isAuthenticated(), listFileContainers);
+  router.get('/video-codecs', isAuthenticated(), listVideoCodecs);
+  router.get('/audio-codecs', isAuthenticated(), listAudioCodecs);
+  router.get('/file-resolutions', isAuthenticated(), listFileResolutions);
+  router.get('/labels', isAuthenticated(), listLabels);
   router.delete('/reset', isAuthenticated(), resetMedia);
 
   return router;

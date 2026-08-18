@@ -5,6 +5,7 @@ import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
 import {
   type IProviderFactory,
+  type PlexMediaItem,
   type PlexProvider,
   ProviderFactory,
   type ProviderSettingsService,
@@ -73,6 +74,15 @@ const sharedFilterFields = {
   lastWatchedDaysAgoLte: intNum(),
   plexAddedDaysAgoGte: intNum(),
   plexAddedDaysAgoLte: intNum(),
+  fileSizeBytesGte: num(),
+  fileSizeBytesLte: num(),
+  releaseDaysAgoGte: intNum(),
+  releaseDaysAgoLte: intNum(),
+  fileContainer: z.string().optional(),
+  videoCodec: z.string().optional(),
+  audioCodec: z.string().optional(),
+  fileResolution: z.string().optional(),
+  labels: z.string().optional(),
   sort: sortField,
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
@@ -91,6 +101,8 @@ const moviesQuerySchema = paginationQuerySchema.extend({
   movieGenres: z.string().optional(),
   radarrImdbRatingGte: num(),
   radarrImdbRatingLte: num(),
+  runtimeMinutesGte: intNum(),
+  runtimeMinutesLte: intNum(),
 });
 
 const seriesQuerySchema = paginationQuerySchema.extend({
@@ -147,6 +159,8 @@ const MOVIE_PARAM_TO_KEY = {
   sizeOnDiskGbLte: { key: 'sizeOnDiskGb', bound: 'max' },
   radarrImdbRatingGte: { key: 'imdbRating', bound: 'min' },
   radarrImdbRatingLte: { key: 'imdbRating', bound: 'max' },
+  runtimeMinutesGte: { key: 'runtimeMinutes', bound: 'min' },
+  runtimeMinutesLte: { key: 'runtimeMinutes', bound: 'max' },
   overseerrRequestStatus: { key: 'overseerrRequestStatus' },
   overseerrHasIssue: { key: 'overseerrHasIssue' },
   tmdbStatus: { key: 'tmdbStatus' },
@@ -154,6 +168,15 @@ const MOVIE_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
+  fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
+  releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
+  releaseDaysAgoLte: { key: 'releaseDaysAgo', bound: 'max' },
+  fileContainer: { key: 'fileContainer' },
+  videoCodec: { key: 'videoCodec' },
+  audioCodec: { key: 'audioCodec' },
+  fileResolution: { key: 'fileResolution' },
+  labels: { key: 'labels' },
 } as const satisfies Record<string, ParamMapping>;
 
 const SERIES_PARAM_TO_KEY = {
@@ -190,6 +213,15 @@ const SERIES_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
+  fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
+  releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
+  releaseDaysAgoLte: { key: 'releaseDaysAgo', bound: 'max' },
+  fileContainer: { key: 'fileContainer' },
+  videoCodec: { key: 'videoCodec' },
+  audioCodec: { key: 'audioCodec' },
+  fileResolution: { key: 'fileResolution' },
+  labels: { key: 'labels' },
 } as const satisfies Record<string, ParamMapping>;
 
 /**
@@ -218,6 +250,9 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
+  runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
+  fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
+  releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
 };
 
@@ -229,6 +264,8 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
+  fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
+  releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },
   communityRating: { gte: 'sonarrRatingGte', lte: 'sonarrRatingLte' },
   lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
   episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
@@ -392,6 +429,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
   const studioCache = new MediaCache<string[]>();
+  const fileContainerCache = new MediaCache<string[]>();
+  const videoCodecCache = new MediaCache<string[]>();
+  const audioCodecCache = new MediaCache<string[]>();
+  const fileResolutionCache = new MediaCache<string[]>();
+  const labelsCache = new MediaCache<string[]>();
+  const plexItemsCache = new MediaCache<PlexMediaItem[]>();
 
   /** One active Radarr instance's library, kept separate so browse can attribute copies. */
   async function getMovies(): Promise<{ sublists: MovieSublist[]; errors: MediaError[] }> {
@@ -441,6 +484,47 @@ export function createMediaHandlers(cradle: MediaCradle) {
     });
   }
 
+  /** Every active Plex instance's flattened library — shared by every Plex-sourced
+   *  lookup (studio, file-tech fields, labels) so each fetches Plex once, not once
+   *  per lookup route. */
+  async function getPlexItems(): Promise<PlexMediaItem[]> {
+    return plexItemsCache.getOrFetch('plexItems', async () => {
+      const providers = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.PLEX,
+      ]);
+      const all: PlexMediaItem[] = [];
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const plex = factory.create(provider, log) as PlexProvider;
+            all.push(...(await plex.getAllItems()));
+          } catch (err) {
+            log.warn('Plex fetch failed', { provider: provider.name, err });
+          }
+        })
+      );
+      return all;
+    });
+  }
+
+  /** Dedupe+sort a string projection over every fetched Plex item — the shape every
+   *  file-tech/label lookup route shares. */
+  function plexStringLookup(
+    cache: MediaCache<string[]>,
+    cacheKey: string,
+    pick: (item: PlexMediaItem) => string | string[] | undefined
+  ) {
+    return () =>
+      cache.getOrFetch(cacheKey, async () => {
+        const items = await getPlexItems();
+        const values = items.flatMap((item) => {
+          const v = pick(item);
+          return v === undefined ? [] : Array.isArray(v) ? v : [v];
+        });
+        return [...new Set(values)].sort();
+      });
+  }
+
   function invalidateMediaCaches(): void {
     moviesCache.invalidate('movies');
     seriesCache.invalidate('series');
@@ -448,6 +532,13 @@ export function createMediaHandlers(cradle: MediaCradle) {
     qualityProfilesCache.invalidate('qualityProfiles');
     genresCache.invalidate('genres');
     networksCache.invalidate('networks');
+    studioCache.invalidate('studio');
+    fileContainerCache.invalidate('fileContainer');
+    videoCodecCache.invalidate('videoCodec');
+    audioCodecCache.invalidate('audioCodec');
+    fileResolutionCache.invalidate('fileResolution');
+    labelsCache.invalidate('labels');
+    plexItemsCache.invalidate('plexItems');
   }
 
   return {
@@ -658,6 +749,34 @@ export function createMediaHandlers(cradle: MediaCradle) {
           );
           return [...new Set(all)].sort();
         }),
+    }),
+
+    listFileContainers: defineRoute({
+      handler: plexStringLookup(
+        fileContainerCache,
+        'fileContainer',
+        (i) => i.Media?.[0]?.container
+      ),
+    }),
+
+    listVideoCodecs: defineRoute({
+      handler: plexStringLookup(videoCodecCache, 'videoCodec', (i) => i.Media?.[0]?.videoCodec),
+    }),
+
+    listAudioCodecs: defineRoute({
+      handler: plexStringLookup(audioCodecCache, 'audioCodec', (i) => i.Media?.[0]?.audioCodec),
+    }),
+
+    listFileResolutions: defineRoute({
+      handler: plexStringLookup(
+        fileResolutionCache,
+        'fileResolution',
+        (i) => i.Media?.[0]?.videoResolution
+      ),
+    }),
+
+    listLabels: defineRoute({
+      handler: plexStringLookup(labelsCache, 'labels', (i) => i.Label?.map((l) => l.tag)),
     }),
 
     listSources: defineRoute({

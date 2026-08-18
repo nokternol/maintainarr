@@ -231,6 +231,97 @@ export const MEDIA_RULES = [
     required: false,
     predicate: (item, value) => item.hasFile === asBool(value),
   },
+  {
+    key: 'fileSizeBytes',
+    label: 'File size (bytes)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('fileSizeBytes'),
+    sourceField: 'fileSizeBytes',
+    required: false,
+    predicate: (item, value) => {
+      if (item.fileSizeBytes === undefined) return false;
+      return inRange(item.fileSizeBytes, value);
+    },
+  },
+  {
+    key: 'releaseDaysAgo',
+    label: 'Release date (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('releaseDate'),
+    sourceField: 'releaseDate',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.releaseDate) return false;
+      return inRange(daysElapsed(item.releaseDate), value);
+    },
+  },
+  {
+    key: 'fileContainer',
+    label: 'File container',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('fileContainer'),
+    sourceField: 'fileContainer',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.fileContainer) return false;
+      return parseCsvStrings(value).includes(item.fileContainer);
+    },
+  },
+  {
+    key: 'videoCodec',
+    label: 'Video codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('videoCodec'),
+    sourceField: 'videoCodec',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.videoCodec) return false;
+      return parseCsvStrings(value).includes(item.videoCodec);
+    },
+  },
+  {
+    key: 'audioCodec',
+    label: 'Audio codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('audioCodec'),
+    sourceField: 'audioCodec',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.audioCodec) return false;
+      return parseCsvStrings(value).includes(item.audioCodec);
+    },
+  },
+  {
+    key: 'fileResolution',
+    label: 'File resolution',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('fileResolution'),
+    sourceField: 'fileResolution',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.fileResolution) return false;
+      return parseCsvStrings(value).includes(item.fileResolution);
+    },
+  },
+  {
+    key: 'labels',
+    label: 'Labels',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: deriveSourceProviders('plexLabels'),
+    sourceField: 'plexLabels',
+    required: false,
+    predicate: (item, value) => {
+      const labels = parseCsvStrings(value);
+      return (item.plexLabels ?? []).some((l) => labels.includes(l));
+    },
+  },
 
   // ── Movie-only ─────────────────────────────────────────────────────────────
   {
@@ -288,6 +379,20 @@ export const MEDIA_RULES = [
     predicate: (item, value) => {
       if (!item.studio) return false;
       return parseCsvStrings(value).includes(item.studio);
+    },
+  },
+  {
+    key: 'runtimeMinutes',
+    label: 'Runtime (minutes)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('runtimeMinutes'),
+    sourceField: 'runtimeMinutes',
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (movie.runtimeMinutes === undefined) return false;
+      return inRange(movie.runtimeMinutes, value);
     },
   },
   {

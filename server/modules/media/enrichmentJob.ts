@@ -86,6 +86,14 @@ export class EnrichmentJob {
         tmdbStatus: resolved?.tmdbStatus ?? null,
         plexAddedAt: resolved?.plexAddedAt ?? null,
         studio: resolved?.studio ?? null,
+        runtimeMinutes: resolved?.runtimeMinutes ?? null,
+        fileSizeBytes: resolved?.fileSizeBytes ?? null,
+        releaseDate: resolved?.releaseDate ?? null,
+        fileContainer: resolved?.fileContainer ?? null,
+        videoCodec: resolved?.videoCodec ?? null,
+        audioCodec: resolved?.audioCodec ?? null,
+        fileResolution: resolved?.fileResolution ?? null,
+        plexLabels: resolved?.plexLabels ?? null,
       };
       const presentFields = Object.fromEntries(
         Object.entries(values).filter(([, value]) => value !== null)

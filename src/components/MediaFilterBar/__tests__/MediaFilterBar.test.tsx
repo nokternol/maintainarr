@@ -238,6 +238,70 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     sourceProviders: ['RADARR', 'SONARR', 'TMDB', 'OMDB'],
     required: false,
   },
+  {
+    key: 'fileContainer',
+    label: 'File container',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'videoCodec',
+    label: 'Video codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'audioCodec',
+    label: 'Audio codec',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'fileResolution',
+    label: 'File resolution',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'labels',
+    label: 'Labels',
+    contentTypes: ['movie', 'show'],
+    dataType: 'csv-strings',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'fileSizeBytes',
+    label: 'File size (bytes)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'releaseDaysAgo',
+    label: 'Release date (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'runtimeMinutes',
+    label: 'Runtime (minutes)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['PLEX'],
+    required: false,
+  },
 ];
 
 function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
@@ -281,6 +345,11 @@ const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
   },
   networks: ['HBO', 'Netflix'],
   studio: ['Legendary Pictures', 'Warner Bros'],
+  fileContainers: ['mkv', 'mp4'],
+  videoCodecs: ['h264', 'hevc'],
+  audioCodecs: ['aac', 'dts'],
+  fileResolutions: ['1080', '4k'],
+  labels: ['4K', 'Favorites'],
 };
 
 const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
@@ -289,6 +358,11 @@ const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
   genres: { movies: [], series: [] },
   networks: [],
   studio: [],
+  fileContainers: [],
+  videoCodecs: [],
+  audioCodecs: [],
+  fileResolutions: [],
+  labels: [],
 };
 
 function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBarProps {
@@ -498,6 +572,36 @@ describe('MediaFilterBar — MultiSelectDropdown', () => {
     );
     await addFilter(user, /movie studio/i);
     expect(screen.getByRole('button', { name: /movie studio/i })).toBeInTheDocument();
+  });
+
+  it('renders file container dropdown when file container options are present', async () => {
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          lookups: RICH_LOOKUPS,
+          rules: rulesFor(new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX'])),
+          configuredTypes: new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX']),
+        })}
+      />
+    );
+    await addFilter(user, /file container/i);
+    expect(screen.getByRole('button', { name: /file container/i })).toBeInTheDocument();
+  });
+
+  it('renders labels dropdown when label options are present', async () => {
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          lookups: RICH_LOOKUPS,
+          rules: rulesFor(new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX'])),
+          configuredTypes: new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX']),
+        })}
+      />
+    );
+    await addFilter(user, 'Labels');
+    expect(screen.getByRole('button', { name: 'Labels' })).toBeInTheDocument();
   });
 
   it('does not render movie tags dropdown when no radarr tags', () => {

@@ -59,7 +59,7 @@ export { JellyfinProvider } from './connections/jellyfinProvider';
 export { OverseerrProvider } from './connections/overseerrProvider';
 export type { OverseerrIssue, OverseerrRequest } from './connections/overseerrProvider';
 export { PlexProvider } from './connections/plexProvider';
-export type { PlexMediaItem } from './connections/plexProvider';
+export type { PlexMedia, PlexMediaItem, PlexMediaPart } from './connections/plexProvider';
 export { RadarrProvider } from './connections/radarrProvider';
 export type { RadarrMovie, RadarrProfile, RadarrTag } from './connections/radarrProvider';
 export { SonarrProvider } from './connections/sonarrProvider';

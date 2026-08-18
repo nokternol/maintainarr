@@ -19,12 +19,20 @@ describe('fieldsByProviderType', () => {
     ]);
   });
 
-  it('declares playCount, lastWatchedAt, plexAddedAt, and studio for Plex', () => {
+  it('declares every field Plex produces', () => {
     expect(fieldsByProviderType[MetadataProviderType.PLEX]).toEqual([
       'playCount',
       'lastWatchedAt',
       'plexAddedAt',
       'studio',
+      'runtimeMinutes',
+      'fileSizeBytes',
+      'releaseDate',
+      'fileContainer',
+      'videoCodec',
+      'audioCodec',
+      'fileResolution',
+      'plexLabels',
     ]);
   });
 

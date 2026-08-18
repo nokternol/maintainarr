@@ -1,6 +1,7 @@
 import type {
   OverseerrIssue,
   OverseerrRequest,
+  PlexMedia,
   PlexMediaItem,
   TautulliHistoryItem,
 } from '../providers';
@@ -22,6 +23,14 @@ export interface EnrichmentFields {
   tmdbStatus: string;
   plexAddedAt: string;
   studio: string;
+  runtimeMinutes: number;
+  fileSizeBytes: number;
+  releaseDate: string;
+  fileContainer: string;
+  videoCodec: string;
+  audioCodec: string;
+  fileResolution: string;
+  plexLabels: string[];
 }
 
 /**
@@ -147,25 +156,66 @@ export const overseerrFieldProvider: MediaFieldProvider<
   }),
 };
 
-/** Plex's own representation: play history plus its library-added timestamp. */
+/** The first `Media` entry's first `Part` — the file Plex actually plays, per item. */
+function primaryPart(item: PlexMediaItem): { media?: PlexMedia; size?: number } {
+  const media = item.Media?.[0];
+  return { media, size: media?.Part?.[0]?.size };
+}
+
+/** Plex's own representation: play history plus its library-added timestamp and
+ *  the rest of the item's directly-owned metadata (studio, runtime, file-tech,
+ *  release date, labels). */
 interface PlexNativeFields extends PlayHistoryFields {
   addedAtUnix?: number;
   studio?: string;
+  durationMs?: number;
+  fileSizeBytes?: number;
+  releaseDate?: string;
+  fileContainer?: string;
+  videoCodec?: string;
+  audioCodec?: string;
+  fileResolution?: string;
+  plexLabels?: string[];
 }
 
 export const plexFieldProvider: MediaFieldProvider<
   PlexMediaItem[],
   PlexNativeFields,
-  Partial<Pick<EnrichmentFields, 'playCount' | 'lastWatchedAt' | 'plexAddedAt' | 'studio'>>
+  Partial<
+    Pick<
+      EnrichmentFields,
+      | 'playCount'
+      | 'lastWatchedAt'
+      | 'plexAddedAt'
+      | 'studio'
+      | 'runtimeMinutes'
+      | 'fileSizeBytes'
+      | 'releaseDate'
+      | 'fileContainer'
+      | 'videoCodec'
+      | 'audioCodec'
+      | 'fileResolution'
+      | 'plexLabels'
+    >
+  >
 > = {
   visit: (items) => {
     const byKey = new Map<string, PlexNativeFields>();
     for (const item of items) {
+      const { media, size } = primaryPart(item);
       byKey.set(item.ratingKey, {
         playCount: item.viewCount ?? 0,
         lastPlayedUnix: item.lastViewedAt,
         addedAtUnix: item.addedAt,
         studio: item.studio,
+        durationMs: item.duration,
+        fileSizeBytes: size,
+        releaseDate: item.originallyAvailableAt,
+        fileContainer: media?.container,
+        videoCodec: media?.videoCodec,
+        audioCodec: media?.audioCodec,
+        fileResolution: media?.videoResolution,
+        plexLabels: item.Label?.map((l) => l.tag),
       });
     }
     return byKey;
@@ -174,5 +224,17 @@ export const plexFieldProvider: MediaFieldProvider<
     ...playHistoryToEnrichmentFields(native),
     ...(native.addedAtUnix !== undefined ? { plexAddedAt: toIso(native.addedAtUnix) } : {}),
     ...(native.studio !== undefined ? { studio: native.studio } : {}),
+    ...(native.durationMs !== undefined
+      ? { runtimeMinutes: Math.round(native.durationMs / 60_000) }
+      : {}),
+    ...(native.fileSizeBytes !== undefined ? { fileSizeBytes: native.fileSizeBytes } : {}),
+    ...(native.releaseDate !== undefined ? { releaseDate: native.releaseDate } : {}),
+    ...(native.fileContainer !== undefined ? { fileContainer: native.fileContainer } : {}),
+    ...(native.videoCodec !== undefined ? { videoCodec: native.videoCodec } : {}),
+    ...(native.audioCodec !== undefined ? { audioCodec: native.audioCodec } : {}),
+    ...(native.fileResolution !== undefined ? { fileResolution: native.fileResolution } : {}),
+    ...(native.plexLabels !== undefined && native.plexLabels.length > 0
+      ? { plexLabels: native.plexLabels }
+      : {}),
   }),
 };
