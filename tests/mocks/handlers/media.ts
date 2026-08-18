@@ -108,6 +108,26 @@ export const mediaHandlers = [
     });
   }),
 
+  http.get('/api/media/file-containers', () => {
+    return HttpResponse.json({ status: 'ok', data: ['mkv', 'mp4'] });
+  }),
+
+  http.get('/api/media/video-codecs', () => {
+    return HttpResponse.json({ status: 'ok', data: ['h264', 'hevc'] });
+  }),
+
+  http.get('/api/media/audio-codecs', () => {
+    return HttpResponse.json({ status: 'ok', data: ['aac', 'dts'] });
+  }),
+
+  http.get('/api/media/file-resolutions', () => {
+    return HttpResponse.json({ status: 'ok', data: ['1080', '4k'] });
+  }),
+
+  http.get('/api/media/labels', () => {
+    return HttpResponse.json({ status: 'ok', data: ['4K', 'Favorites'] });
+  }),
+
   // Mirrors GET /api/media/sources' ownership projection (sourceOwnership in
   // server/providers/mediaSourceFactory.ts) — configured state matches the
   // default settings.ts fixture (RADARR active, no SONARR).
