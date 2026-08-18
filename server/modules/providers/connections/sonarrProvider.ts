@@ -1,5 +1,5 @@
 import { MetadataProviderType } from '@server/database/schema';
-import { type ActuatorTask, type MediaActuator, modelledRun, requireParameter } from '../roles';
+import { type ActuatorTask, type MediaActuator, requireParameter } from '../roles';
 import { BaseProviderConnection } from './baseProviderConnection';
 
 export interface SonarrSeason {
@@ -99,7 +99,26 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
         label: 'Delete series (keep files)',
         destructive: true,
         affects: 'media',
-        run: modelledRun('deleteSeriesKeepFiles'),
+        run: async (ids) => this.deleteSeriesKeepFiles(ids.map(Number)),
+      },
+      {
+        id: 'refreshSeries',
+        label: 'Refresh metadata',
+        destructive: false,
+        run: async (ids) => this.refreshSeries(ids.map(Number)),
+      },
+      {
+        id: 'rescanSeries',
+        label: 'Rescan folder',
+        destructive: false,
+        run: async (ids) => this.rescanSeries(ids.map(Number)),
+      },
+      {
+        id: 'renameSeries',
+        label: 'Rename files',
+        destructive: false,
+        affects: 'media',
+        run: async (ids) => this.renameSeries(ids.map(Number)),
       },
       {
         id: 'changeQualityProfile',
@@ -143,6 +162,12 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
   public async getProfiles(): Promise<SonarrProfile[]> {
     return this.client
       .get('qualityprofile', { searchParams: this.apiParams })
+      .json<SonarrProfile[]>();
+  }
+
+  public async getLanguageProfiles(): Promise<SonarrProfile[]> {
+    return this.client
+      .get('languageprofile', { searchParams: this.apiParams })
       .json<SonarrProfile[]>();
   }
 
@@ -222,5 +247,51 @@ export class SonarrProvider extends BaseProviderConnection implements MediaActua
           .json()
       )
     );
+  }
+
+  public async deleteSeriesKeepFiles(seriesIds: number[]): Promise<void> {
+    await Promise.all(
+      seriesIds.map((id) =>
+        this.client
+          .delete(`series/${id}`, {
+            searchParams: {
+              ...this.apiParams,
+              deleteFiles: 'false',
+              addImportListExclusion: 'false',
+            },
+          })
+          .json()
+      )
+    );
+  }
+
+  public async refreshSeries(seriesIds: number[]): Promise<void> {
+    if (seriesIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RefreshSeries', seriesIds },
+      })
+      .json();
+  }
+
+  public async rescanSeries(seriesIds: number[]): Promise<void> {
+    if (seriesIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RescanSeries', seriesIds },
+      })
+      .json();
+  }
+
+  public async renameSeries(seriesIds: number[]): Promise<void> {
+    if (seriesIds.length === 0) return;
+    await this.client
+      .post('command', {
+        searchParams: this.apiParams,
+        json: { name: 'RenameSeries', seriesIds },
+      })
+      .json();
   }
 }
