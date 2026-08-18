@@ -489,6 +489,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     radarr: DecoratedProfile[];
     sonarr: DecoratedProfile[];
   }>();
+  const languageProfilesCache = new MediaCache<DecoratedProfile[]>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
   const studioCache = new MediaCache<string[]>();
@@ -626,6 +627,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     seriesCache.invalidate('series');
     tagsCache.invalidate('tags');
     qualityProfilesCache.invalidate('qualityProfiles');
+    languageProfilesCache.invalidate('languageProfiles');
     genresCache.invalidate('genres');
     networksCache.invalidate('networks');
     studioCache.invalidate('studio');
@@ -800,6 +802,37 @@ export function createMediaHandlers(cradle: MediaCradle) {
           );
 
           return { radarr: radarrProfiles, sonarr: sonarrProfiles };
+        }),
+    }),
+
+    listLanguageProfiles: defineRoute({
+      handler: () =>
+        languageProfilesCache.getOrFetch('languageProfiles', async () => {
+          const providers = await providerSettingsService.findActiveByTypes([
+            MetadataProviderType.SONARR,
+          ]);
+
+          const profiles: DecoratedProfile[] = [];
+
+          await Promise.all(
+            providers.map(async (provider) => {
+              try {
+                const sonarr = factory.create(provider, log) as SonarrProvider;
+                const languageProfiles = await sonarr.getLanguageProfiles();
+                profiles.push(
+                  ...languageProfiles.map((p) => ({
+                    ...p,
+                    providerId: provider.id,
+                    providerName: provider.name,
+                  }))
+                );
+              } catch (err) {
+                log.warn('Language profiles fetch failed', { provider: provider.name, err });
+              }
+            })
+          );
+
+          return profiles;
         }),
     }),
 

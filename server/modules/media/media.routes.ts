@@ -13,6 +13,7 @@ export function createMediaRoutes(
     listSeries,
     listTags,
     listQualityProfiles,
+    listLanguageProfiles,
     listGenres,
     listNetworks,
     listStudio,
@@ -32,6 +33,7 @@ export function createMediaRoutes(
   router.get('/series', isAuthenticated(), listSeries);
   router.get('/tags', isAuthenticated(), listTags);
   router.get('/quality-profiles', isAuthenticated(), listQualityProfiles);
+  router.get('/language-profiles', isAuthenticated(), listLanguageProfiles);
   router.get('/genres', isAuthenticated(), listGenres);
   router.get('/networks', isAuthenticated(), listNetworks);
   router.get('/studio', isAuthenticated(), listStudio);
