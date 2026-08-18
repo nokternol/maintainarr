@@ -52,15 +52,17 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  /**
-   * 47 = 18 shared (both content types) + 14 movie-only + 15 show-only, per
-   * filterRegistry.ts's own `// ── Shared / Movie-only / Show-only ──` section
-   * comments. Bump this count (and re-derive the breakdown) whenever a rule is
-   * added or removed — a silent pass/fail here is the signal that MEDIA_RULES
-   * drifted without this test being updated to match.
-   */
-  it('contains exactly 47 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(47);
+  it('has no two rules registering the same key for the same content type', () => {
+    const seen = new Set<string>();
+    const dupes: string[] = [];
+    for (const rule of MEDIA_RULES) {
+      for (const contentType of rule.contentTypes) {
+        const id = `${rule.key}:${contentType}`;
+        if (seen.has(id)) dupes.push(id);
+        seen.add(id);
+      }
+    }
+    expect(dupes).toEqual([]);
   });
 
   it('every entry has required fields', () => {
