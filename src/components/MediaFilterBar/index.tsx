@@ -837,7 +837,7 @@ function groupsFor(rule: MediaRuleDescriptor, configuredTypes: Set<string>): Fil
     groups.push('tmdb');
   }
   if (
-    (providers.has('TAUTULLI') || providers.has('PLEX')) &&
+    (providers.has('TAUTULLI') || providers.has('PLEX') || providers.has('JELLYFIN')) &&
     !providers.has('RADARR') &&
     !providers.has('SONARR')
   ) {
@@ -859,6 +859,7 @@ const BOOLEAN_VALUE_LABELS: Record<string, [true: string, false: string]> = {
   watched: ['Watched', 'Unwatched'],
   ended: ['Finished', 'Running'],
   overseerrHasIssue: ['Has Issue', 'No Issue'],
+  jellyfinIsFavorite: ['Favorited', 'Not Favorited'],
 };
 
 function booleanOptions(rule: MediaRuleDescriptor) {

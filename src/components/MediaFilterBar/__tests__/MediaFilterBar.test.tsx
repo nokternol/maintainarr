@@ -275,7 +275,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Labels',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -300,6 +300,14 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     contentTypes: ['movie'],
     dataType: 'range',
     sourceProviders: ['PLEX'],
+    required: false,
+  },
+  {
+    key: 'jellyfinIsFavorite',
+    label: 'Jellyfin favorite',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['JELLYFIN'],
     required: false,
   },
 ];
@@ -486,6 +494,29 @@ describe('MediaFilterBar — provider gating', () => {
       />
     );
     expect(screen.queryByRole('button', { name: /watched/i })).not.toBeInTheDocument();
+  });
+
+  it('renders a shared rule whose sole active producer is JELLYFIN, reachable via Add filter', async () => {
+    const user = setupUser();
+    render(
+      <MediaFilterBar {...makeProps({ ...propsFor(['JELLYFIN']), lookups: EMPTY_LOOKUPS })} />
+    );
+    await addFilter(user, 'Jellyfin favorite');
+    expect(screen.getByRole('button', { name: 'Favorited' })).toBeInTheDocument();
+  });
+
+  it('renders a Plex+Jellyfin shared rule when only JELLYFIN is configured', async () => {
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({
+          ...propsFor(['JELLYFIN']),
+          lookups: { ...RICH_LOOKUPS, labels: ['Anime'] },
+        })}
+      />
+    );
+    await addFilter(user, 'Labels');
+    expect(screen.getByRole('button', { name: 'Labels' })).toBeInTheDocument();
   });
 });
 
