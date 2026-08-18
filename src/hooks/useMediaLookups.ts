@@ -47,6 +47,8 @@ export function useMediaLookups() {
   const { data: genresData } = useSWR<GenresResponse>('/api/media/genres', fetcher);
   const { data: networksData } = useSWR<string[]>('/api/media/networks', fetcher);
   const { data: studioData } = useSWR<string[]>('/api/media/studio', fetcher);
+  const { data: releaseGroupsData } = useSWR<string[]>('/api/media/release-groups', fetcher);
+  const { data: collectionNamesData } = useSWR<string[]>('/api/media/collection-names', fetcher);
   const { data: fileContainersData } = useSWR<string[]>('/api/media/file-containers', fetcher);
   const { data: videoCodecsData } = useSWR<string[]>('/api/media/video-codecs', fetcher);
   const { data: audioCodecsData } = useSWR<string[]>('/api/media/audio-codecs', fetcher);
@@ -68,6 +70,8 @@ export function useMediaLookups() {
     },
     networks: networksData ?? [],
     studio: studioData ?? [],
+    releaseGroups: releaseGroupsData ?? [],
+    collectionNames: collectionNamesData ?? [],
     fileContainers: fileContainersData ?? [],
     videoCodecs: videoCodecsData ?? [],
     audioCodecs: audioCodecsData ?? [],

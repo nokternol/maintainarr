@@ -33,6 +33,8 @@ interface Lookups {
   audioCodecs: string[];
   fileResolutions: string[];
   labels: string[];
+  releaseGroups: string[];
+  collectionNames: string[];
 }
 
 export interface MediaFilterBarProps {
@@ -859,6 +861,7 @@ const BOOLEAN_VALUE_LABELS: Record<string, [true: string, false: string]> = {
   watched: ['Watched', 'Unwatched'],
   ended: ['Finished', 'Running'],
   overseerrHasIssue: ['Has Issue', 'No Issue'],
+  isAvailable: ['Available', 'Unavailable'],
 };
 
 function booleanOptions(rule: MediaRuleDescriptor) {
@@ -910,6 +913,13 @@ const ENUM_OPTIONS: Record<string, { value: string; label: string }[]> = {
     { value: '2', label: 'Approved' },
     { value: '3', label: 'Declined' },
     { value: '4', label: 'Available' },
+  ],
+  radarrStatus: [
+    { value: 'tba', label: 'TBA' },
+    { value: 'announced', label: 'Announced' },
+    { value: 'inCinemas', label: 'In Cinemas' },
+    { value: 'released', label: 'Released' },
+    { value: 'deleted', label: 'Deleted' },
   ],
 };
 
@@ -970,6 +980,8 @@ function csvStringOptions(
   if (rule.key === 'audioCodec') return lookups.audioCodecs;
   if (rule.key === 'fileResolution') return lookups.fileResolutions;
   if (rule.key === 'labels') return lookups.labels;
+  if (rule.key === 'releaseGroups') return lookups.releaseGroups;
+  if (rule.key === 'collectionName') return lookups.collectionNames;
   return null;
 }
 

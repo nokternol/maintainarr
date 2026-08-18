@@ -108,6 +108,14 @@ export const mediaHandlers = [
     });
   }),
 
+  http.get('/api/media/release-groups', () => {
+    return HttpResponse.json({ status: 'ok', data: ['SPARKS', 'RARBG'] });
+  }),
+
+  http.get('/api/media/collection-names', () => {
+    return HttpResponse.json({ status: 'ok', data: ['The Matrix Collection'] });
+  }),
+
   http.get('/api/media/file-containers', () => {
     return HttpResponse.json({ status: 'ok', data: ['mkv', 'mp4'] });
   }),

@@ -79,6 +79,26 @@ describe('useMediaLookups', () => {
     expect(typeof result.current.studio[0]).toBe('string');
   });
 
+  it('loads release groups', async () => {
+    const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.releaseGroups.length).toBeGreaterThan(0);
+    });
+
+    expect(typeof result.current.releaseGroups[0]).toBe('string');
+  });
+
+  it('loads collection names', async () => {
+    const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.collectionNames.length).toBeGreaterThan(0);
+    });
+
+    expect(typeof result.current.collectionNames[0]).toBe('string');
+  });
+
   it('exposes the correct shape for all fields', async () => {
     const { result } = renderHook(() => useMediaLookups(), { wrapper: Wrapper });
 

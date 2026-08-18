@@ -424,6 +424,8 @@ interface Lookups {
   audioCodecs: string[];
   fileResolutions: string[];
   labels: string[];
+  releaseGroups: string[];
+  collectionNames: string[];
 }
 
 export interface MediaContentProps {

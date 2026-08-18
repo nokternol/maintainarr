@@ -100,6 +100,8 @@ const VIDEO_CODECS = ['h264', 'hevc', 'mpeg2video'];
 const AUDIO_CODECS = ['aac', 'dts', 'ac3'];
 const FILE_RESOLUTIONS = ['2160', '1080', '720', 'sd'];
 const LABELS = ['4K', 'HDR', 'Favorites'];
+const RELEASE_GROUPS = ['SPARKS', 'RARBG', 'FraMeSToR', 'CMRG'];
+const COLLECTION_NAMES = ['The Matrix Collection', 'Rocky Collection', 'James Bond Collection'];
 
 const YEAR_RANGE = { min: 1980, max: 2024 };
 
@@ -114,6 +116,8 @@ const EMPTY_LOOKUPS = {
   audioCodecs: [],
   fileResolutions: [],
   labels: [],
+  releaseGroups: [],
+  collectionNames: [],
 };
 
 const RICH_LOOKUPS = {
@@ -127,6 +131,8 @@ const RICH_LOOKUPS = {
   audioCodecs: AUDIO_CODECS,
   fileResolutions: FILE_RESOLUTIONS,
   labels: LABELS,
+  releaseGroups: RELEASE_GROUPS,
+  collectionNames: COLLECTION_NAMES,
 };
 
 const MULTI_INSTANCE_LOOKUPS = {
@@ -140,6 +146,8 @@ const MULTI_INSTANCE_LOOKUPS = {
   audioCodecs: AUDIO_CODECS,
   fileResolutions: FILE_RESOLUTIONS,
   labels: LABELS,
+  releaseGroups: RELEASE_GROUPS,
+  collectionNames: COLLECTION_NAMES,
 };
 
 // The full rule set, unfiltered — mirrors `MEDIA_RULES` (server/modules/media/filterRegistry.ts).
@@ -224,6 +232,70 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'IMDB rating',
     contentTypes: ['movie'],
     dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'movieFileCount',
+    label: 'Movie file count',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'releaseGroups',
+    label: 'Release group',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'inCinemasDaysAgo',
+    label: 'In cinemas (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'physicalReleaseDaysAgo',
+    label: 'Physical release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'digitalReleaseDaysAgo',
+    label: 'Digital release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'collectionName',
+    label: 'Collection',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'isAvailable',
+    label: 'Available',
+    contentTypes: ['movie'],
+    dataType: 'boolean',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'radarrStatus',
+    label: 'Radarr status',
+    contentTypes: ['movie'],
+    dataType: 'string',
     sourceProviders: ['RADARR'],
     required: false,
   },

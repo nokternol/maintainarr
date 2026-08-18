@@ -302,6 +302,70 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     sourceProviders: ['PLEX'],
     required: false,
   },
+  {
+    key: 'movieFileCount',
+    label: 'Movie file count',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'releaseGroups',
+    label: 'Release group',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'inCinemasDaysAgo',
+    label: 'In cinemas (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'physicalReleaseDaysAgo',
+    label: 'Physical release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'digitalReleaseDaysAgo',
+    label: 'Digital release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'collectionName',
+    label: 'Collection',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'isAvailable',
+    label: 'Available',
+    contentTypes: ['movie'],
+    dataType: 'boolean',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
+  {
+    key: 'radarrStatus',
+    label: 'Radarr status',
+    contentTypes: ['movie'],
+    dataType: 'string',
+    sourceProviders: ['RADARR'],
+    required: false,
+  },
 ];
 
 function rulesFor(configuredTypes: Set<string>): MediaRuleDescriptor[] {
@@ -350,6 +414,8 @@ const RICH_LOOKUPS: MediaFilterBarProps['lookups'] = {
   audioCodecs: ['aac', 'dts'],
   fileResolutions: ['1080', '4k'],
   labels: ['4K', 'Favorites'],
+  releaseGroups: ['SPARKS', 'RARBG'],
+  collectionNames: ['The Matrix Collection'],
 };
 
 const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
@@ -363,6 +429,8 @@ const EMPTY_LOOKUPS: MediaFilterBarProps['lookups'] = {
   audioCodecs: [],
   fileResolutions: [],
   labels: [],
+  releaseGroups: [],
+  collectionNames: [],
 };
 
 function makeProps(overrides: Partial<MediaFilterBarProps> = {}): MediaFilterBarProps {
@@ -924,6 +992,93 @@ describe('MediaFilterBar — movie predicate controls', () => {
   it('does not render movie-specific filters when RADARR is not configured', () => {
     render(<MediaFilterBar {...makeProps(propsFor(['SONARR']))} />);
     expect(screen.queryByRole('button', { name: /imdb rating/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MediaFilterBar — Radarr new-field controls', () => {
+  it('renders movie file count range filter when RADARR is configured', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, /movie file count/i);
+    expect(screen.getByRole('button', { name: /movie file count/i })).toBeInTheDocument();
+  });
+
+  it('renders in cinemas / physical release / digital release range filters', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, /in cinemas/i);
+    expect(screen.getByRole('button', { name: /in cinemas/i })).toBeInTheDocument();
+    await addFilter(user, /physical release/i);
+    expect(screen.getByRole('button', { name: /physical release/i })).toBeInTheDocument();
+    await addFilter(user, /digital release/i);
+    expect(screen.getByRole('button', { name: /digital release/i })).toBeInTheDocument();
+  });
+
+  it('renders release group dropdown when release group options are present', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, /release group/i);
+    expect(screen.getByRole('button', { name: /release group/i })).toBeInTheDocument();
+  });
+
+  it('does not render release group dropdown when no release group options', () => {
+    render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS })} />);
+    expect(screen.queryByRole('button', { name: /release group/i })).not.toBeInTheDocument();
+  });
+
+  it('renders collection dropdown when collection name options are present', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: RICH_LOOKUPS })} />);
+    await addFilter(user, 'Collection');
+    expect(screen.getByRole('button', { name: 'Collection' })).toBeInTheDocument();
+  });
+
+  it('does not render collection dropdown when no collection name options', () => {
+    render(<MediaFilterBar {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS })} />);
+    expect(screen.queryByRole('button', { name: 'Collection' })).not.toBeInTheDocument();
+  });
+
+  it('renders isAvailable boolean filter with Available/Unavailable labels', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, 'Available');
+    expect(screen.getByRole('button', { name: 'Available' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Unavailable' })).toBeInTheDocument();
+  });
+
+  it('calls onRuleChange when an isAvailable option is clicked', async () => {
+    const onRuleChange = vi.fn();
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS, onRuleChange })}
+      />
+    );
+    await addFilter(user, 'Available');
+    await user.click(screen.getByRole('button', { name: 'Available' }));
+    expect(onRuleChange).toHaveBeenCalledWith('movie', 'isAvailable', 'true');
+  });
+
+  it('renders radarrStatus enum options', async () => {
+    const user = setupUser();
+    render(<MediaFilterBar {...makeProps(propsFor(['RADARR']))} />);
+    await addFilter(user, /radarr status/i);
+    expect(screen.getByRole('button', { name: 'Released' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'In Cinemas' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Deleted' })).toBeInTheDocument();
+  });
+
+  it('calls onRuleChange when a radarrStatus option is clicked', async () => {
+    const onRuleChange = vi.fn();
+    const user = setupUser();
+    render(
+      <MediaFilterBar
+        {...makeProps({ ...propsFor(['RADARR']), lookups: EMPTY_LOOKUPS, onRuleChange })}
+      />
+    );
+    await addFilter(user, /radarr status/i);
+    await user.click(screen.getByRole('button', { name: 'Released' }));
+    expect(onRuleChange).toHaveBeenCalledWith('movie', 'radarrStatus', 'released');
   });
 });
 

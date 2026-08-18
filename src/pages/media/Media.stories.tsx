@@ -245,6 +245,8 @@ const LOOKUPS = {
   audioCodecs: ['aac', 'dts'],
   fileResolutions: ['2160', '1080'],
   labels: ['4K', 'HDR'],
+  releaseGroups: ['SPARKS', 'RARBG'],
+  collectionNames: ['The Matrix Collection', 'Rocky Collection'],
 };
 
 const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);
