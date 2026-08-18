@@ -51,9 +51,17 @@ export function normalizeRadarrMovie(m: RadarrMovie, providerId: number): Normal
 
 export function normalizeSonarrSeries(s: SonarrSeries, providerId: number): NormalizedShow {
   return {
-    _sourceIds: { sonarr: s.id, providerId, tvdb: s.tvdbId, tmdb: s.tmdbId },
+    _sourceIds: {
+      sonarr: s.id,
+      providerId,
+      tvdb: s.tvdbId,
+      tmdb: s.tmdbId,
+      imdb: s.imdbId,
+      tvmaze: s.tvMazeId,
+    },
     title: s.title,
     year: s.year,
+    hasFile: (s.statistics?.episodeFileCount ?? 0) > 0,
     monitored: s.monitored,
     qualityProfileId: s.qualityProfileId,
     ...sonarrTagsFieldSource.toEnrichmentFields(s.tags),
@@ -68,5 +76,13 @@ export function normalizeSonarrSeries(s: SonarrSeries, providerId: number): Norm
     episodePercentage: s.statistics?.percentOfEpisodes,
     lastAiredAt: s.previousAiring,
     communityRating: s.ratings?.value,
+    path: s.path,
+    images: s.images,
+    nextAiring: s.nextAiring,
+    seasonCount: s.statistics?.seasonCount,
+    episodeFileCount: s.statistics?.episodeFileCount,
+    episodeCount: s.statistics?.episodeCount,
+    totalEpisodeCount: s.statistics?.totalEpisodeCount,
+    languageProfileId: s.languageProfileId,
   };
 }

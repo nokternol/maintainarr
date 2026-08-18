@@ -141,6 +141,14 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   sonarrLastAiredDaysAgoLte: intNum(),
   sonarrPercentEpisodesGte: num(),
   sonarrPercentEpisodesLte: num(),
+  seasonCountGte: intNum(),
+  seasonCountLte: intNum(),
+  episodeCountGte: intNum(),
+  episodeCountLte: intNum(),
+  nextAiringInDaysGte: intNum(),
+  nextAiringInDaysLte: intNum(),
+  seriesLanguageProfileIds: z.string().optional(),
+  seriesLanguageProfileIdsProviderId: providerIdParam(),
 });
 
 // ─── Registry delegation ───────────────────────────────────────────────────────
@@ -239,6 +247,16 @@ const SERIES_PARAM_TO_KEY = {
   sonarrLastAiredDaysAgoLte: { key: 'lastAiredDaysAgo', bound: 'max' },
   sonarrPercentEpisodesGte: { key: 'episodePercentage', bound: 'min' },
   sonarrPercentEpisodesLte: { key: 'episodePercentage', bound: 'max' },
+  seasonCountGte: { key: 'seasonCount', bound: 'min' },
+  seasonCountLte: { key: 'seasonCount', bound: 'max' },
+  episodeCountGte: { key: 'episodeCount', bound: 'min' },
+  episodeCountLte: { key: 'episodeCount', bound: 'max' },
+  nextAiringInDaysGte: { key: 'nextAiringInDays', bound: 'min' },
+  nextAiringInDaysLte: { key: 'nextAiringInDays', bound: 'max' },
+  seriesLanguageProfileIds: {
+    key: 'languageProfileIds',
+    providerIdParam: 'seriesLanguageProfileIdsProviderId',
+  },
   overseerrRequestStatus: { key: 'overseerrRequestStatus' },
   overseerrHasIssue: { key: 'overseerrHasIssue' },
   tmdbStatus: { key: 'tmdbStatus' },
@@ -312,6 +330,9 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
   episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+  seasonCount: { gte: 'seasonCountGte', lte: 'seasonCountLte' },
+  episodeCount: { gte: 'episodeCountGte', lte: 'episodeCountLte' },
+  nextAiringInDays: { gte: 'nextAiringInDaysGte', lte: 'nextAiringInDaysLte' },
 };
 
 /**

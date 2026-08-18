@@ -35,6 +35,7 @@ export interface SonarrSeries {
   added?: string;
   ended?: boolean;
   previousAiring?: string;
+  nextAiring?: string;
   certification?: string;
   ratings?: { votes: number; value: number };
   statistics?: {

@@ -108,4 +108,78 @@ describe('normalizeSonarrSeries', () => {
     const item = normalizeSonarrSeries({ ...baseSeries, tags: [30, 40] }, 9);
     expect(item.tags).toEqual([30, 40]);
   });
+
+  it('populates the logical imdb/tvmaze ids the resolver joins on', () => {
+    const item = normalizeSonarrSeries({ ...baseSeries, tvMazeId: 169 }, 9);
+    expect(item._sourceIds.imdb).toBe('tt0903747');
+    expect(item._sourceIds.tvmaze).toBe(169);
+  });
+
+  it('derives hasFile from episodeFileCount — at least one episode file present', () => {
+    const withFiles = normalizeSonarrSeries(
+      {
+        ...baseSeries,
+        statistics: {
+          seasonCount: 5,
+          episodeFileCount: 3,
+          episodeCount: 62,
+          totalEpisodeCount: 62,
+          sizeOnDisk: 0,
+          percentOfEpisodes: 100,
+        },
+      },
+      9
+    );
+    expect(withFiles.hasFile).toBe(true);
+
+    const noFiles = normalizeSonarrSeries(
+      {
+        ...baseSeries,
+        statistics: {
+          seasonCount: 5,
+          episodeFileCount: 0,
+          episodeCount: 62,
+          totalEpisodeCount: 62,
+          sizeOnDisk: 0,
+          percentOfEpisodes: 0,
+        },
+      },
+      9
+    );
+    expect(noFiles.hasFile).toBe(false);
+
+    const noStatistics = normalizeSonarrSeries(baseSeries, 9);
+    expect(noStatistics.hasFile).toBe(false);
+  });
+
+  it('wires the series display/range fields onto NormalizedShow', () => {
+    const item = normalizeSonarrSeries(
+      {
+        ...baseSeries,
+        path: '/tv/breaking-bad',
+        images: [{ coverType: 'poster', remoteUrl: 'https://example.com/poster.jpg' }],
+        nextAiring: '2026-09-01T00:00:00Z',
+        languageProfileId: 3,
+        statistics: {
+          seasonCount: 5,
+          episodeFileCount: 62,
+          episodeCount: 62,
+          totalEpisodeCount: 62,
+          sizeOnDisk: 0,
+          percentOfEpisodes: 100,
+        },
+      },
+      9
+    );
+    expect(item.path).toBe('/tv/breaking-bad');
+    expect(item.images).toEqual([
+      { coverType: 'poster', remoteUrl: 'https://example.com/poster.jpg' },
+    ]);
+    expect(item.nextAiring).toBe('2026-09-01T00:00:00Z');
+    expect(item.seasonCount).toBe(5);
+    expect(item.episodeFileCount).toBe(62);
+    expect(item.episodeCount).toBe(62);
+    expect(item.totalEpisodeCount).toBe(62);
+    expect(item.languageProfileId).toBe(3);
+  });
 });

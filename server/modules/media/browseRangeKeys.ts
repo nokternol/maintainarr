@@ -39,4 +39,7 @@ export type ShowRangeRuleKey =
   | 'communityRating'
   | 'lastAiredDaysAgo'
   | 'episodePercentage'
-  | 'lastWatchedDaysAgo';
+  | 'lastWatchedDaysAgo'
+  | 'seasonCount'
+  | 'episodeCount'
+  | 'nextAiringInDays';
