@@ -27,8 +27,8 @@ every other surface derives from it — never re-declares it.
 | Tier | Providers (today) | Role in code |
 |---|---|---|
 | **Catalog owner** (`MediaSource`) | Radarr (movies), Sonarr (series) | Define what *exists* and its canonical id; the catalog is the union of every active instance's library |
-| **Enricher** | Tautulli, Plex, Overseerr, TMDB / OMDB / TVMaze | Decorate owner rows by shared key; contribute nothing standalone |
-| **Inert toward catalog** | Jellyfin (connection-test + search only), Plex-as-*owner* | Cannot produce a catalog row at all |
+| **Enricher** | Tautulli, Plex, Jellyfin, Overseerr, TMDB / OMDB / TVMaze | Decorate owner rows by shared key; contribute nothing standalone |
+| **Inert toward catalog** | Plex-as-*owner*, Jellyfin-as-*owner* | Cannot produce a catalog row at all |
 
 With no Radarr and no Sonarr configured, the app is effectively empty: browse lists, identity
 resolution, and enrichment all short-circuit to nothing (see the pipeline below).
@@ -206,6 +206,5 @@ single-instance deployment is unchanged.
    sources can expose several editions from *one* instance (a single Plex item with multiple
    quality-optimized versions) — distinct from the multi-*instance* case the identity model above
    already handles.
-2. **Media servers cannot own.** Plex only enriches; Jellyfin is wired only into connection-test and
-   search (`providers.handler.ts`, `search.handler.ts`) and its `jellyfinItemId` column is never
-   populated by any job.
+2. **Media servers cannot own.** Plex and Jellyfin both only enrich — neither can produce a catalog row,
+   the same limitation `docs/architecture/media-providers.md`'s Jellyfin entry documents in full.

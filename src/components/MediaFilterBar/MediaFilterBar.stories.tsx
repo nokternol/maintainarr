@@ -232,7 +232,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Studio',
     contentTypes: ['movie'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -298,7 +298,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Studio',
     contentTypes: ['show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -338,7 +338,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Last watched (days ago)',
     contentTypes: ['movie', 'show'],
     dataType: 'range',
-    sourceProviders: ['TAUTULLI'],
+    sourceProviders: ['TAUTULLI', 'PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -346,7 +346,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Runtime (minutes)',
     contentTypes: ['movie'],
     dataType: 'range',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -354,7 +354,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'File size (bytes)',
     contentTypes: ['movie', 'show'],
     dataType: 'range',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -362,7 +362,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Release date (days ago)',
     contentTypes: ['movie', 'show'],
     dataType: 'range',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -370,7 +370,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'File container',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -378,7 +378,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Video codec',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -386,7 +386,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Audio codec',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -394,7 +394,7 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'File resolution',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
     required: false,
   },
   {
@@ -402,7 +402,23 @@ const ALL_RULES: MediaRuleDescriptor[] = [
     label: 'Labels',
     contentTypes: ['movie', 'show'],
     dataType: 'csv-strings',
-    sourceProviders: ['PLEX'],
+    sourceProviders: ['PLEX', 'JELLYFIN'],
+    required: false,
+  },
+  {
+    key: 'jellyfinAddedDaysAgo',
+    label: 'Jellyfin added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: ['JELLYFIN'],
+    required: false,
+  },
+  {
+    key: 'jellyfinIsFavorite',
+    label: 'Jellyfin favorite',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: ['JELLYFIN'],
     required: false,
   },
 ];
@@ -433,12 +449,13 @@ function isBucketActive(bucket: Record<string, FilterValue>, skipEmptyTitle = fa
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 const CONFIGURED_TYPE_OPTIONS = {
-  'All providers': new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX']),
+  'All providers': new Set(['RADARR', 'SONARR', 'TAUTULLI', 'PLEX', 'JELLYFIN']),
   'Movies only (Radarr)': new Set(['RADARR']),
   'Series only (Sonarr)': new Set(['SONARR']),
   'Movies + Tautulli': new Set(['RADARR', 'TAUTULLI']),
   'Tautulli only': new Set(['TAUTULLI']),
   'Plex only': new Set(['PLEX']),
+  'Jellyfin only': new Set(['JELLYFIN']),
 };
 
 type WrapperArgs = {

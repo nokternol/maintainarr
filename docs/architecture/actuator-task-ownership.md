@@ -54,7 +54,8 @@ vocabulary was pruned to what the domain and the APIs can actually address befor
   was pruned as unrealisable: Plex's "trash" is a scanner state for items whose files went missing, not
   an action — no per-item endpoint exists.
 - **Jellyfin** — `deleteItem`, `refreshMetadata`, `markPlayed`/`markUnplayed` (per configured `userId`),
-  `addToCollection` (parameterized: which collection).
+  `addToCollection`/`removeFromCollection` (both parameterized: which collection; the latter is
+  `addToCollection`'s natural counterpart, same external-collection-id shape).
 - **Tautulli** — `deleteWatchHistory` only. Each Plex rating key is looked up both directly
   (`rating_key`: movies, episodes) and as a series (`grandparent_rating_key` — Tautulli logs history per
   played item, so a show's history lives on its episodes), then all matched rows are deleted in one

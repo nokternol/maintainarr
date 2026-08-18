@@ -2,7 +2,7 @@
 type: wayfinder-spec
 label: wayfinder:spec
 provider: jellyfin
-status: draft
+status: implementing
 source_ticket: docs/in_progress/provider-e2e-spec/tickets/02-jellyfin-decision.md
 source_research: docs/in_progress/provider-e2e-spec/research/jellyfin.md
 ---

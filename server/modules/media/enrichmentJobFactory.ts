@@ -4,6 +4,7 @@ import { getChildLogger } from '../../kernel/logger';
 import type { EnrichmentJobFactoryLike } from '../../modules/system';
 import type { ProviderFactory, ProviderSettingsService } from '../providers';
 import {
+  jellyfinEnricher,
   overseerrEnricher,
   plexEnricher,
   tautulliEnricher,
@@ -39,13 +40,18 @@ export class EnrichmentJobFactory implements EnrichmentJobFactoryLike {
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.OVERSEERR,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
       MetadataProviderType.TMDB,
     ]);
-    const { tautulli, overseerr, plex, tmdb } = this.providerFactory.createMany(providers, log);
+    const { tautulli, overseerr, plex, jellyfin, tmdb } = this.providerFactory.createMany(
+      providers,
+      log
+    );
     const enrichers = [
       tautulli && tautulliEnricher(tautulli),
       overseerr && overseerrEnricher(overseerr),
       plex && plexEnricher(plex),
+      jellyfin && jellyfinEnricher(jellyfin),
       tmdb && tmdbEnricher(tmdb),
     ].filter((e) => e !== undefined);
     return new EnrichmentJob({ db: this.db, enrichmentQueries: this.enrichmentQueries, enrichers });

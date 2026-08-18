@@ -93,7 +93,9 @@ export class EnrichmentJob {
         videoCodec: resolved?.videoCodec ?? null,
         audioCodec: resolved?.audioCodec ?? null,
         fileResolution: resolved?.fileResolution ?? null,
-        plexLabels: resolved?.plexLabels ?? null,
+        labels: resolved?.labels ?? null,
+        jellyfinAddedAt: resolved?.jellyfinAddedAt ?? null,
+        isFavorite: resolved?.isFavorite ?? null,
       };
       const presentFields = Object.fromEntries(
         Object.entries(values).filter(([, value]) => value !== null)
