@@ -45,8 +45,10 @@ lifecycle:
    `main`. Fill in the tracker row below with the branch and PR link.
 3. The PR description is the report of what was done — update it as work lands rather than
    narrating progress elsewhere. No separate summary doc.
-4. Drive the actual build with the `plan-and-go:tdd` skill (strict RED/GREEN/REFACTOR), pointed
-   at the spec file and this implementation map.
+4. Drive the actual build with the `plan-and-go:tdd` skill: invoke it via the Skill tool
+   (`skill: "plan-and-go:tdd"`) as the first action, before writing any code — do not just
+   apply RED/GREEN/REFACTOR from general knowledge, follow the skill's own instructions once
+   loaded. Point it at the spec file and this implementation map.
 5. On merge: flip `status` to `implemented`, update the tracker row, and hand off to
    `docs-lifecycle` to move the spec into `docs/architecture/`.
 
@@ -55,8 +57,8 @@ lifecycle:
 | Spec | Status | Branch | PR |
 |---|---|---|---|
 | [plex](plex.md) | implementing | `implement/plex-provider-spec` | [#46](https://github.com/nokternol/maintainarr/pull/46) |
-| [jellyfin](jellyfin.md) | draft | — | — |
-| [radarr](radarr.md) | draft | — | — |
+| [jellyfin](jellyfin.md) | implementing | `implement/jellyfin-provider-spec` | [#48](https://github.com/nokternol/maintainarr/pull/48) |
+| [radarr](radarr.md) | implementing | `implement/radarr-provider-spec` | [#49](https://github.com/nokternol/maintainarr/pull/49) |
 | [sonarr](sonarr.md) | draft | — | — |
 | [tautulli](tautulli.md) | draft | — | — |
 | [overseerr](overseerr.md) | draft | — | — |

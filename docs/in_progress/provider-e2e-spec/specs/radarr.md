@@ -2,7 +2,7 @@
 type: wayfinder-spec
 label: wayfinder:spec
 provider: radarr
-status: draft
+status: implementing
 source_ticket: docs/in_progress/provider-e2e-spec/tickets/03-radarr-decision.md
 source_research: docs/in_progress/provider-e2e-spec/research/radarr.md
 ---
