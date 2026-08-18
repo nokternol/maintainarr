@@ -243,8 +243,10 @@ export const plexFieldProvider: MediaFieldProvider<
 
 /** Discrete resolution tier from a video stream's pixel height — matches Plex's
  *  `videoResolution` string convention (e.g. "1080"), since Jellyfin reports raw
- *  Width/Height rather than a pre-computed tier label. */
-function resolutionTier(height: number | undefined): string | undefined {
+ *  Width/Height rather than a pre-computed tier label. Exported for the
+ *  fileResolution lookup route, which needs the identical derivation over raw
+ *  Jellyfin items outside the enrichment pipeline. */
+export function resolutionTier(height: number | undefined): string | undefined {
   if (height === undefined) return undefined;
   if (height >= 2160) return '2160';
   if (height >= 1080) return '1080';
