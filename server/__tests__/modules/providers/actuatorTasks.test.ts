@@ -103,7 +103,7 @@ describe('pure-actuator media systems — modelled vocabularies', () => {
     expect(refresh?.affects).toBe('media');
   });
 
-  it('Jellyfin declares a fully realised vocabulary — addToCollection parameterized', () => {
+  it('Jellyfin declares a fully realised vocabulary — addToCollection/removeFromCollection parameterized', () => {
     const tasks = new JellyfinProvider(cfg, log).tasks();
     expect(tasks.map((t) => t.id)).toEqual([
       'deleteItem',
@@ -111,6 +111,7 @@ describe('pure-actuator media systems — modelled vocabularies', () => {
       'markPlayed',
       'markUnplayed',
       'addToCollection',
+      'removeFromCollection',
     ]);
 
     const del = tasks.find((t) => t.id === 'deleteItem');
@@ -118,6 +119,7 @@ describe('pure-actuator media systems — modelled vocabularies', () => {
     expect(del?.affects).toBe('media');
 
     expect(tasks.find((t) => t.id === 'addToCollection')?.parameter?.label).toBe('Collection');
+    expect(tasks.find((t) => t.id === 'removeFromCollection')?.parameter?.label).toBe('Collection');
   });
 
   it('Tautulli declares only its item-addressed task — session/notification tasks pruned', () => {

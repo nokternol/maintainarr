@@ -52,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 37 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(37);
+  it('contains exactly 39 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(39);
   });
 
   it('every entry has required fields', () => {
@@ -116,10 +116,11 @@ describe('sourceProviders accuracy', () => {
     expect(getRule('tagIds', 'show')!.sourceProviders).toEqual([MetadataProviderType.SONARR]);
   });
 
-  it('watched is derived from playCount — Tautulli before Plex, matching the field it reads', () => {
+  it('watched is derived from playCount — Tautulli, Plex, and Jellyfin all produce it', () => {
     expect(getRule('watched', 'movie')!.sourceProviders).toEqual([
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
     ]);
   });
 
@@ -149,10 +150,11 @@ describe('deriveSourceProviders', () => {
     expect(deriveSourceProviders('tmdbStatus')).toEqual([MetadataProviderType.TMDB]);
   });
 
-  it('derives playCount to both Tautulli and Plex — a contested field', () => {
+  it('derives playCount to Tautulli, Plex, and Jellyfin — a contested field', () => {
     expect(deriveSourceProviders('playCount')).toEqual([
       MetadataProviderType.TAUTULLI,
       MetadataProviderType.PLEX,
+      MetadataProviderType.JELLYFIN,
     ]);
   });
 
@@ -561,5 +563,30 @@ describe('file-tech and release-date predicates', () => {
     const rule = getRule('labels', 'show')!;
     expect(rule.predicate({ ...baseShow, labels: ['Anime'] }, 'Anime,Kids')).toBe(true);
     expect(rule.predicate(baseShow, 'Anime')).toBe(false);
+  });
+});
+
+// ─── Jellyfin-only predicates ─────────────────────────────────────────────────
+
+describe('Jellyfin-only predicates', () => {
+  it('jellyfinAddedDaysAgo — movie: passes within min/max bounds', () => {
+    const rule = getRule('jellyfinAddedDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: tenDaysAgo }, { min: 5 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: tenDaysAgo }, { min: 15 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, jellyfinAddedAt: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('jellyfinIsFavorite — movie: matches boolean exactly', () => {
+    const rule = getRule('jellyfinIsFavorite', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, isFavorite: true }, true)).toBe(true);
+    expect(rule.predicate({ ...baseMovie, isFavorite: true }, false)).toBe(false);
+    expect(rule.predicate({ ...baseMovie, isFavorite: undefined }, false)).toBe(true);
+  });
+
+  it('jellyfinIsFavorite — show: matches boolean exactly', () => {
+    const rule = getRule('jellyfinIsFavorite', 'show')!;
+    expect(rule.predicate({ ...baseShow, isFavorite: true }, true)).toBe(true);
+    expect(rule.predicate({ ...baseShow, isFavorite: false }, true)).toBe(false);
   });
 });

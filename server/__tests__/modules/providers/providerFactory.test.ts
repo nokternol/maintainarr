@@ -1,6 +1,7 @@
 import { MetadataProviderType } from '@server/database/schema';
 import type { MetadataProvider } from '@server/database/schema';
 import { getChildLogger } from '@server/kernel/logger';
+import { JellyfinProvider } from '@server/modules/providers/connections/jellyfinProvider';
 import { OverseerrProvider } from '@server/modules/providers/connections/overseerrProvider';
 import { PlexProvider } from '@server/modules/providers/connections/plexProvider';
 import { RadarrProvider } from '@server/modules/providers/connections/radarrProvider';
@@ -49,6 +50,12 @@ describe('ProviderFactory.create', () => {
     );
   });
 
+  it('creates a JellyfinProvider for JELLYFIN type', () => {
+    expect(factory.create(makeProvider(MetadataProviderType.JELLYFIN), log)).toBeInstanceOf(
+      JellyfinProvider
+    );
+  });
+
   it('creates a TautulliProvider for TAUTULLI type', () => {
     expect(factory.create(makeProvider(MetadataProviderType.TAUTULLI), log)).toBeInstanceOf(
       TautulliProvider
@@ -79,6 +86,12 @@ describe('ProviderFactory.createMany', () => {
     expect(set.plex).toBeInstanceOf(PlexProvider);
     expect(set.tautulli).toBeInstanceOf(TautulliProvider);
     expect(set.overseerr).toBeUndefined();
+  });
+
+  it('places an active Jellyfin provider into its typed slot', () => {
+    const set = factory.createMany([makeProvider(MetadataProviderType.JELLYFIN)], log);
+
+    expect(set.jellyfin).toBeInstanceOf(JellyfinProvider);
   });
 
   it('has no radarr/sonarr slots — MediaSource instances are never collapsed to one', () => {

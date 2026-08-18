@@ -36,6 +36,24 @@ describe('fieldsByProviderType', () => {
     ]);
   });
 
+  it('declares every field Jellyfin produces', () => {
+    expect(fieldsByProviderType[MetadataProviderType.JELLYFIN]).toEqual([
+      'playCount',
+      'lastWatchedAt',
+      'jellyfinAddedAt',
+      'studio',
+      'runtimeMinutes',
+      'fileSizeBytes',
+      'releaseDate',
+      'fileContainer',
+      'videoCodec',
+      'audioCodec',
+      'fileResolution',
+      'labels',
+      'isFavorite',
+    ]);
+  });
+
   it('declares overseerrRequestStatus and overseerrHasIssue for Overseerr', () => {
     expect(fieldsByProviderType[MetadataProviderType.OVERSEERR]).toEqual([
       'overseerrRequestStatus',

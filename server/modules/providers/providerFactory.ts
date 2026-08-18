@@ -33,6 +33,7 @@ export type AnyProvider =
  */
 export interface ProviderSet {
   plex?: PlexProvider;
+  jellyfin?: JellyfinProvider;
   tautulli?: TautulliProvider;
   overseerr?: OverseerrProvider;
   tmdb?: TmdbProvider;
@@ -79,6 +80,7 @@ export class ProviderFactory implements IProviderFactory {
     for (const settings of providers) {
       const provider = this.create(settings, logger);
       if (provider instanceof PlexProvider) set.plex = provider;
+      else if (provider instanceof JellyfinProvider) set.jellyfin = provider;
       else if (provider instanceof TautulliProvider) set.tautulli = provider;
       else if (provider instanceof OverseerrProvider) set.overseerr = provider;
       else if (provider instanceof TmdbProvider) set.tmdb = provider;

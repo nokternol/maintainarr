@@ -56,6 +56,13 @@ export type { IdentityJobFactory } from './identityJobFactory';
 // Connection classes + payload types still consumed outside the module
 // (search handler, media handler, enrichment mappers) until Phase 4.
 export { JellyfinProvider } from './connections/jellyfinProvider';
+export type {
+  JellyfinItem,
+  JellyfinLibrary,
+  JellyfinMediaSource,
+  JellyfinMediaStream,
+  JellyfinUserData,
+} from './connections/jellyfinProvider';
 export { OverseerrProvider } from './connections/overseerrProvider';
 export type { OverseerrIssue, OverseerrRequest } from './connections/overseerrProvider';
 export { PlexProvider } from './connections/plexProvider';

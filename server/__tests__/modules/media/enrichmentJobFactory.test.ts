@@ -74,6 +74,37 @@ describe('EnrichmentJobFactory', () => {
     expect(fields.get(identity.id)?.playCount).toBe(1);
   });
 
+  it('wires the active Jellyfin provider so the job persists isFavorite', async () => {
+    const JELLYFIN_URL = 'http://localhost:8096';
+    const db = getDb();
+    const providerSettingsService = new ProviderSettingsService({ db });
+    await providerSettingsService.create({
+      type: MetadataProviderType.JELLYFIN,
+      name: 'Test Jellyfin',
+      url: JELLYFIN_URL,
+      apiKey: 'jellyfin-key',
+      settings: { userId: 'test-user-id' },
+    });
+    const [identity] = await db
+      .insert(mediaIdentity)
+      .values({ kind: 'movie', tmdbId: 603, jellyfinItemId: 'jf-1', resolvedAt: 0 })
+      .returning();
+    server.use(
+      http.get(`${JELLYFIN_URL}/Users/:userId/Items`, () =>
+        HttpResponse.json({
+          Items: [{ Id: 'jf-1', Name: 'M', Type: 'Movie', UserData: { IsFavorite: true } }],
+          TotalRecordCount: 1,
+        })
+      )
+    );
+
+    const job = await makeFactory().create();
+    await job.run();
+
+    const fields = await new EnrichmentQueries({ db }).getByIdentityIds([identity.id]);
+    expect(fields.get(identity.id)?.isFavorite).toBe(true);
+  });
+
   it('returns a runnable job when no enrichment providers are active', async () => {
     await getDb().insert(mediaIdentity).values({ kind: 'movie', tmdbId: 604, resolvedAt: 0 });
 

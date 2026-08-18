@@ -74,6 +74,8 @@ const sharedFilterFields = {
   lastWatchedDaysAgoLte: intNum(),
   plexAddedDaysAgoGte: intNum(),
   plexAddedDaysAgoLte: intNum(),
+  jellyfinAddedDaysAgoGte: intNum(),
+  jellyfinAddedDaysAgoLte: intNum(),
   fileSizeBytesGte: num(),
   fileSizeBytesLte: num(),
   releaseDaysAgoGte: intNum(),
@@ -83,6 +85,7 @@ const sharedFilterFields = {
   audioCodec: z.string().optional(),
   fileResolution: z.string().optional(),
   labels: z.string().optional(),
+  jellyfinIsFavorite: bool3(),
   sort: sortField,
   tautulliWatched: z.enum(['true', 'false']).optional(),
 };
@@ -168,6 +171,8 @@ const MOVIE_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  jellyfinAddedDaysAgoGte: { key: 'jellyfinAddedDaysAgo', bound: 'min' },
+  jellyfinAddedDaysAgoLte: { key: 'jellyfinAddedDaysAgo', bound: 'max' },
   fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
   fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
   releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
@@ -177,6 +182,7 @@ const MOVIE_PARAM_TO_KEY = {
   audioCodec: { key: 'audioCodec' },
   fileResolution: { key: 'fileResolution' },
   labels: { key: 'labels' },
+  jellyfinIsFavorite: { key: 'jellyfinIsFavorite' },
 } as const satisfies Record<string, ParamMapping>;
 
 const SERIES_PARAM_TO_KEY = {
@@ -213,6 +219,8 @@ const SERIES_PARAM_TO_KEY = {
   lastWatchedDaysAgoLte: { key: 'lastWatchedDaysAgo', bound: 'max' },
   plexAddedDaysAgoGte: { key: 'plexAddedDaysAgo', bound: 'min' },
   plexAddedDaysAgoLte: { key: 'plexAddedDaysAgo', bound: 'max' },
+  jellyfinAddedDaysAgoGte: { key: 'jellyfinAddedDaysAgo', bound: 'min' },
+  jellyfinAddedDaysAgoLte: { key: 'jellyfinAddedDaysAgo', bound: 'max' },
   fileSizeBytesGte: { key: 'fileSizeBytes', bound: 'min' },
   fileSizeBytesLte: { key: 'fileSizeBytes', bound: 'max' },
   releaseDaysAgoGte: { key: 'releaseDaysAgo', bound: 'min' },
@@ -222,6 +230,7 @@ const SERIES_PARAM_TO_KEY = {
   audioCodec: { key: 'audioCodec' },
   fileResolution: { key: 'fileResolution' },
   labels: { key: 'labels' },
+  jellyfinIsFavorite: { key: 'jellyfinIsFavorite' },
 } as const satisfies Record<string, ParamMapping>;
 
 /**
@@ -248,6 +257,7 @@ const _MOVIE_RANGE_PARAM_WITNESS: Record<
   year: { gte: 'yearMin', lte: 'yearMax' },
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  jellyfinAddedDaysAgo: { gte: 'jellyfinAddedDaysAgoGte', lte: 'jellyfinAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   imdbRating: { gte: 'radarrImdbRatingGte', lte: 'radarrImdbRatingLte' },
   runtimeMinutes: { gte: 'runtimeMinutesGte', lte: 'runtimeMinutesLte' },
@@ -263,6 +273,7 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   year: { gte: 'yearMin', lte: 'yearMax' },
   addedDaysAgo: { gte: 'addedDaysAgoGte', lte: 'addedDaysAgoLte' },
   plexAddedDaysAgo: { gte: 'plexAddedDaysAgoGte', lte: 'plexAddedDaysAgoLte' },
+  jellyfinAddedDaysAgo: { gte: 'jellyfinAddedDaysAgoGte', lte: 'jellyfinAddedDaysAgoLte' },
   sizeOnDiskGb: { gte: 'sizeOnDiskGbGte', lte: 'sizeOnDiskGbLte' },
   fileSizeBytes: { gte: 'fileSizeBytesGte', lte: 'fileSizeBytesLte' },
   releaseDaysAgo: { gte: 'releaseDaysAgoGte', lte: 'releaseDaysAgoLte' },

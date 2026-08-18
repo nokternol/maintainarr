@@ -189,6 +189,19 @@ export const MEDIA_RULES = [
     },
   },
   {
+    key: 'jellyfinAddedDaysAgo',
+    label: 'Jellyfin added (days ago)',
+    contentTypes: ['movie', 'show'],
+    dataType: 'range',
+    sourceProviders: deriveSourceProviders('jellyfinAddedAt'),
+    sourceField: 'jellyfinAddedAt',
+    required: false,
+    predicate: (item, value) => {
+      if (!item.jellyfinAddedAt) return false;
+      return inRange(daysElapsed(item.jellyfinAddedAt), value);
+    },
+  },
+  {
     key: 'sizeOnDiskGb',
     label: 'Size on disk (GB)',
     contentTypes: ['movie', 'show'],
@@ -321,6 +334,16 @@ export const MEDIA_RULES = [
       const labels = parseCsvStrings(value);
       return (item.labels ?? []).some((l) => labels.includes(l));
     },
+  },
+  {
+    key: 'jellyfinIsFavorite',
+    label: 'Jellyfin favorite',
+    contentTypes: ['movie', 'show'],
+    dataType: 'boolean',
+    sourceProviders: deriveSourceProviders('isFavorite'),
+    sourceField: 'isFavorite',
+    required: false,
+    predicate: (item, value) => Boolean(item.isFavorite) === asBool(value),
   },
 
   // ── Movie-only ─────────────────────────────────────────────────────────────
