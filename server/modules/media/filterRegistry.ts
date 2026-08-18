@@ -413,6 +413,109 @@ export const MEDIA_RULES = [
       return inRange(movie.imdbRating, value);
     },
   },
+  {
+    key: 'movieFileCount',
+    label: 'Movie file count',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (movie.movieFileCount === undefined) return false;
+      return inRange(movie.movieFileCount, value);
+    },
+  },
+  {
+    key: 'releaseGroups',
+    label: 'Release group',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      const groups = parseCsvStrings(value);
+      return (movie.releaseGroups ?? []).some((g) => groups.includes(g));
+    },
+  },
+  {
+    key: 'inCinemasDaysAgo',
+    label: 'In cinemas (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (!movie.inCinemasDate) return false;
+      return inRange(daysElapsed(movie.inCinemasDate), value);
+    },
+  },
+  {
+    key: 'physicalReleaseDaysAgo',
+    label: 'Physical release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (!movie.physicalReleaseDate) return false;
+      return inRange(daysElapsed(movie.physicalReleaseDate), value);
+    },
+  },
+  {
+    key: 'digitalReleaseDaysAgo',
+    label: 'Digital release (days ago)',
+    contentTypes: ['movie'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (!movie.digitalReleaseDate) return false;
+      return inRange(daysElapsed(movie.digitalReleaseDate), value);
+    },
+  },
+  {
+    key: 'collectionName',
+    label: 'Collection',
+    contentTypes: ['movie'],
+    dataType: 'csv-strings',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (!movie.collectionName) return false;
+      return parseCsvStrings(value).includes(movie.collectionName);
+    },
+  },
+  {
+    key: 'isAvailable',
+    label: 'Available',
+    contentTypes: ['movie'],
+    dataType: 'boolean',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      return movie.isAvailable === asBool(value);
+    },
+  },
+  {
+    key: 'radarrStatus',
+    label: 'Radarr status',
+    contentTypes: ['movie'],
+    dataType: 'string',
+    sourceProviders: [MetadataProviderType.RADARR],
+    required: false,
+    predicate: (item, value) => {
+      const movie = item as NormalizedMovie;
+      if (!movie.radarrStatus) return false;
+      return movie.radarrStatus === String(value);
+    },
+  },
 
   // ── Show-only ──────────────────────────────────────────────────────────────
   {

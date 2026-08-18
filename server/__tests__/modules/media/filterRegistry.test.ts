@@ -52,8 +52,8 @@ const baseShow: NormalizedShow = {
 // ─── Registry structure ───────────────────────────────────────────────────────
 
 describe('MEDIA_RULES', () => {
-  it('contains exactly 37 entries', () => {
-    expect(MEDIA_RULES).toHaveLength(37);
+  it('contains exactly 45 entries', () => {
+    expect(MEDIA_RULES).toHaveLength(45);
   });
 
   it('every entry has required fields', () => {
@@ -99,6 +99,29 @@ describe('dataType classification', () => {
     expect(getRule('year', 'movie')!.dataType).toBe('range');
     expect(getRule('addedDaysAgo', 'movie')!.dataType).toBe('range');
     expect(getRule('imdbRating', 'movie')!.dataType).toBe('range');
+  });
+
+  it('movieFileCount is a range, not a number — no natural small enum for a file count', () => {
+    expect(getRule('movieFileCount', 'movie')!.dataType).toBe('range');
+  });
+
+  it('releaseGroups / collectionName compare strings — csv-strings', () => {
+    expect(getRule('releaseGroups', 'movie')!.dataType).toBe('csv-strings');
+    expect(getRule('collectionName', 'movie')!.dataType).toBe('csv-strings');
+  });
+
+  it('inCinemasDaysAgo / physicalReleaseDaysAgo / digitalReleaseDaysAgo are bounded — range', () => {
+    expect(getRule('inCinemasDaysAgo', 'movie')!.dataType).toBe('range');
+    expect(getRule('physicalReleaseDaysAgo', 'movie')!.dataType).toBe('range');
+    expect(getRule('digitalReleaseDaysAgo', 'movie')!.dataType).toBe('range');
+  });
+
+  it('isAvailable is a computed availability flag — boolean', () => {
+    expect(getRule('isAvailable', 'movie')!.dataType).toBe('boolean');
+  });
+
+  it("radarrStatus is Radarr's own release-lifecycle enum — string", () => {
+    expect(getRule('radarrStatus', 'movie')!.dataType).toBe('string');
   });
 });
 
@@ -326,6 +349,105 @@ describe('movie predicates', () => {
     expect(rule.predicate({ ...baseMovie, playCount: 0 }, true)).toBe(false);
     expect(rule.predicate(baseMovie, false)).toBe(false);
     expect(rule.predicate({ ...baseMovie, playCount: 0 }, false)).toBe(true);
+  });
+});
+
+// ─── Radarr movie-only predicates (new fields) ────────────────────────────────
+
+describe('Radarr movie-only predicates', () => {
+  it('movieFileCount — passes within min/max bounds', () => {
+    const rule = getRule('movieFileCount', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, movieFileCount: 1 }, { min: 1 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, movieFileCount: 0 }, { min: 1 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, movieFileCount: 1 }, { max: 0 })).toBe(false);
+    expect(rule.predicate(baseMovie, { min: 0 })).toBe(false); // undefined movieFileCount
+  });
+
+  it('releaseGroups — passes when item has any of the csv release groups', () => {
+    const rule = getRule('releaseGroups', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, releaseGroups: ['SPARKS', 'RARBG'] }, 'RARBG')).toBe(
+      true
+    );
+    expect(rule.predicate({ ...baseMovie, releaseGroups: ['SPARKS'] }, 'RARBG')).toBe(false);
+    expect(rule.predicate(baseMovie, 'RARBG')).toBe(false);
+  });
+
+  it('inCinemasDaysAgo — passes within min/max bounds', () => {
+    const rule = getRule('inCinemasDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, inCinemasDate: tenDaysAgo }, { min: 5 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, inCinemasDate: tenDaysAgo }, { min: 15 })).toBe(false);
+    expect(rule.predicate({ ...baseMovie, inCinemasDate: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('physicalReleaseDaysAgo — passes within min/max bounds', () => {
+    const rule = getRule('physicalReleaseDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, physicalReleaseDate: tenDaysAgo }, { min: 5 })).toBe(
+      true
+    );
+    expect(rule.predicate({ ...baseMovie, physicalReleaseDate: tenDaysAgo }, { min: 15 })).toBe(
+      false
+    );
+    expect(rule.predicate({ ...baseMovie, physicalReleaseDate: undefined }, { min: 5 })).toBe(
+      false
+    );
+  });
+
+  it('digitalReleaseDaysAgo — passes within min/max bounds', () => {
+    const rule = getRule('digitalReleaseDaysAgo', 'movie')!;
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    expect(rule.predicate({ ...baseMovie, digitalReleaseDate: tenDaysAgo }, { min: 5 })).toBe(true);
+    expect(rule.predicate({ ...baseMovie, digitalReleaseDate: tenDaysAgo }, { min: 15 })).toBe(
+      false
+    );
+    expect(rule.predicate({ ...baseMovie, digitalReleaseDate: undefined }, { min: 5 })).toBe(false);
+  });
+
+  it('collectionName — passes when item collection is in the csv list', () => {
+    const rule = getRule('collectionName', 'movie')!;
+    expect(
+      rule.predicate(
+        { ...baseMovie, collectionName: 'The Matrix Collection' },
+        'The Matrix Collection'
+      )
+    ).toBe(true);
+    expect(
+      rule.predicate({ ...baseMovie, collectionName: 'The Matrix Collection' }, 'Rocky Collection')
+    ).toBe(false);
+    expect(rule.predicate(baseMovie, 'The Matrix Collection')).toBe(false);
+  });
+
+  it('isAvailable — true only when isAvailable matches value', () => {
+    const rule = getRule('isAvailable', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, isAvailable: true }, true)).toBe(true);
+    expect(rule.predicate({ ...baseMovie, isAvailable: false }, true)).toBe(false);
+    expect(rule.predicate({ ...baseMovie, isAvailable: true }, false)).toBe(false);
+  });
+
+  it("radarrStatus — matches Radarr's own release-lifecycle enum value", () => {
+    const rule = getRule('radarrStatus', 'movie')!;
+    expect(rule.predicate({ ...baseMovie, radarrStatus: 'released' }, 'released')).toBe(true);
+    expect(rule.predicate({ ...baseMovie, radarrStatus: 'announced' }, 'released')).toBe(false);
+    expect(rule.predicate({ ...baseMovie, radarrStatus: undefined }, 'released')).toBe(false);
+  });
+
+  it('every new Radarr rule is movie-only, sourced from Radarr', () => {
+    for (const key of [
+      'movieFileCount',
+      'releaseGroups',
+      'inCinemasDaysAgo',
+      'physicalReleaseDaysAgo',
+      'digitalReleaseDaysAgo',
+      'collectionName',
+      'isAvailable',
+      'radarrStatus',
+    ]) {
+      const rule = getRule(key, 'movie')!;
+      expect(rule).toBeDefined();
+      expect(rule.contentTypes).toEqual(['movie']);
+      expect(rule.sourceProviders).toEqual([MetadataProviderType.RADARR]);
+    }
   });
 });
 
