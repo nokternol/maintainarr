@@ -28,15 +28,19 @@ owner of the movie catalog; any number of active instances may run at once.
 **Auth:** API key (`?apikey=` query param).
 
 **What the app can pull today** ([`connections/radarrProvider.ts`](ref:path:server/modules/providers/connections/radarrProvider.ts)):
-`getMovies()`, `getProfiles()`, `getRootFolders()`, `getTags()`, `lookupMovies(term)`. Actuator tasks:
-`unmonitorMovies()` and `triggerMoviesSearch()` are real (call Radarr's API); `deleteMovies()` is real;
-`deleteMovieKeepFiles`/`changeQualityProfile`/`addTag`/`removeTag` are declared but modelled-only
-(`modelledRun` — reject on invocation, not yet implemented against Radarr's API).
+`getMovies()`, `getProfiles()`, `getRootFolders()`, `getTags()`, `lookupMovies(term)`. Every actuator
+task is real (calls Radarr's API): `unmonitorMovies()`, `triggerMoviesSearch()`, `deleteMovies()`,
+`deleteMoviesKeepFiles()`, `changeQualityProfile()`, `applyTag()` (add/remove), `refreshMovies()`,
+`rescanMovies()`, `renameMovies()`, `refreshCollections()` (the last is instance-wide — Radarr's
+`RefreshCollections` command has no per-movie scope, so its task ignores the selected ids and fires
+once). None are modelled-only.
 
 **Wired into the media-item pipeline?** Yes — as `MediaSource`. Radarr's own fields (`genres`,
-`imdbRating`, `tags`, `qualityProfileId`, `certification`, etc.) are normalized directly onto
-`NormalizedMovie` by [`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts) and gated
-straight into `filterRegistry.ts` — no enrichment step needed for source-owned data.
+`imdbRating`, `tags`, `qualityProfileId`, `certification`, `movieFileCount`, `releaseGroups`,
+`inCinemasDate`, `physicalReleaseDate`, `digitalReleaseDate`, `collectionName`, `isAvailable`,
+`radarrStatus`, etc.) are normalized directly onto `NormalizedMovie` by
+[`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts) and gated straight into
+`filterRegistry.ts` — no enrichment step needed for source-owned data.
 
 ## Sonarr
 
