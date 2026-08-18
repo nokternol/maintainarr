@@ -47,10 +47,16 @@ lifecycle:
    narrating progress elsewhere. No separate summary doc.
 4. Drive the actual build via the `plan-and-go:tdd-engineer` agent persona: spawn it directly
    with `Agent(subagent_type: "plan-and-go:tdd-engineer")`, pointed at the spec file and this
-   implementation map. Do not spawn a generic agent and have it separately invoke the
-   `plan-and-go:tdd` skill — that skill's own process spawns a `plan-and-go:tdd-engineer` agent
-   internally, so doing both nests two agents deep for no reason. Spawning the persona directly
-   is the flat, one-level version of the same thing.
+   implementation map. That agent definition (`~/.claude/skills/plan-and-go/agents/tdd-engineer.md`)
+   is governance only — phase discipline, mismatch protocol, working-tree discipline — it does
+   NOT contain the actual RED/GREEN/REFACTOR process. For that, the spawned agent must **read
+   directly with the Read tool**, not invoke the Skill tool:
+   `~/.claude/skills/plan-and-go/skills/tdd/SKILL.md` (Atomic Cycle Rule, output format) and its
+   `references/` (`phases.md`, `red-phase.md`, `green-phase.md`, `refactor-phase.md`,
+   `extracting-steps.md`). Do NOT have it invoke `Skill(skill: "plan-and-go:tdd")` — that skill's
+   own header says it's "executed by the `plan-and-go:tdd-engineer` agent," which triggers a
+   nested agent spawn even from inside an agent that already *is* that persona. Reading the
+   files directly gets the same process content with no spawn mechanism involved.
 5. On merge: flip `status` to `implemented`, update the tracker row, and hand off to
    `docs-lifecycle` to move the spec into `docs/architecture/`.
 
