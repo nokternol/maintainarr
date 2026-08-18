@@ -51,6 +51,44 @@ describe('normalizeRadarrMovie', () => {
     const item = normalizeRadarrMovie({ ...baseMovie, tags: [10, 20] }, 7);
     expect(item.tags).toEqual([10, 20]);
   });
+
+  it('carries display-only fields through unchanged, for detail views not filters', () => {
+    const item = normalizeRadarrMovie(
+      {
+        ...baseMovie,
+        overview: 'A thief who steals corporate secrets.',
+        originalTitle: 'Inception',
+        originalLanguage: { id: 1, name: 'English' },
+        alternateTitles: [{ title: 'Origen' }],
+        secondaryYear: 2011,
+        sortTitle: 'inception',
+        cleanTitle: 'inception',
+        titleSlug: 'inception-27205',
+        collection: { name: 'The Matrix Collection', tmdbId: 2344 },
+        minimumAvailability: 'released',
+        rootFolderPath: '/movies',
+        website: 'https://inceptionmovie.warnerbros.com',
+        youTubeTrailerId: 'YoHD9XEInc0',
+      },
+      7
+    );
+    expect(item.overview).toBe('A thief who steals corporate secrets.');
+    expect(item.originalTitle).toBe('Inception');
+    expect(item.originalLanguage).toEqual({ id: 1, name: 'English' });
+    expect(item.alternateTitles).toEqual([{ title: 'Origen' }]);
+    expect(item.secondaryYear).toBe(2011);
+    expect(item.sortTitle).toBe('inception');
+    expect(item.cleanTitle).toBe('inception');
+    expect(item.titleSlug).toBe('inception-27205');
+    expect(item.collectionName).toBe('The Matrix Collection');
+    expect(item.collectionTmdbId).toBe(2344);
+    expect(item.minimumAvailability).toBe('released');
+    expect(item.rootFolderPath).toBe('/movies');
+    expect(item.website).toBe('https://inceptionmovie.warnerbros.com');
+    expect(item.youTubeTrailerId).toBe('YoHD9XEInc0');
+    expect(item.folderName).toBe('/movies/inception');
+    expect(item.path).toBe('/movies/inception');
+  });
 });
 
 describe('normalizeSonarrSeries', () => {

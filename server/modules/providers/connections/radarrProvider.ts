@@ -7,6 +7,20 @@ export interface RadarrImage {
   remoteUrl: string;
 }
 
+export interface RadarrLanguage {
+  id: number;
+  name: string;
+}
+
+export interface RadarrAlternateTitle {
+  title: string;
+}
+
+export interface RadarrCollection {
+  name: string;
+  tmdbId: number;
+}
+
 export interface RadarrMovie {
   id: number;
   title: string;
@@ -36,6 +50,24 @@ export interface RadarrMovie {
     sizeOnDisk: number;
     releaseGroups: string[];
   };
+  inCinemas?: string;
+  physicalRelease?: string;
+  digitalRelease?: string;
+  isAvailable?: boolean;
+  status?: 'tba' | 'announced' | 'inCinemas' | 'released' | 'deleted';
+  overview?: string;
+  originalTitle?: string;
+  originalLanguage?: RadarrLanguage;
+  alternateTitles?: RadarrAlternateTitle[];
+  secondaryYear?: number;
+  sortTitle?: string;
+  cleanTitle?: string;
+  titleSlug?: string;
+  collection?: RadarrCollection;
+  minimumAvailability?: string;
+  rootFolderPath?: string;
+  website?: string;
+  youTubeTrailerId?: string;
 }
 
 export interface RadarrProfile {

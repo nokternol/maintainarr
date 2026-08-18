@@ -32,4 +32,34 @@ export interface NormalizedMovie extends Partial<EnrichmentFields> {
   certification?: string;
   imdbRating?: number;
   tmdbRating?: number;
+  /** Filesystem location — display only, no substring-match filter control exists yet. */
+  folderName?: string;
+  path?: string;
+  movieFileCount?: number;
+  releaseGroups?: string[];
+  inCinemasDate?: string;
+  physicalReleaseDate?: string;
+  digitalReleaseDate?: string;
+  collectionName?: string;
+  /** Flattened alongside `collectionName` — no confirmed id-based filter use case, unfiltered. */
+  collectionTmdbId?: number;
+  isAvailable?: boolean;
+  /** Radarr's own release-lifecycle enum (`tba`/`announced`/`inCinemas`/`released`/`deleted`) —
+   *  prefixed to avoid colliding with NormalizedShow.status (series continuing/ended, different enum). */
+  radarrStatus?: string;
+  /** Plot synopsis — display only, on-demand item detail, not a filter target. */
+  overview?: string;
+  originalTitle?: string;
+  originalLanguage?: { id: number; name: string };
+  alternateTitles?: { title: string }[];
+  secondaryYear?: number;
+  sortTitle?: string;
+  cleanTitle?: string;
+  titleSlug?: string;
+  /** Config-surface — read-only detail, not a filter widget. */
+  minimumAvailability?: string;
+  rootFolderPath?: string;
+  /** External links — display only. */
+  website?: string;
+  youTubeTrailerId?: string;
 }
