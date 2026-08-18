@@ -55,7 +55,7 @@ lifecycle:
 | Spec | Status | Branch | PR |
 |---|---|---|---|
 | [plex](plex.md) | implementing | `implement/plex-provider-spec` | [#46](https://github.com/nokternol/maintainarr/pull/46) |
-| [jellyfin](jellyfin.md) | draft | — | — |
+| [jellyfin](jellyfin.md) | implementing | `implement/jellyfin-provider-spec` | [#48](https://github.com/nokternol/maintainarr/pull/48) |
 | [radarr](radarr.md) | draft | — | — |
 | [sonarr](sonarr.md) | draft | — | — |
 | [tautulli](tautulli.md) | draft | — | — |
