@@ -426,6 +426,7 @@ interface Lookups {
   labels: string[];
   releaseGroups: string[];
   collectionNames: string[];
+  languageProfiles: MediaQualityProfile[];
 }
 
 export interface MediaContentProps {

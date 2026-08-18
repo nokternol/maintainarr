@@ -93,6 +93,14 @@ fit the per-item `ActuatorTask.run(ids)` shape) — flagged as future work needi
   strings differently (`"PG-13"` vs country-prefixed). Value-format risk, not a name collision — flag
   for precedence ticket since the filter predicate does exact case-insensitive string match.
 
+## Implementation status
+
+Every row below is implemented except `runtime`/`studio`: both are already-live
+`EnrichmentFields` keys with Plex as sole current producer, so wiring Radarr in now would make it
+a second, uncoordinated producer with no precedence ordering between them. Blocked on
+`_precedence.md`'s implementation landing precedence-ordering machinery first. Tracked in
+`specs/_implementation-map.md`.
+
 ## Filter type mapping
 
 | Domain field | Filter key | dataType | Notes |

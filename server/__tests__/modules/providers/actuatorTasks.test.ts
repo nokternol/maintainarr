@@ -70,7 +70,7 @@ describe('RadarrProvider — MediaActuator.tasks()', () => {
 });
 
 describe('SonarrProvider — MediaActuator.tasks()', () => {
-  it('declares its real tasks bound to methods, parameterized tasks with their parameter', async () => {
+  it('declares its real tasks bound to methods, parameterized tasks with their parameter', () => {
     const provider = new SonarrProvider(sonarrConfig, log);
     const tasks = provider.tasks();
     const ids = tasks.map((t) => t.id);
@@ -84,9 +84,16 @@ describe('SonarrProvider — MediaActuator.tasks()', () => {
     expect(del?.affects).toBe('media');
 
     expect(tasks.find((t) => t.id === 'addTag')?.parameter?.label).toBe('Tag');
+  });
 
-    const keepFiles = tasks.find((t) => t.id === 'deleteSeriesKeepFiles')!;
-    await expect(keepFiles.run([1])).rejects.toThrow(/not yet implemented/i);
+  it('declares deleteSeriesKeepFiles, refreshSeries, rescanSeries, renameSeries as real tasks', () => {
+    const provider = new SonarrProvider(sonarrConfig, log);
+    const ids = provider.tasks().map((t) => t.id);
+
+    expect(ids).toContain('deleteSeriesKeepFiles');
+    expect(ids).toContain('refreshSeries');
+    expect(ids).toContain('rescanSeries');
+    expect(ids).toContain('renameSeries');
   });
 });
 

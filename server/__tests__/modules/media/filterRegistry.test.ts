@@ -745,3 +745,67 @@ describe('Jellyfin-only predicates', () => {
     expect(rule.predicate({ ...baseShow, isFavorite: false }, true)).toBe(false);
   });
 });
+
+// ─── Sonarr-only predicates ────────────────────────────────────────────────────
+
+describe('Sonarr-only predicates', () => {
+  it('seasonCount is a range, not a number — no natural small enum for a season count', () => {
+    expect(getRule('seasonCount', 'show')!.dataType).toBe('range');
+  });
+
+  it('seasonCount — show: passes within min/max bounds', () => {
+    const rule = getRule('seasonCount', 'show')!;
+    expect(rule.predicate({ ...baseShow, seasonCount: 5 }, { min: 3 })).toBe(true);
+    expect(rule.predicate({ ...baseShow, seasonCount: 5 }, { min: 6 })).toBe(false);
+    expect(rule.predicate({ ...baseShow, seasonCount: 5 }, { max: 6 })).toBe(true);
+    expect(rule.predicate({ ...baseShow, seasonCount: 5 }, { max: 3 })).toBe(false);
+    expect(rule.predicate(baseShow, { min: 1 })).toBe(false);
+  });
+
+  it('episodeCount is a range — spans totalEpisodeCount as the practical bound', () => {
+    expect(getRule('episodeCount', 'show')!.dataType).toBe('range');
+  });
+
+  it('episodeCount — show: reads totalEpisodeCount when present', () => {
+    const rule = getRule('episodeCount', 'show')!;
+    expect(
+      rule.predicate({ ...baseShow, totalEpisodeCount: 62, episodeCount: 60 }, { min: 61 })
+    ).toBe(true);
+    expect(
+      rule.predicate({ ...baseShow, totalEpisodeCount: 62, episodeCount: 60 }, { min: 70 })
+    ).toBe(false);
+  });
+
+  it('episodeCount — show: falls back to episodeCount when totalEpisodeCount is absent', () => {
+    const rule = getRule('episodeCount', 'show')!;
+    expect(rule.predicate({ ...baseShow, episodeCount: 12 }, { min: 10 })).toBe(true);
+    expect(rule.predicate(baseShow, { min: 1 })).toBe(false);
+  });
+
+  it('nextAiringInDays is a forward-looking range — not the "days ago" convention', () => {
+    expect(getRule('nextAiringInDays', 'show')!.dataType).toBe('range');
+  });
+
+  it('nextAiringInDays — show: passes within min/max bounds counting forward from now', () => {
+    const rule = getRule('nextAiringInDays', 'show')!;
+    const inTenDays = new Date(Date.now() + 10 * 86_400_000 + 60_000).toISOString();
+    expect(rule.predicate({ ...baseShow, nextAiring: inTenDays }, { min: 5, max: 15 })).toBe(true);
+    expect(rule.predicate({ ...baseShow, nextAiring: inTenDays }, { min: 11 })).toBe(false);
+    expect(rule.predicate({ ...baseShow, nextAiring: inTenDays }, { max: 9 })).toBe(false);
+    expect(rule.predicate(baseShow, { min: 0 })).toBe(false); // no nextAiring
+  });
+
+  it('languageProfileIds is csv-ids, instance-scoped — same shape as qualityProfileIds', () => {
+    const rule = getRule('languageProfileIds', 'show')!;
+    expect(rule.dataType).toBe('csv-ids');
+    expect(rule.instanceScoped).toBe(true);
+    expect(rule.sourceProviders).toEqual([MetadataProviderType.SONARR]);
+  });
+
+  it('languageProfileIds — show: passes when item languageProfileId is in the csv list', () => {
+    const rule = getRule('languageProfileIds', 'show')!;
+    expect(rule.predicate({ ...baseShow, languageProfileId: 3 }, '3,4')).toBe(true);
+    expect(rule.predicate({ ...baseShow, languageProfileId: 3 }, '99')).toBe(false);
+    expect(rule.predicate(baseShow, '3')).toBe(false); // no languageProfileId
+  });
+});

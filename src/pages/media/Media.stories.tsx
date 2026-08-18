@@ -247,6 +247,10 @@ const LOOKUPS = {
   labels: ['4K', 'HDR'],
   releaseGroups: ['SPARKS', 'RARBG'],
   collectionNames: ['The Matrix Collection', 'Rocky Collection'],
+  languageProfiles: [
+    { id: 1, name: 'English', providerId: 2, providerName: 'Sonarr' },
+    { id: 2, name: 'English/Japanese', providerId: 2, providerName: 'Sonarr' },
+  ],
 };
 
 const ALL_PROVIDERS = new Set(['RADARR', 'SONARR', 'TAUTULLI']);

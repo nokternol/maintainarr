@@ -104,6 +104,13 @@ const BROWSE_PARAM_BINDINGS = {
   sonarrLastAiredDaysAgoLte: { scope: 'show', key: 'lastAiredDaysAgo', bound: 'max' },
   sonarrPercentEpisodesGte: { scope: 'show', key: 'episodePercentage', bound: 'min' },
   sonarrPercentEpisodesLte: { scope: 'show', key: 'episodePercentage', bound: 'max' },
+  seasonCountGte: { scope: 'show', key: 'seasonCount', bound: 'min' },
+  seasonCountLte: { scope: 'show', key: 'seasonCount', bound: 'max' },
+  episodeCountGte: { scope: 'show', key: 'episodeCount', bound: 'min' },
+  episodeCountLte: { scope: 'show', key: 'episodeCount', bound: 'max' },
+  nextAiringInDaysGte: { scope: 'show', key: 'nextAiringInDays', bound: 'min' },
+  nextAiringInDaysLte: { scope: 'show', key: 'nextAiringInDays', bound: 'max' },
+  seriesLanguageProfileIds: { scope: 'show', key: 'languageProfileIds' },
 } as const;
 
 /**
@@ -152,6 +159,9 @@ const _SHOW_RANGE_PARAM_WITNESS: Record<
   lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
   episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+  seasonCount: { gte: 'seasonCountGte', lte: 'seasonCountLte' },
+  episodeCount: { gte: 'episodeCountGte', lte: 'episodeCountLte' },
+  nextAiringInDays: { gte: 'nextAiringInDaysGte', lte: 'nextAiringInDaysLte' },
 };
 
 type ScopedBuckets = Record<

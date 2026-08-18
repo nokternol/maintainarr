@@ -45,6 +45,22 @@ describe('SonarrProvider', () => {
     expect(tags).toHaveLength(1);
     expect(tags[0].label).toBe('drama');
   });
+
+  it('fetches and parses language profiles correctly', async () => {
+    server.use(
+      http.get(`${SONARR_BASE}/languageprofile`, () =>
+        HttpResponse.json([
+          { id: 1, name: 'English' },
+          { id: 2, name: 'English/Japanese' },
+        ])
+      )
+    );
+
+    const profiles = await provider.getLanguageProfiles();
+
+    expect(profiles).toHaveLength(2);
+    expect(profiles[0].name).toBe('English');
+  });
 });
 
 describe('SonarrProvider — task methods', () => {
@@ -84,6 +100,64 @@ describe('SonarrProvider — task methods', () => {
 
     expect(deleted.map((d) => d.id)).toEqual(expect.arrayContaining([7, 8]));
     expect(deleted.every((d) => d.deleteFiles === 'true')).toBe(true);
+  });
+
+  it('deleteSeriesKeepFiles sends DELETE /series/{id} with deleteFiles=false for each ID', async () => {
+    const deleted: Array<{ id: number; deleteFiles: string | null }> = [];
+    server.use(
+      http.delete(`${SONARR_BASE}/series/:id`, ({ params, request }) => {
+        const url = new URL(request.url);
+        deleted.push({ id: Number(params.id), deleteFiles: url.searchParams.get('deleteFiles') });
+        return HttpResponse.json({});
+      })
+    );
+
+    await provider.deleteSeriesKeepFiles([6, 7]);
+
+    expect(deleted.map((d) => d.id)).toEqual(expect.arrayContaining([6, 7]));
+    expect(deleted.every((d) => d.deleteFiles === 'false')).toBe(true);
+  });
+
+  it('refreshSeries posts RefreshSeries command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${SONARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.refreshSeries([1, 2]);
+
+    expect(commandBody).toEqual({ name: 'RefreshSeries', seriesIds: [1, 2] });
+  });
+
+  it('rescanSeries posts RescanSeries command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${SONARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.rescanSeries([3]);
+
+    expect(commandBody).toEqual({ name: 'RescanSeries', seriesIds: [3] });
+  });
+
+  it('renameSeries posts RenameSeries command with given IDs', async () => {
+    let commandBody: unknown = null;
+    server.use(
+      http.post(`${SONARR_BASE}/command`, async ({ request }) => {
+        commandBody = await request.json();
+        return HttpResponse.json({ id: 1 });
+      })
+    );
+
+    await provider.renameSeries([4, 5]);
+
+    expect(commandBody).toEqual({ name: 'RenameSeries', seriesIds: [4, 5] });
   });
 
   it('unmonitorSeries sends PUT /series/{id} with monitored:false for each ID', async () => {

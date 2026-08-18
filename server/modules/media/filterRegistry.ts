@@ -82,6 +82,14 @@ function daysElapsed(isoDate: string): number {
   return Math.floor((Date.now() - Date.parse(isoDate)) / 86_400_000);
 }
 
+/** Mirror of `daysElapsed` for a forward-looking date — days *until* `isoDate`,
+ *  not days since. Kept separate rather than negating `daysElapsed`'s result:
+ *  a "days ago" rule and a "days until" rule read their min/max bounds in
+ *  opposite directions, and this keeps that direction explicit at the call site. */
+function daysUntil(isoDate: string): number {
+  return Math.floor((Date.parse(isoDate) - Date.now()) / 86_400_000);
+}
+
 function asBool(value: FilterValue): boolean {
   if (typeof value === 'boolean') return value;
   return String(value).toLowerCase() === 'true';
@@ -682,6 +690,60 @@ export const MEDIA_RULES = [
       const show = item as NormalizedShow;
       if (show.episodePercentage === undefined) return false;
       return inRange(show.episodePercentage, value);
+    },
+  },
+  {
+    key: 'seasonCount',
+    label: 'Season count',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.SONARR],
+    required: false,
+    predicate: (item, value) => {
+      const show = item as NormalizedShow;
+      if (show.seasonCount === undefined) return false;
+      return inRange(show.seasonCount, value);
+    },
+  },
+  {
+    key: 'episodeCount',
+    label: 'Episode count',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.SONARR],
+    required: false,
+    predicate: (item, value) => {
+      const show = item as NormalizedShow;
+      const count = show.totalEpisodeCount ?? show.episodeCount;
+      if (count === undefined) return false;
+      return inRange(count, value);
+    },
+  },
+  {
+    key: 'nextAiringInDays',
+    label: 'Next airing (days)',
+    contentTypes: ['show'],
+    dataType: 'range',
+    sourceProviders: [MetadataProviderType.SONARR],
+    required: false,
+    predicate: (item, value) => {
+      const show = item as NormalizedShow;
+      if (!show.nextAiring) return false;
+      return inRange(daysUntil(show.nextAiring), value);
+    },
+  },
+  {
+    key: 'languageProfileIds',
+    label: 'Language profile',
+    contentTypes: ['show'],
+    dataType: 'csv-ids',
+    sourceProviders: [MetadataProviderType.SONARR],
+    required: false,
+    instanceScoped: true,
+    predicate: (item, value) => {
+      const show = item as NormalizedShow;
+      const ids = parseCsvIds(value);
+      return show.languageProfileId !== undefined && ids.includes(show.languageProfileId);
     },
   },
   {

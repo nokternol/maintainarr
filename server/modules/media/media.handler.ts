@@ -141,6 +141,14 @@ const seriesQuerySchema = paginationQuerySchema.extend({
   sonarrLastAiredDaysAgoLte: intNum(),
   sonarrPercentEpisodesGte: num(),
   sonarrPercentEpisodesLte: num(),
+  seasonCountGte: intNum(),
+  seasonCountLte: intNum(),
+  episodeCountGte: intNum(),
+  episodeCountLte: intNum(),
+  nextAiringInDaysGte: intNum(),
+  nextAiringInDaysLte: intNum(),
+  seriesLanguageProfileIds: z.string().optional(),
+  seriesLanguageProfileIdsProviderId: providerIdParam(),
 });
 
 // ─── Registry delegation ───────────────────────────────────────────────────────
@@ -239,6 +247,16 @@ const SERIES_PARAM_TO_KEY = {
   sonarrLastAiredDaysAgoLte: { key: 'lastAiredDaysAgo', bound: 'max' },
   sonarrPercentEpisodesGte: { key: 'episodePercentage', bound: 'min' },
   sonarrPercentEpisodesLte: { key: 'episodePercentage', bound: 'max' },
+  seasonCountGte: { key: 'seasonCount', bound: 'min' },
+  seasonCountLte: { key: 'seasonCount', bound: 'max' },
+  episodeCountGte: { key: 'episodeCount', bound: 'min' },
+  episodeCountLte: { key: 'episodeCount', bound: 'max' },
+  nextAiringInDaysGte: { key: 'nextAiringInDays', bound: 'min' },
+  nextAiringInDaysLte: { key: 'nextAiringInDays', bound: 'max' },
+  seriesLanguageProfileIds: {
+    key: 'languageProfileIds',
+    providerIdParam: 'seriesLanguageProfileIdsProviderId',
+  },
   overseerrRequestStatus: { key: 'overseerrRequestStatus' },
   overseerrHasIssue: { key: 'overseerrHasIssue' },
   tmdbStatus: { key: 'tmdbStatus' },
@@ -312,6 +330,9 @@ const _SERIES_RANGE_PARAM_WITNESS: Record<
   lastAiredDaysAgo: { gte: 'sonarrLastAiredDaysAgoGte', lte: 'sonarrLastAiredDaysAgoLte' },
   episodePercentage: { gte: 'sonarrPercentEpisodesGte', lte: 'sonarrPercentEpisodesLte' },
   lastWatchedDaysAgo: { gte: 'lastWatchedDaysAgoGte', lte: 'lastWatchedDaysAgoLte' },
+  seasonCount: { gte: 'seasonCountGte', lte: 'seasonCountLte' },
+  episodeCount: { gte: 'episodeCountGte', lte: 'episodeCountLte' },
+  nextAiringInDays: { gte: 'nextAiringInDaysGte', lte: 'nextAiringInDaysLte' },
 };
 
 /**
@@ -468,6 +489,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     radarr: DecoratedProfile[];
     sonarr: DecoratedProfile[];
   }>();
+  const languageProfilesCache = new MediaCache<DecoratedProfile[]>();
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
   const studioCache = new MediaCache<string[]>();
@@ -605,6 +627,7 @@ export function createMediaHandlers(cradle: MediaCradle) {
     seriesCache.invalidate('series');
     tagsCache.invalidate('tags');
     qualityProfilesCache.invalidate('qualityProfiles');
+    languageProfilesCache.invalidate('languageProfiles');
     genresCache.invalidate('genres');
     networksCache.invalidate('networks');
     studioCache.invalidate('studio');
@@ -779,6 +802,37 @@ export function createMediaHandlers(cradle: MediaCradle) {
           );
 
           return { radarr: radarrProfiles, sonarr: sonarrProfiles };
+        }),
+    }),
+
+    listLanguageProfiles: defineRoute({
+      handler: () =>
+        languageProfilesCache.getOrFetch('languageProfiles', async () => {
+          const providers = await providerSettingsService.findActiveByTypes([
+            MetadataProviderType.SONARR,
+          ]);
+
+          const profiles: DecoratedProfile[] = [];
+
+          await Promise.all(
+            providers.map(async (provider) => {
+              try {
+                const sonarr = factory.create(provider, log) as SonarrProvider;
+                const languageProfiles = await sonarr.getLanguageProfiles();
+                profiles.push(
+                  ...languageProfiles.map((p) => ({
+                    ...p,
+                    providerId: provider.id,
+                    providerName: provider.name,
+                  }))
+                );
+              } catch (err) {
+                log.warn('Language profiles fetch failed', { provider: provider.name, err });
+              }
+            })
+          );
+
+          return profiles;
         }),
     }),
 

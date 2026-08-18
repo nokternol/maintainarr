@@ -11,6 +11,7 @@ export interface NormalizedShow extends Partial<EnrichmentFields> {
     tmdb?: number;
     tvdb?: number;
     tvmaze?: number;
+    imdb?: string;
     jellyfin?: string;
     /** The configured instance this item came from — set by every source-produced item. */
     providerId?: number;
@@ -33,4 +34,17 @@ export interface NormalizedShow extends Partial<EnrichmentFields> {
   episodePercentage?: number;
   lastAiredAt?: string;
   communityRating?: number;
+  /** Filesystem location — display only, no substring-match filter control exists yet
+   *  (same gap as `NormalizedMovie.path`, Radarr's precedent). */
+  path?: string;
+  /** Poster/fanart — display only, not a filter/query concern. */
+  images?: { coverType: string; remoteUrl: string }[];
+  nextAiring?: string;
+  seasonCount?: number;
+  /** Backs the `hasFile` predicate fix — not exposed as its own filter rule. */
+  episodeFileCount?: number;
+  episodeCount?: number;
+  totalEpisodeCount?: number;
+  /** Sonarr-only, instance-scoped id — backs the `languageProfileIds` filter rule. */
+  languageProfileId?: number;
 }
