@@ -5,6 +5,7 @@ import { defineRoute } from '@server/kernel/defineRoute';
 import { getChildLogger } from '@server/kernel/logger';
 import {
   type IProviderFactory,
+  type PlexMediaItem,
   type PlexProvider,
   ProviderFactory,
   type ProviderSettingsService,
@@ -428,6 +429,12 @@ export function createMediaHandlers(cradle: MediaCradle) {
   const genresCache = new MediaCache<{ movies: string[]; series: string[] }>();
   const networksCache = new MediaCache<string[]>();
   const studioCache = new MediaCache<string[]>();
+  const fileContainerCache = new MediaCache<string[]>();
+  const videoCodecCache = new MediaCache<string[]>();
+  const audioCodecCache = new MediaCache<string[]>();
+  const fileResolutionCache = new MediaCache<string[]>();
+  const labelsCache = new MediaCache<string[]>();
+  const plexItemsCache = new MediaCache<PlexMediaItem[]>();
 
   /** One active Radarr instance's library, kept separate so browse can attribute copies. */
   async function getMovies(): Promise<{ sublists: MovieSublist[]; errors: MediaError[] }> {
@@ -477,6 +484,47 @@ export function createMediaHandlers(cradle: MediaCradle) {
     });
   }
 
+  /** Every active Plex instance's flattened library — shared by every Plex-sourced
+   *  lookup (studio, file-tech fields, labels) so each fetches Plex once, not once
+   *  per lookup route. */
+  async function getPlexItems(): Promise<PlexMediaItem[]> {
+    return plexItemsCache.getOrFetch('plexItems', async () => {
+      const providers = await providerSettingsService.findActiveByTypes([
+        MetadataProviderType.PLEX,
+      ]);
+      const all: PlexMediaItem[] = [];
+      await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const plex = factory.create(provider, log) as PlexProvider;
+            all.push(...(await plex.getAllItems()));
+          } catch (err) {
+            log.warn('Plex fetch failed', { provider: provider.name, err });
+          }
+        })
+      );
+      return all;
+    });
+  }
+
+  /** Dedupe+sort a string projection over every fetched Plex item — the shape every
+   *  file-tech/label lookup route shares. */
+  function plexStringLookup(
+    cache: MediaCache<string[]>,
+    cacheKey: string,
+    pick: (item: PlexMediaItem) => string | string[] | undefined
+  ) {
+    return () =>
+      cache.getOrFetch(cacheKey, async () => {
+        const items = await getPlexItems();
+        const values = items.flatMap((item) => {
+          const v = pick(item);
+          return v === undefined ? [] : Array.isArray(v) ? v : [v];
+        });
+        return [...new Set(values)].sort();
+      });
+  }
+
   function invalidateMediaCaches(): void {
     moviesCache.invalidate('movies');
     seriesCache.invalidate('series');
@@ -484,6 +532,13 @@ export function createMediaHandlers(cradle: MediaCradle) {
     qualityProfilesCache.invalidate('qualityProfiles');
     genresCache.invalidate('genres');
     networksCache.invalidate('networks');
+    studioCache.invalidate('studio');
+    fileContainerCache.invalidate('fileContainer');
+    videoCodecCache.invalidate('videoCodec');
+    audioCodecCache.invalidate('audioCodec');
+    fileResolutionCache.invalidate('fileResolution');
+    labelsCache.invalidate('labels');
+    plexItemsCache.invalidate('plexItems');
   }
 
   return {
@@ -694,6 +749,34 @@ export function createMediaHandlers(cradle: MediaCradle) {
           );
           return [...new Set(all)].sort();
         }),
+    }),
+
+    listFileContainers: defineRoute({
+      handler: plexStringLookup(
+        fileContainerCache,
+        'fileContainer',
+        (i) => i.Media?.[0]?.container
+      ),
+    }),
+
+    listVideoCodecs: defineRoute({
+      handler: plexStringLookup(videoCodecCache, 'videoCodec', (i) => i.Media?.[0]?.videoCodec),
+    }),
+
+    listAudioCodecs: defineRoute({
+      handler: plexStringLookup(audioCodecCache, 'audioCodec', (i) => i.Media?.[0]?.audioCodec),
+    }),
+
+    listFileResolutions: defineRoute({
+      handler: plexStringLookup(
+        fileResolutionCache,
+        'fileResolution',
+        (i) => i.Media?.[0]?.videoResolution
+      ),
+    }),
+
+    listLabels: defineRoute({
+      handler: plexStringLookup(labelsCache, 'labels', (i) => i.Label?.map((l) => l.tag)),
     }),
 
     listSources: defineRoute({
