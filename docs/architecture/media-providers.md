@@ -51,14 +51,25 @@ once). None are modelled-only.
 **Auth:** API key (`?apikey=` query param).
 
 **What the app can pull today** ([`connections/sonarrProvider.ts`](ref:path:server/modules/providers/connections/sonarrProvider.ts)):
-`getSeries()`, `getProfiles()`, `getRootFolders()`, `getTags()`, `lookupSeries(term)`. Actuator tasks:
-`unmonitorSeries()`, `triggerSeriesSearch()`, `deleteSeries()` are real; `deleteSeriesKeepFiles`/
-`changeQualityProfile`/`addTag`/`removeTag` are modelled-only.
+`getSeries()`, `getProfiles()`, `getLanguageProfiles()`, `getRootFolders()`, `getTags()`,
+`lookupSeries(term)`. Every actuator task is real (calls Sonarr's API): `unmonitorSeries()`,
+`triggerSeriesSearch()`, `deleteSeries()`, `deleteSeriesKeepFiles()`, `changeQualityProfile()`,
+`applyTag()` (add/remove), `refreshSeries()`, `rescanSeries()`, `renameSeries()`. None are
+modelled-only. `moveSeries` and `changeLanguageProfile` are deliberately not built as tasks — their
+automation-UI parameter shape (target root folder; target language profile id) is deferred to
+[`docs/in_progress/provider-e2e-spec/tickets/11-automation-task-parameters.md`](ref:path:docs/in_progress/provider-e2e-spec/tickets/11-automation-task-parameters.md),
+same precedent as Radarr's `moveMovie`.
 
 **Wired into the media-item pipeline?** Yes — as `MediaSource`. Sonarr's fields (`genres`, `network`,
-`seriesType`, `communityRating`, `episodePercentage`, `lastAiredAt`, etc.) normalize onto
-`NormalizedShow` ([`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts)) and are gated
-directly into `filterRegistry.ts`.
+`seriesType`, `communityRating`, `episodePercentage`, `lastAiredAt`, `hasFile` (derived from
+`statistics.episodeFileCount > 0`), `path`, `images`, `nextAiring`, `seasonCount`, `episodeFileCount`,
+`episodeCount`/`totalEpisodeCount`, `languageProfileId`, etc.) normalize onto `NormalizedShow`
+([`normalizeMedia.ts`](ref:path:server/modules/media/normalizeMedia.ts)) and are gated directly into
+`filterRegistry.ts`. `_sourceIds.imdb`/`_sourceIds.tvmaze` are also populated (identity fields, not
+enrichment data), closing the asymmetry with `NormalizedMovie._sourceIds.imdb`. Language profiles are a
+Sonarr-only concept with no Radarr equivalent — `getLanguageProfiles()` backs the `languageProfileIds`
+filter rule and the `GET /api/media/language-profiles` lookup route, both independent of the
+not-yet-built `changeLanguageProfile` task.
 
 ## Tautulli
 
